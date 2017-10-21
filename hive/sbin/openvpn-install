@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#Sets up openvpn if config and keys are available
+
+HIVEOVPN=/hive-config/openvpn
+VPN_INSTALLED="/tmp/.openvpn-installed"
+[ -f $VPN_INSTALLED ] && rm $VPN_INSTALLED
+
+#Search for client conf
+conf=`find $HIVEOVPN/ -iname '*.conf' -exec basename {} \; | head -n 1`
+[[ -z $conf ]] && echo "No OpenVPN config found" && exit 1
+echo "OpenVPN config $HIVEOVPN/$conf"
+[ -f /etc/openvpn/client.conf ] && rm /etc/openvpn/client.conf
+ln -sf $HIVEOVPN/$conf /etc/openvpn/client.conf
+
+#CA
+[ ! -f $HIVEOVPN/ca.crt ] && echo "$HIVEOVPN/ca.crt not found" && exit 1
+#echo "ca.crt found"
+[ -f /etc/openvpn/ca.crt ] && rm /etc/openvpn/ca.crt
+ln -sf $HIVEOVPN/ca.crt /etc/openvpn/ca.crt
+
+#Search for client crt
+crt=`find $HIVEOVPN/ -iname '*.crt' -exec basename {} \; | grep -v ca.crt | head -n 1`
+[[ -z $crt ]] && echo "Client crt not found" && exit 1
+echo "client.crt at $HIVEOVPN/$crt"
+[ -f /etc/openvpn/client.crt ] && rm /etc/openvpn/client.crt
+ln -sf $HIVEOVPN/$crt /etc/openvpn/client.crt
+
+#Search for client key
+key=`find $HIVEOVPN/ -iname '*.key' -exec basename {} \; | head -n 1`
+[[ -z $key ]] && echo "Client key not found" && exit 1
+echo "client.key at $HIVEOVPN/$key"
+[ -f /etc/openvpn/client.key ] && rm /etc/openvpn/client.key
+ln -sf $HIVEOVPN/$key /etc/openvpn/client.key
+
+
+#systemctl restart openvpn
+systemctl restart openvpn@client
+
+touch $VPN_INSTALLED
+
+
+#this is stupid, but we need to wait a bit for openvpn to setup
+for i in {1..15}; do
+	count=`echo $(hostname -I) | sed 's/ /\n/g' | wc -l`
+	[[ $count > 1 ]] &&
+		echo "One more interface came up" > /dev/tty1 &&
+		echo "One more interface came up" &&
+		break
+	echo "Waiting interface to come up... $i" > /dev/tty1
+	echo "Waiting interface to come up... $i"
+	sleep 1
+done
+
+
+exit 0

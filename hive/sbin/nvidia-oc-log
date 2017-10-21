@@ -1,0 +1,6 @@
+#!/bin/bash
+#just a log wrapper, required by nvidia-ocx
+
+#nvidia-oc > /var/log/nvidia-oc.log 2>&1
+
+nvidia-oc 2>&1 | tee /var/log/nvidia-oc.log

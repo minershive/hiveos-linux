@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+#ln -s /hive/bin/motd /etc/update-motd.d/00-my-motd
+
+uname -a
+hostname
+
+ifconfig | grep -v "127.0.0.1" | grep "inet addr" | sed -E 's/^[[:space:]]+//'
+echo ""
+
+df -h /
+
+echo ""
+
+uptime
+
+echo  ""
+
+#echo "AMD GPU: `/hive/sbin/gpu-detect AMD`"
+#echo "NVIDIA GPU: `/hive/sbin/gpu-detect NVIDIA`"
+#echo ""
+
+sudo /hive/sbin/gpu-detect list
+
+echo ""
+
+helpme
+
+echo ""

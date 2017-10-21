@@ -1,0 +1,128 @@
+#!/bin/bash
+# Sends hello to Hive, receives config files, restarts miner
+
+HELLO_OK="/tmp/.hive-hello-ok"
+[ -f $HELLO_OK ] && rm $HELLO_OK
+
+RIG_CONF="/hive-config/rig.conf"
+NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
+AMD_OC_CONF="/hive-config/amd-oc.conf"
+WALLET_CONF="/hive-config/wallet.conf"
+VPN_INSTALLED="/tmp/.openvpn-installed"
+mkdir -p "/hive-config"
+mkdir -p "/hive-config/openvpn"
+
+[ -t 1 ] && . colors
+[ ! -f $RIG_CONF ] && echo -e "No config $RIG_CONF" && exit 1
+
+. $RIG_CONF
+
+[[ -z $RIG_ID ]] && echo "No RIG_ID in config" && exit 1
+[[ -z $RIG_PASSWD ]] && echo "No RIG_PASSWD in config" && exit 1
+[[ -z $HIVE_HOST_URL ]] && echo "No HIVE_HOST_URL in config" && exit 1
+
+
+HIVE_URL="$HIVE_HOST_URL/worker/api"
+
+# Make hello request ================================================================
+
+boot_time=`TZ='UTC' uptime -s`
+#boot_time_ts=`date --date="$boot_time" +"%s"`
+
+gpus_json=`gpu-detect listjson`
+#gpus_json=`echo "${gpus[@]}" | jq -R . | jq -s -c .`
+gpu_count_amd=`gpu-detect AMD`
+gpu_count_nvidia=`gpu-detect NVIDIA`
+ips=`hostname -I | sed 's/ /\n/g'`
+ips_json=`echo "${ips[@]}" | jq -R . | jq -s -c .`
+[ -f $VPN_INSTALLED ] && openvpn=1 || openvpn=0
+
+mb_manufacturer=`dmidecode | grep -A4 '^Base Board Information' | grep "Manufacturer:" | sed -E 's/\sManufacturer:\s+(.*)/\1/'`
+mb_product=`dmidecode | grep -A4 '^Base Board Information' | grep "Product Name:" | sed -E 's/\sProduct Name:\s+(.*)/\1/'`
+
+kernel=`uname --kernel-release`
+
+request=$(
+jq -n \
+--arg rig_id "$RIG_ID" \
+--arg passwd "$RIG_PASSWD" \
+--arg boot_time "$boot_time" \
+--argjson ip "$ips_json" \
+--argjson gpu "$gpus_json" \
+--arg gpu_count_amd "$gpu_count_amd" \
+--arg gpu_count_nvidia "$gpu_count_nvidia" \
+--arg version "`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`" \
+--arg openvpn "$openvpn" \
+--arg manufacturer "$mb_manufacturer" \
+--arg product "$mb_product" \
+--arg kernel "$kernel" \
+'{
+	"method": "hello", "jsonrpc": "2.0", "id": 0,
+	"params": {
+		$rig_id, $passwd,
+		$boot_time, $ip,
+		$gpu, $gpu_count_amd, $gpu_count_nvidia,
+		"mb": {$manufacturer, $product},
+		$openvpn, $kernel, $version
+	}
+}'
+)
+echo "$request" | jq -c '.'
+
+response=$(echo $request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=hello" -H "Content-Type: application/json")
+exitcode=$?
+[[ $exitcode -ne 0 ]] &&
+	echo -e "${RED}Error connecting to Hive server${NOCOLOR}" &&
+	human-curl-error $exitcode &&
+	exit $exitcode #404 is not a bad exit code
+
+#output and check json
+echo "$response" | jq '.'
+
+[ $? -ne 0 ] && echo -e "${RED}Error parsing JSON response:${NOCOLOR} $response" && exit $? #error json parsing
+
+error=$(echo $response | jq '.error' --raw-output)
+[[ ! -z $error && $error != "null" ]] && echo -e "${RED}ERROR:${NOCOLOR} `echo $response | jq '.error.message' -r`" && exit 1
+
+
+# Save config and check it ================================================================
+config=$(echo $response | jq '.result.config' --raw-output)
+[[ -z $config || $config == "null" ]] &&  echo -e "${RED}ERROR:${NOCOLOR} no config field:" && exit 1
+echo "$config" > $RIG_CONF
+. $RIG_CONF
+hostname-check
+
+# Wallet config ================================================================
+wallet=$(echo $response | jq '.result.wallet' --raw-output)
+if [[ ! -z $wallet && $wallet != "null" ]]; then
+	echo "$wallet" > $WALLET_CONF
+fi
+
+# Nvidia config ================================================================
+nvidia_oc=$(echo $response | jq '.result.nvidia_oc' --raw-output)
+if [[ ! -z $nvidia_oc && $nvidia_oc != "null" ]]; then
+	echo "$nvidia_oc" > $NVIDIA_OC_CONF
+else
+	[[ -f $NVIDIA_OC_CONF ]] && rm $NVIDIA_OC_CONF
+fi
+
+# AMD config ================================================================
+amd_oc=$(echo $response | jq '.result.amd_oc' --raw-output)
+if [[ ! -z $amd_oc && $amd_oc != "null" ]]; then
+	echo "Saving AMD OC config"
+	echo "$amd_oc" > $AMD_OC_CONF
+else
+	[[ -f $AMD_OC_CONF ]] && rm $AMD_OC_CONF
+fi
+
+# Post actions =================================================================
+#restartminer - restart miner on success
+if [[ $1 == "restartminer" ]]; then
+	miner restart
+	[[ $WD_ENABLED == 1 ]] &&
+		wd restart
+fi
+
+echo "Touching $HELLO_OK"
+touch $HELLO_OK
+exit 0

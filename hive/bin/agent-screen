@@ -1,0 +1,8 @@
+#!/bin/bash
+
+screen -x -S agent
+
+[[ $? -ne 0 ]] &&
+    echo "Starting new agent screen session" &&
+    screen -dm -S agent "agent"
+#    screen -dm -S agent bash -c "agent; bash"

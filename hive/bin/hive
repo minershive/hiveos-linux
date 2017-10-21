@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+# __    __         __                  _                                           _                      _
+#/ / /\ \ \___    /__\ ___  __ _ _   _(_)_ __ ___    /\/\   ___  _ __ ___    /\/\ (_)_ __   ___ _ __ __ _| |___
+#\ \/  \/ / _ \  / \/// _ \/ _\` | | | | | '__/ _ \  /    \ / _ \| '__/ _ \  /    \| | '_ \ / _ \ '__/ _\` | / __|
+# \  /\  /  __/ / _  \  __/ (_| | |_| | | | |  __/ / /\/\ \ (_) | | |  __/ / /\/\ \ | | | |  __/ | | (_| | \__ \\
+#  \/  \/ \___| \/ \_/\___|\__, |\__,_|_|_|  \___| \/    \/\___/|_|  \___| \/    \/_|_| |_|\___|_|  \__,_|_|___/
+#                             |_|
+
+
+#To ensure we can read and write /hive-config
+fsck.fat -a /dev/disk/by-uuid/3B95-2BB9
+
+#ensure we have unix config
+if [[ -e /hive-config/rig.conf ]]; then
+    crlf=`grep -U $'\x0D' /hive-config/rig.conf | wc -l`
+    [[ $crlf > 0 ]] &&
+        echo "Converting /hive-config/rig.conf to unix" &&
+        dos2unix /hive-config/rig.conf
+fi
+
+
+#source /etc/environment
+export PATH="./:/hive/bin:/hive/sbin:$PATH"
+
+export GPU_COUNT_AMD=`gpu-detect AMD`
+export GPU_COUNT_NVIDIA=`gpu-detect NVIDIA`
+export GPU_FIRST_AMD=`lspci | grep VGA | head -n 1 | grep AMD | wc -l`
+export GPU_FIRST_NVIDIA=`lspci | grep VGA | head -n 1 | grep NVIDIA | wc -l`
+
+RIG_CONF="/hive-config/rig.conf"
+AMD_OC_CONF="/hive-config/amd-oc.conf"
+
+#[ -t 1 ] &&
+. colors #use them anyway
+
+#cd $(dirname $(realpath $0))
+
+#let some other services to finish
+#sleep 2
+
+#Log to file, bad idea as there is no log rotate
+#journalctl -u hive --no-pager -x -a -f > /tmp/hive-startup.log &
+
+uname=`uname -a`
+hostinfo=$(hostname; hostname -I)
+
+msg=$(cat <<EOF
+$uname
+$BYELLOW
+_______ _______ ___ ___ _______
+|   |   |_     _|   |   |    ___|
+|       |_|   |_|   |   |    ___|
+|___|___|_______|\_____/|_______|
+
+${CYAN}$hostinfo
+${NOCOLOR}
+EOF
+)
+
+echo -e "$msg" > /dev/tty1
+echo -e "$msg"
+
+
+
+### OpenVPN #############################################################################################
+openvpn-install
+#will wait for interface
+
+
+### Check for internal GPU ##############################################################################
+
+if [[ $GPU_FIRST_AMD == 0 && $GPU_FIRST_NVIDIA == 0 ]]; then
+    warnmsg=$(cat <<WARN
+$YELLOW
+#####################################################################
+###
+### You have connected monitor to integrated GPU on the motherboard?
+### Don't do this. Connect monitor to the 1st external GPU (in 16x slot).
+### However we will try to continue in 5 seconds.
+###
+#####################################################################
+$NOCOLOR
+WARN
+)
+
+	#rm config so maybe xorg autoconfig will work
+	rm /etc/X11/xorg.conf
+
+    echo -e "$warnmsg" > /dev/tty1 #this is for user to see on tty
+    echo -e "$warnmsg" #this is for own log
+    sleep 5
+fi
+
+### Nvidia not first warning ############################################################################
+if [ $GPU_FIRST_AMD -gt 0 ] && [ $GPU_COUNT_NVIDIA -gt 0 ]; then
+    warnmsg=$(cat <<WARN
+$YELLOW
+#####################################################################
+###
+###   WARNING
+###
+###   You have mix of NVIDIA and AMD cards.
+###   AMD is detected to be in the first slot.
+###   It's better to have NVIDIA in the 1st PCIe slot for OC to work.
+###   X server will crash in this configuration.
+###
+#####################################################################
+###   Boot will continue in 15 seconds so you may try
+#####################################################################
+$NOCOLOR
+WARN
+)
+
+    echo -e "$warnmsg" > /dev/tty1 #this is for user to see on tty
+    echo -e "$warnmsg" #this is for own log
+    sleep 15
+fi
+
+
+
+### modprobe drivers, nvidia better to be first ##################################################################
+if [ $GPU_COUNT_NVIDIA -gt 0 ]; then
+    echo "modprobe NVIDIA drivers"
+    modprobe nvidia_drm modeset=1
+    modprobe nvidia
+
+	nvidia-xorg
+fi
+if [ $GPU_COUNT_AMD -gt 0 ]; then
+    echo "modprobe AMD drivers"
+    modprobe amdgpu
+    #if there are nvidias then their config should be used, amd will not work anyways
+    if [ $GPU_COUNT_NVIDIA -eq 0 ]; then
+        echo "Copying AMD Xorg config"
+        cp /hive/etc/xorg.conf.amd /etc/X11/xorg.conf
+    fi
+
+    amd-save-pp_tables
+fi
+#sleep 1
+
+
+
+
+### Loading continues ##################################################################
+
+#commented, no one will see it
+### tail syslog ############################################################################
+#TAILPID=`ps aux | grep "tail -f /var/log/syslog" | grep -v grep | awk '{print $2}'`
+#[ "0$TAILPID" != "0" ] && kill -9 $TAILPID
+#tail -f /var/log/syslog > /dev/tty1 &
+
+
+motd
+
+#Run watchdog pinger ASAP. Will detect device.
+echo "> Detecting watchdogs"
+watchdoginua.sh
+watchdog-opendev.sh
+
+echo "> Applying crontab"
+crontab /hive/etc/crontab.root
+
+
+echo "> Caching host resolve"
+cache-hive-ip
+
+echo "> Saying hello to server"
+hello
+[[ -e $RIG_CONF ]] &&
+	. $RIG_CONF #will be needed to start WD later
+
+
+
+#AMD OC in hivex now
+#Nvidia OC will be run by xinit
+
+echo "> Starting miner"
+miner start
+
+#Start Watchdog. It will exit if its 0
+[[ $WD_ENABLED == 1 ]] &&
+	echo "> Hashrate Watchdog enabled" &&
+	wd start
+
+
+echo "> Starting agent screen"
+agent-screen
+
+echo "> Starting HiveX"
+systemctl start hivex
+
+echo "> Hive Start Finished"
+exit 0

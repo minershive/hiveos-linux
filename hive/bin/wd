@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+export PATH="./:/hive/bin:/hive/sbin:$PATH"
+
+SLEEP=10 #seconds to sleep over iteration
+OK_MESSAGE_REDUCE=$(( 1 * 60 / $SLEEP )) #e.g. only every 12th message will be displayed to reduce log
+
+RIG_CONF="/hive-config/rig.conf"
+
+#[ -t 1 ] && .
+. /hive/bin/colors
+
+
+function loadconf() {
+	WD_ENABLED=
+
+	if [ ! -f $RIG_CONF ]; then
+		echo -e "${RED}No config $RIG_CONF${NOCOLOR}"
+		echo "Exiting"
+		exit 1
+	else
+		. $RIG_CONF
+	fi
+
+
+	[[ -z $WD_ENABLED || $WD_ENABLED != 1 ]] &&
+		echo -e "${YELLOW}Watchdog not enabled, exiting${NOCOLOR}" &&
+		exit 0
+
+
+	minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
+	[[ -z $minhash || $minhash == "null" ]] &&
+		message warn "Minimal hashrate for $MINER is not set" &&
+		echo -e "${RED}Minimal hashrate for $MINER is not set in config, exiting${NOCOLOR}" &&
+		exit 1
+}
+
+
+function set_lastgood() {
+	#lastgood=`date +%s`
+	[[ -e /tmp/khs ]] &&
+		lastgood=`stat -c %Y /tmp/khs` ||
+		#lastgood=0 can't set it to 0, in case of boot agent may be late
+		lastgood=`date +%s` #let's count from now
+
+	miner_restart_count=0
+}
+
+
+set_lastgood
+ok_count=0
+function loop() {
+	#echo -n "[`date`] "
+
+	loadconf
+
+	khs=
+	[[ -e /tmp/khs ]] && khs=`cat /tmp/khs`
+	[[ -z $khs ]] && khs=0
+
+
+	hashok=`echo $khs $minhash | awk '{ print ($1 >= $2) ? 1 : 0 }'` #float comparison
+
+	if [[ $hashok == 1 ]]; then
+		set_lastgood
+		[[ $ok_count == 0 ]] &&
+			echo -e "${GREEN}OK${NOCOLOR} ${CYAN}$MINER${NOCOLOR} $khs kHs >= $minhash kHs"
+
+		((ok_count++))
+		[[ $ok_count -ge $OK_MESSAGE_REDUCE ]] && ok_count=0
+
+		return
+	fi
+
+
+	now=`date +%s`
+	elapsed=$(($now - $lastgood))
+	#echo Elapsed $elapsed seconds
+
+	echo -e "${RED}BARK${NOCOLOR} ${CYAN}$MINER${NOCOLOR} $khs kHs < $minhash kHs for $elapsed seconds"
+
+	#Check to reboot first
+	if [[ ! -z $WD_REBOOT ]]; then
+		reboot_timeout=`echo $WD_REBOOT 60 | awk '{print $1 * $2}'`
+		if [[ $elapsed -ge $reboot_timeout ]]; then
+			message danger "$MINER low hashrate ($khs kH/s), rebooting"
+			echo -e "---"
+			echo -e "${RED}Rebooting after $WD_REBOOT minutes${NOCOLOR}"
+			echo -e "---"
+			sreboot
+			return #for testing and if it does not work)
+		fi
+	fi
+
+	#Check to restart miner
+	if [[ ! -z $WD_MINER ]]; then
+		miner_restart_timeout=`echo $WD_MINER 60 | awk '{print $1 * $2}'`
+		if [[ $miner_restart_count == 0 && $elapsed -ge $miner_restart_timeout ]]; then
+			message warn "$MINER low hashrate ($khs kH/s), restarting"
+			echo -e "---"
+			echo -e "${YELLOW}Restarting ${CYAN}$MINER${NOCOLOR} ${YELLOW}after $WD_MINER minutes${NOCOLOR}"
+			echo -e "---"
+			miner_restart_count=1
+			miner restart
+		fi
+	fi
+}
+
+
+########################################################################################################################
+
+case $1 in
+	run)
+		loadconf
+		echo "MINER RERSTART:  $WD_MINER minutes"
+		echo "REBOOT:          $WD_REBOOT minutes"
+		while true; do
+			loop
+			sleep $SLEEP
+		done
+	;;
+	stop)
+		systemctl stop hive-watchdog
+	;;
+	start)
+		systemctl start hive-watchdog
+	;;
+	restart)
+		systemctl restart hive-watchdog
+	;;
+	log)
+		journalctl -u hive-watchdog --no-pager $2 $3 $4 $5 $6 $7
+	;;
+	status)
+		systemctl status hive-watchdog
+	;;
+	*)
+		bname=`basename $0`
+		echo -e "${YELLOW}Hashrate Watchdog${NOCOLOR}"
+		echo -e "Usage: ${CYAN}$bname start|stop|restart|log|status${NOCOLOR}"
+	;;
+esac

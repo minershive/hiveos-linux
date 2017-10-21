@@ -1,0 +1,122 @@
+#!/bin/bash
+#GPU temps and fans
+#Sorted by pci bus id. It was hard...
+
+
+temps=()
+fans=()
+
+bus_temp_fan=()
+
+function putstats {
+	#echo $1
+	#echo $2
+	#temps+=($1)
+	#fans+=($2)
+	bus_temp_fan+=("$3 $1 $2")
+}
+
+
+#AMD cards stats
+function amd_stats {
+	#cardcount=0;
+	#/sys/class/drm/card7/device/hwmon/hwmon10
+	for hwmondir in /sys/class/drm/card*/device/hwmon/hwmon*/ ; do
+		#echo $hwmondir
+		#if there are no dirs then there will be 1 string item in loop, skip it
+		[[ ! -e $hwmondir ]] && continue
+
+		[[ $hwmondir =~ \/card([0-9a-z]+)\/ ]]
+
+		if [[ -n ${BASH_REMATCH[1]} ]]; then
+			cardno=${BASH_REMATCH[1]}
+		else
+			echo "$0: Unknown card number in $hwmondir"
+			continue
+		fi
+
+		busid=`realpath /sys/class/drm/card$cardno | rev | cut -d '/' -f 3 | rev`
+		busid=${busid#0000:} #trim prefix
+
+		fanmax=`head -1 $hwmondir/pwm1_max`
+		fan=`head -1 $hwmondir/pwm1`
+		temp=`head -1 $hwmondir/temp1_input`
+		if [ $fanmax -gt 0 ]; then
+			speed=$(( fan * 100 / fanmax ))
+			temp=$(( temp / 1000 ))
+			#echo "GPU $cardno $busid ${temp}C $speed%"
+			#echo "${temp}, $speed"
+
+			putstats $temp $speed $busid
+		else
+			echo "Error: fanmax unknown for card $cardno"
+		fi
+
+		#cardcount=$(( cardcount + 1 ))
+	done
+}
+
+function nv_stats {
+	#72, 81, 00000000:01:00.0
+	#71, 54, 00000000:03:00.0
+	#68, 46, 00000000:06:00.0
+	#68, 83, 00000000:07:00.0
+	stats=`timeout -s9 2 nvidia-smi --format=csv,noheader,nounits --query-gpu=temperature.gpu,fan.speed,gpu_bus_id`
+
+	#NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver. Make sure that the latest NVIDIA driver is installed and running.
+	[[ $stats =~ NVIDIA-SMI ]] && return
+
+	#echo -e "$stats"
+	#IFS=$'\n'
+	#for s in ${stats[@]}; do
+	while read -r s; do
+		#echo "$s"
+		#split by ', '
+		params=(${s//, / })
+		#echo ${params[0]}
+		#echo ${params[1]}
+		busid=${params[2]#00000000:} #trim prefix
+		putstats ${params[0]} ${params[1]} $busid
+	done <<<"$stats"
+}
+
+amd_stats
+nv_stats
+
+#echo "# ${#bus_temp_fan[@]}"
+#echo "* ${bus_temp_fan[*]}"
+#echo "1) ${bus_temp_fan[1]}"
+#echo "2) ${bus_temp_fan[2]}"
+#echo "bus_temp_fan: ${bus_temp_fan[@]}"
+
+sorted=`for s in "${bus_temp_fan[@]}"; do echo "$s"; done | sort`
+#echo "$sorted"
+
+while read -r s; do
+	params=(${s// / })
+	#busid ${params[0]}
+	temps+=(${params[1]})
+	fans+=(${params[2]})
+done <<<"$sorted"
+
+#echo "Temp: ${temps[@]}"
+#echo "Fans: ${fans[@]}"
+
+jsontemps=`printf '%s\n' "${temps[@]}" | jq --raw-input . | jq --slurp -c .`
+jsonfans=`printf '%s\n' "${fans[@]}" | jq --raw-input . | jq --slurp -c .`
+
+jq -c -n --argjson t "$jsontemps" --argjson f "$jsonfans" '{"temp": $t, "fan": $f}'
+
+
+
+#
+#root@w163:~# nvidia-smi --query-gpu=index,timestamp,power.draw,clocks.sm,clocks.mem,clocks.gr --format=csv
+#index, timestamp, power.draw [W], clocks.current.sm [MHz], clocks.current.memory [MHz], clocks.current.graphics [MHz]
+#0, 2017/10/04 00:54:27.644, 98.29 W, 1974 MHz, 4151 MHz, 1974 MHz
+#1, 2017/10/04 00:54:27.650, 138.22 W, 2075 MHz, 4252 MHz, 2075 MHz
+#2, 2017/10/04 00:54:27.662, 96.14 W, 1961 MHz, 4151 MHz, 1961 MHz
+#3, 2017/10/04 00:54:27.667, 193.98 W, 2025 MHz, 5481 MHz, 2025 MHz
+#4, 2017/10/04 00:54:27.674, 193.30 W, 2037 MHz, 5481 MHz, 2037 MHz
+#5, 2017/10/04 00:54:27.679, 133.95 W, 2050 MHz, 4252 MHz, 2050 MHz
+
+

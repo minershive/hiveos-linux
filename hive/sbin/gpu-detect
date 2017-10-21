@@ -1,0 +1,134 @@
+#!/bin/bash
+
+if [[ $# < 1 ]]; then
+	echo "Usage: $0 NVIDIA|AMD|list|listjson|listnvidia"
+	exit 1
+fi
+
+[ -t 1 ] && . colors
+#[[ -t 1 || $2 == "--colors" ]] && . colors
+
+
+AMDMEMINFO_FILE=/tmp/amdmeminfo
+NVIDIASMI_FILE=/tmp/nvidia_smi_info
+
+
+if [[ $1 == "list" || $1 == "listjson" ]]; then
+	#gpu_count_amd=`gpu-detect AMD`
+	#if [[ $gpu_count_amd > 0 ]]; then
+	#	[[ ! -f $AMDMEMINFO_FILE ]] && amdmeminfo -q -s > $AMDMEMINFO_FILE
+	#fi
+
+	#| sed "s/VGA compatible controller: //" \
+	#| sed "s/Advanced Micro Devices, Inc. //" \
+	#| sed "s/NVIDIA Corporation //"
+	#| grep --color -P "\[(GeForce|Radeon).*?\]"
+	list=`lspci | grep -E "VGA|3D controller"`
+	gpus=()
+	while read -r s; do
+		unset gputype
+		[[ $s =~ "NVIDIA" ]] && gputype="NVIDIA" && COLOR=$GREEN
+		[[ $s =~ "Advanced Micro Devices" ]] && gputype="AMD" && COLOR=$RED
+
+		#[[ $s =~ ^([0-9a-z:.]+).*\[(.+)\] ]]
+		re='^([0-9a-z\:\.]+) VGA compatible controller: (.*)$'
+		re='^([0-9a-z\:\.]+) (VGA compatible|3D) controller: (.*)$'
+		[[ $s =~ $re ]]
+		busid=${BASH_REMATCH[1]}
+		name=${BASH_REMATCH[3]}
+		additional=""
+
+		#echo $s
+		#echo $busid
+
+		if [[ $gputype == "AMD" ]]; then
+			for value in {1..30}; do #wait 3 sec for another amdmeminfo process to finish
+				[[ -z `pidof amdmeminfo` ]] && break
+				sleep 0.1
+			done
+			[[ ! -f $AMDMEMINFO_FILE ]] && amdmeminfo -q -s > $AMDMEMINFO_FILE
+			#GPU1:09.00.0:Radeon RX 470:113-1E3471U.O69:0x506066f2:SK Hynix H5GC4H24AJR
+			#GPU0:07.00.0:Radeon RX 470:113-1E3471U.O69:0x506066f2:SK Hynix H5GC4H24AJR
+			meminfopci=${BASH_REMATCH[1]}
+			meminfopci=${meminfopci%$":00.0"} #cut out suffix
+			meminfopci=:${meminfopci}.00.0:
+			meminfo=`cat $AMDMEMINFO_FILE | grep "$meminfopci"`
+			if [[ ! -z $meminfo ]]; then
+				#meminfo=(${meminfo//:/ }) #split by :
+				_IFS=$IFS && IFS=":"
+				read -a meminfo <<< "$meminfo" #explode array by :
+				IFS=$_IFS
+				name=${meminfo[2]}
+
+				#[   26.705145] amdgpu 0000:07:00.0: VRAM: 4096M 0x0000000000000000 - 0x00000000FFFFFFFF (4096M used)
+				mem=`dmesg | grep -oE "amdgpu 0000:${busid}: VRAM:\s.*" | sed -n 's/.*VRAM:\s\([0-9MG]\+\).*/\1/p'`
+
+				additional=" ($mem, ${meminfo[3]}, ${meminfo[4]})"
+				if [[ $1 == "listjson" ]]; then
+					gpujson=`jq -n -c --arg busid "$busid" --arg name "$name" --arg vbios "${meminfo[3]}" --arg mem_type "${meminfo[4]}" '{$busid, $name, $vbios, $mem_type}'`
+					[[ ! -z $mem ]] && gpujson=`echo $gpujson | jq -c --arg mem "$mem" '. + {$mem}'`
+					gpus+=("$gpujson")
+					continue
+				fi
+			fi
+		elif [[ $gputype == "NVIDIA" ]]; then
+			[[ ! -f $NVIDIASMI_FILE ]] &&
+				nvidia-smi --query-gpu=gpu_bus_id,gpu_name,memory.total,power.min_limit,power.default_limit,power.max_limit --format=csv,noheader > $NVIDIASMI_FILE
+			#00000000:05:00.0, GeForce GTX 1080 Ti, 11172 MiB, 300.00 W
+			#00000000:06:00.0, GeForce GTX 1060 6GB, 6072 MiB, 140.00 W			nvidiainfo=`cat $NVIDIASMI_FILE | grep "00000000:$busid, "`
+			#00000000:0C:00.0, GeForce GTX 1080, 8114 MiB, 326.00 W
+			#00000000:01:00.0, GeForce GTX 1050 Ti, 4038 MiB, 52.50 W, 120.00 W, 130.00 W
+			nvidiainfo=`cat $NVIDIASMI_FILE | grep -i "00000000:$busid, "` #ignore busid case
+			if [[ ! -z $nvidiainfo ]]; then
+				#shity fucking bash array, just get line by number. ebis ono provalis
+				#nvidiainfo=`echo $nvidiainfo | sed -e 's/,\s/\n/g'` #split by ", "
+				#name=`echo "$nvidiainfo" | sed '2q;d'` #get line by number
+				#mem=`echo "$nvidiainfo" | sed '3q;d'`
+				#plim_max=`echo "$nvidiainfo" | sed '4q;d'`
+
+				name=`awk -F', ' '{print $2}' <<< $nvidiainfo`
+				mem=`awk -F', ' '{print $3}' <<< $nvidiainfo`
+				plim_min=`awk -F', ' '{print $4}' <<< $nvidiainfo`
+				plim_def=`awk -F', ' '{print $5}' <<< $nvidiainfo`
+				plim_max=`awk -F', ' '{print $6}' <<< $nvidiainfo`
+
+				additional=" ($mem, $plim_def)"
+				if [[ $1 == "listjson" ]]; then
+					gpus+=(`jq -n -c --arg busid "$busid" --arg name "$name" --arg mem "$mem" \
+						--arg plim_min "$plim_min" --arg plim_def "$plim_def" --arg plim_max "$plim_max" \
+						'{$busid, $name, $mem, $plim_min, $plim_def, $plim_max}'`)
+					continue
+				fi
+			fi
+		else #unknown type
+			[[ $1 == "listjson" ]] && continue #we don't need internal gpu in report
+			COLOR=$YELLOW
+		fi
+
+		#default construction
+		if [[ $1 == "listjson" ]]; then
+			gpus+=(`jq -n -c --arg busid "$busid" --arg name "$name" '{$busid, $name}'`)
+			continue
+		fi
+
+		echo -e "$busid ${COLOR}$name${NOCOLOR}$additional"
+	done <<<"$list"
+
+	if [[ $1 == "listjson" ]]; then
+		echo "${gpus[@]}" | jq --slurp . #| jq --slurp -c .
+	fi
+
+
+	exit 0
+elif [[ $1 == "listnvidia" ]]; then
+	list=`nvidia-smi --query-gpu=gpu_bus_id,gpu_name --format=csv,noheader`
+	while read -r s; do
+		echo $s | sed -e "s/^00000000://" | sed -e "s/,\s/ /"
+	done <<<"$list"
+	exit 0
+fi
+
+
+
+#default, just grep
+lspci | grep -E "(VGA|3D controller).*$1" | wc -l

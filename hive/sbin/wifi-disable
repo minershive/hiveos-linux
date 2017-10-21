@@ -1,0 +1,6 @@
+#!/bin/bash
+
+systemctl stop wpa_supplicant@wlan0
+systemctl disable wpa_supplicant@wlan0
+
+echo "WiFi wpa_supplicant@wlan0 service disabled"

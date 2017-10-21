@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#checks if there is a hostname in /etc/hosts for WORKER_NAME
+
+RIG_CONF="/hive-config/rig.conf"
+
+. $RIG_CONF
+
+if [[ ! -z $WORKER_NAME ]]; then
+    #if ! grep -qE "127.0.0.1 .*\s+$WORKER_NAME" "/etc/hosts"; then
+    if ! grep -q "127.0.0.1 $WORKER_NAME" "/etc/hosts"; then
+        #echo "Hostname missing in /etc/hosts, adding"
+        printf "\n127.0.0.1 $WORKER_NAME\n" >> /etc/hosts
+    fi
+    #echo "WORKER_NAME=$WORKER_NAME"
+    hostnamectl set-hostname "$WORKER_NAME"
+fi

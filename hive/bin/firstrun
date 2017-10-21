@@ -1,0 +1,126 @@
+#!/bin/bash
+#Checks if config exists, ask for rig if no config found
+
+HELLO_OK="/tmp/.hive-hello-ok"
+RIG_CONF="/hive-config/rig.conf"
+NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
+AMD_OC_CONF="/hive-config/amd-oc.conf"
+mkdir -p "/hive-config"
+
+[ -t 1 ] && . colors
+
+
+[[ $1 == "-f" ]] && echo "Forcing reconfig"
+
+
+if [[ ! -f $RIG_CONF ]] || [[ $1 == "-f" ]]; then
+	selfupgrade
+	msg=$(cat <<EOF
+$BYELLOW
+_______ _______ ___ ___ _______
+|   |   |_     _|   |   |    ___|
+|       |_|   |_|   |   |    ___|
+|___|___|_______|\_____/|_______|
+
+$CYAN
+Welcome to Miners Hive.
+This is your first boot, no config found at "$RIG_CONF".
+Please add your rig in your profile on the web, set the name and password for it.
+Then get rig id and give it to me.
+
+$NOCOLOR
+EOF
+)
+	echo -e "$msg"
+elif [[ ! -f $HELLO_OK ]]; then
+	msg=$(cat <<EOF
+$BYELLOW
+_______ _______ ___ ___ _______
+|   |   |_     _|   |   |    ___|
+|       |_|   |_|   |   |    ___|
+|___|___|_______|\_____/|_______|
+
+$YELLOW
+Config "$RIG_CONF" exists but during boot the connection to hive server failed.
+Either the server or your network is temporary down.
+If you have changed the password for this rig, then you need to enter credentials again.$NOCOLOR
+Run ${CYAN}hello${NOCOLOR} to try again. Or run ${CYAN}firstrun -f${NOCOLOR} to enter new ID and password.
+$NOCOLOR
+EOF
+)
+	echo -e "$msg"
+
+	sleep 5
+
+	echo "Trying to say hello again...";
+	hello
+
+	exit 0
+
+else
+	exit 0
+fi
+
+
+
+
+
+
+
+id=""
+passwd=""
+
+function read_id {
+	while true; do
+		echo -n "RIG ID: "
+		read id
+		[[ $id =~ ^[0-9]+$ ]] && break
+		echo "Invalid input"
+	done
+}
+
+function read_passwd {
+	while true; do
+		echo -n "Password: "
+		read passwd
+		#any chars no spaces
+		#[[ ! $passwd =~ [[:blank:]] ]] && break
+		[[ ! $passwd =~ \"|\'|[[:blank:]] ]] && break #if does not match \" or \' space - break cycle
+		echo "Invalid input"
+	done
+}
+
+
+
+while true; do
+	read_id
+	read_passwd
+
+	cat > $RIG_CONF <<FILEEOF
+HIVE_HOST_URL="https://hiveos.farm"
+RIG_ID="$id"
+RIG_PASSWD="$passwd"
+FILEEOF
+
+	echo ""
+	echo "Config written to \"$RIG_CONF\"."
+
+	#try to connect
+	hello restartminer
+
+	if [ $? -eq 0 ]; then
+		#miner restart
+
+		#Apply OC if configs are available
+		[[ -f $AMD_OC_CONF ]] && amd-oc
+		[[ -f $NVIDIA_OC_CONF ]] && nvidia-oc
+
+	 	echo -e "\n${BGREEN}Login OK. Happy mining!${NOCOLOR}\n"
+	 	exit 0
+	fi
+
+	echo -e "${RED}Sorry, id and password did not work, check and try again${NOCOLOR}\n"
+done
+
+
+

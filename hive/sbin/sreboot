@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+#reboots or shutdowns the system using sysrq
+#Usage: sreboot [shutdown]
+
+screen -S agent -X quit
+miner stop
+
+sync
+
+mount -o remount,ro /hive-config
+
+#does not seem to work
+#trap 'echo Booh!' SIGINT SIGTERM EXIT QUIT KILL
+
+#kill `ps -Ao pid= | grep $$`
+
+#PID=$$
+#sPPID=$PPID
+#echo "Own pid=$PID"
+
+#kill `ps -o pid= -N T | grep -v $PID`
+#kill `ps -o pid= -N T | grep -v "^[[:blank:]]*$PID$" | grep -v "^[[:blank:]]*1$"`
+#kill `ps -o pid= -N T | grep -v "^[[:blank:]]*$PID$" | grep -v "^[[:blank:]]*$sPPID$"`
+#kill `ps -o pid= -N T | grep -v "^[[:blank:]]*$PID$"`
+
+#kill -- -1
+#sleep 2 # leave processes some time to exit cleanly on SIGTERM
+#kill -s KILL -- -1 # removes the remaining processes or those
+                   # that have started since without giving them
+                   # a chance to clean-up.
+#sleep 2
+
+#kill -9 `ps -o pid= -N T | grep -v  "^[[:blank:]]*$PID$" | grep -v "^[[:blank:]]*1$"`
+#sleep 5
+
+#unRaw      (take control of keyboard back from X),
+# tErminate (send SIGTERM to all processes),
+# kIll      (send SIGKILL to all processes),
+#  Sync     (flush data to disk),
+#  Unmount  (remount all filesystems read-only),
+#reBoot.
+#‘o’ – Shutdown the system immediately.
+#‘t’ – Output a list of current tasks and their information to the console.
+
+echo 1 > /proc/sys/kernel/sysrq
+echo s > /proc/sysrq-trigger
+echo u > /proc/sysrq-trigger
+
+[[ $1 == "shutdown" ]] &&
+	echo o > /proc/sysrq-trigger
+
+echo b > /proc/sysrq-trigger

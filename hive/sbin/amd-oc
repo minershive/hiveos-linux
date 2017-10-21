@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+date
+echo ""
+
+AMD_OC_CONF="/hive-config/amd-oc.conf"
+DEFAULT_CORE_STATE=5
+
+n=`gpu-detect AMD`
+
+if [[ $n == 0 ]]; then
+    echo "No AMD cards detected, exiting"
+    exit
+fi
+echo "Detected $n AMD cards"
+
+if [ ! -f $AMD_OC_CONF ]; then
+    echo "ERROR: $AMD_OC_CONF does not exist"
+    exit
+fi
+
+source $AMD_OC_CONF
+
+
+#pad arrays
+[[ ! -z $CORE_CLOCK ]] &&
+CORE_CLOCK=($CORE_CLOCK) &&
+for (( i=${#CORE_CLOCK[@]}; i < $n; ++i )); do
+	CORE_CLOCK[$i]=${CORE_CLOCK[$i-1]}
+done
+
+#[[ ! -z $CORE_VDDC_INDEX ]] &&
+#CORE_VDDC_INDEX=($CORE_VDDC_INDEX) &&
+#for (( i=${#CORE_VDDC_INDEX[@]}; i < $n; ++i )); do
+#    CORE_VDDC_INDEX[$i]=${CORE_VDDC_INDEX[$i-1]}
+#done
+
+#[[ - z $CORE_STATE ]] && CORE_STATE="5" #default is 5
+[[ ! -z $CORE_STATE ]] &&
+CORE_STATE=($CORE_STATE) &&
+for (( i=${#CORE_STATE[@]}; i < $n; ++i )); do
+    CORE_STATE[$i]=${CORE_STATE[$i-1]}
+done
+
+[[ ! -z $MEM_CLOCK ]] &&
+MEM_CLOCK=($MEM_CLOCK) &&
+for (( i=${#MEM_CLOCK[@]}; i < $n; ++i )); do
+    MEM_CLOCK[$i]=${MEM_CLOCK[$i-1]}
+done
+
+[[ ! -z $FAN ]] &&
+FAN=($FAN) &&
+for (( i=${#FAN[@]}; i < $n; ++i )); do
+    FAN[$i]=${FAN[$i-1]}
+done
+
+
+echo "CORE_CLOCK = ${CORE_CLOCK[*]}"
+echo "CORE_STATE = ${CORE_STATE[*]}"
+echo "MEM_CLOCK  = ${MEM_CLOCK[*]}"
+echo "FAN        = ${FAN[*]}"
+
+#exit
+
+
+dirs=`ls -d1 /sys/class/drm/card?/device/pp_table`
+if [[ -z $dirs ]]; then
+	echo "No AMD GPUs found as /sys/class/drm/card?/device/pp_table"
+	exit 1
+fi
+
+
+i=-1
+for dir in $dirs; do
+	(( i++ ))
+	echo ""
+
+	#echo $dir
+	#[[ $dir =~ /sys/class/drm/card([0-9]+)/device/pp_table ]]
+	[[ $dir =~ \/card([0-9a-z]+)\/ ]]
+	cardno=${BASH_REMATCH[1]}
+
+	[[ -z $cardno ]] && echo "ERROR: can not match card no in $dir" && continue
+
+	echo "=== GPU $i /sys/class/drm/card$cardno ==="
+	savedpp=/tmp/pp_tables/card$cardno/pp_table
+
+	[[ ! -e $savedpp ]] && echo "ERROR: $savedpp not found, try to reboot" && continue
+
+	#coreState=`wolfamdctrl -i $cardno --show-core | grep -E "DPM state ([0-9]+):" | tail -n 1 | sed -r 's/.*([0-9]+).*/\1/'`
+	args=''
+	coreState=
+	memoryState=
+
+	if [[ ! -z $CORE_STATE ]]; then
+		if [[ ${CORE_STATE[$i]} -ge 0 && ${CORE_STATE[$i]} -le 7 ]]; then
+			[[ ${CORE_STATE[$i]} != 0 ]] && #skip zero state, means auto
+				coreState=${CORE_STATE[$i]}
+		else
+			echo "WARNING: Invalid core state ${CORE_STATE[$i]}, falling back to $DEFAULT_CORE_STATE"
+			coreState=$DEFAULT_CORE_STATE
+		fi
+	fi
+
+	if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} > 0 ]]; then
+		#memoryState=1 #hello ethos
+		memoryState=`wolfamdctrl -i $cardno --show-mem | grep -E "Memory state ([0-9]+):" | tail -n 1 | sed -r 's/.*([0-9]+).*/\1/'`
+
+		#echo "Setting mem to ${MEM_CLOCK[$i]}" &&
+		#wolfamdctrl -i $cardno --mem-clock ${MEM_CLOCK[$i]} --mem-state $memoryState
+		args+=" --mem-clock ${MEM_CLOCK[$i]} --mem-state $memoryState"
+	fi
+
+	if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} > 0 ]]; then
+		[[ -z $coreState ]] && # core set is not specified, let's use some default or it will not work
+			echo "WARNING: Unset core state, falling back to $DEFAULT_CORE_STATE" &&
+			coreState=$DEFAULT_CORE_STATE
+		#wolfamdctrl -i $cardno --core-clock ${CORE_CLOCK[$i]} --core-state $coreState
+		args+=" --core-clock ${CORE_CLOCK[$i]} --core-state $coreState"
+	fi
+
+	#[[ ! -z $CORE_VDDC_INDEX && ${CORE_VDDC_INDEX[$i]} > 0 ]] &&
+	#	wolfamdctrl -i $cardno --core-vddc-idx ${CORE_VDDC_INDEX[$i]} --core-state $coreState
+
+
+	[[ ! -z $FAN && ${FAN[$i]} > 0 ]] &&
+		#wolfamdctrl -i $cardno --set-fanspeed ${FAN[$i]}
+		args+=" --set-fanspeed ${FAN[$i]}"
+
+
+	if [[ -z $args ]]; then
+		: #maybe there is just DPM level to set
+		#echo "Nothing to set"
+	else
+		cp $savedpp /sys/class/drm/card$cardno/device/pp_table
+		sync
+
+		#wolfamdctrl -i $cardno --core-state $coreState --mem-state $memoryState --core-clock 1100 --mem-clock 2000
+		oc_cmd="wolfamdctrl -i $cardno $args"
+		echo $oc_cmd
+		eval $oc_cmd
+	fi
+
+	if [[ ! -z $coreState || ! -z $memoryState ]]; then
+		echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
+
+		[[ ! -z $coreState ]] &&
+			echo $coreState > /sys/class/drm/card$cardno/device/pp_dpm_sclk &&
+			echo "Setting DPM core state to $coreState"
+
+		[[ ! -z $memoryState ]] &&
+			echo $memoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
+	fi
+
+
+
+	#wolfamdctrl -i $i --mem-clock 2000 --mem-state 1
+	#wolfamdctrl -i $i --core-clock 1100 --core-state 7
+	#wolfamdctrl -i 0 --core-vddc-idx 4 --core-state 7
+done
+
+sync
+#just in case, silly flushing reasons
+sleep 0.2
+
+exit 0

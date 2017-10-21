@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#Save power play tables
+
+for ppfile in /sys/class/drm/card*/device/pp_table ; do
+	echo "Saving $ppfile"
+	[[ $ppfile =~ \/card([0-9a-z]+)\/ ]]
+
+	cardno=${BASH_REMATCH[1]}
+	[[ -z ${BASH_REMATCH[1]} ]] && echo "$0: Error matching card no in $ppfile" && continue
+
+	mkdir -p /tmp/pp_tables/card$cardno
+	cp $ppfile /tmp/pp_tables/card$cardno/pp_table
+done

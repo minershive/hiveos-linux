@@ -1,0 +1,20 @@
+#!/bin/bash
+
+n=`gpu-detect AMD`
+
+if [[ $n == 0 ]]; then
+	echo "No AMD GPUs detected"
+	exit 1
+fi
+
+if [[ -z $1 ]]; then
+	echo "Flashes VBIOS to all available AMD GPUs"
+	echo "Usage: `basename $0` <biosfile.rom>";
+	exit 1
+fi
+
+
+for (( i=0; i < $n; i++ )); do
+	echo "=== Flashing card $i ==="
+	atiflash -p $i $1
+done

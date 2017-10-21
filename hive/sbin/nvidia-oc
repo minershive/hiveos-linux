@@ -1,0 +1,166 @@
+#!/bin/bash
+
+[ -t 1 ] && . colors
+
+date
+echo ""
+
+NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
+export DISPLAY=":0"
+
+n=`gpu-detect NVIDIA`
+
+if [ $n == 0 ]; then
+	echo "No NVIDIA cards detected, exiting"
+	exit
+fi
+echo "Detected $n NVIDIA cards"
+
+
+if [ ! -f $NVIDIA_OC_CONF ]; then
+	echo "ERROR: $NVIDIA_OC_CONF does not exist"
+	exit
+fi
+
+source $NVIDIA_OC_CONF
+
+if [[ -z $MEM ]]; then
+	:
+	#MEM=0
+	#echo "ERROR: no MEM set"
+	#exit
+fi
+
+if [[ -z $CLOCK ]] || [[ $CLOCK == "" ]]; then
+	:
+	#CLOCK=0
+	#echo "ERROR: no CLOCK set"
+	#exit
+fi
+
+if [[ -z $FAN ]] || [[ $FAN == "" ]]; then
+	FAN=0
+fi
+
+if [[ -z $PLIMIT ]] || [[ $PLIMIT == "" ]]; then
+	PLIMIT=0
+fi
+
+
+
+#pad arrays
+[[ ! -z $CLOCK ]] &&
+CLOCK=($CLOCK) &&
+for (( i=${#CLOCK[@]}; i < $n; ++i )); do
+	CLOCK[$i]=${CLOCK[$i-1]}
+done
+
+[[ ! -z $MEM ]] &&
+MEM=($MEM) &&
+for (( i=${#MEM[@]}; i < $n; ++i )); do
+	MEM[$i]=${MEM[$i-1]}
+done
+
+[[ ! -z $FAN ]] &&
+FAN=($FAN) &&
+for (( i=${#FAN[@]}; i < $n; ++i )); do
+	FAN[$i]=${FAN[$i-1]}
+done
+
+[[ ! -z $PLIMIT ]] &&
+PLIMIT=($PLIMIT) &&
+for (( i=${#PLIMIT[@]}; i < $n; ++i )); do
+	PLIMIT[$i]=${PLIMIT[$i-1]}
+done
+
+
+echo "CLOCK  = ${CLOCK[*]}"
+echo "MEM    = ${MEM[*]}"
+echo "FAN    = ${FAN[*]}"
+echo "PLIMIT = ${PLIMIT[*]}"
+
+#exit
+
+echo ""
+nvidia-persistenced --persistence-mode
+nvidia-smi -pm 1
+
+echo ""
+
+#for i in {0..$n}
+for (( i=0; i < $n; ++i )); do
+	#name=`nvidia-smi --query-gpu=gpu_name,gpu_bus_id --format=csv,noheader -i $i`
+	nvidiainfo=`nvidia-smi --query-gpu=gpu_bus_id,gpu_name,power.default_limit,power.limit,power.draw --format=csv,noheader -i $i`
+	bus=`awk -F', ' '{print $1}' <<< $nvidiainfo`
+	name=`awk -F', ' '{print $2}' <<< $nvidiainfo`
+	plim_def=`awk -F', ' '{print $3}' <<< $nvidiainfo`
+	plim=`awk -F', ' '{print $4}' <<< $nvidiainfo`
+	power_draw=`awk -F', ' '{print $5}' <<< $nvidiainfo`
+
+	bus=`awk '{print substr($1,10); }' <<< $bus` #00000000:01:00.0
+
+	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, $bus ${GREEN}$name${NOCOLOR}, $power_draw / $plim (Default $plim_def) ${YELLOW}===${NOCOLOR}"
+
+	#persistense mode, save settings on process restart
+	#nvidia-smi -i $i -pm 1
+
+	#continue
+
+	#power limit
+	if [[ ! -z $PLIMIT && ${PLIMIT[$i]} > 0 ]]; then
+		nvidia-smi -i $i -pl ${PLIMIT[$i]} | grep -v "^$"
+	else
+		if [[ $plim != $plim_def ]]; then
+			echo "Restoring default power limit"
+			nvidia-smi -i $i -pl `awk -F' W' '{print $1}' <<< $plim_def` | grep -v "^$"
+		fi
+	fi
+
+	#not working
+	#nvidia-smi -i ${i} -ac 4004,1911
+
+	nvidia-settings -a [gpu:$i]/GPUPowerMizerMode=1 | grep -v "^$"
+
+	if [[ -z $FAN || ${FAN[$i]} == 0 ]]; then
+		nvidia-settings -a [gpu:$i]/GPUFanControlState=0 | grep -v "^$"
+	else
+		nvidia-settings -a [gpu:$i]/GPUFanControlState=1 | grep -v "^$"
+		nvidia-settings -a [fan:$i]/GPUTargetFanSpeed=${FAN[$i]} | grep -v "^$"
+	fi
+
+
+	#echo "i=$i x=$x"
+	#GTX 1050 wanted i=2, allothers want i=3
+	x=3
+	[[ $name =~ "1050" ]] && x=2
+	[[ $name =~ "P106-100" ]] && x=2
+
+	[[ ! -z $CLOCK ]] &&
+		nvidia-settings -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]} | grep -v "^$"
+
+	[[ ! -z $MEM ]] &&
+		nvidia-settings -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]} | grep -v "^$"
+		
+done
+
+
+
+#
+#if [ -z $CPUFREQ ]; then
+#    :
+#    #echo "WARNING: CPUFREQ not set"
+#else
+#    :
+#    #dont see any improvement with this
+#    #cpufreq-set -c 0 -g performance
+#    #cpufreq-set -c 1 -g performance
+#    #cpufreq-set -c 0 -f 2800Mhz
+#    #cpufreq-set -c 1 -f 2800Mhz
+#    #echo "performance" >/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+#    #echo "performance" >/sys/devices/system/cpu/cpu1/cpufreq/scaling_governor
+#    #echo $CPUFREQ > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+#    #echo $CPUFREQ > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+#fi
+
+
+exit 0

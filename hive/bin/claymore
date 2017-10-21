@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+
+THIS_MINER_NAME="claymore"
+[ -t 1 ] && . colors
+
+
+[[ `ps aux | grep ethdcrminer64 | grep -v grep | wc -l` != 0 ]] &&
+	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
+	exit 1
+
+
+
+function epools() {
+	[[ -z $EPOOLS_TPL || -z $EWAL ]] &&
+		echo -e "${YELLOW}WARNING: EWAL or EPOOLS_TPL is not set, skipping epools.txt generation${NOCOLOR}" &&
+		return 1
+
+	echo "Creating epools.txt"
+	echo "$EPOOLS_TPL" > $EPOOLS_TXT
+
+	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $EPOOLS_TXT || echo "${RED}EWAL not set${NOCOLOR}"
+	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $EPOOLS_TXT || echo "${RED}WORKER_NAME not set${NOCOLOR}"
+	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $EPOOLS_TXT
+
+#	if [[ -z $EPOOLS_TPL ]]; then
+#		echo -e "${YELLOW}WARNING: EPOOLS_TPL not set${NOCOLOR}"
+#		#echo -e "${YELLOW}Will leave the file as it is{NOCOLOR}"
+#		#echo "" > $EPOOLS_TXT
+#	else
+#	fi
+
+	return 0
+}
+
+
+function dpools() {
+	#dpools is not required, so clear it
+	[[ -z $DPOOLS_TPL || -z $DWAL ]] &&
+		echo -e "${YELLOW}WARNING: DWAL or DPOOLS_TPL is not set, clearing dpools.txt${NOCOLOR}" &&
+		echo "" > $DPOOLS_TXT &&
+		return 1
+
+
+	echo "Creating dpools.txt"
+	echo "$DPOOLS_TPL" > $DPOOLS_TXT
+
+	if [[ ! -z $WORKER_NAME ]]; then sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $DPOOLS_TXT; else echo "WORKER_NAME not set"; fi
+	if [[ ! -z $DWAL ]]; then sed -i "s/%DWAL%/$DWAL/g" $DPOOLS_TXT; else echo "DWAL not set"; fi
+	if [[ ! -z $EMAIL ]]; then sed -i "s/%EMAIL%/$EMAIL/g" $DPOOLS_TXT; else echo "EMAIL not set"; fi
+
+	#if [[ ! -z $DCOIN ]]; then else echo "DCOIN not set"; fi
+	sed -i "s/^-dcoin.*/-dcoin $DCOIN/g" $CLAYMORE_CONFIG;
+
+	if [[ ! -z $DCRI ]]; then sed -i "s/^-dcri .*/-dcri $DCRI/g" $CLAYMORE_CONFIG; else echo "DCRI not set"; fi
+
+	return 0
+}
+
+function user_config() {
+	sed -i "/^$USER_CONFIG_SEPARATOR$/,$ d" $CLAYMORE_CONFIG
+	echo "$USER_CONFIG_SEPARATOR" >> $CLAYMORE_CONFIG
+	if [[ ! -z $CLAYMORE_USER_CONFIG ]]; then
+		echo "Appending user config";
+		echo "$CLAYMORE_USER_CONFIG" >> $CLAYMORE_CONFIG
+	fi
+}
+
+
+
+function config_gen() {
+	RIG_CONF="/hive-config/rig.conf"
+	WALLET_CONF="/hive-config/wallet.conf"
+	CLAYMORE_CONFIG="/hive/claymore/config.txt"
+	EPOOLS_TXT="/hive/claymore/epools.txt"
+	DPOOLS_TXT="/hive/claymore/dpools.txt"
+	USER_CONFIG_SEPARATOR="### USER CONFIG ###"
+
+	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
+	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+
+	. $RIG_CONF
+	. $WALLET_CONF
+
+	[[ -z $WORKER_NAME ]] && echo "ERROR: No WORKER_NAME set" && return 1
+
+	epools
+	dpools
+	user_config
+}
+
+
+config_gen
+
+
+
+LOG_BASENAME="lastrun_noappend"
+function logs_rotate() {
+	[[ -e $LOG_BASENAME.5.log ]] && rm $LOG_BASENAME.5.log
+	[[ -e $LOG_BASENAME.4.log ]] && mv -f $LOG_BASENAME.4.log $LOG_BASENAME.5.log
+	[[ -e $LOG_BASENAME.3.log ]] && mv -f $LOG_BASENAME.3.log $LOG_BASENAME.4.log
+	[[ -e $LOG_BASENAME.2.log ]] && mv -f $LOG_BASENAME.2.log $LOG_BASENAME.3.log
+	[[ -e $LOG_BASENAME.1.log ]] && mv -f $LOG_BASENAME.1.log $LOG_BASENAME.2.log
+	[[ -e $LOG_BASENAME.log ]] && mv -f $LOG_BASENAME.log $LOG_BASENAME.1.log
+}
+
+
+export GPU_FORCE_64BIT_PTR=0
+export GPU_MAX_HEAP_SIZE=100
+export GPU_USE_SYNC_OBJECTS=1
+export GPU_MAX_ALLOC_PERCENT=100
+export GPU_SINGLE_ALLOC_PERCENT=100
+
+cd /hive/$THIS_MINER_NAME
+while true
+do
+	logs_rotate
+	sudo ./ethdcrminer64
+	echo ""
+	echo "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
+	echo ""
+	sleep 3
+done

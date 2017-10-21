@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+#remove stupid rep file for smaller updates
+[[ -f /etc/apt/sources.list.d/amdgpu-pro.list ]] && /etc/apt/sources.list.d/amdgpu-pro.list
+
+#apt-get update -o Dir::Etc::sourcelist=hiverepo.list
+#apt-get update
+apt-get update -o Dir::Etc::sourcelist="sources.list.d/hiverepo.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
+[[ $? -ne 0 ]] && exit $?
+
+
+updateavail=`apt list --upgradable 2>&1 | grep hive | wc -l`
+[[ $updateavail == 0 ]] &&
+	echo "Hive is up to date already" &&
+	exit 0
+
+echo ------------------------------------------------------
+
+apt-get upgrade -y hive
+[[ $? -ne 0 ]] && echo "selfupgrade: apt-get upgrade failed" && exit $?
+
+echo ------------------------------------------------------
+
+apt-get -y autoremove
+
+
+#clean cached packages to save space
+apt-get clean
+
+
+#echo ------------------------------------------------------
+#Moved from postinst again as hello need to see new version
+echo "> Saying hello to server again"
+hello restartminer
+#miner restart
+#wd restart
+
+
+#Restart agent
+echo "> Restarting agent"
+screen -S agent -X quit
+agent-screen
+
+exit 0

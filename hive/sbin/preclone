@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+#Cleans system before cloning
+
+miner stop
+screen -S agent -X quit
+systemctl stop hivex
+
+
+echo "" > /hive/claymore/lastrun_noappend.log
+rm /hive/claymore/lastrun_reboot.log
+
+echo "" > /hive/claymorez/lastrun_noappend.log
+rm /hive/claymorez/lastrun_reboot.log
+
+echo "" > /hive/ewbf/miner.log
+
+echo "" > /hive/ccminer/ccminer.log
+
+
+rm -r /var/log/*
+#rm /var/log/*.1; rm /var/log/*.2; rm /var/log/*.gz; echo "" > /var/log/kern.log; echo "" > /var/log/syslog
+#rm /var/log/*.log
+#rm /var/log/apt/*
+#rm /var/log/hive*
+#rm /var/log/amd-oc.log
+mkdir -p /var/log/journal
+
+
+
+rm /hive-config/*.conf
+rm /hive-config/openvpn/*.conf
+rm /hive-config/openvpn/*.key
+rm /hive-config/openvpn/*.crt
+#echo -e "# THIS IS A STARTING EXAMPLE, REAL CONFIG IS IN rig.conf\r
+## Normally the rig will ask for password at first run.\r
+## Optionally you can put rig ID and password and \"Save As\" to rig.conf for a fresh start\r
+#\r
+#HIVE_HOST_URL=\"https://hiveos.farm\"\r
+#RIG_ID=\"\"\r
+#RIG_PASSWD=\"\"\r
+#" > /hive-config/rig-config-example.txt
+
+
+echo "" > /root/.bash_history
+echo "" > /home/user/.bash_history
+rm -rf /var/tmp/*
+
+
+systemctl stop wpa_supplicant@wlan0
+systemctl disable wpa_supplicant@wlan0
+rm /etc/wpa_supplicant/wpa_supplicant.conf
+
+/hive/bin/cache-hive-ip
+
+chown -R user:user /hive
+chown -R root:root /hive/etc/logrotate.d/*
+chown -R user:user /hive-config
+
+
+#no AMD in updates
+rm /etc/apt/sources.list.d/amdgpu-pro.list
+
+echo "> Filling with zeros..."
+zerofill
+echo "Done"
+

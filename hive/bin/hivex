@@ -1,0 +1,16 @@
+#!/bin/bash
+#Runs nvidia-oc in X
+#Supposed to be run with service
+
+export PATH="./:/hive/bin:/hive/sbin:$PATH"
+
+sudo -i xinit /hive/etc/xinitrc
+exitcode=$?
+
+echo ""
+echo "xinit exited (exitcode=$exitcode), starting hive-console"
+
+#xinit failed, so no OC was run, do it now
+amd-oc-safe
+
+systemctl restart hive-console

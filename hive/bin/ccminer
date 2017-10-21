@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+THIS_MINER_NAME="ccminer"
+[ -t 1 ] && . colors
+
+[[ `ps aux | grep "\./ccminer -c pools.conf" | grep -v grep | wc -l` != 0 ]] &&
+	echo "$THIS_MINER_NAME is already running" &&
+	exit 1
+
+
+
+
+function config_gen() {
+	RIG_CONF="/hive-config/rig.conf"
+	WALLET_CONF="/hive-config/wallet.conf"
+	CCMINER_CONFIG_FILE="/hive/ccminer/pools.conf"
+
+	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+
+	. $RIG_CONF
+	. $WALLET_CONF
+
+	[[ -z $CCMINERCONF || $CCMINERCONF = "{}" ]] &&
+		echo -e "${YELLOW}WARNING: No CCMINERCONF set, skipping $CCMINER_CONFIG_FILE generation${NOCOLOR}" &&
+		return 1
+
+	echo $CCMINERCONF | jq . > $CCMINER_CONFIG_FILE
+
+
+	echo "Generating $CCMINER_CONFIG_FILE"
+
+	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $CCMINER_CONFIG_FILE #||  "WORKER_NAME not set"
+	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $CCMINER_CONFIG_FILE #|| echo "EMAIL not set"
+	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $CCMINER_CONFIG_FILE #|| echo "DWAL not set"
+	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $CCMINER_CONFIG_FILE #|| echo "ZWAL not set"
+	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $CCMINER_CONFIG_FILE #|| echo "EWAL not set"
+
+}
+
+
+config_gen
+
+
+
+LOG_BASENAME="ccminer"
+function logs_rotate() {
+	[[ -e $LOG_BASENAME.5.log ]] && rm $LOG_BASENAME.5.log
+	[[ -e $LOG_BASENAME.4.log ]] && mv -f $LOG_BASENAME.4.log $LOG_BASENAME.5.log
+	[[ -e $LOG_BASENAME.3.log ]] && mv -f $LOG_BASENAME.3.log $LOG_BASENAME.4.log
+	[[ -e $LOG_BASENAME.2.log ]] && mv -f $LOG_BASENAME.2.log $LOG_BASENAME.3.log
+	[[ -e $LOG_BASENAME.1.log ]] && mv -f $LOG_BASENAME.1.log $LOG_BASENAME.2.log
+	[[ -e $LOG_BASENAME.log ]] && mv -f $LOG_BASENAME.log $LOG_BASENAME.1.log
+}
+
+
+cd /hive/$THIS_MINER_NAME
+while true
+do
+	logs_rotate
+	/hive/$THIS_MINER_NAME/ccminer.sh
+	echo ""
+	echo "$THIS_MINER_NAME exited, waiting to cooldown a bit"
+	echo ""
+	sleep 3
+done

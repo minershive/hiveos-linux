@@ -1,1 +1,87 @@
 * text=auto !eol
+hive/bin/agent -text
+hive/bin/agent-screen -text
+hive/bin/cache-hive-ip -text
+hive/bin/ccminer -text
+hive/bin/claymore -text
+hive/bin/claymore-on-reboot -text
+hive/bin/claymore-z -text
+hive/bin/colors -text
+hive/bin/ethminer -text
+hive/bin/ewbf -text
+hive/bin/firstrun -text
+hive/bin/hello -text
+hive/bin/helpme -text
+hive/bin/hive -text
+hive/bin/hive-console -text
+hive/bin/hivex -text
+hive/bin/hostname-check -text
+hive/bin/human-curl-error -text
+hive/bin/message -text
+hive/bin/miner -text
+hive/bin/motd -text
+hive/bin/selfupgrade -text
+hive/bin/sgminer-gm -text
+hive/bin/wd -text
+hive/bin/xmr-stack-cpu -text
+hive/claymore -text
+hive/claymore100/Data.bin -text
+hive/claymore100/Data1a1.bin -text
+hive/claymore100/Data1b1.bin -text
+hive/claymore100/Data1c1.bin -text
+hive/claymore100/Data1d1.bin -text
+hive/claymore100/Data1e1.bin -text svneol=unset#application/x-dosexec
+hive/claymore100/Data1e2.bin -text
+hive/claymore100/Data1g1.bin -text
+hive/claymore100/Data1g2.bin -text
+hive/claymore100/Data1h1.bin -text
+hive/claymore100/Data1i1.bin -text
+hive/claymore100/Data3.bin -text
+hive/claymore100/History.txt -text
+hive/claymore100/License.txt -text
+hive/claymore100/Readme!!!.txt -text
+hive/claymore100/config.txt -text
+hive/claymore100/dpools.txt -text
+hive/claymore100/epools.txt -text
+hive/claymore100/epools.txt.example -text
+hive/claymore100/ethdcrminer64 -text svneol=unset#application/x-executable
+hive/claymore100/reboot.sh -text
+hive/ethminer -text
+hive/ethminer012/ethminer -text
+hive/ethminer012/ethminer.conf -text
+hive/ethminer012/ethminer.sh -text
+hive/ethminer012/ethminer012 -text svneol=unset#application/x-executable
+hive/sbin/amd-oc -text
+hive/sbin/amd-oc-safe -text
+hive/sbin/amd-save-pp_tables -text
+hive/sbin/amdcovc -text svneol=unset#application/x-executable
+hive/sbin/amdmeminfo -text svneol=unset#application/x-executable
+hive/sbin/atiflash -text svneol=unset#application/x-executable
+hive/sbin/atiflashall -text
+hive/sbin/atiflashlist -text
+hive/sbin/clinfo -text svneol=unset#application/x-executable
+hive/sbin/ddcopy -text
+hive/sbin/gpu-detect -text
+hive/sbin/gpu-stats -text
+hive/sbin/http_proxy.sh -text
+hive/sbin/killcx -text
+hive/sbin/logrotate -text
+hive/sbin/nvidia-oc -text
+hive/sbin/nvidia-oc-log -text
+hive/sbin/nvidia-xorg -text
+hive/sbin/openvpn-install -text
+hive/sbin/preclone -text
+hive/sbin/sreboot -text
+hive/sbin/update-initgrub -text
+hive/sbin/watchdog-opendev-daemon.sh -text
+hive/sbin/watchdog-opendev.sh -text
+hive/sbin/watchdoginua -text svneol=unset#application/x-executable
+hive/sbin/watchdoginua.sh -text
+hive/sbin/wifi -text
+hive/sbin/wifi-disable -text
+hive/sbin/wolfamdctrl -text svneol=unset#application/x-executable
+hive/sbin/zerofill -text
+hive/share/images/Honey[!!-~]Bees[!!-~]Wallpaper[!!-~]1920x1080[!!-~]Honey[!!-~]Bees.jpg -text svneol=unset#image/jpeg
+hive/share/images/blur-bg-blurred.jpg -text svneol=unset#image/jpeg
+hive/share/images/wallpaper-1117546_1920.jpg -text svneol=unset#image/jpeg
+hive/share/images/wallpaper.jpg -text

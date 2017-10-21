@@ -1,0 +1,409 @@
+#!/usr/bin/env bash
+#Send stats, receives commands
+
+INTERVAL=10
+RIG_CONF="/hive-config/rig.conf"
+NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
+AMD_OC_CONF="/hive-config/amd-oc.conf"
+WALLET_CONF="/hive-config/wallet.conf"
+LOG="/var/log/hive-agent.log"
+
+[ -t 1 ] && . colors
+
+#$PPID - might be parent screen pid
+screen_count=`screen -ls | grep "\.agent" | grep -v $PPID | wc -l`
+
+#there will be still 1 process for subshell
+#[[ `ps aux | grep "./agent" | grep -vE "grep|screen|SCREEN|$$" | wc -l` > 1 ]] &&
+[[ $screen_count > 0 ]] &&
+	echo -e "${RED}Agent screen is already running${NOCOLOR}\nRun ${CYAN}agent-screen${NOCOLOR} to resume screen" &&
+	exit 1
+
+
+function loop() {
+	date
+
+	[ ! -f $RIG_CONF ] && echo -e "No config $RIG_CONF" && return
+
+	#each time read config again
+	. $RIG_CONF
+
+	[ -z $MINER ] && MINER="claymore"
+	HIVE_URL="$HIVE_HOST_URL/worker/api"
+
+	gpu_stats=`gpu-stats`
+	temp=`echo $gpu_stats | jq '.temp'`
+	fan=`echo $gpu_stats | jq '.fan'`
+
+	khs=0
+	stats=
+	case $MINER in
+		claymore)
+			stats=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w 2 localhost 3333 | jq '.result'`
+			if [ $? -ne 0 ]; then
+				echo -e "${YELLOW}Failed to read Claymore stats from localhost:3333${NOCOLOR}"
+			else
+				#[ "10.0 - ETH", "83", "67664;48;0", "28076;27236;12351", "891451;29;0", "421143;408550;61758", "67;40;70;45;69;34", "eth-eu1.nanopool.org:9999;sia-eu1.nanopool.org:7777", "0;0;0;0" ]
+				khs=`echo $stats | jq -r '.[2]' | awk -F';' '{print $1}'`
+			fi
+		;;
+		claymore-z)
+			stats=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w 2 localhost 3335 | jq '.result'`
+			if [ $? -ne 0 ]; then
+				echo -e "${YELLOW}Failed to read Claymore Z stats from localhost:3335${NOCOLOR}"
+			else
+				khs=`echo $stats | jq -r '.[2]' | awk -F';' '{print $1/1000}'` #sols to khs
+			fi
+		;;
+		ewbf)
+			#0000:03:00.0, .result[].busid[5:] trims first 5 chars
+			#stats_raw=`curl --connect-timeout 2 --max-time 5 --silent http://localhost:42000/getstat`
+			#curl uses http_proxy env var, we don't need it. --noproxy does not work
+			stats_raw=`echo "GET /getstat" | nc -w 2 localhost 42000 | tail -n 1`
+			if [ $? -ne 0 ]; then
+				echo -e "${YELLOW}Failed to read EWBF stats from localhost:42000${NOCOLOR}"
+			else
+				stats=`echo $stats_raw | jq -c '{speed_sps: [.result[].speed_sps], busid: [.result[].busid[5:]|ascii_downcase], start_time: .result[0].start_time}'`
+				khs=`echo $stats_raw | jq -r '.result[].speed_sps' | awk '{s+=$1} END {print s/1000}'` #sum up and convert to khs
+			fi
+		;;
+		ccminer)
+			threads=`echo "threads" | nc -w 2 localhost 4068` #&& echo $threads
+			if [ $? -ne 0 ]; then
+				echo -e "${YELLOW}Failed to read CCMINER stats from localhost:4068${NOCOLOR}"
+			else
+				summary=`echo "summary" | nc -w 2 localhost 4068`
+				re=';UPTIME=([0-9]+);' && [[ $summary =~ $re ]] && #&& echo "Matched" || echo "No match"
+					uptime=${BASH_REMATCH[1]}
+				re=';KHS=([0-9\.]+);' && [[ $summary =~ $re ]] && #&& echo "Matched" || echo "No match"
+					khs=${BASH_REMATCH[1]}
+				#stats=`echo $threads | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176' | grep -E 'KHS=' | sed -e 's/.*=//' | jq -cs '{khs:.}'`
+				striplines=`echo $threads | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176'`
+				#khs=`echo $striplines | grep -E 'KHS=' | sed -e 's/.*=//' | jq -cs '.'`
+				stats=$(jq -n \
+					--arg uptime "$uptime" \
+					--argjson khs "`echo \"$striplines\" | grep 'KHS=' | sed -e 's/.*=//' | jq -cs '.'`" \
+					--argjson temp "`echo \"$striplines\" | grep 'TEMP=' | sed -e 's/.*=//' | jq -cs '.'`" \
+					--argjson fan "`echo \"$striplines\" | grep 'FAN=' | sed -e 's/.*=//' | jq -cs '.'`" \
+					'{$khs, $temp, $fan, $uptime}')
+			fi
+		;;
+		ethminer)
+			stats=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w 2 localhost 3334 | jq '.result'`
+			if [ $? -ne 0 ]; then
+				echo -e "${YELLOW}Failed to read ethminer stats from localhost:3334${NOCOLOR}"
+			else
+				khs=`echo $stats | jq -r '.[2]' | awk -F';' '{print $1}'`
+				#`echo $stats | jq -r '.[3]' | awk 'gsub(";", "\n")' | jq -cs .` #send only hashes
+				stats=$(jq -n \
+					--arg uptime "`echo \"$stats\" | jq -r '.[1]' | awk '{print $1*60}'`" \
+					--argjson khs "`echo \"$stats\" | jq -r '.[3]' | awk 'gsub(";", "\n")' | jq -cs '.'`" \
+					'{$khs, $uptime}')
+			fi
+		;;
+		*)
+			MINER="unknown"
+		;;
+	esac
+
+
+	[[ -z $khs ]] && khs=0
+	echo -e "Total hashrate `[[ $khs > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs${NOCOLOR} kH/s"
+	echo $khs > /tmp/khs
+
+	[[ -z $stats ]] && stats="null"
+
+
+	#echo $stats
+	#uptime: load averages for the past 1, 5, and 15 minutes
+
+	request=$(
+	jq -n \
+	--arg rig_id "$RIG_ID" \
+	--arg passwd "$RIG_PASSWD" \
+	--arg miner "$MINER" \
+	--argjson miner_stats "$stats" \
+	--arg total_khs "$khs" \
+	--argjson temp "$temp" \
+	--argjson fan "$fan" \
+	--arg df "`df -h / | awk '{ print $4 }' | tail -n 1 | sed 's/%//'`" \
+	--argjson cpuavg "[`uptime | awk -F': ' '{print $2}'`]" \
+	'{
+		"method": "stats", "jsonrpc": "2.0", "id": 0,
+		"params": {
+			$rig_id, $passwd, $miner, $miner_stats, $total_khs,
+			$temp, $fan, $df, $cpuavg
+		}
+	}'
+	)
+
+	echo $request | jq '.' -c
+
+	#log request
+	echo "[`date`] > `echo $request | jq '.' -c`" >> $LOG
+	#echo "[`date`] > $request" >> $LOG
+
+	response=$(echo $request | curl --insecure -L --data @- \
+	--connect-timeout 7 --max-time 15 --silent \
+	-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=stats"  -H "Content-Type: application/json")
+
+	exitcode=$?
+	if [[ $exitcode -ne 0 || -z $response ]]; then
+		echo -e "${RED}Error sending stats${NOCOLOR}" && human-curl-error $exitcode
+		echo "[`date`] < Error sending stats (curl code=$exitcode) \"$response\"" >> $LOG
+		return $exitcode
+	fi
+
+	#echo $response
+	#echo "[`date`] < `echo $response | jq '.' -c`" >> $LOG
+	echo "[`date`] < $response" >> $LOG #full response even invalid
+
+	error=$(echo $response | jq '.error' --raw-output)
+	[[ ! -z $error && $error != "null" ]] && echo -e "${RED}Error response${NOCOLOR}: $error" && return 1
+
+	command=$(echo $response | jq '.result.command' --raw-output)
+
+	[[ $command != "OK" ]] && echo "$response" | jq '.result'
+
+
+	if [[ $command != "batch" ]]; then
+		body=`echo $response | jq -c '.result'`
+		do_command
+	else
+		count=`echo $response | jq '.result.commands|length'`
+		echo "Got $count batch commands"
+		for (( i=0; i < $count; i++ )); do
+			body=`echo $response | jq -c ".result.commands[$i]"`
+			command=
+			do_command
+		done
+	fi
+}
+
+
+
+
+function do_command() {
+	#body=$1
+	[[ -z $command ]] && command=`echo $body | jq -r '.command'` #get command for batch
+
+	case $command in
+		OK)
+			echo -e "${BGREEN}$command${NOCOLOR}"
+		;;
+		reboot)
+			message ok "Rebooting..." 120
+			echo -e "${BRED}Rebooting...${NOCOLOR}"
+			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+			#superreboot
+		;;
+		upgrade)
+			nohup bash -c '
+				payload=`selfupgrade`
+				echo "$payload"
+				[[ $? -eq 0 ]] &&
+					echo "$payload" | message ok "Selfupgrade successful" payload ||
+					echo "$payload" | message error "Selfupgrade failed, please check log" payload
+			' > /tmp/nohup.log 2>&1 &
+		;;
+		exec)
+			exec=$(echo $body | jq '.exec' --raw-output)
+			payload=`bash -c "$exec" 2>&1`
+			exitcode=$?
+			echo "$payload"
+			[[ $exitcode -eq 0 ]] &&
+				echo "$payload" | message info "$exec" payload ||
+				echo "$payload" | message error "Exec failed, exitcode=$exitcode" payload
+		;;
+		config)
+			config=$(echo $body | jq '.config' --raw-output)
+			if [[ ! -z $config && $config != "null" ]]; then
+				#scan for password change
+				echo "$config" > /tmp/rig.conf.new
+				while read line; do
+					[[ $line =~ ^RIG_PASSWD=\"(.*)\" ]] && NEW_PASSWD=${BASH_REMATCH[1]} && break
+				done < /tmp/rig.conf.new
+				rm /tmp/rig.conf.new
+
+				#Password change
+				if [[ $RIG_PASSWD != $NEW_PASSWD ]]; then
+					echo -e "${RED}New password:${NOCOLOR} $NEW_PASSWD";
+
+					message warning "Password change received, wait for next message..." 120
+					request=$(jq -n --arg rig_id "$RIG_ID" --arg passwd "$RIG_PASSWD" \
+					'{ "method": "password_change_received", "params": {$rig_id, $passwd}, "jsonrpc": "2.0", "id": 0}')
+					response=$(echo $request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=password_change_received" -H "Content-Type: application/json")
+
+					exitcode=$?
+					[ $exitcode -ne 0 ] &&
+						message error "Error notifying hive about \"password_change_received\"" &&
+						return $exitcode #better exit because password will not be changed
+
+					error=$(echo $response | jq '.error' --raw-output)
+					[[ ! -z $error && $error != "null" ]] && echo -e "${RED}Server error:${NOCOLOR} `echo $response | jq '.error.message' -r`" && return 1
+
+					echo "$response" | jq '.'
+					#after this there will be new password on server, so all new request should use new one
+				fi
+
+				#just apply new config
+				echo "$config" > $RIG_CONF
+				. $RIG_CONF
+
+				justwrite=$(echo $body | jq '.justwrite' --raw-output)
+
+				if [[ $justwrite != 1 ]]; then
+					hostname-check
+					miner restart
+				fi
+
+				#Start Watchdog. It will exit if WD_ENABLED=0
+				[[ $WD_ENABLED=1 ]] && wd restart
+
+				message ok "Rig config changed" 120
+				#[[ $? == 0 ]] && message ok "Wallet changed, miner restarted" 120 || message warn "Error restarting miner"
+			else
+				message error "No rig \"config\" given"
+			fi
+		;;
+		wallet)
+			wallet=$(echo $body | jq '.wallet' --raw-output)
+			if [[ ! -z $wallet && $wallet != "null" ]]; then
+				echo "$wallet" > $WALLET_CONF
+				miner restart
+				[[ $? == 0 ]] && message ok "Wallet changed, miner restarted" 120 || message warn "Error restarting miner"
+			else
+				message error "No \"wallet\" config given"
+			fi
+		;;
+		nvidia_oc)
+			nvidia_oc=$(echo $body | jq '.nvidia_oc' --raw-output)
+			if [[ ! -z $nvidia_oc && $nvidia_oc != "null" ]]; then
+				echo "$nvidia_oc" > $NVIDIA_OC_CONF
+				nohup bash -c '
+					nvidia-oc > /var/log/nvidia-oc.log 2>&1
+					exitcode=$?
+					payload=`cat /var/log/nvidia-oc.log`
+					echo "$payload"
+					[[ $exitcode == 0 ]] &&
+						echo "$payload" | message ok "Nvidia settings applied" payload ||
+						echo "$payload" | message warn "Nvidia settings applied with errors, check X server running" payload
+				' > /tmp/nohup.log 2>&1 &
+			else
+				message error "No \"nvidia_oc\" config given"
+			fi
+		;;
+		amd_oc)
+			amd_oc=$(echo $body | jq '.amd_oc' --raw-output)
+			if [[ ! -z $amd_oc && $amd_oc != "null" ]]; then
+				echo "$amd_oc" > $AMD_OC_CONF
+				nohup bash -c '
+					amd-oc > /var/log/amd-oc.log 2>&1
+					exitcode=$?
+					payload=`cat /var/log/amd-oc.log`
+					echo "$payload"
+					[[ $exitcode == 0 ]] &&
+						echo "$payload" | message ok "AMD settings applied" payload ||
+						echo "$payload" | message warn "AMD settings applied with errors" payload
+				' > /tmp/nohup.log 2>&1 &
+			else
+				message error "No \"amd_oc\" config given"
+			fi
+		;;
+		amd_download)
+			gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
+			if [[ ! -z $gpu_index && $gpu_index != "null" ]]; then
+			    payload=`atiflash -s $gpu_index /tmp/amd.saved.rom`
+			    exitcode=$?
+			    echo "$payload"
+				if [[ $exitcode == 0 ]]; then
+					#payload=`cat /tmp/amd.saved.rom | base64`
+					#echo "$payload" | message file "VBIOS $gpu_index" payload
+					cat /tmp/amd.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "vbios-$gpu_index.rom" payload
+				else
+					echo "$payload" | message warn "AMD VBIOS saving failed" payload
+				fi
+			else
+				message error "No \"gpu_index\" given"
+			fi
+		;;
+		amd_upload)
+			gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
+			rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
+			if [[ -z $gpu_index || $gpu_index == "null" ]]; then
+				message error "No \"gpu_index\" given"
+			elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
+				message error "No \"rom_base64\" given"
+			else
+				echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded.rom
+				fsize=`cat /tmp/amd.uploaded.rom | wc -c`
+				if [[ -z $fsize || $fsize < 250000 ]]; then #too short file
+					message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping"
+				else
+					if [[ $gpu_index == -1 ]]; then # -1 = all
+				    	payload=`atiflashall /tmp/amd.uploaded.rom`
+					else
+				    	payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index /tmp/amd.uploaded.rom`
+					fi
+				    exitcode=$?
+				    echo "$payload"
+					if [[ $exitcode == 0 ]]; then
+						echo "$payload" | message ok "ROM flashing OK, now reboot" payload
+					else
+						echo "$payload" | message warn "ROM flashing failed" payload
+					fi
+				fi
+			fi
+		;;
+		openvpn_set)
+			clientconf=$(echo $body | jq '.clientconf' --raw-output)
+			cacrt=$(echo $body | jq '.cacrt' --raw-output)
+			clientcrt_fname=$(echo $body | jq '.clientcrt_fname' --raw-output)
+			clientcrt=$(echo $body | jq '.clientcrt' --raw-output)
+			clientkey_fname=$(echo $body | jq '.clientkey_fname' --raw-output)
+			clientkey=$(echo $body | jq '.clientkey' --raw-output)
+
+			systemctl stop openvpn@client
+			rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf
+
+			echo "$clientconf" > /hive-config/openvpn/client.conf
+			echo "$cacrt" > /hive-config/openvpn/ca.crt
+			echo "$clientcrt" > /hive-config/openvpn/$clientcrt_fname
+			echo "$clientkey" > /hive-config/openvpn/$clientkey_fname
+
+			payload=`openvpn-install && hostname -I`
+			echo "$payload"
+			if [[ $? == 0 ]]; then
+				echo "$payload" | message ok "OpenVPN configured" payload
+				hello #to give new ips and openvpn flag
+			else
+				echo "$payload" | message warn "OpenVPN setup failed" payload
+			fi
+		;;
+		openvpn_remove)
+			systemctl stop openvpn@client
+			rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf
+			openvpn-install #will remove /tmp/.openvpn-installed file
+			hello
+			message ok "OpenVPN service stopped, certificates removed"
+		;;
+		"")
+			echo -e "${YELLOW}Got empty command, might be temporary network issue${NOCOLOR}"
+		;;
+		*)
+			message warning "Got unknown command \"$command\""
+			echo -e "${YELLOW}Got unknown command ${CYAN}$command${NOCOLOR}"
+		;;
+	esac
+}
+
+
+
+
+
+while true
+do
+	loop
+	echo ""
+	sleep $INTERVAL
+done

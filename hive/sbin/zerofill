@@ -1,0 +1,7 @@
+#!/bin/bash
+#Used for better compression
+
+cat /dev/zero > /big_zero
+sync
+rm /big_zero
+sync

@@ -1,0 +1,26 @@
+#!/bin/bash
+#This service is started only if the X server is not started or then xinit is killed
+export PATH="./:/hive/bin:/hive/sbin:$PATH"
+
+#[ -t 1 ] &&
+. colors #use them anyway
+
+
+msg=$(cat <<EOF
+$RED
+
+It seems X server failed to run (or you have stopped it).
+This can happen with some GPUs and buggy drivers.
+But you still can use hive in console.
+
+$NOCOLOR
+EOF
+)
+
+echo -e "$msg"
+
+
+sleep 2
+
+
+sudo -i bash -c "motd; firstrun; bash"

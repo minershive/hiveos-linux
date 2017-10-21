@@ -1,0 +1,28 @@
+#!/bin/bash
+#ln -sf /hive/bin/claymore-on-reboot /hive/claymore/reboot.sh
+
+CLAYMORE_PATH=`dirname $0`
+
+#save last messages about hanging cards
+tail -n 100 $CLAYMORE_PATH/lastrun_noappend.log > $CLAYMORE_PATH/lastrun_reboot.log
+
+
+lastmsg=`cat $CLAYMORE_PATH/lastrun_reboot.log | grep WATCHDOG | tail -n 1`
+#echo $lastmsg
+[[ $lastmsg =~ ^([0-9:]+)[[:space:]]+([a-f0-9]{8})[[:space:]]+(.*) ]]
+
+#-n not empty, -z empty
+if [[ -n ${BASH_REMATCH[3]} ]]; then
+	lastmsg=${BASH_REMATCH[3]}
+fi
+#echo $lastmsg
+
+if [[ -z $lastmsg ]]; then
+	lastmsg="Claymore Reboot"
+fi
+
+
+/hive/bin/message danger "Claymore Reboot: $lastmsg"
+
+#nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+sreboot

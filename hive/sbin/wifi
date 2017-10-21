@@ -1,0 +1,59 @@
+#!/bin/bash
+#Wifi setup script
+
+[ -t 1 ] && . colors
+echo -e "${CYAN}=== WiFi setup ===${NOCOLOR}"
+
+
+
+installed=`dpkg -s wireless-tools | grep 'Status: install ok installed' | wc -l`
+if [[ $installed == 0 ]]; then
+	apt-get install -y wireless-tools wpasupplicant
+	[[ $? > 0 ]] && echo "Error installing wireless-tools package" && exit 1
+fi
+
+installed=`dpkg -s wpasupplicant | grep 'Status: install ok installed' | wc -l`
+if [[ $installed == 0 ]]; then
+	apt-get install -y wireless-tools wpasupplicant
+	[[ $? > 0 ]] && echo "Error installing wpasupplicant package" && exit 1
+fi
+
+
+iwconfig 2>&1 | grep -v "no wireless extensions" | grep -v -e '^$'
+wlanCount=`iwconfig 2>&1 | grep wlan0 | wc -l`
+[[ -z $wlanCount || $wlanCount = 0 ]] &&
+	echo -e "No ${YELLOW}wlan0${NOCOLOR} interface found" &&
+	echo -e "Please check drivers, try ${CYAN}lsusb${NOCOLOR} to find USD device" &&
+	exit 1
+
+
+
+
+while true; do
+	echo -e "${YELLOW}Enter your Access Point details${NOCOLOR}"
+	echo -n "SSID: "
+	read ssid
+	[[ -z $ssid ]] && echo "Empty value" && continue
+
+	echo -n "Password: "
+	read pass
+	[[ -z $pass ]] && echo "Empty value" && continue
+
+	break
+done
+
+
+
+wpa_passphrase "$ssid" "$pass" | tee /etc/wpa_supplicant/wpa_supplicant.conf
+echo -e "${YELLOW}Saved to /etc/wpa_supplicant/wpa_supplicant.conf${NOCOLOR}"
+
+systemctl enable wpa_supplicant@wlan0
+systemctl restart wpa_supplicant@wlan0
+
+sleep 4 #to wait for dhcp
+ifconfig | grep -m1 -A1 wlan0
+
+echo ""
+echo -e "${GREEN}WiFi setup done${NOCOLOR}"
+echo -e "If you will not use WiFi please disable service later with command ${CYAN}wifi-disable${NOCOLOR}"
+

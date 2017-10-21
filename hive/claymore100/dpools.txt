@@ -1,0 +1,1 @@
+POOL: sia-eu1.nanopool.org:7777, WALLET: 9b17e9703126de9269df6c8a219e44b6fe0da1d82627b1aafde8115586c789b5a77c3999317f/worker/fern@kgroup.biz, PSW: x

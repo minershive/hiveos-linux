@@ -1,0 +1,87 @@
+#!/bin/bash
+
+RIG_CONF="/hive-config/rig.conf"
+[ ! -f $RIG_CONF ] && echo -e "No config $RIG_CONF" && exit 1
+
+. $RIG_CONF
+
+HIVE_URL="$HIVE_HOST_URL/worker/api"
+LOG="/var/log/hive-agent.log"
+
+if [[ $# < 2 ]]; then
+	echo "Usage: $0 success|danger|warning|info|default \"message\" [ttl seconds] [payload]"
+	echo "Aliases: ok|error|err|warn"
+	echo "payload is read from stdin"
+	exit 1
+fi
+
+type=$1
+
+[[ $type == "error" || $type == "err" ]] && type="danger"
+[[ $type == "warn" ]] && type="warning"
+[[ $type == "ok" ]] && type="success"
+
+
+
+ttl=$3
+[[ -z $ttl || $ttl=="payload" ]] && ttl=0
+
+
+request=$(
+echo "$payload_json" | jq -n \
+--arg rig_id "$RIG_ID" \
+--arg passwd "$RIG_PASSWD" \
+--arg type "$type" \
+--arg data "$2" \
+--arg ttl "$ttl" \
+'{
+	"method": "message", "jsonrpc": "2.0", "id": 0,
+	"params": {$rig_id, $passwd, $type, $data, $ttl}
+}'
+)
+#echo $request | jq .
+
+#payload_json="{}"
+#yet stupid args job here, todo: do something not that stupid
+[[ $3 == "payload" || $4 == "payload" ]] && echo "With payload" && payload=$(cat)
+#echo "===payload: $payload"
+
+if [[ ! -z $payload ]]; then
+	payload_json=`echo "$payload" | jq -R -s '{"params": {"payload": .}}'`
+	#echo {\"payload\": \"`cat /tmp/amd.saved.rom | base64 -w 0 `\"} | jq .
+
+	request=`echo "$request $payload_json" | jq -s '.[0] * .[1]'`
+fi
+#echo "payload_json=$payload_json"
+
+#date
+echo "> Sending \"$type\": $2"
+
+#echo $request | jq .
+
+[ $? -ne 0 ] && echo "Error formatting JSON message" && exit 1
+
+
+echo "[`date`] > `echo $request | jq . -c`" >> $LOG
+#echo "[`date`] > $request" >> $LOG
+
+response=$(echo $request | curl --insecure -L --data @- \
+--connect-timeout 7 --max-time 15 --silent \
+-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=message"  -H "Content-Type: application/json")
+
+exitcode=$?
+if [ $exitcode -ne 0 ]; then
+	echo "Error sending message (curl code=$exitcode)"
+	echo "[`date`] < Error sending message (curl code=$exitcode)" >> $LOG
+	exit $exitcode
+fi
+
+#echo "[`date`] < $response" >> $LOG
+echo "[`date`] < `echo $response | jq . -c`" >> $LOG
+
+error=$(echo $response | jq '.error' --raw-output)
+#[[ ! -z $error && $error != "null" ]] && echo -e "Error response: `echo $response | jq '.error' -r`" && exit 1
+[[ ! -z $error && $error != "null" ]] && echo "Error response: $error" && exit 1
+
+
+exit 0

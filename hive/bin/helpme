@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+[ -t 1 ] && . colors
+
+echo -e "$(cat <<EOF
+${YELLOW}=== Commands FAQ ===
+${CYAN}miner${NOCOLOR} - shows running miner screen
+${CYAN}miner start | stop${NOCOLOR} - starts or stops miner obviously
+${CYAN}agent-screen${NOCOLOR} - shows hive client agent
+${CYAN}selfupgrade${NOCOLOR} - upgrade hive from repository
+${CYAN}wifi${NOCOLOR} - to setup WiFi is you have one
+${CYAN}firstrun -f${NOCOLOR} - force rig setup, you will enter ID and password again
+${BCYAN}Ctrl+A, D${NOCOLOR} - detach from screen, miners or agents so they will be working in background
+EOF
+)"
+
+

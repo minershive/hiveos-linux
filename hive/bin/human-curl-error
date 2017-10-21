@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#Human error strings for curl errors
+#https://curl.haxx.se/libcurl/c/libcurl-errors.html
+
+[ -t 1 ] && . colors
+
+code=$1
+[ -z $1 ] && code=0
+
+msg=""
+
+color="${PURPLE}"
+
+case "$code" in
+	0)
+		color="${GREEN}"
+		msg="CURLE_OK (0) All fine";
+		;;
+	1)
+		msg="CURLE_UNSUPPORTED_PROTOCOL (1) The URL you passed to libcurl used a protocol that this libcurl does not support.";
+		;;
+	3)
+		msg="CURLE_URL_MALFORMAT (3) The URL was not properly formatted.";
+		;;
+	5)
+		msg="CURLE_COULDNT_RESOLVE_PROXY (5) Couldn't resolve proxy. The given proxy host could not be resolved.";
+		;;
+	6)
+		msg="CURLE_COULDNT_RESOLVE_HOST (6) Couldn't resolve host. The given remote host was not resolved.";
+		;;
+	7)
+		msg="CURLE_COULDNT_CONNECT (7) Failed to connect() to host or proxy.";
+		;;
+	9)
+		msg="CURLE_REMOTE_ACCESS_DENIED (9) We were denied access to the resource given in the URL. For FTP, this occurs while trying to change to the remote directory.";
+		;;
+	22)
+		msg="CURLE_HTTP_RETURNED_ERROR (22) HTTP server returns an error code that is >= 400.";
+		;;
+	28)
+		msg="CURLE_OPERATION_TIMEDOUT (28) Operation timeout. The specified time-out period was reached according to the conditions.";
+		;;
+	34)
+		msg="CURLE_HTTP_POST_ERROR (34) This is an odd error that mainly occurs due to internal confusion.";
+		;;
+	*)
+		msg="CURL ERROR ($code)";
+esac
+
+echo -e "${color}$msg${NOCOLOR}"

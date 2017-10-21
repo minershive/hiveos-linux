@@ -1,0 +1,3 @@
+#just a shortcut to update bootloader and initramfs
+
+update-initramfs -u && update-grub

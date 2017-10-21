@@ -1,0 +1,187 @@
+#!/usr/bin/env bash
+#source /etc/environment
+
+
+function usage() {
+	bname=`basename $0`
+	echo -e "Usage: ${CYAN}$bname start|stop|restart|log${NOCOLOR}"
+	echo -e "If you run ${CYAN}$bname${NOCOLOR} without parameters miner screen will be tried to resume."
+}
+
+
+RIG_CONF="/hive-config/rig.conf"
+
+[ -t 1 ] && . colors
+
+#[ -z $1 ] && usage && exit 1
+
+
+if [ ! -f $RIG_CONF ]; then
+	echo -e "${RED}No config $RIG_CONF${NOCOLOR}"
+	#exit 1
+else
+	. $RIG_CONF
+fi
+
+[ -z $MINER ] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
+
+miners_avail=("claymore" "claymore-z" "ewbf" "ccminer" "ethminer" "sgminer-gm" "xmr-stack-cpu")
+if ! printf '%s\n' "${miners_avail[@]}" | grep -xq $MINER ; then
+	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
+	message error "Unknown miner $MINER"
+	exit 1
+fi
+
+
+########################################################################################################################
+
+function start() {
+	amd-oc-safe
+
+	session_count=`screen -ls miner | grep miner | wc -l`
+	if [[ $session_count > 0 ]]; then
+		echo -e "${RED}Miner screen is already running${NOCOLOR}"
+		echo -e "Run ${CYAN}miner${NOCOLOR} or ${CYAN}screen -r${NOCOLOR} to resume screen"
+		return
+	fi
+
+	echo -e "Starting ${CYAN}$MINER${NOCOLOR}"
+	#screen -dm -S miner bash -c "${MINER}; bash"
+	screen -dm -S miner ${MINER}
+}
+
+
+function stop() {
+	#echo -e "Stopping ${CYAN}$MINER${NOCOLOR}"
+
+#	screen -S miner -Q select .
+#	if [ $? -eq 0 ] ; then
+#		echo "Screen exists"
+#		screen -r -S miner
+#		exit
+#	fi
+
+	#screen -S miner -X quit
+
+	screens=`screen -ls miner | grep -E "[0-9]+\.miner" | cut -d. -f1 | awk '{print $1}'`
+
+	if [[ -z $screens ]]; then
+		echo "No miner screens found"
+	else
+		for pid in $screens; do
+			echo "Stopping screen session $pid"
+			screen -S $pid -X quit
+		done
+	fi
+
+	#remove khs so no confusing for watchdog
+	#[[ -e /tmp/khs ]] && rm /tmp/khs
+	#wd gets mtime of file, no problem
+}
+
+
+function log_tail() {
+	logname=""
+	case $MINER in
+		"claymore")
+			logname="/hive/claymore/lastrun_noappend.log"
+			;;
+		"claymore-z")
+			logname="/hive/claymorez/lastrun_noappend.log"
+			;;
+		"ewbf")
+			logname="/hive/ewbf/miner.log"
+			;;
+		"ccminer")
+			logname="/hive/ccminer/ccminer.log"
+			;;
+		"ethminer")
+			logname="/hive/ethminer/ethminer.log"
+			;;
+		*)
+			echo "Unknown miner $MINER"
+			return
+			;;
+	esac
+
+	if [[ ! -e $logname ]]; then
+		echo "Log $logname does not exist yet"
+		return
+	fi
+
+	if [[ `ls -l $logname | awk '{print $5}'` -le 1 ]]; then #can be 1, empty line
+		echo "Log $logname is empty"
+		return
+	fi
+
+	TAIL_LINE=60
+
+	echo "$logname last $TAIL_LINE lines:"
+	echo ""
+	tail -n $TAIL_LINE $logname | sed "s,$(printf '\033')\\[[0-9;]*[a-zA-Z],,g"
+}
+
+
+function echo_config_file() {
+	echo "=== $1 ================================================="
+	cat $1
+	echo ""
+}
+
+#Shows miner config
+function config() {
+	logname=""
+	case $MINER in
+		"claymore")
+			echo_config_file "/hive/claymore/config.txt"
+			echo_config_file "/hive/claymore/epools.txt"
+			echo_config_file "/hive/claymore/dpools.txt"
+			;;
+		"claymore-z")
+			echo_config_file "/hive/claymorez/config.txt"
+			echo_config_file "/hive/claymorez/epools.txt"
+			;;
+		"ewbf")
+			echo_config_file "/hive/ewbf/miner.cfg"
+			;;
+		"ccminer")
+			echo_config_file "/hive/ccminer/pools.conf"
+			;;
+		"ethminer")
+			echo_config_file "/hive/ethminer/ethminer.conf"
+			;;
+		*)
+			echo "Unknown miner $MINER"
+			return
+			;;
+	esac
+}
+
+########################################################################################################################
+
+case $1 in
+	start)
+		start
+	;;
+	stop)
+		stop
+	;;
+	restart)
+#		echo -e "Restarting ${CYAN}$MINER${NOCOLOR}"
+		echo -e "${YELLOW}Restarting miner${NOCOLOR}" #can be different on miner change
+		stop
+		#need some time to finish it seems
+		sleep 1
+		start
+	;;
+	log)
+		log_tail
+	;;
+	config)
+		config
+	;;
+	*)
+		screen -x -S miner
+		[[ $? != 0 ]] && usage
+	;;
+esac

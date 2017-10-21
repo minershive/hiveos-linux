@@ -1,0 +1,6 @@
+# WARNING! Remove "#" characters to enable lines, with "#" they are disabled and will be ignored by miner! Check README for details.
+
+# POOL: eth-eu.dwarfpool.com:8008, WALLET: 0xD69af2A796A737A103F12d2f0BCC563a13900E6F/YourWorker, PSW: x, ESM: 0, ALLPOOLS: 0
+# POOL: us1.ethermine.org:4444, WALLET: 0xD69af2A796A737A103F12d2f0BCC563a13900E6F.YourWorker, PSW: x, ESM: 1, ALLPOOLS: 0
+# POOL: coinotron.com:3344, WALLET: YourUserName.YourWorkerName, PSW: YourWorkerPass, WORKER: , ESM: 2, ALLPOOLS: 1
+# POOL: us-east1.ethereum.miningpoolhub.com:20535, WALLET: YourLogin.YourWorkerName, PSW: YourWorkerPass, WORKER: YourLogin.YourWorkerName, ESM: 2

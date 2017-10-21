@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#Safe execution of amd-oc
+
+LOCK_FILE=/tmp/.amd-oc-pid
+
+AMD_OC_CONF="/hive-config/amd-oc.conf"
+[[ ! -f $AMD_OC_CONF ]] && exit 1
+
+GPU_COUNT_AMD=`gpu-detect AMD`
+[[ -z $GPU_COUNT_AMD || $GPU_COUNT_AMD == 0 ]] && exit 1
+
+echo "> AMD OC"
+
+if [[ -e $LOCK_FILE ]]; then
+	echo "Found $LOCK_FILE, seems already running"
+
+	pid=`cat $LOCK_FILE`
+	#returns 0 if it exists, 1 otherwise
+	ps --pid $pid &>/dev/null
+	[[ $? = 0 ]] && exit 1
+
+	#pid not found
+	echo "Seems PID $pid is dead, removing lock"
+	rm $LOCK_FILE
+fi
+
+echo $$ > $LOCK_FILE
+amd-oc > /var/log/amd-oc.log 2>&1
+rm $LOCK_FILE
+
+exit 0

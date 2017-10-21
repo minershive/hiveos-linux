@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+#export PATH="./:/hive/bin:/hive/sbin:$PATH"
+
+#echo "AAAAAA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+#exit
+
+#Recreate. Because of shitty picky bugs
+echo "127.0.0.1	localhost
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+" > /etc/hosts
+
+#adds host ip
+/hive/bin/hostname-check
+
+
+RIG_CONF="/hive-config/rig.conf"
+[ ! -e $RIG_CONF ] && echo "No $RIG_CONF" && exit 1
+. $RIG_CONF
+[[ -z $HIVE_HOST_URL ]] && echo "HIVE_HOST_URL is empty" && exit 1
+
+
+
+
+#Resolves host and writes it to /etc/hosts
+
+SEPARATOR="#HIVE HOST CACHE BEGIN"
+#HOST="hiveos.farm"
+HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
+
+[[ -z $HOST ]] && echo "Unable to cur hostname from $HIVE_HOST_URL" && exit 1
+
+
+
+#remove one line after match which should remove entry in hosts
+#sed -i "/^$SEPARATOR$/,+1d" /etc/hosts
+#sed -i "/$SEPARATOR/,+1d" /etc/hosts
+#hosts=`cat /etc/hosts | grep -v "$HOST" | grep -v "$SEPARATOR"`
+#echo "$hosts" > /etc/hosts
+
+#getent hosts hiveos.farm | awk '{ print $1 }' >> /etc/hosts
+#ent=`getent hosts hiveos.farm`
+
+ent=`getent ahosts hiveos.farm | grep -m 1 STREAM | sed -E 's/(\w+)\s+STREAM\s+(.*)/\1 \2/'`
+exitcode=$?
+
+echo -e "\n$SEPARATOR" >> /etc/hosts
+if [[ -z $ent || $exitcode > 0 ]]; then
+    echo "Unable to resolve $HOST"
+    ent="#Unable to resolve $HOST" #to place this in file
+else
+    echo "Writing DNS resolve \"$ent\" to /etc/hosts"
+fi
+
+echo $ent >> /etc/hosts
+
+sync
+
+#Example with double results
+#94.231.46.146 STREAM hiveos.farm
+#94.231.46.146 DGRAM
+#94.231.46.146 RAW
+#5ee7:2e92:: STREAM
+#5ee7:2e92:: DGRAM
+#5ee7:2e92:: RAW

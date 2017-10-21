@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+THIS_MINER_NAME="ethminer"
+[ -t 1 ] && . colors
+
+[[ `ps aux | grep "\./ethminer" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
+	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
+	exit 1
+
+
+function config_gen() {
+	RIG_CONF="/hive-config/rig.conf"
+	WALLET_CONF="/hive-config/wallet.conf"
+	MINER_CONFIG="/hive/ethminer/ethminer.conf"
+
+	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
+	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+
+	. $RIG_CONF
+	. $WALLET_CONF
+
+	#put default config settings
+	#\n--farm-recheck 2000
+	echo -e "--api-port 3334" > $MINER_CONFIG
+
+	[[ $ETHMINER_OPENCL == 1 && -z $ETHMINER_CUDA ]] && echo "--opencl" >> $MINER_CONFIG
+	[[ -z $ETHMINER_OPENCL && $ETHMINER_CUDA == 1 ]] && echo "--cuda" >> $MINER_CONFIG
+	[[ $ETHMINER_OPENCL == 1 && $ETHMINER_CUDA == 1 ]] && echo "--cuda-opencl" >> $MINER_CONFIG
+
+	if [[ ! -z $ETHMINER_TEMPLATE ]]; then
+		echo -n "-O $ETHMINER_TEMPLATE" >> $MINER_CONFIG
+		[[ ! -z $ETHMINER_PASS ]] && echo -n ":$ETHMINER_PASS" >> $MINER_CONFIG
+		echo -en "\n" >> $MINER_CONFIG
+	fi
+
+	if [[ ! -z $ETHMINER_SERVER ]]; then
+		echo -n "-S $ETHMINER_SERVER" >> $MINER_CONFIG
+		[[ ! -z $ETHMINER_PORT ]] && echo -n ":$ETHMINER_PORT" >> $MINER_CONFIG
+		echo -en "\n" >> $MINER_CONFIG
+	fi
+
+	[[ ! -z $ETHMINER_USER_CONFIG ]] && echo "$ETHMINER_USER_CONFIG" >> $MINER_CONFIG
+
+	#replace tpl values in whole file
+	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $MINER_CONFIG || echo "${RED}EWAL not set${NOCOLOR}"
+	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG || echo "${RED}WORKER_NAME not set${NOCOLOR}"
+	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $MINER_CONFIG
+}
+
+
+config_gen
+
+
+
+
+LOG_BASENAME=$THIS_MINER_NAME
+function logs_rotate() {
+	[[ -e $LOG_BASENAME.5.log ]] && rm $LOG_BASENAME.5.log
+	[[ -e $LOG_BASENAME.4.log ]] && mv -f $LOG_BASENAME.4.log $LOG_BASENAME.5.log
+	[[ -e $LOG_BASENAME.3.log ]] && mv -f $LOG_BASENAME.3.log $LOG_BASENAME.4.log
+	[[ -e $LOG_BASENAME.2.log ]] && mv -f $LOG_BASENAME.2.log $LOG_BASENAME.3.log
+	[[ -e $LOG_BASENAME.1.log ]] && mv -f $LOG_BASENAME.1.log $LOG_BASENAME.2.log
+	[[ -e $LOG_BASENAME.log ]] && mv -f $LOG_BASENAME.log $LOG_BASENAME.1.log
+}
+
+
+
+cd /hive/$THIS_MINER_NAME
+while true
+do
+	logs_rotate
+	/hive/$THIS_MINER_NAME/ethminer.sh
+	echo ""
+	echo "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
+	echo ""
+	sleep 3
+done

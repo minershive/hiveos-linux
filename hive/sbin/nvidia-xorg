@@ -1,0 +1,12 @@
+#!/bin/bash
+
+echo "Copying NVIDIA Xorg config"
+cp /hive/etc/xorg.conf.nvidia /etc/X11/xorg.conf
+connected_monitor=`nvidia-smi --query-gpu=gpu_bus_id,display_mode --format=csv,noheader | grep Enabled | wc -l`
+echo "Connected monitors: $connected_monitor"
+if [[ $connected_monitor == 0 ]]; then #no connected monitors, emulate connected
+	echo "Emulating connected monitor on Device0 in /etc/X11/xorg.conf"
+	sed -i -e '/^#Device0 ConnectedMonitor BEGIN$/,/^#Device0 ConnectedMonitor END$/c\\tOption "ConnectedMonitor" "DFP-0"\n\tOption "CustomEDID" "DFP-0:/hive/etc/edid.bin"' /etc/X11/xorg.conf
+else
+	echo "Connected monitor detected"
+fi

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+sync
+
+if [ "$#" -eq 0 ] ; then
+    echo "ddcopy sdx sdy"
+    exit
+fi
+
+
+dd if=/dev/$1 of=/dev/$2 bs=10M count=800 status=progress
+
+sync
+
+partprobe
+
+fsck -fy /dev/${2}1
+
+mkdir -p /mnt/${2}1
+
+mount /dev/${2}1 /mnt/${2}1
+
