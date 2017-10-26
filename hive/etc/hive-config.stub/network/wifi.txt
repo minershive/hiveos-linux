@@ -1,0 +1,5 @@
+# If you need WiFi, then give SSID and password.
+# NOTE: there is WiFi may not work for may reasons, you'd better use Ethernet.
+
+WIFI_SSID=""
+WIFI_PASSWORD=""

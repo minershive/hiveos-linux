@@ -37,8 +37,8 @@ function loadconf() {
 
 function set_lastgood() {
 	#lastgood=`date +%s`
-	[[ -e /tmp/khs ]] &&
-		lastgood=`stat -c %Y /tmp/khs` ||
+	[[ -e /run/hive/khs ]] &&
+		lastgood=`stat -c %Y /run/hive/khs` ||
 		#lastgood=0 can't set it to 0, in case of boot agent may be late
 		lastgood=`date +%s` #let's count from now
 
@@ -54,7 +54,7 @@ function loop() {
 	loadconf
 
 	khs=
-	[[ -e /tmp/khs ]] && khs=`cat /tmp/khs`
+	[[ -e /run/hive/khs ]] && khs=`cat /run/hive/khs`
 	[[ -z $khs ]] && khs=0
 
 

@@ -1,0 +1,30 @@
+#[[ ! -f /lib/systemd/system/hive.service ]] && ln -s /hive/etc/hive.service /lib/systemd/system/hive.service
+#systemctl enable hive
+
+[Unit]
+Description=Hive
+After=network-online.target multi-user.target
+Requires=network-online.target
+
+[Service]
+Type=forking
+TimeoutStartSec=infinity
+
+ExecStart=/hive/bin/hive
+
+#need this for 'screen' to work
+#RemainAfterExit=yes
+
+
+#StandardOutput=syslog
+#StandardError=syslog
+#SyslogIdentifier=hive
+
+#StandardOutput=tty
+#StandardInput=tty
+#TTYPath=/dev/tty1
+
+
+[Install]
+WantedBy=multi-user.target
+

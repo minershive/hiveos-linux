@@ -1,0 +1,14 @@
+#[[ ! -f /lib/systemd/system/hive-watchdog.service ]] && ln -s /hive/etc/hive-watchdog.service /lib/systemd/system/hive-watchdog.service
+
+[Unit]
+Description=Hive Watchdog Service
+
+[Service]
+Type=simple
+ExecStart=/hive/bin/wd run
+
+SyslogIdentifier=hive-watchdog
+
+
+[Install]
+WantedBy=multi-user.target

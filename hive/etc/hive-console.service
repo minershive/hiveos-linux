@@ -1,0 +1,17 @@
+#[[ ! -f /lib/systemd/system/hive-console.service ]] && ln -s /hive/etc/hive-console.service /lib/systemd/system/hive-console.service
+
+[Unit]
+Description=Hive Console on TTY1
+
+[Service]
+Type=simple
+ExecStart=/hive/bin/hive-console
+
+StandardOutput=tty
+StandardInput=tty
+TTYPath=/dev/tty1
+
+
+[Install]
+WantedBy=multi-user.target
+

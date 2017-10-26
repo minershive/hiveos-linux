@@ -1,0 +1,15 @@
+#Hive logs
+#ln -sf /hive/etc/logrotate.d/hive /etc/logrotate.d/hive
+
+/var/log/hive*.log
+{
+    rotate 5
+    daily
+    size 10M
+    missingok
+    notifempty
+    delaycompress
+    compress
+    copytruncate
+    nocreate
+}

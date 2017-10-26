@@ -39,6 +39,9 @@ ips_json=`echo "${ips[@]}" | jq -R . | jq -s -c .`
 
 mb_manufacturer=`dmidecode | grep -A4 '^Base Board Information' | grep "Manufacturer:" | sed -E 's/\sManufacturer:\s+(.*)/\1/'`
 mb_product=`dmidecode | grep -A4 '^Base Board Information' | grep "Product Name:" | sed -E 's/\sProduct Name:\s+(.*)/\1/'`
+cpu_model=`lscpu | grep "Model name:" | sed 's/Model name:[ \t]*//g'`
+cpu_cores=`lscpu | grep "^CPU(s):" | sed 's/CPU(s):[ \t]*//g'`
+aes=`lscpu | grep "^Flags:.*aes" | wc -l`
 
 kernel=`uname --kernel-release`
 
@@ -53,8 +56,8 @@ jq -n \
 --arg gpu_count_nvidia "$gpu_count_nvidia" \
 --arg version "`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`" \
 --arg openvpn "$openvpn" \
---arg manufacturer "$mb_manufacturer" \
---arg product "$mb_product" \
+--arg manufacturer "$mb_manufacturer" --arg product "$mb_product" \
+--arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" \
 --arg kernel "$kernel" \
 '{
 	"method": "hello", "jsonrpc": "2.0", "id": 0,
@@ -62,7 +65,7 @@ jq -n \
 		$rig_id, $passwd,
 		$boot_time, $ip,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
-		"mb": {$manufacturer, $product},
+		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes},
 		$openvpn, $kernel, $version
 	}
 }'

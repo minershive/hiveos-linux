@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+THIS_MINER_NAME="dstm"
+[ -t 1 ] && . colors
+
+[[ `ps aux | grep "\./zm" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
+	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
+	exit 1
+
+
+function config_gen() {
+	RIG_CONF="/hive-config/rig.conf"
+	WALLET_CONF="/hive-config/wallet.conf"
+	MINER_CONFIG="/hive/$THIS_MINER_NAME/zm.conf"
+
+	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
+	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+
+	. $RIG_CONF
+	. $WALLET_CONF
+
+	#put default config settings
+	#\n--farm-recheck 2000
+	echo -e "--telemetry=127.0.0.1:43000" > $MINER_CONFIG
+
+	[[ ! -z $DSTM_SERVER ]] && echo "--server $DSTM_SERVER" >> $MINER_CONFIG
+	[[ ! -z $DSTM_PORT ]] && echo "--port $DSTM_PORT" >> $MINER_CONFIG
+	[[ ! -z $DSTM_TEMPLATE ]] && echo "--user $DSTM_TEMPLATE" >> $MINER_CONFIG
+	[[ ! -z $DSTM_PASS ]] && echo "--pass $DSTM_PASS" >> $MINER_CONFIG
+	[[ ! -z $DSTM_USER_CONFIG ]] && echo "$DSTM_USER_CONFIG" >> $MINER_CONFIG
+
+	#replace tpl values in whole file
+	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG || echo "${RED}ZWAL not set${NOCOLOR}"
+	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG || echo "${RED}WORKER_NAME not set${NOCOLOR}"
+	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $MINER_CONFIG
+}
+
+
+config_gen
+
+
+
+cd /hive/$THIS_MINER_NAME
+while true
+do
+	miner logrotate $THIS_MINER_NAME
+	/hive/$THIS_MINER_NAME/zm.sh
+	echo ""
+	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
+	echo ""
+	sleep 3
+done

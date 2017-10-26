@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+#Network preconfiguration
+export PATH="./:/hive/bin:/hive/sbin:$PATH"
+. colors
+
+#To ensure we can read and write /hive-config
+fsck.fat -a /dev/disk/by-label/HIVE
+
+
+#systemctl status systemd-networkd
+if [[ `ls -1 /hive-config/network/*.network | wc -l` == 0 ]]; then
+	echo "No /hive-config/network/*.network files"
+else
+	rm /etc/systemd/network/*.network
+	for hivefile in /hive-config/network/*.network; do
+		echo "Copying $hivefile to /etc/systemd/network/"
+		cp $hivefile /etc/systemd/network/
+	done
+	dos2unix-safe /etc/systemd/network/*.network
+	chmod 644 /etc/systemd/network/*.network
+fi
+#cp -f /hive-config/network/10-static.network /etc/systemd/network/10-static.network
+
+
+#Try to setup wifi if it is found
+wifi setup
+
+
+exit 0

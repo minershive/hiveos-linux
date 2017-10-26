@@ -1,6 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #just a log wrapper, required by nvidia-ocx
 
 #nvidia-oc > /var/log/nvidia-oc.log 2>&1
 
 nvidia-oc 2>&1 | tee /var/log/nvidia-oc.log
+exitcode=$? #actually not sure is it nvidia or tee result
+
+#sed removes colors
+#[[ -e /var/log/nvidia-oc.log ]] &&
+#sed -i "s,$(printf '\033')\\[[0-9;]*[a-zA-Z],,g" /var/log/nvidia-oc.log
+
+
+exit $exitcode

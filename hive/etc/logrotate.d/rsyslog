@@ -1,0 +1,49 @@
+#System log
+#[ -f /etc/logrotate.d/rsyslog ] && rm /etc/logrotate.d/rsyslog
+#ln -sf /hive/etc/logrotate.d/rsyslog /etc/logrotate.d/rsyslog
+
+/var/log/syslog
+{
+	rotate 1
+	daily
+	size 10M
+	missingok
+	notifempty
+	
+	#postrotate
+	#	invoke-rc.d rsyslog rotate > /dev/null
+	#endscript
+	
+	#delaycompress
+	compress
+	copytruncate
+}
+
+/var/log/mail.info
+/var/log/mail.warn
+/var/log/mail.err
+/var/log/mail.log
+/var/log/daemon.log
+/var/log/kern.log
+/var/log/auth.log
+/var/log/user.log
+/var/log/lpr.log
+/var/log/cron.log
+/var/log/debug
+/var/log/messages
+{
+	rotate 1
+	daily
+	size 10M
+	missingok
+	notifempty
+	sharedscripts
+	
+	#postrotate
+	#	invoke-rc.d rsyslog rotate > /dev/null
+	#endscript
+	
+	#delaycompress
+	compress
+	copytruncate
+}

@@ -1,0 +1,25 @@
+Section "ServerFlags"
+    Option "BlankTime" "0"
+    Option "StandbyTime" "0"
+    Option "SuspendTime" "0"
+    Option "OffTime" "0"
+EndSection
+
+
+
+Section "Device"
+    Identifier  "Configured Video Device"
+    Driver      "amdgpu"
+EndSection
+
+Section "Monitor"
+    Identifier  "Configured Monitor"
+    Option      "NODPMS"
+EndSection
+
+Section "Screen"
+    Identifier  "Default Screen"
+    Monitor     "Configured Monitor"
+    Device      "Configured Video Device"
+EndSection
+

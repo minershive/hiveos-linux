@@ -1,0 +1,16 @@
+[Match]
+Name=e*
+
+[Network]
+DHCP=yes
+
+#Uncomment the following for static IP, set DHCP=no
+#Address=192.168.0.189/24
+#Gateway=192.168.0.1
+#DNS=192.168.0.1
+
+
+
+[DHCP]
+ClientIdentifier=mac
+RouteMetric=10

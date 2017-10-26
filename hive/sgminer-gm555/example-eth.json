@@ -1,0 +1,26 @@
+{
+    "pools": [{
+        "url": "stratum+tcp://eth-eu1.nanopool.org:9999",
+        "user": "0x7f28c0e16bcb91d9f1e11efde48053762b565811/worker/fern@kgroup.biz",
+        "pass": "x"
+    }],
+    "profiles": [{
+        "gpu-powertune": "0",
+        "worksize": "192",
+        "name": "eth",
+        "algorithm": "ethash",
+        "gpu-threads": "1",
+        "xintensity": "1024"
+    }],
+    "no-extranonce": "true",
+    "default-profile": "eth",
+    "api-allow": "W:10.0.0.0/8",
+    "temp-target": "72",
+    "auto-gpu": true,
+    "gpu-fan": "45-85",
+    "api-port": 4028,
+    "temp-cutoff": "82",
+    "api-listen": true,
+    "auto-fan": true,
+    "temp-overheat": "80"
+} 

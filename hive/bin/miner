@@ -4,14 +4,15 @@
 
 function usage() {
 	bname=`basename $0`
-	echo -e "Usage: ${CYAN}$bname start|stop|restart|log${NOCOLOR}"
+	echo -e "Usage: ${CYAN}$bname start|stop|restart|log|logrotate|logtruncate${NOCOLOR}"
 	echo -e "If you run ${CYAN}$bname${NOCOLOR} without parameters miner screen will be tried to resume."
 }
 
 
 RIG_CONF="/hive-config/rig.conf"
 
-[ -t 1 ] && . colors
+#[ -t 1 ] &&
+. colors
 
 #[ -z $1 ] && usage && exit 1
 
@@ -25,7 +26,7 @@ fi
 
 [ -z $MINER ] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
 
-miners_avail=("claymore" "claymore-z" "ewbf" "ccminer" "ethminer" "sgminer-gm" "xmr-stack-cpu")
+miners_avail=("claymore" "claymore-z" "ewbf" "ccminer" "ethminer" "sgminer-gm" "xmr-stak-cpu" "dstm")
 if ! printf '%s\n' "${miners_avail[@]}" | grep -xq $MINER ; then
 	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
 	message error "Unknown miner $MINER"
@@ -36,7 +37,7 @@ fi
 ########################################################################################################################
 
 function start() {
-	amd-oc-safe
+	amd-oc-safe > /dev/null #be silent
 
 	session_count=`screen -ls miner | grep miner | wc -l`
 	if [[ $session_count > 0 ]]; then
@@ -45,9 +46,19 @@ function start() {
 		return
 	fi
 
-	echo -e "Starting ${CYAN}$MINER${NOCOLOR}"
+	echo -en "Starting ${CYAN}$MINER${NOCOLOR}"
+	[[ ! -z $MINER2 ]] &&
+		echo -en " and ${CYAN}$MINER2${NOCOLOR}"
+	echo -en "\n"
+
 	#screen -dm -S miner bash -c "${MINER}; bash"
-	screen -dm -S miner ${MINER}
+	#hack to preselect window 1
+	#yes, empty bash or it will hang from time to time if start with screen miner instantly
+	screen -dm -c /hive/etc/screenrc.miner bash
+	if [[ ! -z $MINER2 ]]; then
+		screen -S miner -X screen 2 $MINER2
+	fi
+	screen -S miner -X screen 1 $MINER
 }
 
 
@@ -75,34 +86,68 @@ function stop() {
 	fi
 
 	#remove khs so no confusing for watchdog
-	#[[ -e /tmp/khs ]] && rm /tmp/khs
+	#[[ -e /run/hive/khs ]] && rm /run/hive/khs
 	#wd gets mtime of file, no problem
 }
 
 
-function log_tail() {
-	logname=""
-	case $MINER in
+function miner_log_basename {
+	local miner=$1
+	[[ -z $miner ]] && echo "No miner given to miner_log_basename" && return 1
+
+	log_basename=""
+	case $miner in
 		"claymore")
-			logname="/hive/claymore/lastrun_noappend.log"
+			log_basename="/hive/claymore/lastrun_noappend"
 			;;
 		"claymore-z")
-			logname="/hive/claymorez/lastrun_noappend.log"
+			log_basename="/hive/claymorez/lastrun_noappend"
 			;;
 		"ewbf")
-			logname="/hive/ewbf/miner.log"
+			log_basename="/hive/ewbf/miner"
 			;;
 		"ccminer")
-			logname="/hive/ccminer/ccminer.log"
+			log_basename="/hive/ccminer/ccminerg"
 			;;
 		"ethminer")
-			logname="/hive/ethminer/ethminer.log"
+			log_basename="/hive/ethminer/ethminer"
+			;;
+		"sgminer-gm")
+			log_basename="/hive/sgminer-gm/sgminer-gm"
+			;;
+		"xmr-stak-cpu")
+			log_basename="/hive/xmr-stak-cpu/xmr-stak-cpu"
+			;;
+		"dstm")
+			log_basename="/hive/dstm/zm"
 			;;
 		*)
-			echo "Unknown miner $MINER"
-			return
+			echo "Unknown miner $miner to miner_log_basename"
+			return 1
 			;;
 	esac
+	echo $log_basename
+	return 0
+}
+
+function log_tail {
+	local TAIL_LINE=80
+
+	local suffix=1
+	[[ $1 == 2 ]] && #second miner
+		suffix=2
+
+	tail -n $TAIL_LINE /run/hive/miner.$suffix
+	return
+
+	#-----------------------------------------------------------
+	log_basename=`miner_log_basename $MINER`
+	if [[ $? > 0 ]]; then
+		echo $log_basename #show error message
+		return
+	fi
+
+	logname="${log_basename}.log"
 
 	if [[ ! -e $logname ]]; then
 		echo "Log $logname does not exist yet"
@@ -114,11 +159,10 @@ function log_tail() {
 		return
 	fi
 
-	TAIL_LINE=60
 
 	echo "$logname last $TAIL_LINE lines:"
 	echo ""
-	tail -n $TAIL_LINE $logname | sed "s,$(printf '\033')\\[[0-9;]*[a-zA-Z],,g"
+	tail -n $TAIL_LINE $logname | sed "s,$(printf '\033')\\[[0-9;]*[a-zA-Z],,g" #sed removes colors
 }
 
 
@@ -150,12 +194,70 @@ function config() {
 		"ethminer")
 			echo_config_file "/hive/ethminer/ethminer.conf"
 			;;
+		"sgminer-gm")
+			echo_config_file "/hive/sgminer-gm/sgminer-gm.conf"
+			;;
+		"xmr-stak-cpu")
+			echo_config_file "/hive/xmr-stak-cpu/config.txt"
+			;;
+		"dstm")
+			echo_config_file "/hive/dstm/zm.conf"
+			;;
 		*)
 			echo "Unknown miner $MINER"
 			return
 			;;
 	esac
 }
+
+
+
+
+function logs_rotate {
+	log_basename=`miner_log_basename $1`
+	if [[ $? > 0 ]]; then
+		echo $log_basename #show error message
+		return 1
+	fi
+
+	[[ -e $log_basename.5.log ]] && rm $log_basename.5.log
+	[[ -e $log_basename.4.log ]] && mv -f $log_basename.4.log $log_basename.5.log
+	[[ -e $log_basename.3.log ]] && mv -f $log_basename.3.log $log_basename.4.log
+	[[ -e $log_basename.2.log ]] && mv -f $log_basename.2.log $log_basename.3.log
+	[[ -e $log_basename.1.log ]] && mv -f $log_basename.1.log $log_basename.2.log
+	[[ -e $log_basename.log ]] && mv -f $log_basename.log $log_basename.1.log
+
+	return 0
+}
+
+
+
+#truncates current log, run by cron
+function log_truncate {
+	log_basename=`miner_log_basename $1`
+	if [[ $? > 0 ]]; then
+		echo $log_basename #show error message
+		return 1
+	fi
+
+	[[ -e $log_basename.log ]] &&
+		echo "" >  $log_basename.log
+
+	return 0
+}
+
+
+
+function check_second_miner {
+	[[ -z $1 || $1 != "2" ]] && return #not a second miner request
+
+	[[ $1 == "2" && -z $MINER2 ]] &&
+		echo "No second miner configured" &&
+		exit 1
+
+	MINER=$MINER2 #substitute MINER var with second miner
+}
+
 
 ########################################################################################################################
 
@@ -174,11 +276,20 @@ case $1 in
 		sleep 1
 		start
 	;;
-	log)
-		log_tail
-	;;
-	config)
+	config) #miner config 2
+		check_second_miner $2
 		config
+	;;
+	log) #miner log 2 //can be 2 for other miner, log from miner.1 or miner.2!!!
+		check_second_miner $2
+		log_tail $2
+	;;
+	logrotate) #miner logrotate claymore
+		logs_rotate $2
+	;;
+	logtruncate) #miner logtruncate 2
+		check_second_miner $2
+		log_truncate $miner
 	;;
 	*)
 		screen -x -S miner

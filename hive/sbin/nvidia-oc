@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-[ -t 1 ] && . colors
+#[ -t 1 ] &&
+. colors
 
 date
 echo ""

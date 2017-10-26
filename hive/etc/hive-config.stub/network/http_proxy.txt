@@ -1,0 +1,5 @@
+#If you want HTTP Proxy to work on your rig, then write you proxy address and uncommment the following lines.
+
+#export http_proxy=http://192.168.0.10:8080
+#export https_proxy=http://192.168.0.10:8080
+

@@ -1,10 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #Wifi setup script
+#Usage: wifi ssid pass
 
 [ -t 1 ] && . colors
 echo -e "${CYAN}=== WiFi setup ===${NOCOLOR}"
 
 
+[[ -z $1 && -z $2 ]] &&
+	interactive=1 ||
+	interactive=0
+
+WIFI_SSID=$1
+WIFI_PASSWORD=$2
+
+
+#Check packages
 
 installed=`dpkg -s wireless-tools | grep 'Status: install ok installed' | wc -l`
 if [[ $installed == 0 ]]; then
@@ -19,41 +29,110 @@ if [[ $installed == 0 ]]; then
 fi
 
 
+
+
+#Wifi setup from config
+function setup_wifi {
+#	echo "..."
+#	iwconfig
+#	echo -e "...\n"
+#	ifconfig -a
+#	echo -e "...\n\n\n"
+
+
+	#If no config, then leave things as the are, maybe broken fs, then service and supplicant file will remain
+	[[ ! -e /hive-config/network/wifi.txt ]] &&
+		echo "No config found at /hive-config/network/wifi.txt" &&
+		exit 1
+
+
+	wlanCount=`iwconfig 2>&1 | grep wlan0 | wc -l`
+	[[ -z $wlanCount || $wlanCount = 0 ]] &&
+		echo -e "No ${YELLOW}wlan0${NOCOLOR} interface found" &&
+		wifi-disable && #or the service will wait for interface on boot
+		exit 0
+
+
+
+	echo "### Found /hive-config/network/wifi.txt"
+	eval "`cat /hive-config/network/wifi.txt | tr -d '\r'`"
+
+	[[ -z $WIFI_SSID || -z $WIFI_PASSWORD ]] &&
+		echo "No SSID and password in WiFi config, exiting" &&
+		exit 0
+
+	echo "Found WIFI_SSID=$WIFI_SSID"
+
+	interactive=0
+	#wifi $WIFI_SSID $WIFI_PASSWORD
+	#just continue
+}
+
+
+[[ $1 == "setup" && -z $2 ]] &&
+	setup_wifi
+
+
+
+
+
+
+
+
+
+
+
+#just to display
 iwconfig 2>&1 | grep -v "no wireless extensions" | grep -v -e '^$'
+
+
 wlanCount=`iwconfig 2>&1 | grep wlan0 | wc -l`
 [[ -z $wlanCount || $wlanCount = 0 ]] &&
 	echo -e "No ${YELLOW}wlan0${NOCOLOR} interface found" &&
-	echo -e "Please check drivers, try ${CYAN}lsusb${NOCOLOR} to find USD device" &&
+	echo -e "Please check drivers, try ${CYAN}lsusb${NOCOLOR} to check USB device is present" &&
 	exit 1
 
 
 
-
+[[ -z $WIFI_SSID || -z $WIFI_PASSWORD ]] &&
 while true; do
 	echo -e "${YELLOW}Enter your Access Point details${NOCOLOR}"
 	echo -n "SSID: "
-	read ssid
-	[[ -z $ssid ]] && echo "Empty value" && continue
+	read WIFI_SSID
+	[[ -z $WIFI_SSID ]] && echo "Empty value" && continue
 
 	echo -n "Password: "
-	read pass
-	[[ -z $pass ]] && echo "Empty value" && continue
+	read WIFI_PASSWORD
+	[[ -z $WIFI_PASSWORD ]] && echo "Empty value" && continue
 
 	break
 done
 
 
-
-wpa_passphrase "$ssid" "$pass" | tee /etc/wpa_supplicant/wpa_supplicant.conf
+wpa_passphrase "$WIFI_SSID" "$WIFI_PASSWORD" | tee /etc/wpa_supplicant/wpa_supplicant.conf
 echo -e "${YELLOW}Saved to /etc/wpa_supplicant/wpa_supplicant.conf${NOCOLOR}"
 
+
 systemctl enable wpa_supplicant@wlan0
+#we need to start it or network-online.target will wait for it, enable is not enough
 systemctl restart wpa_supplicant@wlan0
 
-sleep 4 #to wait for dhcp
-ifconfig | grep -m1 -A1 wlan0
+if [[ $interactive == 1 ]]; then
 
-echo ""
-echo -e "${GREEN}WiFi setup done${NOCOLOR}"
-echo -e "If you will not use WiFi please disable service later with command ${CYAN}wifi-disable${NOCOLOR}"
+	#Create config file from input
+	mkdir -p /hive-config/network
+	cp -f /hive/etc/hive-config.stub/network/wifi.txt /hive-config/network/wifi.txt
+	sed -i "s/^WIFI_SSID=.*/WIFI_SSID=\"$WIFI_SSID\"\r/g" /hive-config/network/wifi.txt;
+	sed -i "s/^WIFI_PASSWORD=.*/WIFI_PASSWORD=\"$WIFI_PASSWORD\"\r/g" /hive-config/network/wifi.txt;
+
+
+	sleep 4 #to wait for dhcp
+	ifconfig | grep -m1 -A1 wlan0
+
+	echo ""
+	echo -e "${GREEN}WiFi setup done${NOCOLOR}"
+	echo -e "If you will not use WiFi please disable service later with command ${CYAN}wifi-disable${NOCOLOR}"
+fi
+
+
 

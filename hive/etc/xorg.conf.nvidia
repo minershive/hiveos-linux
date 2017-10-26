@@ -1,0 +1,445 @@
+Section "ServerFlags"
+	Option "BlankTime" "0"
+	Option "StandbyTime" "0"
+	Option "SuspendTime" "0"
+	Option "OffTime" "0"
+EndSection
+
+Section "ServerLayout"
+	Identifier     "Layout0"
+
+	#If there is internal GPU this will be uncommened
+	#Screen		0  "Screen0" 0 0
+
+	#Nvidias
+	Screen		1  "Screen1" 0 0
+	Screen		2  "Screen2" 0 0
+	Screen      3  "Screen3" 0 0
+	Screen      4  "Screen4" 0 0
+	Screen      5  "Screen5" 0 0
+	Screen      6  "Screen6" 0 0
+	Screen      7  "Screen7" 0 0
+	Screen      8  "Screen8" 0 0
+	Screen      9  "Screen9" 0 0
+	Screen      10 "Screen10" 0 0
+	Screen      11 "Screen11" 0 0
+	Screen      12 "Screen12" 0 0
+	Screen      13 "Screen13" 0 0
+	Screen      14 "Screen14" 0 0
+	Screen      15 "Screen15" 0 0
+	Screen      16 "Screen16" 0 0
+	Screen      17 "Screen17" 0 0
+	Screen      18 "Screen18" 0 0
+	#Screen      19 "Screen19" 0 0
+	#Screen      20 "Screen20" 0 0
+	InputDevice    "Mouse0" "CorePointer"
+EndSection
+
+Section "Files"
+EndSection
+
+###############################################################################################
+
+
+Section "InputDevice"
+	Identifier     "Mouse0"
+	Driver         "mouse"
+	Option         "Protocol" "auto"
+	Option         "Device" "/dev/psaux"
+	Option         "Emulate3Buttons" "no"
+	Option         "ZAxisMapping" "4 5"
+EndSection
+
+Section "InputDevice"
+	Identifier     "Keyboard0"
+	Driver         "kbd"
+EndSection
+
+
+###############################################################################################
+
+
+Section "Monitor"
+	Identifier     "Monitor0"
+	VendorName     "Unknown"
+	ModelName      "Unknown"
+	HorizSync       28.0 - 33.0
+	VertRefresh     43.0 - 72.0
+	Option         "NODPMS"
+EndSection
+
+
+###############################################################################################
+
+
+Section "Device"
+	Identifier     "Device0"
+	Driver         "intel"
+	BusID          "PCI:0:02:0"
+EndSection
+
+
+Section "Device"
+	Identifier     "Device1"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	BusID          "PCI:1:0:0"
+	Option         "Coolbits" "31"
+	#Comment this for real monitor
+#Device0 ConnectedMonitor BEGIN
+#	This will be replaced after connected monitor detection
+#	Option		"ConnectedMonitor" "DFP-0"
+#	Option		"CustomEDID" "DFP-0:/hive/etc/edid.bin"
+#Device0 ConnectedMonitor END
+EndSection
+
+Section "Device"
+	Identifier     "Device2"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:2:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device3"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:3:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device4"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:4:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device5"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:5:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device6"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:6:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device7"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:7:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device8"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:8:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+
+Section "Device"
+	Identifier     "Device9"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:9:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+
+Section "Device"
+	Identifier     "Device10"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:10:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device11"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:11:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device12"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:12:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device13"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:13:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device14"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:14:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device15"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:15:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device16"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:16:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device17"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:17:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device18"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:18:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device19"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:19:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+Section "Device"
+	Identifier     "Device20"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:20:0:0"
+	Option         "ConnectedMonitor" "DFP-0"
+	Option         "CustomEDID" "DFP-0:/hive/etc/edid.bin"
+EndSection
+
+
+
+###############################################################################################
+
+
+Section "Screen"
+	Identifier     "Screen0"
+	Device         "Device0"
+	Monitor        "Monitor0"
+#	DefaultDepth    24
+#	SubSection     "Display"
+#		Depth       24
+#	EndSubSection
+EndSection
+
+Section "Screen"
+	Identifier     "Screen1"
+	Device         "Device1"
+	Option         "Coolbits" "31"
+#	Option         "UseDisplayDevice" "none"
+	DefaultDepth    24
+	SubSection     "Display"
+		Depth       24
+	EndSubSection
+EndSection
+
+Section "Screen"
+	Identifier     "Screen2"
+	Device         "Device2"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen3"
+	Device         "Device3"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen4"
+	Device         "Device4"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen5"
+	Device         "Device5"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen6"
+	Device         "Device6"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen7"
+	Device         "Device7"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen8"
+	Device         "Device8"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen9"
+	Device         "Device9"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen10"
+	Device         "Device10"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen11"
+	Device         "Device11"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen12"
+	Device         "Device12"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen13"
+	Device         "Device13"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen14"
+	Device         "Device14"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen15"
+	Device         "Device15"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen16"
+	Device         "Device16"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen17"
+	Device         "Device17"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen18"
+	Device         "Device18"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen19"
+	Device         "Device19"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen20"
+	Device         "Device20"
+	Option         "Coolbits" "31"
+	Option         "UseDisplayDevice" "none"
+EndSection

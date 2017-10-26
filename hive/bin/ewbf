@@ -60,18 +60,6 @@ function config_gen() {
 config_gen
 
 
-LOG_BASENAME="miner"
-function logs_rotate() {
-	[[ -e $LOG_BASENAME.5.log ]] && rm $LOG_BASENAME.5.log
-	[[ -e $LOG_BASENAME.4.log ]] && mv -f $LOG_BASENAME.4.log $LOG_BASENAME.5.log
-	[[ -e $LOG_BASENAME.3.log ]] && mv -f $LOG_BASENAME.3.log $LOG_BASENAME.4.log
-	[[ -e $LOG_BASENAME.2.log ]] && mv -f $LOG_BASENAME.2.log $LOG_BASENAME.3.log
-	[[ -e $LOG_BASENAME.1.log ]] && mv -f $LOG_BASENAME.1.log $LOG_BASENAME.2.log
-	[[ -e $LOG_BASENAME.log ]] && mv -f $LOG_BASENAME.log $LOG_BASENAME.1.log
-}
-
-
-
 cd /hive/$THIS_MINER_NAME
 while true
 do
@@ -80,10 +68,10 @@ do
 		killcx $con lo
 	done
 
-	logs_rotate
+	miner logrotate $THIS_MINER_NAME
 	/hive/$THIS_MINER_NAME/miner
 	echo ""
-	echo "Miner process exited, waiting to cooldown a bit"
+	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
 	echo ""
 	sleep 3
 done

@@ -6,7 +6,7 @@ for ppfile in /sys/class/drm/card*/device/pp_table ; do
 	[[ $ppfile =~ \/card([0-9a-z]+)\/ ]]
 
 	cardno=${BASH_REMATCH[1]}
-	[[ -z ${BASH_REMATCH[1]} ]] && echo "$0: Error matching card no in $ppfile" && continue
+	[[ -z ${BASH_REMATCH[1]} ]] && echo "$0: Error matching card number in $ppfile" && continue
 
 	mkdir -p /tmp/pp_tables/card$cardno
 	cp $ppfile /tmp/pp_tables/card$cardno/pp_table

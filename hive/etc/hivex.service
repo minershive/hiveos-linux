@@ -1,0 +1,20 @@
+#[[ ! -f /lib/systemd/system/hivex.service ]] && ln -s /hive/etc/hivex.service /lib/systemd/system/hivex.service
+
+[Unit]
+Description=Hive X Server
+
+[Service]
+Type=simple
+ExecStart=/hive/bin/hivex
+
+#StandardOutput=syslog
+#StandardError=syslog
+#SyslogIdentifier=hive
+
+#StandardOutput=tty
+#StandardInput=tty
+#TTYPath=/dev/tty1
+
+
+[Install]
+WantedBy=multi-user.target

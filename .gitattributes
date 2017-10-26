@@ -7,6 +7,7 @@ hive/bin/claymore -text
 hive/bin/claymore-on-reboot -text
 hive/bin/claymore-z -text
 hive/bin/colors -text
+hive/bin/dstm -text
 hive/bin/ethminer -text
 hive/bin/ewbf -text
 hive/bin/firstrun -text
@@ -23,7 +24,16 @@ hive/bin/motd -text
 hive/bin/selfupgrade -text
 hive/bin/sgminer-gm -text
 hive/bin/wd -text
-hive/bin/xmr-stack-cpu -text
+hive/bin/xmr-stak-cpu -text
+hive/ccminer -text
+hive/ccminer222-cuda75/ccminer -text
+hive/ccminer222-cuda75/ccminer-52-50-cuda75 -text svneol=unset#application/x-executable
+hive/ccminer222-cuda75/ccminer.sh -text
+hive/ccminer222-cuda75/cuda -text
+hive/ccminer222-cuda75/cuda-7.5/libcudart.so -text
+hive/ccminer222-cuda75/cuda-7.5/libcudart.so.7.5 -text
+hive/ccminer222-cuda75/cuda-7.5/libcudart.so.7.5.18 -text svneol=unset#application/x-sharedlib
+hive/ccminer222-cuda75/pools.conf -text
 hive/claymore -text
 hive/claymore100/Data.bin -text
 hive/claymore100/Data1a1.bin -text
@@ -46,11 +56,66 @@ hive/claymore100/epools.txt -text
 hive/claymore100/epools.txt.example -text
 hive/claymore100/ethdcrminer64 -text svneol=unset#application/x-executable
 hive/claymore100/reboot.sh -text
+hive/claymorez -text
+hive/claymorez126/Data.bin -text
+hive/claymorez126/Data1a1.bin -text
+hive/claymorez126/Data1b1.bin -text
+hive/claymorez126/Data1c1.bin -text
+hive/claymorez126/Data1d1.bin -text
+hive/claymorez126/Data1e1.bin -text
+hive/claymorez126/Data1g1.bin -text
+hive/claymorez126/Data1h1.bin -text
+hive/claymorez126/Data1i1.bin -text
+hive/claymorez126/Data2.bin -text
+hive/claymorez126/Data3.bin -text
+hive/claymorez126/History.txt -text
+hive/claymorez126/License.txt -text
+hive/claymorez126/Readme!!!.txt -text
+hive/claymorez126/config.txt -text
+hive/claymorez126/epools.txt -text
+hive/claymorez126/epools.txt.example -text
+hive/claymorez126/reboot.sh -text
+hive/claymorez126/start.bash -text
+hive/claymorez126/zecminer64 -text svneol=unset#application/x-executable
+hive/dstm052/json-rpc.txt -text
+hive/dstm052/zm -text svneol=unset#application/x-executable
+hive/dstm052/zm.conf -text
+hive/dstm052/zm.sh -text
+hive/etc/blacklist-hive.conf -text
+hive/etc/crontab.root -text
+hive/etc/edid.bin -text
+hive/etc/environment -text
+hive/etc/hive-config.stub/network/20-ethernet.network -text
+hive/etc/hive-config.stub/network/30-wireless.network -text
+hive/etc/hive-config.stub/network/README.txt -text
+hive/etc/hive-config.stub/network/http_proxy.txt -text
+hive/etc/hive-config.stub/network/wifi.txt -text
+hive/etc/hive-config.stub/openvpn/README.txt -text
+hive/etc/hive-config.stub/rig-config-example.txt -text
+hive/etc/hive-config.stub/vnc-password.txt -text
+hive/etc/hive-console.service -text
+hive/etc/hive-netpre.service -text
+hive/etc/hive-watchdog.service -text
+hive/etc/hive.service -text
+hive/etc/hiverepo.list -text
+hive/etc/hivex.service -text
+hive/etc/logrotate.d/hive -text
+hive/etc/logrotate.d/rsyslog -text
+hive/etc/screenrc -text
+hive/etc/screenrc.miner -text
+hive/etc/xinitrc -text
+hive/etc/xorg.conf.amd -text
+hive/etc/xorg.conf.nvidia -text
 hive/ethminer -text
 hive/ethminer012/ethminer -text
 hive/ethminer012/ethminer.conf -text
 hive/ethminer012/ethminer.sh -text
 hive/ethminer012/ethminer012 -text svneol=unset#application/x-executable
+hive/ewbf -text
+hive/ewbf034b/Help.txt -text
+hive/ewbf034b/miner -text svneol=unset#application/x-executable
+hive/ewbf034b/miner.cfg -text
+hive/ewbf034b/start.sh -text
 hive/sbin/amd-oc -text
 hive/sbin/amd-oc-safe -text
 hive/sbin/amd-save-pp_tables -text
@@ -61,11 +126,13 @@ hive/sbin/atiflashall -text
 hive/sbin/atiflashlist -text
 hive/sbin/clinfo -text svneol=unset#application/x-executable
 hive/sbin/ddcopy -text
+hive/sbin/dos2unix-safe -text
 hive/sbin/gpu-detect -text
 hive/sbin/gpu-stats -text
 hive/sbin/http_proxy.sh -text
 hive/sbin/killcx -text
 hive/sbin/logrotate -text
+hive/sbin/netpre -text
 hive/sbin/nvidia-oc -text
 hive/sbin/nvidia-oc-log -text
 hive/sbin/nvidia-xorg -text
@@ -73,7 +140,7 @@ hive/sbin/openvpn-install -text
 hive/sbin/preclone -text
 hive/sbin/sreboot -text
 hive/sbin/update-initgrub -text
-hive/sbin/watchdog-opendev-daemon.sh -text
+hive/sbin/watchdog-opendev -text
 hive/sbin/watchdog-opendev.sh -text
 hive/sbin/watchdoginua -text svneol=unset#application/x-executable
 hive/sbin/watchdoginua.sh -text
@@ -81,7 +148,100 @@ hive/sbin/wifi -text
 hive/sbin/wifi-disable -text
 hive/sbin/wolfamdctrl -text svneol=unset#application/x-executable
 hive/sbin/zerofill -text
+hive/sgminer-gm -text
+hive/sgminer-gm555/config_global.json -text
+hive/sgminer-gm555/config_wallet.json -text
+hive/sgminer-gm555/example-eth.json -text
+hive/sgminer-gm555/example.json -text
+hive/sgminer-gm555/kernel/aes_helper.cl -text
+hive/sgminer-gm555/kernel/alexkarnew.cl -text
+hive/sgminer-gm555/kernel/alexkarold.cl -text
+hive/sgminer-gm555/kernel/animecoin.cl -text
+hive/sgminer-gm555/kernel/arebyp.cl -text
+hive/sgminer-gm555/kernel/bitblock.cl -text
+hive/sgminer-gm555/kernel/bitblockold.cl -text
+hive/sgminer-gm555/kernel/blake.cl -text
+hive/sgminer-gm555/kernel/blake256.cl -text
+hive/sgminer-gm555/kernel/blake256r14.cl -text
+hive/sgminer-gm555/kernel/blake256r8.cl -text
+hive/sgminer-gm555/kernel/bmw.cl -text
+hive/sgminer-gm555/kernel/bmw256.cl -text
+hive/sgminer-gm555/kernel/bufius.cl -text
+hive/sgminer-gm555/kernel/ckolivas.cl -text
+hive/sgminer-gm555/kernel/credits.cl -text
+hive/sgminer-gm555/kernel/cryptonight.cl -text
+hive/sgminer-gm555/kernel/cubehash.cl -text
+hive/sgminer-gm555/kernel/cubehash256.cl -text
+hive/sgminer-gm555/kernel/darkcoin-mod.cl -text
+hive/sgminer-gm555/kernel/darkcoin.cl -text
+hive/sgminer-gm555/kernel/diamond.cl -text
+hive/sgminer-gm555/kernel/echo.cl -text
+hive/sgminer-gm555/kernel/equihash.cl -text
+hive/sgminer-gm555/kernel/ethash-genoil.cl -text
+hive/sgminer-gm555/kernel/ethash-new.cl -text
+hive/sgminer-gm555/kernel/ethash.cl -text
+hive/sgminer-gm555/kernel/fresh.cl -text
+hive/sgminer-gm555/kernel/fugue.cl -text
+hive/sgminer-gm555/kernel/fuguecoin.cl -text
+hive/sgminer-gm555/kernel/groestl.cl -text
+hive/sgminer-gm555/kernel/groestl256.cl -text
+hive/sgminer-gm555/kernel/groestlcoin-v1.cl -text
+hive/sgminer-gm555/kernel/groestlcoin.cl -text
+hive/sgminer-gm555/kernel/hamsi.cl -text
+hive/sgminer-gm555/kernel/hamsi_helper.cl -text
+hive/sgminer-gm555/kernel/hamsi_helper_big.cl -text
+hive/sgminer-gm555/kernel/inkcoin.cl -text
+hive/sgminer-gm555/kernel/jh.cl -text
+hive/sgminer-gm555/kernel/keccak.cl -text
+hive/sgminer-gm555/kernel/keccak1600.cl -text
+hive/sgminer-gm555/kernel/luffa.cl -text
+hive/sgminer-gm555/kernel/lyra2.cl -text
+hive/sgminer-gm555/kernel/lyra2re.cl -text
+hive/sgminer-gm555/kernel/lyra2rev2.cl -text
+hive/sgminer-gm555/kernel/lyra2v2.cl -text
+hive/sgminer-gm555/kernel/marucoin-mod.cl -text
+hive/sgminer-gm555/kernel/marucoin-modold.cl -text
+hive/sgminer-gm555/kernel/marucoin.cl -text
+hive/sgminer-gm555/kernel/maxcoin.cl -text
+hive/sgminer-gm555/kernel/myriadcoin-groestl.cl -text
+hive/sgminer-gm555/kernel/neoscrypt.cl -text
+hive/sgminer-gm555/kernel/panama.cl -text
+hive/sgminer-gm555/kernel/pluck.cl -text
+hive/sgminer-gm555/kernel/psw.cl -text
+hive/sgminer-gm555/kernel/quarkcoin.cl -text
+hive/sgminer-gm555/kernel/qubitcoin.cl -text
+hive/sgminer-gm555/kernel/shabal.cl -text
+hive/sgminer-gm555/kernel/shavite.cl -text
+hive/sgminer-gm555/kernel/sifcoin.cl -text
+hive/sgminer-gm555/kernel/simd.cl -text
+hive/sgminer-gm555/kernel/skein.cl -text
+hive/sgminer-gm555/kernel/skein256.cl -text
+hive/sgminer-gm555/kernel/talkcoin-mod.cl -text
+hive/sgminer-gm555/kernel/twecoin.cl -text
+hive/sgminer-gm555/kernel/vanilla.cl -text
+hive/sgminer-gm555/kernel/whirlcoin.cl -text
+hive/sgminer-gm555/kernel/whirlpool.cl -text
+hive/sgminer-gm555/kernel/whirlpoolx.cl -text
+hive/sgminer-gm555/kernel/wolf-aes.cl -text
+hive/sgminer-gm555/kernel/wolf-skein.cl -text
+hive/sgminer-gm555/kernel/x14.cl -text
+hive/sgminer-gm555/kernel/x14old.cl -text
+hive/sgminer-gm555/kernel/yescrypt-multi.cl -text
+hive/sgminer-gm555/kernel/yescrypt.cl -text
+hive/sgminer-gm555/kernel/yescrypt_essential.cl -text
+hive/sgminer-gm555/kernel/zuikkis.cl -text
+hive/sgminer-gm555/sgminer-5.5.5-gm-nicehash-8 -text svneol=unset#application/x-executable
+hive/sgminer-gm555/sgminer-gm.conf -text
+hive/sgminer-gm555/sgminer-gm.sh -text
+hive/sgminer-gm555/sgminer_gm -text svneol=unset#application/x-executable
+hive/sgminer-gm555/sgminer_gm_nicehash -text svneol=unset#application/x-executable
 hive/share/images/Honey[!!-~]Bees[!!-~]Wallpaper[!!-~]1920x1080[!!-~]Honey[!!-~]Bees.jpg -text svneol=unset#image/jpeg
 hive/share/images/blur-bg-blurred.jpg -text svneol=unset#image/jpeg
 hive/share/images/wallpaper-1117546_1920.jpg -text svneol=unset#image/jpeg
 hive/share/images/wallpaper.jpg -text
+hive/xmr-stak-cpu -text
+hive/xmr-stak-cpu150/config.txt -text
+hive/xmr-stak-cpu150/config_example.txt -text
+hive/xmr-stak-cpu150/config_global.txt -text
+hive/xmr-stak-cpu150/xmr-stak-cpu -text svneol=unset#application/x-executable
+hive/xmr-stak-cpu150/xmr-stak-cpu.sh -text

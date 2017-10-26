@@ -1,0 +1,23 @@
+#[[ ! -f /lib/systemd/system/hive-netpre.service ]] &&
+#	ln -s /hive/etc/hive-netpre.service /lib/systemd/system/hive-netpre.service &&
+#	systemctl enable hive-netpre.service
+
+
+[Unit]
+Description=Net preconfig
+
+Before=network-pre.target
+After=local-fs.target
+
+DefaultDependencies=no
+
+
+[Service]
+#oneshot is to wait for finish
+Type=oneshot
+ExecStart=/hive/sbin/netpre
+
+
+[Install]
+#WantedBy=multi-user.target
+RequiredBy=network-pre.target

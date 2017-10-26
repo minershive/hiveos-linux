@@ -1,6 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #GPU temps and fans
 #Sorted by pci bus id. It was hard...
+
+###Usage: gpu-stats internal|amd|nvidia
+
 
 
 temps=()
@@ -8,14 +11,28 @@ fans=()
 
 bus_temp_fan=()
 
+#bus temp fan
 function putstats {
 	#echo $1
 	#echo $2
 	#temps+=($1)
 	#fans+=($2)
-	bus_temp_fan+=("$3 $1 $2")
+	bus_temp_fan+=("$1 $2 $3")
 }
 
+
+function internal_stats {
+	#detect not NVIDIA and not AMD cards, might be only one internal
+	local cards=`lspci | grep -E "VGA|3D controller" | grep -vE "NVIDIA|AMD"`
+	while read -r line; do
+		[[ -z $line ]] && continue
+
+		busid=`echo $line | awk '{print $1}'`
+
+		[[ ! -z $busid ]] &&
+			putstats $busid "0" "0"
+	done <<< "$cards"
+}
 
 #AMD cards stats
 function amd_stats {
@@ -47,7 +64,7 @@ function amd_stats {
 			#echo "GPU $cardno $busid ${temp}C $speed%"
 			#echo "${temp}, $speed"
 
-			putstats $temp $speed $busid
+			putstats $busid $temp $speed
 		else
 			echo "Error: fanmax unknown for card $cardno"
 		fi
@@ -56,12 +73,17 @@ function amd_stats {
 	done
 }
 
-function nv_stats {
+function nvidia_stats {
 	#72, 81, 00000000:01:00.0
 	#71, 54, 00000000:03:00.0
 	#68, 46, 00000000:06:00.0
 	#68, 83, 00000000:07:00.0
 	stats=`timeout -s9 2 nvidia-smi --format=csv,noheader,nounits --query-gpu=temperature.gpu,fan.speed,gpu_bus_id`
+
+	[[ $? > 0 ]] && return
+
+	#stats='Unable to determine the device handle for GPU 0000:05:00.0: GPU is lost. Reboot the system to recover this GPU'
+	#Exec failed, exitcode=15
 
 	#NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver. Make sure that the latest NVIDIA driver is installed and running.
 	[[ $stats =~ NVIDIA-SMI ]] && return
@@ -76,12 +98,23 @@ function nv_stats {
 		#echo ${params[0]}
 		#echo ${params[1]}
 		busid=${params[2]#00000000:} #trim prefix
-		putstats ${params[0]} ${params[1]} $busid
+
+		#echo "NVIDIA $busid ${params[0]} ${params[1]}"
+		putstats $busid ${params[0]} ${params[1]}
 	done <<<"$stats"
 }
 
-amd_stats
-nv_stats
+
+function all_stats {
+	internal_stats
+	amd_stats
+	nvidia_stats
+}
+
+
+[[ -z $1 ]] &&
+	all_stats ||
+	eval ${1}_stats
 
 #echo "# ${#bus_temp_fan[@]}"
 #echo "* ${bus_temp_fan[*]}"

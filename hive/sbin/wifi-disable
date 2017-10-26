@@ -1,6 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-systemctl stop wpa_supplicant@wlan0
-systemctl disable wpa_supplicant@wlan0
+SERVICE_NAME=wpa_supplicant@wlan0
 
-echo "WiFi wpa_supplicant@wlan0 service disabled"
+systemctl stop $SERVICE_NAME
+
+systemctl is-enabled $SERVICE_NAME > /dev/null
+[[ $? == 0 ]] && # 1 - disabled
+	systemctl disable $SERVICE_NAME &&
+	echo "WiFi $SERVICE_NAME service disabled"

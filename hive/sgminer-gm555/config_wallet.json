@@ -1,0 +1,9 @@
+{
+"user":"%EWAL%/%WORKER_NAME%/%EMAIL%",
+"url":"stratum+tcp://eth-eu1.nanopool.org:9999",
+"pass":"x",
+"algorithm":"ethash",
+"worksize": "192",
+"gpu-threads": "1",
+"xintensity": "1024",
+"_lazyend": "" }

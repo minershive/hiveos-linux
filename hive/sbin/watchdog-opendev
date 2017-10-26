@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+[[ -z $1 ]] &&
+	echo "Usage: `basename $0` ping|reset|power [port]" &&
+	exit 1
+
+PORT=/dev/ttyACM0
+
+[[ ! -z $2 ]] &&
+	PORT=$2 ||
+	echo "No port given, using default"
+
+echo "Using $PORT"
+
+[[ ! -c $PORT ]] &&
+	echo "$PORT is not a character device" &&
+	exit 1
+
+
+if [[ $1 == "reset" ]]; then
+	echo "Pushing Reset"
+	echo -n "~T1" > $PORT
+	exit 0
+fi
+
+
+if [[ $1 == "power" ]]; then
+	echo "Pushing Power"
+	echo -n "~T2" > $PORT
+	exit 0
+fi
+
+
+#should be ping here, but will work with any
+while true
+do
+	echo "Pinging watchdog"
+	echo -n "~U" > $PORT
+	sleep 2
+done
+
+

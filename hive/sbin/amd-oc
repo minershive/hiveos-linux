@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+
+#[ -t 1 ] &&
+. colors
+
 date
 echo ""
 
@@ -62,9 +66,9 @@ echo "FAN        = ${FAN[*]}"
 #exit
 
 
-dirs=`ls -d1 /sys/class/drm/card?/device/pp_table`
+dirs=`ls -d1 /sys/class/drm/card*/device/pp_table`
 if [[ -z $dirs ]]; then
-	echo "No AMD GPUs found as /sys/class/drm/card?/device/pp_table"
+	echo "${RED}No AMD GPUs found as /sys/class/drm/card*/device/pp_table${NOCOLOR}"
 	exit 1
 fi
 
@@ -79,9 +83,13 @@ for dir in $dirs; do
 	[[ $dir =~ \/card([0-9a-z]+)\/ ]]
 	cardno=${BASH_REMATCH[1]}
 
-	[[ -z $cardno ]] && echo "ERROR: can not match card no in $dir" && continue
 
-	echo "=== GPU $i /sys/class/drm/card$cardno ==="
+	[[ -z $cardno ]] && echo "${RED}ERROR: can not match card no in $dir${NOCOLOR}" && continue
+
+	busid=`realpath /sys/class/drm/card$cardno/device | awk -F/ '{print $NF}'`
+	busid=${busid#0000:} #trim prefix
+
+	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${PURPLE}$busid${NOCOLOR} /sys/class/drm/card$cardno ${YELLOW}===${NOCOLOR}"
 	savedpp=/tmp/pp_tables/card$cardno/pp_table
 
 	[[ ! -e $savedpp ]] && echo "ERROR: $savedpp not found, try to reboot" && continue
@@ -96,7 +104,7 @@ for dir in $dirs; do
 			[[ ${CORE_STATE[$i]} != 0 ]] && #skip zero state, means auto
 				coreState=${CORE_STATE[$i]}
 		else
-			echo "WARNING: Invalid core state ${CORE_STATE[$i]}, falling back to $DEFAULT_CORE_STATE"
+			echo "${YELLOW}WARNING: Invalid core state ${CORE_STATE[$i]}, falling back to $DEFAULT_CORE_STATE${NOCOLOR}"
 			coreState=$DEFAULT_CORE_STATE
 		fi
 	fi
@@ -112,7 +120,7 @@ for dir in $dirs; do
 
 	if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} > 0 ]]; then
 		[[ -z $coreState ]] && # core set is not specified, let's use some default or it will not work
-			echo "WARNING: Unset core state, falling back to $DEFAULT_CORE_STATE" &&
+			echo "${YELLOW}WARNING: Unset core state, falling back to $DEFAULT_CORE_STATE${NOCOLOR}" &&
 			coreState=$DEFAULT_CORE_STATE
 		#wolfamdctrl -i $cardno --core-clock ${CORE_CLOCK[$i]} --core-state $coreState
 		args+=" --core-clock ${CORE_CLOCK[$i]} --core-state $coreState"

@@ -25,7 +25,13 @@ if [[ -e $LOCK_FILE ]]; then
 fi
 
 echo $$ > $LOCK_FILE
-amd-oc > /var/log/amd-oc.log 2>&1
+amd-oc 2>&1 | tee /var/log/amd-oc.log
 rm $LOCK_FILE
+
+
+#sed removes colors
+#[[ -e /var/log/amd-oc.log ]] &&
+#sed -i "s,$(printf '\033')\\[[0-9;]*[a-zA-Z],,g" /var/log/amd-oc.log
+
 
 exit 0

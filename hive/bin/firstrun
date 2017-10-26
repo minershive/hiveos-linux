@@ -112,8 +112,8 @@ FILEEOF
 		#miner restart
 
 		#Apply OC if configs are available
-		[[ -f $AMD_OC_CONF ]] && amd-oc
-		[[ -f $NVIDIA_OC_CONF ]] && nvidia-oc
+		[[ -f $AMD_OC_CONF ]] && amd-oc-safe
+		[[ -f $NVIDIA_OC_CONF ]] && nvidia-oc-log
 
 	 	echo -e "\n${BGREEN}Login OK. Happy mining!${NOCOLOR}\n"
 	 	exit 0
