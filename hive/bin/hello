@@ -55,6 +55,8 @@ jq -n \
 --arg gpu_count_amd "$gpu_count_amd" \
 --arg gpu_count_nvidia "$gpu_count_nvidia" \
 --arg version "`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`" \
+--arg nvidia_version "`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//'`" \
+--arg amd_version "`dpkg -l amdgpu-pro | tail -n 1 | awk '{print $3}'`" \
 --arg openvpn "$openvpn" \
 --arg manufacturer "$mb_manufacturer" --arg product "$mb_product" \
 --arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" \
@@ -66,7 +68,7 @@ jq -n \
 		$boot_time, $ip,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
 		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes},
-		$openvpn, $kernel, $version
+		$openvpn, $kernel, $version, $amd_version, $nvidia_version
 	}
 }'
 )

@@ -4,7 +4,8 @@
 CLAYMORE_PATH=`dirname $0`
 
 #save last messages about hanging cards
-tail -n 100 $CLAYMORE_PATH/lastrun_noappend.log > $CLAYMORE_PATH/lastrun_reboot.log
+[[ -e $CLAYMORE_PATH/lastrun_noappend.log ]] &&
+	tail -n 100 $CLAYMORE_PATH/lastrun_noappend.log > $CLAYMORE_PATH/lastrun_reboot.log
 
 
 lastmsg=`cat $CLAYMORE_PATH/lastrun_reboot.log | grep WATCHDOG | tail -n 1`
@@ -24,5 +25,5 @@ fi
 
 /hive/bin/message danger "Claymore Reboot: $lastmsg"
 
-#nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
-sreboot
+#need nohup or the sreboot will stop miner and this process also in it
+nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &

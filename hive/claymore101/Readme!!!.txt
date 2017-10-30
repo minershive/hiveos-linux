@@ -121,7 +121,8 @@ COMMAND LINE OPTIONS:
 	You can also turn on/off cards in runtime with "0"..."9" keys and check current statistics with "s" key.
 	For systems with more than 10 GPUs: use letters to specify indexes more than 9, for example, "a" means index 10, "b" means index 11, etc.
 
--gser	this setting can improve stability on multi-GPU systems if miner hangs during startup. It serializes GPUs initalization routines. Use "-gser 1" to serailize some of routines and "-gser 2" to serialize all routines.
+-gser	this setting can improve stability on multi-GPU systems if miner hangs during startup. It serializes GPUs initalization routines. Use "-gser 1" to serailize some of routines and "-gser 2" to serialize all routines. 
+	Using values higher than 2 allows you also to set custom delay between DAG generation on GPUs, for example, "-gser 5" means same as "-gser 2" and also adds 3sec delay between DAG generation (can be useful for buggy drivers and/or weak PSU).
 	Default value is "0" (no serialization, fast initialization).
 
 -mode	Select mining mode:
@@ -157,6 +158,9 @@ COMMAND LINE OPTIONS:
 
 -logfile	debug log file name. After restart, miner will append new log data to the same file. If you want to clear old log data, file name must contain "noappend" string.
 	If missed, default file name will be used.
+
+-logsmaxsize	maximal size of debug log files, in MB. At every start the miner checks all files in its folder, selects all files that contain "_log.txt" string and removes oldest files if summary files size is larger than specified value. 
+	Specify "-logsmaxsize 0" to cancel old logs removal. Default value is 1000 (i.e. about 1GB of log files are allowed).
 
 -nofee	set "1" to cancel my developer fee at all. In this mode some optimizations are disabled so mining speed will be slower by about 4%. 
 	By enabling this mode, I will lose 100% of my earnings, you will lose only 2-3% of your earnings.

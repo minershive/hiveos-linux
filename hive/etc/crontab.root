@@ -11,6 +11,8 @@
 #rotate every 5 min, kern.log and syslog can grow up to 1.5G each in 15 min
 #since we have pci=noaer, maybe 5 min rotate is too much
 */10 * * * * /hive/sbin/logrotate
+
+#clean screen logs
 0 * * * * (for fname in /run/hive/miner.* ; do echo "" > $fname; done)
 
 

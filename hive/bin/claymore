@@ -48,10 +48,13 @@ function dpools() {
 	if [[ ! -z $DWAL ]]; then sed -i "s/%DWAL%/$DWAL/g" $DPOOLS_TXT; else echo "DWAL not set"; fi
 	if [[ ! -z $EMAIL ]]; then sed -i "s/%EMAIL%/$EMAIL/g" $DPOOLS_TXT; else echo "EMAIL not set"; fi
 
-	#if [[ ! -z $DCOIN ]]; then else echo "DCOIN not set"; fi
-	sed -i "s/^-dcoin.*/-dcoin $DCOIN/g" $CLAYMORE_CONFIG;
+	[[ ! -z $DCOIN ]] &&
+		sed -i "s/^-dcoin.*/-dcoin $DCOIN/g" $CLAYMORE_CONFIG #|| echo "DCOIN not set
 
-	if [[ ! -z $DCRI ]]; then sed -i "s/^-dcri .*/-dcri $DCRI/g" $CLAYMORE_CONFIG; else echo "DCRI not set"; fi
+	#Claymore is degrading if no dcoin, but he still uses dcri and eth performance is lower
+	[[ -z $DCOIN ]] && DCRI=0
+
+	[[ ! -z $DCRI ]] && sed -i "s/^-dcri .*/-dcri $DCRI/g" $CLAYMORE_CONFIG || echo "DCRI not set"
 
 	return 0
 }

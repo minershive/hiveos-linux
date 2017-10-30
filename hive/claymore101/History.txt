@@ -1,6 +1,18 @@
 VERSION HISTORY
 
 
+v10.1
+---------------------------------------------------------------------
+
+- now if miner has to recreate DAG for devfee, new DAG generation time will be included in devfee time.
+- improved "-gser" option, now you can set custom delay between DAG generation on GPUs, check Readme for details.
+- added detailed stats about rejected shares per GPU ("s" key).
+- added "-logsmaxsize" option.
+- fixed issues with "-r -1" option value.
+- EthMan: added detailed stats mode in web server.
+- a few minor bug fixes and improvements.
+
+
 
 v10.0
 ---------------------------------------------------------------------

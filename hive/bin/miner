@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-#source /etc/environment
-
 
 function usage() {
 	bname=`basename $0`
@@ -55,6 +53,7 @@ function start() {
 	#hack to preselect window 1
 	#yes, empty bash or it will hang from time to time if start with screen miner instantly
 	screen -dm -c /hive/etc/screenrc.miner bash
+	sleep 0.2 #it needs some time? it happens that you'll have "No screen session found" without sleep
 	if [[ ! -z $MINER2 ]]; then
 		screen -S miner -X screen 2 $MINER2
 	fi
@@ -248,6 +247,7 @@ function log_truncate {
 
 
 
+# Sets MINER to MINER2 if requested
 function check_second_miner {
 	[[ -z $1 || $1 != "2" ]] && return #not a second miner request
 
@@ -289,7 +289,7 @@ case $1 in
 	;;
 	logtruncate) #miner logtruncate 2
 		check_second_miner $2
-		log_truncate $miner
+		log_truncate $MINER
 	;;
 	*)
 		screen -x -S miner

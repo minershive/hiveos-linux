@@ -5,12 +5,20 @@ RIG_CONF="/hive-config/rig.conf"
 
 . $RIG_CONF
 
+
+
+
 if [[ ! -z $WORKER_NAME ]]; then
+	hostname=$WORKER_NAME
+
+	#starts with digits
+	[[ $hostname =~ ^([0-9]+).* ]] && hostname="hive$WORKER_NAME" #echo "${BASH_REMATCH[1]}"
+
     #if ! grep -qE "127.0.0.1 .*\s+$WORKER_NAME" "/etc/hosts"; then
-    if ! grep -q "127.0.0.1 $WORKER_NAME" "/etc/hosts"; then
+    if ! grep -q "127.0.0.1 $hostname" "/etc/hosts"; then
         #echo "Hostname missing in /etc/hosts, adding"
-        printf "\n127.0.0.1 $WORKER_NAME\n" >> /etc/hosts
+        printf "\n127.0.0.1 $hostname\n" >> /etc/hosts
     fi
     #echo "WORKER_NAME=$WORKER_NAME"
-    hostnamectl set-hostname "$WORKER_NAME"
+    hostnamectl set-hostname "$hostname"
 fi

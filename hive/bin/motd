@@ -21,7 +21,7 @@ echo  ""
 #echo "NVIDIA GPU: `/hive/sbin/gpu-detect NVIDIA`"
 #echo ""
 
-sudo /hive/sbin/gpu-detect list
+/hive/sbin/gpu-detect list
 
 echo ""
 

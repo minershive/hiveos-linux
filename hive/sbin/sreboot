@@ -2,8 +2,9 @@
 #reboots or shutdowns the system using sysrq
 #Usage: sreboot [shutdown]
 
-screen -S agent -X quit
-miner stop
+#Why should I do this at all????
+#screen -S agent -X quit
+#miner stop
 
 sync
 

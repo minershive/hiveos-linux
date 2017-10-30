@@ -86,7 +86,8 @@ function loop() {
 			echo -e "---"
 			echo -e "${RED}Rebooting after $WD_REBOOT minutes${NOCOLOR}"
 			echo -e "---"
-			sreboot
+			#sreboot
+			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 			return #for testing and if it does not work)
 		fi
 	fi

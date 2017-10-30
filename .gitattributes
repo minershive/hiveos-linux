@@ -25,7 +25,6 @@ hive/bin/selfupgrade -text
 hive/bin/sgminer-gm -text
 hive/bin/wd -text
 hive/bin/xmr-stak-cpu -text
-hive/ccminer -text
 hive/ccminer222-cuda75/ccminer -text
 hive/ccminer222-cuda75/ccminer-52-50-cuda75 -text svneol=unset#application/x-executable
 hive/ccminer222-cuda75/ccminer.sh -text
@@ -34,29 +33,27 @@ hive/ccminer222-cuda75/cuda-7.5/libcudart.so -text
 hive/ccminer222-cuda75/cuda-7.5/libcudart.so.7.5 -text
 hive/ccminer222-cuda75/cuda-7.5/libcudart.so.7.5.18 -text svneol=unset#application/x-sharedlib
 hive/ccminer222-cuda75/pools.conf -text
-hive/claymore -text
-hive/claymore100/Data.bin -text
-hive/claymore100/Data1a1.bin -text
-hive/claymore100/Data1b1.bin -text
-hive/claymore100/Data1c1.bin -text
-hive/claymore100/Data1d1.bin -text
-hive/claymore100/Data1e1.bin -text svneol=unset#application/x-dosexec
-hive/claymore100/Data1e2.bin -text
-hive/claymore100/Data1g1.bin -text
-hive/claymore100/Data1g2.bin -text
-hive/claymore100/Data1h1.bin -text
-hive/claymore100/Data1i1.bin -text
-hive/claymore100/Data3.bin -text
-hive/claymore100/History.txt -text
-hive/claymore100/License.txt -text
-hive/claymore100/Readme!!!.txt -text
-hive/claymore100/config.txt -text
-hive/claymore100/dpools.txt -text
-hive/claymore100/epools.txt -text
-hive/claymore100/epools.txt.example -text
-hive/claymore100/ethdcrminer64 -text svneol=unset#application/x-executable
-hive/claymore100/reboot.sh -text
-hive/claymorez -text
+hive/claymore101/Data.bin -text
+hive/claymore101/Data1a1.bin -text
+hive/claymore101/Data1b1.bin -text
+hive/claymore101/Data1c1.bin -text
+hive/claymore101/Data1d1.bin -text
+hive/claymore101/Data1e1.bin -text svneol=unset#application/x-dosexec
+hive/claymore101/Data1e2.bin -text
+hive/claymore101/Data1g1.bin -text
+hive/claymore101/Data1g2.bin -text
+hive/claymore101/Data1h1.bin -text
+hive/claymore101/Data1i1.bin -text
+hive/claymore101/Data3.bin -text
+hive/claymore101/History.txt -text
+hive/claymore101/License.txt -text
+hive/claymore101/Readme!!!.txt -text
+hive/claymore101/config.txt -text
+hive/claymore101/dpools.txt -text
+hive/claymore101/epools.txt -text
+hive/claymore101/epools.txt.example -text
+hive/claymore101/ethdcrminer64 -text svneol=unset#application/x-executable
+hive/claymore101/reboot.sh -text
 hive/claymorez126/Data.bin -text
 hive/claymorez126/Data1a1.bin -text
 hive/claymorez126/Data1b1.bin -text
@@ -77,10 +74,12 @@ hive/claymorez126/epools.txt.example -text
 hive/claymorez126/reboot.sh -text
 hive/claymorez126/start.bash -text
 hive/claymorez126/zecminer64 -text svneol=unset#application/x-executable
-hive/dstm052/json-rpc.txt -text
-hive/dstm052/zm -text svneol=unset#application/x-executable
-hive/dstm052/zm.conf -text
-hive/dstm052/zm.sh -text
+hive/dstm053/README -text
+hive/dstm053/json-rpc.txt -text
+hive/dstm053/zm -text svneol=unset#application/x-executable
+hive/dstm053/zm.conf -text
+hive/dstm053/zm.sh -text
+hive/dstm053/zm.try.sh -text
 hive/etc/blacklist-hive.conf -text
 hive/etc/crontab.root -text
 hive/etc/edid.bin -text
@@ -106,15 +105,15 @@ hive/etc/screenrc.miner -text
 hive/etc/xinitrc -text
 hive/etc/xorg.conf.amd -text
 hive/etc/xorg.conf.nvidia -text
-hive/ethminer -text
 hive/ethminer012/ethminer -text
 hive/ethminer012/ethminer.conf -text
 hive/ethminer012/ethminer.sh -text
 hive/ethminer012/ethminer012 -text svneol=unset#application/x-executable
-hive/ewbf -text
 hive/ewbf034b/Help.txt -text
 hive/ewbf034b/miner -text svneol=unset#application/x-executable
 hive/ewbf034b/miner.cfg -text
+hive/ewbf034b/miner.example.cfg -text
+hive/ewbf034b/miner.global.cfg -text
 hive/ewbf034b/start.sh -text
 hive/sbin/amd-oc -text
 hive/sbin/amd-oc-safe -text
@@ -148,7 +147,6 @@ hive/sbin/wifi -text
 hive/sbin/wifi-disable -text
 hive/sbin/wolfamdctrl -text svneol=unset#application/x-executable
 hive/sbin/zerofill -text
-hive/sgminer-gm -text
 hive/sgminer-gm555/config_global.json -text
 hive/sgminer-gm555/config_wallet.json -text
 hive/sgminer-gm555/example-eth.json -text
@@ -239,7 +237,6 @@ hive/share/images/Honey[!!-~]Bees[!!-~]Wallpaper[!!-~]1920x1080[!!-~]Honey[!!-~]
 hive/share/images/blur-bg-blurred.jpg -text svneol=unset#image/jpeg
 hive/share/images/wallpaper-1117546_1920.jpg -text svneol=unset#image/jpeg
 hive/share/images/wallpaper.jpg -text
-hive/xmr-stak-cpu -text
 hive/xmr-stak-cpu150/config.txt -text
 hive/xmr-stak-cpu150/config_example.txt -text
 hive/xmr-stak-cpu150/config_global.txt -text

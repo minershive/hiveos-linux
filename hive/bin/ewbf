@@ -13,6 +13,7 @@ THIS_MINER_NAME="ewbf"
 function config_gen() {
 	RIG_CONF="/hive-config/rig.conf"
 	WALLET_CONF="/hive-config/wallet.conf"
+	EWBF_GLOBAL_CONFIG="/hive/ewbf/miner.global.cfg"
 	EWBF_CONFIG="/hive/ewbf/miner.cfg"
 
 	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
@@ -21,12 +22,21 @@ function config_gen() {
 	. $RIG_CONF
 	. $WALLET_CONF
 
-	[[ -z $WORKER_NAME ]] && echo "ERROR: No WORKER_NAME set" && return 1
+	#[[ -z $WORKER_NAME ]] && echo "${RED}ERROR: No WORKER_NAME set${NOCOLOR}" && return 1
 
+	cat $EWBF_GLOBAL_CONFIG > $EWBF_CONFIG
 
-	[[ ! -z $ZSERVER ]] && sed -i "s/^server .*/server $ZSERVER/g" $EWBF_CONFIG || echo "ZSERVER not set"
-	[[ ! -z $ZPORT ]] && sed -i "s/^port .*/port $ZPORT/g" $EWBF_CONFIG || echo "ZPORT not set"
-	[[ ! -z $ZPASS ]] && sed -i "s/^pass .*/pass $ZPASS/g" $EWBF_CONFIG || echo "ZPASS not set"
+	[[ ! -z $EWBF_USER_CONFIG ]] && echo -e "#USER CONFIG\n$EWBF_USER_CONFIG" >> $EWBF_CONFIG
+
+	echo -e "\n[server]"  >> $EWBF_CONFIG
+
+#	[[ ! -z $ZSERVER ]] && sed -i "s/^server .*/server $ZSERVER/g" $EWBF_CONFIG || echo "${RED}ZSERVER not set${NOCOLOR}"
+#	[[ ! -z $ZPORT ]] && sed -i "s/^port .*/port $ZPORT/g" $EWBF_CONFIG || echo "${RED}ZPORT not set${NOCOLOR}"
+#	[[ ! -z $ZPASS ]] && sed -i "s/^pass .*/pass $ZPASS/g" $EWBF_CONFIG || echo "${RED}ZPASS not set${NOCOLOR}"
+
+	[[ ! -z $ZSERVER ]] && echo "server $ZSERVER" >>  $EWBF_CONFIG || echo "${RED}ZSERVER not set${NOCOLOR}"
+	[[ ! -z $ZPORT ]] && echo "port $ZPORT" >> $EWBF_CONFIG || echo "${RED}ZPORT not set${NOCOLOR}"
+	[[ ! -z $ZPASS ]] && echo "pass $ZPASS" >> $EWBF_CONFIG || echo "${RED}ZPASS not set${NOCOLOR}"
 
 
 	#[[ -z $ZWAL ]] && echo -e "${RED}ZWAL not set{NOCOLOR}"
@@ -34,20 +44,15 @@ function config_gen() {
 	if [[ -z $ZTEMPLATE ]]; then
 		echo -e "${RED}ZTEMPLATE not set{NOCOLOR}"
 	else
-		[[ ! -z $ZWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%ZWAL\%/$ZWAL} || "${RED}ZWAL not set${NOCOLOR}"
-		[[ ! -z $WORKER_NAME ]] && ZTEMPLATE=${ZTEMPLATE/\%WORKER_NAME\%/$WORKER_NAME} || echo "${RED}WORKER_NAME not set${NOCOLOR}";
+		[[ ! -z $ZWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%ZWAL\%/$ZWAL} #|| "${RED}ZWAL not set${NOCOLOR}"
+		[[ ! -z $WORKER_NAME ]] && ZTEMPLATE=${ZTEMPLATE/\%WORKER_NAME\%/$WORKER_NAME} #|| echo "${RED}WORKER_NAME not set${NOCOLOR}";
 		[[ ! -z $EMAIL ]] && ZTEMPLATE=${ZTEMPLATE/\%EMAIL\%/$EMAIL} #|| echo "EMAIL not set";
 
 		#escape variable
-		ZTEMPLATE=$(sed 's/[]\/$*.^|[]/\\&/g' <<<"$ZTEMPLATE")
-		sed -i "s/^user .*/user $ZTEMPLATE/g" $EWBF_CONFIG
+		#ZTEMPLATE=$(sed 's/[]\/$*.^|[]/\\&/g' <<<"$ZTEMPLATE")
+		#sed -i "s/^user .*/user $ZTEMPLATE/g" $EWBF_CONFIG
+		echo "user $ZTEMPLATE" >> $EWBF_CONFIG
 	fi
-
-	#ZWAL="t1VS4MURTc5HxV3Hm85HsCXRHHN5Etss9vH"
-	#ZSERVER="zec-eu1.nanopool.org"
-	#ZTEMPLATE="%ZWAL%/%WORKER_NAME%/%EMAIL%"
-	#ZPORT="6666"
-	#ZPASS="z"
 
 	#[server]
 	#server zec-eu1.nanopool.org
@@ -68,7 +73,7 @@ do
 		killcx $con lo
 	done
 
-	miner logrotate $THIS_MINER_NAME
+	/hive/bin/miner logrotate $THIS_MINER_NAME
 	/hive/$THIS_MINER_NAME/miner
 	echo ""
 	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
