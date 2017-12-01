@@ -1,6 +1,18 @@
 VERSION HISTORY
 
 
+v10.2
+---------------------------------------------------------------------
+
+- fixed critical issues in remote management feature (attacker could crash miner even in read-only mode).
+- now miner supports up to #299 epoch.
+- in rare cases ADL API calls can hang, now watchdog checks it as well.
+- improved "-minspeed" option, check readme for details.
+- added "miner_getstat2" command to remote management, check "API.txt" for details.
+- EthMan: added detailed stats mode in main window.
+
+
+
 v10.1
 ---------------------------------------------------------------------
 

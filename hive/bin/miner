@@ -24,7 +24,7 @@ fi
 
 [ -z $MINER ] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
 
-miners_avail=("claymore" "claymore-z" "ewbf" "ccminer" "ethminer" "sgminer-gm" "xmr-stak-cpu" "dstm")
+miners_avail=("claymore" "claymore-z" "claymore-x" "ewbf" "ccminer" "ethminer" "sgminer-gm" "xmr-stak-cpu" "dstm")
 if ! printf '%s\n' "${miners_avail[@]}" | grep -xq $MINER ; then
 	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
 	message error "Unknown miner $MINER"
@@ -99,6 +99,9 @@ function miner_log_basename {
 		"claymore")
 			log_basename="/hive/claymore/lastrun_noappend"
 			;;
+		"claymore-x")
+			log_basename="/hive/claymorex/lastrun_noappend"
+			;;
 		"claymore-z")
 			log_basename="/hive/claymorez/lastrun_noappend"
 			;;
@@ -106,7 +109,7 @@ function miner_log_basename {
 			log_basename="/hive/ewbf/miner"
 			;;
 		"ccminer")
-			log_basename="/hive/ccminer/ccminerg"
+			log_basename="/hive/ccminer/ccminer"
 			;;
 		"ethminer")
 			log_basename="/hive/ethminer/ethminer"
@@ -166,7 +169,7 @@ function log_tail {
 
 
 function echo_config_file() {
-	echo "=== $1 ================================================="
+	echo -e "${YELLOW}=== $1 =================================================${NOCOLOR}"
 	cat $1
 	echo ""
 }
@@ -179,6 +182,10 @@ function config() {
 			echo_config_file "/hive/claymore/config.txt"
 			echo_config_file "/hive/claymore/epools.txt"
 			echo_config_file "/hive/claymore/dpools.txt"
+			;;
+		"claymore-x")
+			echo_config_file "/hive/claymorex/config.txt"
+			echo_config_file "/hive/claymorex/epools.txt"
 			;;
 		"claymore-z")
 			echo_config_file "/hive/claymorez/config.txt"
@@ -233,13 +240,19 @@ function logs_rotate {
 
 #truncates current log, run by cron
 function log_truncate {
+	#MAX_LOG_SIZE=$(( 10 * 1024 * 1024 ))
+	MAX_LOG_SIZE=10000000 #10m
+
 	log_basename=`miner_log_basename $1`
 	if [[ $? > 0 ]]; then
 		echo $log_basename #show error message
 		return 1
 	fi
 
-	[[ -e $log_basename.log ]] &&
+	[[ ! -e $log_basename.log ]] && return 0
+
+	fsize=`stat -c%s $log_basename.log`
+	[[ ! -z $fsize && $fsize -ge $MAX_LOG_SIZE ]] &&
 		echo "" >  $log_basename.log
 
 	return 0

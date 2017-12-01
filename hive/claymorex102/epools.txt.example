@@ -1,0 +1,6 @@
+# WARNING! Remove "#" characters to enable lines, with "#" they are disabled and will be ignored by miner! Check README for details.
+
+# POOL: stratum+tcp://monero.crypto-pool.fr:3333, WALLET: 449TGay4WWJPwsXrWZfkMoPtDbJp8xoSzFuyjRt3iaM4bRHdzw4qoDu26FdcGx67BMDS1r2bnp7f5hF6xdPWWrD3Q3Wf7G6, PSW: x, ALLPOOLS: 0
+# POOL: stratum+tcp://mine.moneropool.com:3333, WALLET: 449TGay4WWJPwsXrWZfkMoPtDbJp8xoSzFuyjRt3iaM4bRHdzw4qoDu26FdcGx67BMDS1r2bnp7f5hF6xdPWWrD3Q3Wf7G6, PSW: x, ALLPOOLS: 0
+# POOL: ssl://us-east.cryptonight-hub.miningpoolhub.com:20580, WALLET: YourLogin.YourWorker, PSW: x, ALLPOOLS: 0
+# POOL: stratum+tcp://cryptonight.usa.nicehash.com:3355, WALLET: 1LmMNkiEvjapn5PRY8A9wypcWJveRrRGWr, PSW: x, ALLPOOLS: 0

@@ -5,6 +5,7 @@ hive/bin/cache-hive-ip -text
 hive/bin/ccminer -text
 hive/bin/claymore -text
 hive/bin/claymore-on-reboot -text
+hive/bin/claymore-x -text
 hive/bin/claymore-z -text
 hive/bin/colors -text
 hive/bin/dstm -text
@@ -33,27 +34,47 @@ hive/ccminer222-cuda75/cuda-7.5/libcudart.so -text
 hive/ccminer222-cuda75/cuda-7.5/libcudart.so.7.5 -text
 hive/ccminer222-cuda75/cuda-7.5/libcudart.so.7.5.18 -text svneol=unset#application/x-sharedlib
 hive/ccminer222-cuda75/pools.conf -text
-hive/claymore101/Data.bin -text
-hive/claymore101/Data1a1.bin -text
-hive/claymore101/Data1b1.bin -text
-hive/claymore101/Data1c1.bin -text
-hive/claymore101/Data1d1.bin -text
-hive/claymore101/Data1e1.bin -text svneol=unset#application/x-dosexec
-hive/claymore101/Data1e2.bin -text
-hive/claymore101/Data1g1.bin -text
-hive/claymore101/Data1g2.bin -text
-hive/claymore101/Data1h1.bin -text
-hive/claymore101/Data1i1.bin -text
-hive/claymore101/Data3.bin -text
-hive/claymore101/History.txt -text
-hive/claymore101/License.txt -text
-hive/claymore101/Readme!!!.txt -text
-hive/claymore101/config.txt -text
-hive/claymore101/dpools.txt -text
-hive/claymore101/epools.txt -text
-hive/claymore101/epools.txt.example -text
-hive/claymore101/ethdcrminer64 -text svneol=unset#application/x-executable
-hive/claymore101/reboot.sh -text
+hive/claymore102/Data.bin -text
+hive/claymore102/Data1a1.bin -text
+hive/claymore102/Data1b1.bin -text
+hive/claymore102/Data1c1.bin -text
+hive/claymore102/Data1d1.bin -text
+hive/claymore102/Data1e1.bin -text svneol=unset#application/x-dosexec
+hive/claymore102/Data1e2.bin -text
+hive/claymore102/Data1g1.bin -text
+hive/claymore102/Data1g2.bin -text
+hive/claymore102/Data1h1.bin -text
+hive/claymore102/Data1i1.bin -text
+hive/claymore102/Data3.bin -text
+hive/claymore102/History.txt -text
+hive/claymore102/License.txt -text
+hive/claymore102/Readme!!!.txt -text
+hive/claymore102/config.txt -text
+hive/claymore102/config_global.txt -text
+hive/claymore102/dpools.txt -text
+hive/claymore102/epools.txt -text
+hive/claymore102/epools.txt.example -text
+hive/claymore102/ethdcrminer64 -text svneol=unset#application/x-executable
+hive/claymore102/reboot.sh -text
+hive/claymore102/start.bash -text
+hive/claymorex102/Data1a1.bin -text
+hive/claymorex102/Data1b1.bin -text
+hive/claymorex102/Data1c1.bin -text
+hive/claymorex102/Data1d1.bin -text
+hive/claymorex102/Data1e1.bin -text
+hive/claymorex102/Data1g1.bin -text
+hive/claymorex102/Data1h1.bin -text
+hive/claymorex102/Data1i1.bin -text
+hive/claymorex102/Data3.bin -text
+hive/claymorex102/History.txt -text
+hive/claymorex102/License.txt -text
+hive/claymorex102/Readme!!!.txt -text
+hive/claymorex102/config.txt -text
+hive/claymorex102/epools.txt -text
+hive/claymorex102/epools.txt.example -text
+hive/claymorex102/nsgpucnminer -text svneol=unset#application/x-executable
+hive/claymorex102/reboot.sh -text
+hive/claymorex102/start.bash -text
 hive/claymorez126/Data.bin -text
 hive/claymorez126/Data1a1.bin -text
 hive/claymorez126/Data1b1.bin -text
@@ -74,12 +95,12 @@ hive/claymorez126/epools.txt.example -text
 hive/claymorez126/reboot.sh -text
 hive/claymorez126/start.bash -text
 hive/claymorez126/zecminer64 -text svneol=unset#application/x-executable
-hive/dstm053/README -text
-hive/dstm053/json-rpc.txt -text
-hive/dstm053/zm -text svneol=unset#application/x-executable
-hive/dstm053/zm.conf -text
-hive/dstm053/zm.sh -text
-hive/dstm053/zm.try.sh -text
+hive/dstm056/README -text
+hive/dstm056/json-rpc.txt -text
+hive/dstm056/zm -text svneol=unset#application/x-executable
+hive/dstm056/zm.conf -text
+hive/dstm056/zm.sh -text
+hive/dstm056/zm.try.sh -text
 hive/etc/blacklist-hive.conf -text
 hive/etc/crontab.root -text
 hive/etc/edid.bin -text

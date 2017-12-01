@@ -38,6 +38,16 @@ function miner_stats {
 			else
 				#[ "10.0 - ETH", "83", "67664;48;0", "28076;27236;12351", "891451;29;0", "421143;408550;61758", "67;40;70;45;69;34", "eth-eu1.nanopool.org:9999;sia-eu1.nanopool.org:7777", "0;0;0;0" ]
 				khs=`echo $stats | jq -r '.[2]' | awk -F';' '{print $1}'`
+				algo=`cat /hive/claymore/config.txt | grep -m1 --text "^\-dcoin" | sed 's/-dcoin //'`
+				stats=`echo "$stats" "[\"$algo\"]" | jq -s '.[0] + .[1]'` # push algo to end of array
+			fi
+		;;
+		claymore-x)
+			stats=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w $API_TIMEOUT localhost 3337 | jq '.result'`
+			if [[ $? -ne 0  || -z stats ]]; then
+				echo -e "${YELLOW}Failed to read $miner stats from localhost:3337${NOCOLOR}"
+			else
+				khs=`echo $stats | jq -r '.[2]' | awk -F';' '{print $1/1000}'` #sols to khs
 			fi
 		;;
 		claymore-z)
@@ -66,19 +76,18 @@ function miner_stats {
 				echo -e "${YELLOW}Failed to read $miner stats from localhost:4068${NOCOLOR}"
 			else
 				summary=`echo "summary" | nc -w 2 localhost 4068`
-				re=';UPTIME=([0-9]+);' && [[ $summary =~ $re ]] && #&& echo "Matched" || echo "No match"
-					uptime=${BASH_REMATCH[1]}
-				re=';KHS=([0-9\.]+);' && [[ $summary =~ $re ]] && #&& echo "Matched" || echo "No match"
-					khs=${BASH_REMATCH[1]}
+				re=';UPTIME=([0-9]+);' && [[ $summary =~ $re ]] && uptime=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
+				re=';KHS=([0-9\.]+);' && [[ $summary =~ $re ]] && khs=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
+				algo=`echo "$summary" | tr ';' '\n' | grep -m1 'ALGO=' | sed -e 's/.*=//'`
 				#stats=`echo $threads | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176' | grep -E 'KHS=' | sed -e 's/.*=//' | jq -cs '{khs:.}'`
-				striplines=`echo $threads | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176'`
+				striplines=`echo "$threads" | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176'`
 				#khs=`echo $striplines | grep -E 'KHS=' | sed -e 's/.*=//' | jq -cs '.'`
 				stats=$(jq -n \
-					--arg uptime "$uptime" \
+					--arg uptime "$uptime", --arg algo "$algo" \
 					--argjson khs "`echo \"$striplines\" | grep 'KHS=' | sed -e 's/.*=//' | jq -cs '.'`" \
 					--argjson temp "`echo \"$striplines\" | grep 'TEMP=' | sed -e 's/.*=//' | jq -cs '.'`" \
 					--argjson fan "`echo \"$striplines\" | grep 'FAN=' | sed -e 's/.*=//' | jq -cs '.'`" \
-					'{$khs, $temp, $fan, $uptime}')
+					'{$khs, $temp, $fan, $uptime, $algo}')
 			fi
 		;;
 		ethminer)
@@ -90,7 +99,7 @@ function miner_stats {
 				#`echo $stats | jq -r '.[3]' | awk 'gsub(";", "\n")' | jq -cs .` #send only hashes
 				stats=$(jq -n \
 					--arg uptime "`echo \"$stats\" | jq -r '.[1]' | awk '{print $1*60}'`" \
-					--argjson khs "`echo \"$stats\" | jq -r '.[3]' | awk 'gsub(";", "\n")' | jq -cs '.'`" \
+					--argjson khs "`echo \"$stats\" | jq -r '.[3]' | tr ';' '\n' | jq -cs '.'`" \
 					'{$khs, $uptime}')
 			fi
 		;;

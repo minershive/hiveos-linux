@@ -35,34 +35,44 @@ function epools() {
 
 function dpools() {
 	#dpools is not required, so clear it
-	[[ -z $DPOOLS_TPL || -z $DWAL ]] &&
-		echo -e "${YELLOW}WARNING: DWAL or DPOOLS_TPL is not set, clearing dpools.txt${NOCOLOR}" &&
-		echo "" > $DPOOLS_TXT &&
+	if [[ -z $DPOOLS_TPL || -z $DCOIN ]]; then
+		echo -e "${YELLOW}DPOOLS_TPL or DCOIN is not set, clearing dpools.txt and setting \"-mode 1\"${NOCOLOR}"
+		echo -e "#Only Ethereum\n-mode 1\n" >> $CLAYMORE_CONFIG
+		echo "" > $DPOOLS_TXT
 		return 1
-
+	fi
 
 	echo "Creating dpools.txt"
 	echo "$DPOOLS_TPL" > $DPOOLS_TXT
 
-	if [[ ! -z $WORKER_NAME ]]; then sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $DPOOLS_TXT; else echo "WORKER_NAME not set"; fi
-	if [[ ! -z $DWAL ]]; then sed -i "s/%DWAL%/$DWAL/g" $DPOOLS_TXT; else echo "DWAL not set"; fi
-	if [[ ! -z $EMAIL ]]; then sed -i "s/%EMAIL%/$EMAIL/g" $DPOOLS_TXT; else echo "EMAIL not set"; fi
+	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $DPOOLS_TXT || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}"
+	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $DPOOLS_TXT || echo -e "${YELLOW}DWAL not set${NOCOLOR}"
+	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $DPOOLS_TXT #|| echo -e "${YELLOW}EMAIL not set${NOCOLOR}"
 
-	[[ ! -z $DCOIN ]] &&
-		sed -i "s/^-dcoin.*/-dcoin $DCOIN/g" $CLAYMORE_CONFIG #|| echo "DCOIN not set
 
 	#Claymore is degrading if no dcoin, but he still uses dcri and eth performance is lower
-	[[ -z $DCOIN ]] && DCRI=0
 
-	[[ ! -z $DCRI ]] && sed -i "s/^-dcri .*/-dcri $DCRI/g" $CLAYMORE_CONFIG || echo "DCRI not set"
+#Dual coin name
+#-dcoin dcr
+#Dual coin intensity
+#-dcri 20
+#Only Ethereum
+#-mode 1
+
+	[[ ! -z $DCOIN ]] && echo -e "#Dual coin name\n-dcoin $DCOIN\n" >> $CLAYMORE_CONFIG || echo echo -e "${YELLOW}DCOIN not set${NOCOLOR}"
+	[[ ! -z $DCRI ]] && echo -e "#Dual coin intensity\n-dcri $DCRI\n" >> $CLAYMORE_CONFIG || echo echo -e "${YELLOW}DCRI not set${NOCOLOR}"
+
+#	[[ ! -z $DCRI ]] && sed -i "s/^-dcri .*/-dcri $DCRI/g" $CLAYMORE_CONFIG || echo "DCRI not set"
+#	[[ ! -z $DCOIN ]] && sed -i "s/^-dcoin.*/-dcoin $DCOIN/g" $CLAYMORE_CONFIG #|| echo "DCOIN not set
 
 	return 0
 }
 
 function user_config() {
-	sed -i "/^$USER_CONFIG_SEPARATOR$/,$ d" $CLAYMORE_CONFIG
-	echo "$USER_CONFIG_SEPARATOR" >> $CLAYMORE_CONFIG
+	#sed -i "/^$USER_CONFIG_SEPARATOR$/,$ d" $CLAYMORE_CONFIG
+
 	if [[ ! -z $CLAYMORE_USER_CONFIG ]]; then
+		echo "$USER_CONFIG_SEPARATOR" >> $CLAYMORE_CONFIG
 		echo "Appending user config";
 		echo "$CLAYMORE_USER_CONFIG" >> $CLAYMORE_CONFIG
 	fi
@@ -86,6 +96,8 @@ function config_gen() {
 
 	[[ -z $WORKER_NAME ]] && echo "ERROR: No WORKER_NAME set" && return 1
 
+	cat /hive/claymore/config_global.txt > $CLAYMORE_CONFIG
+
 	epools
 	dpools
 	user_config
@@ -95,17 +107,21 @@ function config_gen() {
 config_gen
 
 
-export GPU_FORCE_64BIT_PTR=0
+#export GPU_FORCE_64BIT_PTR=0
+#export GPU_MAX_HEAP_SIZE=100
+#export GPU_USE_SYNC_OBJECTS=1
+#export GPU_MAX_ALLOC_PERCENT=100
+#export GPU_SINGLE_ALLOC_PERCENT=100
+
 export GPU_MAX_HEAP_SIZE=100
-export GPU_USE_SYNC_OBJECTS=1
 export GPU_MAX_ALLOC_PERCENT=100
-export GPU_SINGLE_ALLOC_PERCENT=100
+export GPU_USE_SYNC_OBJECTS=1
 
 cd /hive/$THIS_MINER_NAME
 while true
 do
 	miner logrotate $THIS_MINER_NAME
-	sudo ./ethdcrminer64
+	./ethdcrminer64
 	echo ""
 	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
 	echo ""

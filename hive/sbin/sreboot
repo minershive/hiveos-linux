@@ -48,6 +48,10 @@ echo s > /proc/sysrq-trigger
 echo u > /proc/sysrq-trigger
 
 [[ $1 == "shutdown" ]] &&
-	echo o > /proc/sysrq-trigger
+	echo "Shutting down" &&
+	echo o > /proc/sysrq-trigger &&
+	exit 0
 
+
+echo "Rebooting"
 echo b > /proc/sysrq-trigger

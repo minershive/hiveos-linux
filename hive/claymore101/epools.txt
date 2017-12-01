@@ -1,1 +1,0 @@
-POOL: eth-eu1.nanopool.org:9999, WALLET: 0x7f28c0e16bcb91d9f1e11efde48053762b565811/worker/fern@kgroup.biz, PSW: x

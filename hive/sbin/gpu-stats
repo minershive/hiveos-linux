@@ -55,19 +55,27 @@ function amd_stats {
 		busid=`realpath /sys/class/drm/card$cardno | rev | cut -d '/' -f 3 | rev`
 		busid=${busid#0000:} #trim prefix
 
-		fanmax=`head -1 $hwmondir/pwm1_max`
-		fan=`head -1 $hwmondir/pwm1`
-		temp=`head -1 $hwmondir/temp1_input`
+		speed="0"
+		[[ -e ${hwmondir}pwm1_max ]] && fanmax=`head -1 ${hwmondir}pwm1_max` || fanmax=0
 		if [ $fanmax -gt 0 ]; then
+			[[ -e ${hwmondir}pwm1 ]] && fan=`head -1 ${hwmondir}pwm1` || fan=0
 			speed=$(( fan * 100 / fanmax ))
-			temp=$(( temp / 1000 ))
 			#echo "GPU $cardno $busid ${temp}C $speed%"
 			#echo "${temp}, $speed"
-
-			putstats $busid $temp $speed
 		else
-			echo "Error: fanmax unknown for card $cardno"
+			echo "Error: fanmax unknown for card $cardno" >&2
 		fi
+
+		temp="0"
+		if [[ -e ${hwmondir}temp1_input ]]; then
+			temp=`head -1 ${hwmondir}temp1_input`
+			temp=$(( temp / 1000 ))
+		else
+			echo "Error: temp unknown for card $cardno" >&2
+		fi
+
+		putstats $busid $temp $speed
+
 
 		#cardcount=$(( cardcount + 1 ))
 	done
@@ -143,7 +151,7 @@ jq -c -n --argjson t "$jsontemps" --argjson f "$jsonfans" '{"temp": $t, "fan": $
 
 
 #
-#root@w163:~# nvidia-smi --query-gpu=index,timestamp,power.draw,clocks.sm,clocks.mem,clocks.gr --format=csv
+#root@w163:~# nvidia-smi --query-gpu=index,gpu_bus_id,gpu_name,power.draw,clocks.sm,clocks.mem,clocks.gr --format=csv
 #index, timestamp, power.draw [W], clocks.current.sm [MHz], clocks.current.memory [MHz], clocks.current.graphics [MHz]
 #0, 2017/10/04 00:54:27.644, 98.29 W, 1974 MHz, 4151 MHz, 1974 MHz
 #1, 2017/10/04 00:54:27.650, 138.22 W, 2075 MHz, 4252 MHz, 2075 MHz

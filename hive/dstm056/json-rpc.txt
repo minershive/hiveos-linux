@@ -1,0 +1,28 @@
+Request:
+-->{"id":1, "method":"getstat"}
+
+Response:
+<--{
+    "id": 1,
+    "result": [{
+        "gpu_id":          0,         // GPU CUDA id
+        "temperature":     0,         // current GPU temperature 
+        "sol_ps":          0.00,      // current Sol/s
+        "avg_sol_ps":      0.00,      // average Sol/s
+        "sol_pw":          0.00,      // current Sol/s / Watt
+        "avg_sol_pw":      0.00,      // average Sol/s / Watt
+        "power_usage":     0.00,      // current power usage
+        "avg_power_usage": 0.00,      // average power usage
+        "accepted_shares": 0,         // total amount of accepted shares
+        "rejected_shares": 0,         // total amount of rejected shares
+        "latency":         0          // network latency
+    }],
+
+    "uptime":   0,                    // uptime in seconds
+    "contime":  0,                    // connection time in seconds (gets reset on reconnect) 
+    "server":   "myserver.com",       // server name
+    "port":     0000,                 // port
+    "user":     "username",           // username
+    "version":  "0.5.4",              // zm version
+    "error":    null
+}

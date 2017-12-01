@@ -30,8 +30,9 @@ Section "ServerLayout"
 	Screen      16 "Screen16" 0 0
 	Screen      17 "Screen17" 0 0
 	Screen      18 "Screen18" 0 0
-	#Screen      19 "Screen19" 0 0
-	#Screen      20 "Screen20" 0 0
+	#maybe needs to be commented in 19 gpu setup
+	Screen      19 "Screen19" 0 0
+	Screen      20 "Screen20" 0 0
 	InputDevice    "Mouse0" "CorePointer"
 EndSection
 

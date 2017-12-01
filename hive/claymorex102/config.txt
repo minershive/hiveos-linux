@@ -1,11 +1,12 @@
 #DONT EDIT THIS FILE, IT WILL BE OVERWTITTEN AFTER UPDATE
 
 #Management port
--mport -3335
+-mport -3337
 
-#Reboot on GPU hangs
+#run reboot.sh on GPU hangs
 -r 1
 
+#Log to the same file
 -logfile lastrun_noappend.log
 
 #Target temp
@@ -15,7 +16,8 @@
 #stop GPU temperature
 -tstop 82
 
-
 -allpools 1
 
+
 ### USER CONFIG ###
+

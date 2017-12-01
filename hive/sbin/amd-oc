@@ -12,14 +12,14 @@ DEFAULT_CORE_STATE=5
 n=`gpu-detect AMD`
 
 if [[ $n == 0 ]]; then
-    echo "No AMD cards detected, exiting"
-    exit
+	echo "No AMD cards detected, exiting"
+	exit
 fi
 echo "Detected $n AMD cards"
 
 if [ ! -f $AMD_OC_CONF ]; then
-    echo "ERROR: $AMD_OC_CONF does not exist"
-    exit
+	echo -e "ERROR: $AMD_OC_CONF does not exist"
+	exit
 fi
 
 source $AMD_OC_CONF
@@ -42,19 +42,19 @@ done
 [[ ! -z $CORE_STATE ]] &&
 CORE_STATE=($CORE_STATE) &&
 for (( i=${#CORE_STATE[@]}; i < $n; ++i )); do
-    CORE_STATE[$i]=${CORE_STATE[$i-1]}
+	CORE_STATE[$i]=${CORE_STATE[$i-1]}
 done
 
 [[ ! -z $MEM_CLOCK ]] &&
 MEM_CLOCK=($MEM_CLOCK) &&
 for (( i=${#MEM_CLOCK[@]}; i < $n; ++i )); do
-    MEM_CLOCK[$i]=${MEM_CLOCK[$i-1]}
+	MEM_CLOCK[$i]=${MEM_CLOCK[$i-1]}
 done
 
 [[ ! -z $FAN ]] &&
 FAN=($FAN) &&
 for (( i=${#FAN[@]}; i < $n; ++i )); do
-    FAN[$i]=${FAN[$i-1]}
+	FAN[$i]=${FAN[$i-1]}
 done
 
 
@@ -66,9 +66,9 @@ echo "FAN        = ${FAN[*]}"
 #exit
 
 
-dirs=`ls -d1 /sys/class/drm/card*/device/pp_table`
+dirs=`ls -d1 /sys/class/drm/card*/device/pp_table | sort --version-sort` #natural sort for 10+ cards
 if [[ -z $dirs ]]; then
-	echo "${RED}No AMD GPUs found as /sys/class/drm/card*/device/pp_table${NOCOLOR}"
+	echo -e "${RED}No AMD GPUs found as /sys/class/drm/card*/device/pp_table${NOCOLOR}"
 	exit 1
 fi
 
@@ -84,7 +84,7 @@ for dir in $dirs; do
 	cardno=${BASH_REMATCH[1]}
 
 
-	[[ -z $cardno ]] && echo "${RED}ERROR: can not match card no in $dir${NOCOLOR}" && continue
+	[[ -z $cardno ]] && echo -e "${RED}ERROR: can not match card no in $dir${NOCOLOR}" && continue
 
 	busid=`realpath /sys/class/drm/card$cardno/device | awk -F/ '{print $NF}'`
 	busid=${busid#0000:} #trim prefix
@@ -92,7 +92,7 @@ for dir in $dirs; do
 	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${PURPLE}$busid${NOCOLOR} /sys/class/drm/card$cardno ${YELLOW}===${NOCOLOR}"
 	savedpp=/tmp/pp_tables/card$cardno/pp_table
 
-	[[ ! -e $savedpp ]] && echo "ERROR: $savedpp not found, try to reboot" && continue
+	[[ ! -e $savedpp ]] && echo -e "ERROR: $savedpp not found, try to reboot" && continue
 
 	#coreState=`wolfamdctrl -i $cardno --show-core | grep -E "DPM state ([0-9]+):" | tail -n 1 | sed -r 's/.*([0-9]+).*/\1/'`
 	args=''
@@ -104,7 +104,7 @@ for dir in $dirs; do
 			[[ ${CORE_STATE[$i]} != 0 ]] && #skip zero state, means auto
 				coreState=${CORE_STATE[$i]}
 		else
-			echo "${YELLOW}WARNING: Invalid core state ${CORE_STATE[$i]}, falling back to $DEFAULT_CORE_STATE${NOCOLOR}"
+			echo -e "${YELLOW}WARNING: Invalid core state ${CORE_STATE[$i]}, falling back to $DEFAULT_CORE_STATE${NOCOLOR}"
 			coreState=$DEFAULT_CORE_STATE
 		fi
 	fi
@@ -120,7 +120,7 @@ for dir in $dirs; do
 
 	if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} > 0 ]]; then
 		[[ -z $coreState ]] && # core set is not specified, let's use some default or it will not work
-			echo "${YELLOW}WARNING: Unset core state, falling back to $DEFAULT_CORE_STATE${NOCOLOR}" &&
+			echo -e "${YELLOW}WARNING: Unset core state, falling back to $DEFAULT_CORE_STATE${NOCOLOR}" &&
 			coreState=$DEFAULT_CORE_STATE
 		#wolfamdctrl -i $cardno --core-clock ${CORE_CLOCK[$i]} --core-state $coreState
 		args+=" --core-clock ${CORE_CLOCK[$i]} --core-state $coreState"

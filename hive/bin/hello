@@ -24,6 +24,19 @@ mkdir -p "/hive-config/openvpn"
 
 HIVE_URL="$HIVE_HOST_URL/worker/api"
 
+
+#will need to restart miner after
+arg_restartminer=0
+#send boot flag with hello message
+arg_boot=0
+
+#check for arguments
+for var in "$@"
+do
+    [[ $var == "restartminer" ]] && arg_restartminer=1
+    [[ $var == "boot" ]] && arg_boot=1
+done
+
 # Make hello request ================================================================
 
 boot_time=`TZ='UTC' uptime -s`
@@ -50,6 +63,7 @@ jq -n \
 --arg rig_id "$RIG_ID" \
 --arg passwd "$RIG_PASSWD" \
 --arg boot_time "$boot_time" \
+--arg boot_event "$arg_boot" \
 --argjson ip "$ips_json" \
 --argjson gpu "$gpus_json" \
 --arg gpu_count_amd "$gpu_count_amd" \
@@ -65,7 +79,7 @@ jq -n \
 	"method": "hello", "jsonrpc": "2.0", "id": 0,
 	"params": {
 		$rig_id, $passwd,
-		$boot_time, $ip,
+		$boot_time, $boot_event, $ip,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
 		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes},
 		$openvpn, $kernel, $version, $amd_version, $nvidia_version
@@ -92,7 +106,7 @@ error=$(echo $response | jq '.error' --raw-output)
 
 # Save config and check it ================================================================
 config=$(echo $response | jq '.result.config' --raw-output)
-[[ -z $config || $config == "null" ]] &&  echo -e "${RED}ERROR:${NOCOLOR} no config field:" && exit 1
+[[ -z $config || $config == "null" ]] &&  echo -e "${RED}ERROR:${NOCOLOR} no config field in response" && exit 1
 echo "$config" > $RIG_CONF
 . $RIG_CONF
 hostname-check
@@ -122,7 +136,7 @@ fi
 
 # Post actions =================================================================
 #restartminer - restart miner on success
-if [[ $1 == "restartminer" ]]; then
+if [[ $arg_restartminer == 1 ]]; then
 	miner restart
 	[[ $WD_ENABLED == 1 ]] &&
 		wd restart

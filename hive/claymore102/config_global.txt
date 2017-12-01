@@ -1,13 +1,10 @@
 #DONT EDIT THIS FILE, IT WILL BE OVERWTITTEN AFTER UPDATE
 
-#Management port
--mport 3333
+#Management port, readonly
+-mport -3333
 
 #run reboot.sh on GPU hangs
 -r 1
-
-#Only Ethereum
-#-mode 1
 
 #Log to the same file
 -logfile lastrun_noappend.log
@@ -19,13 +16,5 @@
 #stop GPU temperature
 -tstop 82
 
-#Dual coin name
--dcoin sia
-
-#Dual coin intensity
--dcri 15
-
-
 -allpools 1
 
-### USER CONFIG ###

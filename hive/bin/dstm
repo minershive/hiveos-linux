@@ -21,7 +21,7 @@ function config_gen() {
 
 	#put default config settings
 	#\n--farm-recheck 2000
-	echo -e "--telemetry=127.0.0.1:43000" > $MINER_CONFIG
+	echo -e "--telemetry=127.0.0.1:43000 --time --temp-target 82" > $MINER_CONFIG
 
 	[[ ! -z $DSTM_SERVER ]] && echo "--server $DSTM_SERVER" >> $MINER_CONFIG
 	[[ ! -z $DSTM_PORT ]] && echo "--port $DSTM_PORT" >> $MINER_CONFIG
@@ -30,8 +30,9 @@ function config_gen() {
 	[[ ! -z $DSTM_USER_CONFIG ]] && echo "$DSTM_USER_CONFIG" >> $MINER_CONFIG
 
 	#replace tpl values in whole file
-	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG || echo "${RED}ZWAL not set${NOCOLOR}"
-	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG || echo "${RED}WORKER_NAME not set${NOCOLOR}"
+	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG #|| echo "${RED}ZWAL not set${NOCOLOR}"
+	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $MINER_CONFIG #|| echo "${RED}DWAL not set${NOCOLOR}"
+	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
 	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $MINER_CONFIG
 }
 
