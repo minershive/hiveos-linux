@@ -1,0 +1,1 @@
+../bin/claymore-on-reboot

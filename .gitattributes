@@ -34,6 +34,29 @@ hive/ccminer222-cuda75/cuda-7.5/libcudart.so -text
 hive/ccminer222-cuda75/cuda-7.5/libcudart.so.7.5 -text
 hive/ccminer222-cuda75/cuda-7.5/libcudart.so.7.5.18 -text svneol=unset#application/x-sharedlib
 hive/ccminer222-cuda75/pools.conf -text
+hive/claymore101/Data.bin -text
+hive/claymore101/Data1a1.bin -text
+hive/claymore101/Data1b1.bin -text
+hive/claymore101/Data1c1.bin -text
+hive/claymore101/Data1d1.bin -text
+hive/claymore101/Data1e1.bin -text svneol=unset#application/x-dosexec
+hive/claymore101/Data1e2.bin -text
+hive/claymore101/Data1g1.bin -text
+hive/claymore101/Data1g2.bin -text
+hive/claymore101/Data1h1.bin -text
+hive/claymore101/Data1i1.bin -text
+hive/claymore101/Data3.bin -text
+hive/claymore101/History.txt -text
+hive/claymore101/License.txt -text
+hive/claymore101/Readme!!!.txt -text
+hive/claymore101/config.txt -text
+hive/claymore101/config_global.txt -text
+hive/claymore101/dpools.txt -text
+hive/claymore101/epools.txt -text
+hive/claymore101/epools.txt.example -text
+hive/claymore101/ethdcrminer64 -text svneol=unset#application/x-executable
+hive/claymore101/reboot.sh -text
+hive/claymore101/start.bash -text
 hive/claymore102/Data.bin -text
 hive/claymore102/Data1a1.bin -text
 hive/claymore102/Data1b1.bin -text

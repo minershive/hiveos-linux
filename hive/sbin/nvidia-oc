@@ -100,7 +100,7 @@ for (( i=0; i < $n; ++i )); do
 
 	bus=`awk '{print substr($1,10); }' <<< $bus` #00000000:01:00.0
 
-	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, $bus ${GREEN}$name${NOCOLOR}, $power_draw / $plim (Default $plim_def) ${YELLOW}===${NOCOLOR}"
+	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, $bus ${GREEN}$name${NOCOLOR}, $power_draw / $plim (Default $plim_def) ${YELLOW}=== `date +"%T"`${NOCOLOR}"
 
 	#persistense mode, save settings on process restart
 	#nvidia-smi -i $i -pm 1

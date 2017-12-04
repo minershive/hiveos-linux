@@ -1,29 +1,33 @@
 #!/bin/bash
 #ln -sf /hive/bin/claymore-on-reboot /hive/claymore/reboot.sh
 
-CLAYMORE_PATH=`dirname $0`
+CLAYMORE_PATH=$(realpath `dirname $0`)
 
 #save last messages about hanging cards
-[[ -e $CLAYMORE_PATH/lastrun_noappend.log ]] &&
+if [[ -e $CLAYMORE_PATH/lastrun_noappend.log ]]; then
 	tail -n 100 $CLAYMORE_PATH/lastrun_noappend.log > $CLAYMORE_PATH/lastrun_reboot.log
 
+	lastmsg=`tac $CLAYMORE_PATH/lastrun_reboot.log | grep -m1 -E "WATCHDOG|hangs"`
+	#echo $lastmsg
+	[[ $lastmsg =~ ^([0-9:]+)[[:space:]]+([a-f0-9]{8})[[:space:]]+(.*) ]]
 
-lastmsg=`cat $CLAYMORE_PATH/lastrun_reboot.log | grep WATCHDOG | tail -n 1`
-#echo $lastmsg
-[[ $lastmsg =~ ^([0-9:]+)[[:space:]]+([a-f0-9]{8})[[:space:]]+(.*) ]]
-
-#-n not empty, -z empty
-if [[ -n ${BASH_REMATCH[3]} ]]; then
-	lastmsg=${BASH_REMATCH[3]}
+	if [[ ! -z ${BASH_REMATCH[3]} ]]; then
+		lastmsg=${BASH_REMATCH[3]}
+	fi
+	#echo $lastmsg
 fi
-#echo $lastmsg
 
 if [[ -z $lastmsg ]]; then
 	lastmsg="Claymore Reboot"
+else
+	lastmsg="Claymore Reboot: $lastmsg"
 fi
 
-
-/hive/bin/message danger "Claymore Reboot: $lastmsg"
+if [[ -e $CLAYMORE_PATH/lastrun_reboot.log ]]; then
+	echo -e "=== Last 50 lines of $CLAYMORE_PATH/lastrun_reboot.log ===\n`tail -n 50 $CLAYMORE_PATH/lastrun_reboot.log`" | /hive/bin/message danger "$lastmsg" payload
+else
+	/hive/bin/message danger "$lastmsg"
+fi
 
 #need nohup or the sreboot will stop miner and this process also in it
-nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+#nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &

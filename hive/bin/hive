@@ -184,6 +184,10 @@ hello boot
 echo2 "> Starting agent screen"
 agent-screen
 
+
+#remove previous log file for Nvidia OC
+[[ -e /var/log/nvidia-oc.log ]] && rm /var/log/nvidia-oc.log
+
 echo2 "> Starting HiveX"
 systemctl start hivex
 
@@ -193,15 +197,26 @@ if [[ $GPU_COUNT_NVIDIA > 0 ]]; then
 	#give X server some time or nvidia-settings could throw an error
 	sleep 7
 
-	for i in {1..300}; do
-		#root     11463  0.0  0.0  15572  3136 ?        S    00:28   0:00 /bin/bash /hive/sbin/nvidia-oc
-		nvrunning=`ps aux | grep /hive/sbin/nvidia-oc | grep -v grep | wc -l`
+	if [[ -z `pidof xinit` ]]; then
+		echo2 "xinit process not found, will not wait for Nvidia OC"
+		break
+	else
+		for i in {1..30}; do #wait for nvidia-oc-log to start at least and create a file
+			[[ -e /var/log/nvidia-oc.log ]] && break #file exists already
+			echo2 "Waiting for /var/log/nvidia-oc.log... $i"
+			sleep 1
+		done
 
-		[[ $nvrunning == 0 ]] && break
+		for i in {1..300}; do
+			#root     11463  0.0  0.0  15572  3136 ?        S    00:28   0:00 /bin/bash /hive/sbin/nvidia-oc
+			nvrunning=`ps aux | grep /hive/sbin/nvidia-oc | grep -v grep | wc -l`
 
-		echo2 "Waiting for nvidia-oc to complete... $i"
-		sleep 1
-	done
+			[[ $nvrunning == 0 ]] && break
+
+			echo2 "Waiting for nvidia-oc to complete... $i"
+			sleep 1
+		done
+	fi
 fi
 
 
