@@ -500,6 +500,9 @@ do
 	#echo "Sleeping $tosleep"
 	echo ""
 
-	[[ $tosleep > 0 ]] &&
+	if [[ $tosleep > 0 ]]; then
 		sleep $INTERVAL
+	else
+		echo -e "${YELLOW}WARNING: Stats sending interval > $INTERVAL seconds, hanging driver?${NOCOLOR}"
+	fi
 done

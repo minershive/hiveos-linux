@@ -26,14 +26,14 @@ hive/bin/selfupgrade -text
 hive/bin/sgminer-gm -text
 hive/bin/wd -text
 hive/bin/xmr-stak-cpu -text
-hive/ccminer222-cuda75/ccminer -text
-hive/ccminer222-cuda75/ccminer-52-50-cuda75 -text svneol=unset#application/x-executable
-hive/ccminer222-cuda75/ccminer.sh -text
-hive/ccminer222-cuda75/cuda -text
-hive/ccminer222-cuda75/cuda-7.5/libcudart.so -text
-hive/ccminer222-cuda75/cuda-7.5/libcudart.so.7.5 -text
-hive/ccminer222-cuda75/cuda-7.5/libcudart.so.7.5.18 -text svneol=unset#application/x-sharedlib
-hive/ccminer222-cuda75/pools.conf -text
+hive/ccminer223-cuda90/ccminer -text
+hive/ccminer223-cuda90/ccminer-52-50 -text svneol=unset#application/x-executable
+hive/ccminer223-cuda90/ccminer.sh -text
+hive/ccminer223-cuda90/cuda -text
+hive/ccminer223-cuda90/cuda-9.0/libcudart.so -text
+hive/ccminer223-cuda90/cuda-9.0/libcudart.so.9.0 -text
+hive/ccminer223-cuda90/cuda-9.0/libcudart.so.9.0.176 -text svneol=unset#application/x-sharedlib
+hive/ccminer223-cuda90/pools.conf -text
 hive/claymore101/Data.bin -text
 hive/claymore101/Data1a1.bin -text
 hive/claymore101/Data1b1.bin -text
