@@ -41,6 +41,10 @@ chown -R root:root /hive/etc/logrotate.d/*
 
 #no AMD in updates
 rm /etc/apt/sources.list.d/amdgpu-pro.list
+#old DKMS images, they are big!
+rm /boot/*.old-dkms
+#we don't need i386
+rm -rf /opt/amdgpu-pro/lib/i386-linux-gnu
 
 echo "> Filling with zeros..."
 zerofill

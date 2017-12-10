@@ -49,6 +49,7 @@ fi
 
 
 
+
 #pad arrays
 [[ ! -z $CLOCK ]] &&
 CLOCK=($CLOCK) &&
@@ -141,7 +142,10 @@ for (( i=0; i < $n; ++i )); do
 
 	[[ ! -z $MEM ]] &&
 		nvidia-settings -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]} | grep -v "^$"
-		
+
+
+	[[ ! -z $LOGO_BRIGHTNESS ]] &&
+		nvidia-settings -a [gpu:$i]/GPULogoBrightness=$LOGO_BRIGHTNESS | grep -v "^$"
 done
 
 

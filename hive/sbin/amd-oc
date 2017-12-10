@@ -38,6 +38,12 @@ done
 #    CORE_VDDC_INDEX[$i]=${CORE_VDDC_INDEX[$i-1]}
 #done
 
+[[ ! -z $CORE_VDDC ]] &&
+CORE_VDDC=($CORE_VDDC) &&
+for (( i=${#CORE_VDDC[@]}; i < $n; ++i )); do
+    CORE_VDDC[$i]=${CORE_VDDC[$i-1]}
+done
+
 #[[ - z $CORE_STATE ]] && CORE_STATE="5" #default is 5
 [[ ! -z $CORE_STATE ]] &&
 CORE_STATE=($CORE_STATE) &&
@@ -60,6 +66,7 @@ done
 
 echo "CORE_CLOCK = ${CORE_CLOCK[*]}"
 echo "CORE_STATE = ${CORE_STATE[*]}"
+echo "CORE_VDDC  = ${CORE_VDDC[*]}"
 echo "MEM_CLOCK  = ${MEM_CLOCK[*]}"
 echo "FAN        = ${FAN[*]}"
 
@@ -105,7 +112,7 @@ for dir in $dirs; do
 				coreState=${CORE_STATE[$i]}
 		else
 			echo -e "${YELLOW}WARNING: Invalid core state ${CORE_STATE[$i]}, falling back to $DEFAULT_CORE_STATE${NOCOLOR}"
-			coreState=$DEFAULT_CORE_STATE
+			#coreState=$DEFAULT_CORE_STATE
 		fi
 	fi
 
@@ -125,6 +132,16 @@ for dir in $dirs; do
 		#wolfamdctrl -i $cardno --core-clock ${CORE_CLOCK[$i]} --core-state $coreState
 		args+=" --core-clock ${CORE_CLOCK[$i]} --core-state $coreState"
 	fi
+
+
+	if [[ ! -z $CORE_VDDC && ${CORE_VDDC[$i]} > 0 ]]; then
+		[[ -z $coreState ]] && # core set is not specified, let's use some default or it will not work
+			echo -e "${YELLOW}WARNING: Unset core state, falling back to $DEFAULT_CORE_STATE${NOCOLOR}" &&
+			coreState=$DEFAULT_CORE_STATE
+		args+=" --vddc-table-set ${CORE_VDDC[$i]} --volt-state $coreState"
+	fi
+
+
 
 	#[[ ! -z $CORE_VDDC_INDEX && ${CORE_VDDC_INDEX[$i]} > 0 ]] &&
 	#	wolfamdctrl -i $cardno --core-vddc-idx ${CORE_VDDC_INDEX[$i]} --core-state $coreState

@@ -77,15 +77,23 @@ function miner_stats {
 			else
 				summary=`echo "summary" | nc -w 2 localhost 4068`
 				re=';UPTIME=([0-9]+);' && [[ $summary =~ $re ]] && uptime=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
-				re=';KHS=([0-9\.]+);' && [[ $summary =~ $re ]] && khs=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
+				#khs will calculate from cards; re=';KHS=([0-9\.]+);' && [[ $summary =~ $re ]] && khs=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
 				algo=`echo "$summary" | tr ';' '\n' | grep -m1 'ALGO=' | sed -e 's/.*=//'`
 				#stats=`echo $threads | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176' | grep -E 'KHS=' | sed -e 's/.*=//' | jq -cs '{khs:.}'`
 				striplines=`echo "$threads" | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176'`
-				#khs=`echo $striplines | grep -E 'KHS=' | sed -e 's/.*=//' | jq -cs '.'`
+
+				#if GPU has 0.0 temp it hanged. ccminer does not mine on this card but shows hashrate
+				cctemps=(`echo "$striplines" | grep 'TEMP=' | sed -e 's/.*=//'`) #echo ${cctemps[@]} | tr " " "\n" #print it in lines
+				cckhs=(`echo "$striplines" | grep 'KHS=' | sed -e 's/.*=//'`)
+				for (( i=0; i < ${#cckhs[@]}; i++ )); do
+					[[ ${cctemps[$i]} == "0.0" ]] &&  cckhs[$i]="0.0"
+					khs=`echo $khs ${cckhs[$i]} | awk '{print $1 + $2}'`
+				done
+
 				stats=$(jq -n \
 					--arg uptime "$uptime", --arg algo "$algo" \
-					--argjson khs "`echo \"$striplines\" | grep 'KHS=' | sed -e 's/.*=//' | jq -cs '.'`" \
-					--argjson temp "`echo \"$striplines\" | grep 'TEMP=' | sed -e 's/.*=//' | jq -cs '.'`" \
+					--argjson khs "`echo ${cckhs[@]} | tr " " "\n" | jq -cs '.'`" \
+					--argjson temp "`echo ${cctemps[@]} | tr " " "\n" | jq -cs '.'`" \
 					--argjson fan "`echo \"$striplines\" | grep 'FAN=' | sed -e 's/.*=//' | jq -cs '.'`" \
 					'{$khs, $temp, $fan, $uptime, $algo}')
 			fi

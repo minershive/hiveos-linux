@@ -1,1 +1,1 @@
-POOL: daggerhashimoto.eu.nicehash.com:3353, WALLET: 3DPEvwEjV6xuEFNB6xATPTfE5eKUrFmEXq.worker, PSW: x, ESM: 3, ALLPOOLS: 1
+POOL: eth-eu1.nanopool.org:9999, WALLET: 0x7f28c0e16bcb91d9f1e11efde48053762b565811/worker/fern@kgroup.biz, PSW: x

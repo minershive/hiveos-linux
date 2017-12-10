@@ -27,7 +27,7 @@ hive/bin/sgminer-gm -text
 hive/bin/wd -text
 hive/bin/xmr-stak-cpu -text
 hive/ccminer223-cuda90/ccminer -text
-hive/ccminer223-cuda90/ccminer-52-50 -text svneol=unset#application/x-executable
+hive/ccminer223-cuda90/ccminer-generic -text svneol=unset#application/x-executable
 hive/ccminer223-cuda90/ccminer.sh -text
 hive/ccminer223-cuda90/cuda -text
 hive/ccminer223-cuda90/cuda-9.0/libcudart.so -text
@@ -159,6 +159,7 @@ hive/ewbf034b/miner.cfg -text
 hive/ewbf034b/miner.example.cfg -text
 hive/ewbf034b/miner.global.cfg -text
 hive/ewbf034b/start.sh -text
+hive/sbin/amd-info -text
 hive/sbin/amd-oc -text
 hive/sbin/amd-oc-safe -text
 hive/sbin/amd-save-pp_tables -text
@@ -181,6 +182,7 @@ hive/sbin/nvidia-oc-log -text
 hive/sbin/nvidia-xorg -text
 hive/sbin/openvpn-install -text
 hive/sbin/preclone -text
+hive/sbin/rocm-smi -text
 hive/sbin/sreboot -text
 hive/sbin/update-initgrub -text
 hive/sbin/watchdog-opendev -text

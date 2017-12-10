@@ -57,6 +57,12 @@ fi
 
 echo $ent >> /etc/hosts
 
+#blocking nicehash servrs from Claymore
+echo "" >> /etc/hosts
+echo "127.0.0.1 cryptonight.usa.nicehash.com" >> /etc/hosts
+echo "127.0.0.1 daggerhashimoto.usa.nicehash.com" >> /etc/hosts
+
+
 sync
 
 #Example with double results
