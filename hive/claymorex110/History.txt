@@ -1,6 +1,21 @@
 VERSION HISTORY
 
 
+v11.0
+---------------------------------------------------------------------
+
+- improved speed by 1-3%, depends on GPU model.
+- fixed issue with invalid shares.
+- added CryptoNight-Lite support, use "-lite 1" option to mine AEON.
+- improved stability.
+- adjusted default "-h" values for various GPUs for better performance, check your settings.
+- fixed critical issues in remote management feature (attacker could crash miner even in read-only mode).
+- fixed issue with possible GPU crash during miner shutdown.
+- updated pools for devfee.
+- several minor improvements and fixes.
+
+
+
 v10.2 Beta
 ---------------------------------------------------------------------
 

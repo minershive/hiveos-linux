@@ -57,6 +57,14 @@ for (( i=${#MEM_CLOCK[@]}; i < $n; ++i )); do
 	MEM_CLOCK[$i]=${MEM_CLOCK[$i-1]}
 done
 
+[[ ! -z $MEM_STATE ]] &&
+MEM_STATE=($MEM_STATE) &&
+for (( i=${#MEM_STATE[@]}; i < $n; ++i )); do
+	MEM_STATE[$i]=${MEM_STATE[$i-1]}
+done
+
+
+
 [[ ! -z $FAN ]] &&
 FAN=($FAN) &&
 for (( i=${#FAN[@]}; i < $n; ++i )); do
@@ -68,6 +76,7 @@ echo "CORE_CLOCK = ${CORE_CLOCK[*]}"
 echo "CORE_STATE = ${CORE_STATE[*]}"
 echo "CORE_VDDC  = ${CORE_VDDC[*]}"
 echo "MEM_CLOCK  = ${MEM_CLOCK[*]}"
+echo "MEM_STATE  = ${MEM_STATE[*]}"
 echo "FAN        = ${FAN[*]}"
 
 #exit
@@ -104,7 +113,11 @@ for dir in $dirs; do
 	#coreState=`wolfamdctrl -i $cardno --show-core | grep -E "DPM state ([0-9]+):" | tail -n 1 | sed -r 's/.*([0-9]+).*/\1/'`
 	args=''
 	coreState=
-	memoryState=
+
+	#memoryState=
+	#memoryState=1 #hello ethos
+	#getting max mem state
+	memoryState=`wolfamdctrl -i $cardno --show-mem | grep -E "Memory state ([0-9]+):" | tail -n 1 | sed -r 's/.*([0-9]+).*/\1/'`
 
 	if [[ ! -z $CORE_STATE ]]; then
 		if [[ ${CORE_STATE[$i]} -ge 0 && ${CORE_STATE[$i]} -le 7 ]]; then
@@ -116,10 +129,18 @@ for dir in $dirs; do
 		fi
 	fi
 
-	if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} > 0 ]]; then
-		#memoryState=1 #hello ethos
-		memoryState=`wolfamdctrl -i $cardno --show-mem | grep -E "Memory state ([0-9]+):" | tail -n 1 | sed -r 's/.*([0-9]+).*/\1/'`
 
+	if [[ ! -z $MEM_STATE ]]; then
+		if [[ ${MEM_STATE[$i]} -ge 0 && ${MEM_STATE[$i]} -le $memoryState ]]; then
+			[[ ${MEM_STATE[$i]} != 0 ]] && #skip zero state, means auto
+				memoryState=${MEM_STATE[$i]}
+		else
+			echo -e "${YELLOW}WARNING: Invalid mem state ${MEM_STATE[$i]}, falling back to $memoryState${NOCOLOR}"
+		fi
+	fi
+
+
+	if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} > 0 ]]; then
 		#echo "Setting mem to ${MEM_CLOCK[$i]}" &&
 		#wolfamdctrl -i $cardno --mem-clock ${MEM_CLOCK[$i]} --mem-state $memoryState
 		args+=" --mem-clock ${MEM_CLOCK[$i]} --mem-state $memoryState"

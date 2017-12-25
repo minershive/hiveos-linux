@@ -19,7 +19,7 @@ echo "Detected $n NVIDIA cards"
 
 
 if [ ! -f $NVIDIA_OC_CONF ]; then
-	echo "ERROR: $NVIDIA_OC_CONF does not exist"
+	echo "$NVIDIA_OC_CONF does not exist"
 	exit
 fi
 

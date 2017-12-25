@@ -22,6 +22,11 @@ screen_count=`screen -ls | grep "\.agent" | grep -v $PPID | wc -l`
 	exit 1
 
 
+
+#{"temp":["61","42","41"],"fan":["92","0","0"],"load":["92","0","0"],"busids":["01:00.0","03:00.0","05:00.0"]}
+gpu_stats=
+
+
 ########################################################################################################################
 
 function miner_stats {
@@ -85,10 +90,32 @@ function miner_stats {
 				#if GPU has 0.0 temp it hanged. ccminer does not mine on this card but shows hashrate
 				cctemps=(`echo "$striplines" | grep 'TEMP=' | sed -e 's/.*=//'`) #echo ${cctemps[@]} | tr " " "\n" #print it in lines
 				cckhs=(`echo "$striplines" | grep 'KHS=' | sed -e 's/.*=//'`)
+				ccbusids=(`echo "$striplines" | grep 'BUS=' | sed -e 's/.*=//'`)
+
+
+				#local nvidiastats
 				for (( i=0; i < ${#cckhs[@]}; i++ )); do
-					[[ ${cctemps[$i]} == "0.0" ]] &&  cckhs[$i]="0.0"
-					khs=`echo $khs ${cckhs[$i]} | awk '{print $1 + $2}'`
+					#if temp is 0 then driver or GPU failed
+					[[ ${cctemps[$i]} == "0.0" ]] && cckhs[$i]="0.0"
+
+					#cckhs[$i]="84316579.94" #test
+					#check Ghs. 1080ti gives ~64mh (64000kh) on lyra. when it's showing ghs then load is 0 on gpu
+					if [[ `echo ${cckhs[$i]} | awk '{ print ($1 >= 1000000) ? 1 : 0 }'` == 1 ]]; then #hash is in Ghs, >= 1000000 khs
+						#[[ -z $nvidiastats ]] && nvidiastats=`gpu-stats nvidia` #a bit overhead in calling nvidia-smi again
+						local busid=`echo ${ccbusids[$i]} | awk '{ printf("%02x:00.0", $1) }'` #ccbus is decimal
+						local load_i=`echo "$gpu_stats" | jq ".busids|index(\"$busid\")"`
+						local load=`echo "$gpu_stats" | jq -r ".load[$load_i]"`
+						#load=0 #test
+						[[ -z $load || $load -le 10 ]] &&
+							echo -e "${RED}Hash on GPU$i is in GH/s (${cckhs[$i]} kH/s) but Load is detected to be only $load%${NOCOLOR}" &&
+							cckhs[$i]="0.0"
+					fi
+
+					#khs=`echo $khs ${cckhs[$i]} | awk '{ printf("%.3f", $1 + $2) }'`
+					khs=`echo $khs ${cckhs[$i]} | awk '{ printf("%.3f", $1 + $2) }'`
 				done
+
+				khs=`echo $khs | sed -E 's/^( *[0-9]+\.[0-9]([0-9]*[1-9])?)0+$/\1/'` #1234.100 -> 1234.1
 
 				stats=$(jq -n \
 					--arg uptime "$uptime", --arg algo "$algo" \
@@ -128,7 +155,8 @@ function miner_stats {
 			else
 				khs=`echo $stats_raw | jq '.result[].sol_ps' | awk '{s+=$1} END {print s/1000}'`
 				uptime=$(( `date +%s` - $(stat -c%X /proc/`pidof zm`) )) #dont think zm will die so soon after getting stats
-				nvidiastats=`gpu-stats nvidia` #a bit overhead in calling nvidia-smi again, shame on dstm, he gives no temps
+				#todo: use gpu_stats if busid is known
+				local nvidiastats=`gpu-stats nvidia` #a bit overhead in calling nvidia-smi again, shame on dstm, he gives no temps
 				#stats=`echo $stats_raw | jq '{ hs: [.result[].sol_ps], temp: [.result[].temperature], uptime: "'$uptime'"}'`
 				stats=`echo $stats_raw | jq '{ hs: [.result[].sol_ps], uptime: "'$uptime'"}'`
 				stats=`echo "$stats $nvidiastats" | jq -s '.[0] * .[1]'`
@@ -405,6 +433,11 @@ function do_command {
 		;;
 		amd_download)
 			gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
+			listjson=`gpu-detect listjson AMD`
+			gpu_biosid=`echo "$listjson" | jq -r ".[$gpu_index].vbios" | sed -e 's/[\,\.\ ]/_/g'`
+			gpu_type=`echo "$listjson" | jq -r ".[$gpu_index].name" | sed -e 's/[\,\.\ ]//g'`
+			gpu_memsize=`echo "$listjson" | jq -r ".[$gpu_index].mem" | sed -e 's/^\(..\).*/\1/' | sed -e 's/.$/G/'`
+			gpu_memtype=`echo "$listjson" | jq -r ".[$gpu_index].mem_type" | sed -e 's/[\,\.\ ]//g'`
 			if [[ ! -z $gpu_index && $gpu_index != "null" ]]; then
 			    payload=`atiflash -s $gpu_index /tmp/amd.saved.rom`
 			    exitcode=$?
@@ -412,7 +445,7 @@ function do_command {
 				if [[ $exitcode == 0 ]]; then
 					#payload=`cat /tmp/amd.saved.rom | base64`
 					#echo "$payload" | message file "VBIOS $gpu_index" payload
-					cat /tmp/amd.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "vbios-$gpu_index.rom" payload
+					cat /tmp/amd.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "vbios-$gpu_index-$gpu_type-$gpu_memsize-$gpu_memvendor-$gpu_biosid.rom" payload
 				else
 					echo "$payload" | message warn "AMD VBIOS saving failed" payload
 				fi
@@ -428,15 +461,17 @@ function do_command {
 			elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
 				message error "No \"rom_base64\" given"
 			else
+				force=$(echo $body | jq '.force' --raw-output)
+				[[ ! -z $force && $force == "1" ]] && extra_args="-f" || extra_args=""
 				echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded.rom
 				fsize=`cat /tmp/amd.uploaded.rom | wc -c`
 				if [[ -z $fsize || $fsize < 250000 ]]; then #too short file
 					message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping"
 				else
 					if [[ $gpu_index == -1 ]]; then # -1 = all
-				    	payload=`atiflashall /tmp/amd.uploaded.rom`
+				    	payload=`atiflashall $extra_args /tmp/amd.uploaded.rom`
 					else
-				    	payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index /tmp/amd.uploaded.rom`
+				    	payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index $extra_args /tmp/amd.uploaded.rom`
 					fi
 				    exitcode=$?
 				    echo "$payload"
@@ -457,12 +492,12 @@ function do_command {
 			clientkey=$(echo $body | jq '.clientkey' --raw-output)
 
 			systemctl stop openvpn@client
-			rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf
+			(rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf) > /dev/null 2>&1
 
 			echo "$clientconf" > /hive-config/openvpn/client.conf
-			echo "$cacrt" > /hive-config/openvpn/ca.crt
-			echo "$clientcrt" > /hive-config/openvpn/$clientcrt_fname
-			echo "$clientkey" > /hive-config/openvpn/$clientkey_fname
+			[[ ! -z $cacrt && $cacrt != "null" ]] && echo "$cacrt" > /hive-config/openvpn/ca.crt
+			[[ ! -z $clientcrt && $clientcrt != "null" ]] && echo "$clientcrt" > /hive-config/openvpn/$clientcrt_fname
+			[[ ! -z $clientkey && $clientkey != "null" ]] && echo "$clientkey" > /hive-config/openvpn/$clientkey_fname
 
 			payload=`openvpn-install && hostname -I`
 			echo "$payload"
@@ -475,7 +510,7 @@ function do_command {
 		;;
 		openvpn_remove)
 			systemctl stop openvpn@client
-			rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf
+			(rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf) > /dev/null 2>&1
 			openvpn-install #will remove /tmp/.openvpn-installed file
 			hello
 			message ok "OpenVPN service stopped, certificates removed"

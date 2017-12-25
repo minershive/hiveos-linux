@@ -56,6 +56,8 @@ COMMAND LINE OPTIONS:
 -dmem	doubled memory mode selection. Specify "-dmem 1" to use twice more GPU RAM, it will improve performance in many cases. Use "-dmem 0" to disable this mode. 
 	Default value is "-1" (autoselection).
 
+-lite	enables CryptoNight-Lite mode, specify "-lite 1" to be able to mine AEON. If set, "-allpools 1" will be set automatically.
+
 -ftime	failover main pool switch time, in minutes, see "Failover" section below. Default value is 30 minutes, set zero if there is no main pool.
 
 -wd 	watchdog option. Default value is "-wd 1", it enables watchdog, miner will be closed (or restarted, see "-r" option) if any thread is not responding for 1 minute or OpenCL call failed.

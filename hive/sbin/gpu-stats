@@ -6,18 +6,21 @@
 
 
 
+busids=()
 temps=()
 fans=()
+load=()
 
 bus_temp_fan=()
 
-#bus temp fan
+#bus temp fan load
 function putstats {
 	#echo $1
 	#echo $2
 	#temps+=($1)
 	#fans+=($2)
-	bus_temp_fan+=("$1 $2 $3")
+	bus_temp_fan+=("$1 $2 $3 $4")
+	#echo "$1 $2 $3 $4"
 }
 
 
@@ -30,7 +33,7 @@ function internal_stats {
 		busid=`echo $line | awk '{print $1}'`
 
 		[[ ! -z $busid ]] &&
-			putstats $busid "0" "0"
+			putstats $busid "0" "0" "0"
 	done <<< "$cards"
 }
 
@@ -74,7 +77,7 @@ function amd_stats {
 			echo "Error: temp unknown for card $cardno" >&2
 		fi
 
-		putstats $busid $temp $speed
+		putstats $busid $temp $speed "0"
 
 
 		#cardcount=$(( cardcount + 1 ))
@@ -86,7 +89,7 @@ function nvidia_stats {
 	#71, 54, 00000000:03:00.0
 	#68, 46, 00000000:06:00.0
 	#68, 83, 00000000:07:00.0
-	stats=`timeout -s9 2 nvidia-smi --format=csv,noheader,nounits --query-gpu=temperature.gpu,fan.speed,gpu_bus_id`
+	stats=`timeout -s9 2 nvidia-smi --format=csv,noheader,nounits --query-gpu=temperature.gpu,fan.speed,gpu_bus_id,utilization.gpu`
 
 	[[ $? > 0 ]] && return
 
@@ -107,8 +110,8 @@ function nvidia_stats {
 		#echo ${params[1]}
 		busid=${params[2]#00000000:} #trim prefix
 
-		#echo "NVIDIA $busid ${params[0]} ${params[1]}"
-		putstats $busid ${params[0]} ${params[1]}
+			#echo "NVIDIA $busid ${params[0]} ${params[1]}"
+		putstats $busid ${params[0]} ${params[1]} ${params[3]}
 	done <<<"$stats"
 }
 
@@ -135,9 +138,10 @@ sorted=`for s in "${bus_temp_fan[@]}"; do echo "$s"; done | sort`
 
 while read -r s; do
 	params=(${s// / })
-	#busid ${params[0]}
+	busids+=(${params[0]})
 	temps+=(${params[1]})
 	fans+=(${params[2]})
+	load+=(${params[3]})
 done <<<"$sorted"
 
 #echo "Temp: ${temps[@]}"
@@ -145,13 +149,21 @@ done <<<"$sorted"
 
 jsontemps=`printf '%s\n' "${temps[@]}" | jq --raw-input . | jq --slurp -c .`
 jsonfans=`printf '%s\n' "${fans[@]}" | jq --raw-input . | jq --slurp -c .`
+jsonload=`printf '%s\n' "${load[@]}" | jq --raw-input . | jq --slurp -c .`
+jsonbusids=`printf '%s\n' "${busids[@]}" | jq --raw-input . | jq --slurp -c .`
 
-jq -c -n --argjson t "$jsontemps" --argjson f "$jsonfans" '{"temp": $t, "fan": $f}'
+
+jq -c -n \
+--argjson temp "$jsontemps" \
+--argjson fan "$jsonfans" \
+--argjson load "$jsonload" \
+--argjson busids "$jsonbusids" \
+'{$temp, $fan, $load, $busids}'
 
 
 
 #
-#root@w163:~# nvidia-smi --query-gpu=index,gpu_bus_id,gpu_name,power.draw,clocks.sm,clocks.mem,clocks.gr --format=csv
+#root@w163:~# nvidia-smi --query-gpu=index,gpu_bus_id,gpu_name,power.draw,clocks.sm,clocks.mem,clocks.gr,utilization.gpu,utilization.memory --format=csv
 #index, timestamp, power.draw [W], clocks.current.sm [MHz], clocks.current.memory [MHz], clocks.current.graphics [MHz]
 #0, 2017/10/04 00:54:27.644, 98.29 W, 1974 MHz, 4151 MHz, 1974 MHz
 #1, 2017/10/04 00:54:27.650, 138.22 W, 2075 MHz, 4252 MHz, 2075 MHz

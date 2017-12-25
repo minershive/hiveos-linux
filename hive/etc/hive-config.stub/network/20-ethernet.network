@@ -10,6 +10,10 @@ DHCP=yes
 #DNS=192.168.0.1
 
 
+#to disable IPV6 if it's not disabled in grub
+#LinkLocalAddressing=no
+#IPv6AcceptRA=no
+
 
 [DHCP]
 ClientIdentifier=mac

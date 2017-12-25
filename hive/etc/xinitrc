@@ -60,7 +60,7 @@ termcmd+="amd-oc-safe;"
 #NVIDIA OC is there are GPUs
 GPU_COUNT_NVIDIA=`gpu-detect NVIDIA`
 NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
-[[ -f $NVIDIA_OC_CONF && $GPU_COUNT_NVIDIA > 0 ]] &&
+[[ $GPU_COUNT_NVIDIA > 0 && -e $NVIDIA_OC_CONF ]] &&
 	echo "> Nvidia OC" &&
 #    nvidia-oc > /var/log/nvidia-oc.log 2>&1 &&
 #    termcmd+="cat /var/log/nvidia-oc.log;"

@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#we don't care about interface so wont use /lib/systemd/systemd-networkd-wait-online
+
+export PATH="./:/hive/bin:/hive/sbin:$PATH"
+
+#[ -t 1 ] &&
+. colors #use them anyway
+
+function echo2 {
+	echo -e "$1" > /dev/tty1
+	echo -e "$1"
+}
+
+
+host=8.8.8.8
+#wifi_active=`systemctl is-active wpa_supplicant@wlan0.service`
+
+
+pingcheck() {
+	ping -n -c 1 -w 1 $1 >/dev/null 2>&1
+# returns "Network unreachable" and does not wait
+}
+
+# Do you want a timeout ?
+for i in {1..30}; do
+  pingcheck $host &&
+	echo2 "${GREEN}Network is online${NOCOLOR}" &&
+  	exit 0
+
+  [[ $i -ge 5 ]] &&
+  	echo2 "Waiting for online... $i"
+
+  sleep 1
+done
+
+
+echo2 "${RED}Network is offline, check your Internet connection${NOCOLOR}"
+
+exit 1

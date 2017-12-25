@@ -23,8 +23,17 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 	#| sed "s/Advanced Micro Devices, Inc. //" \
 	#| sed "s/NVIDIA Corporation //"
 	#| grep --color -P "\[(GeForce|Radeon).*?\]"
-	list=`lspci | grep -E "VGA|3D controller"`
+
+	filterGrep=""
+	if [[ ! -z $2 && $2 == "AMD" ]]; then
+		list=`lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices"`
+	elif [[ ! -z $2 && $2 == "NVIDIA" ]]; then
+		list=`lspci | grep -E "VGA|3D controller" | grep "NVIDIA"`
+	else
+		list=`lspci | grep -E "VGA|3D controller"`
+	fi
 	gpus=()
+
 
 	gpu_brand_i=-1
 	while read -r s; do

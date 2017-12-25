@@ -3,28 +3,108 @@
 echo "Copying NVIDIA Xorg config"
 cp /hive/etc/xorg.conf.nvidia /etc/X11/xorg.conf
 
+
+screens_section=""
+
 connected_monitor=`nvidia-smi --query-gpu=gpu_bus_id,display_mode --format=csv,noheader | grep Enabled | wc -l`
 echo "Connected monitors: $connected_monitor"
 
-if [[ $connected_monitor == 0 ]]; then #no connected monitors, emulate connected
-	echo "Emulating connected monitor on Device0 in /etc/X11/xorg.conf"
-	sed -i -e '/^#Device0 ConnectedMonitor BEGIN$/,/^#Device0 ConnectedMonitor END$/c\\tOption "ConnectedMonitor" "DFP-0"\n\tOption "CustomEDID" "DFP-0:/hive/etc/edid.bin"' /etc/X11/xorg.conf
-else
-	echo "Connected monitor detected"
+internal=`lspci | grep -E "VGA|3D controller" | head -n 1 | grep -vE "NVIDIA|AMD"`
+if [[ ! -z $internal ]]; then
+	busid=`echo $internal | awk '{print $1}' | awk -F : '{printf("%d:%d:%d\n", "0x"$1, $2, $3)}'` #sed 's/\./:/'
+	echo "Detected internal GPU $busid to be the first one"
+
+	#sed -i -e 's/#Screen		0  "Screen0" 0 0/Screen		0  "Screen0" 0 0/' /etc/X11/xorg.conf
+	#sed -i -e "s/PCI:0:02:0/PCI:$busid/" /etc/X11/xorg.conf
+
+(cat <<EOF
+#--- Internal GPU -------------------------------------------------------------------
+Section "Device"
+	Identifier     "Device0"
+	Driver         "intel"
+	BusID          "PCI:$busid"
+EndSection
+
+Section "Screen"
+	Identifier     "Screen0"
+	Device         "Device0"
+	Monitor        "Monitor0"
+EndSection
+
+EOF
+) >> /etc/X11/xorg.conf
+
+screens_section+=$"Screen 0 \"Screen0\" 0 0\n"
+
 fi
 
 
+nvidia_json=`gpu-detect listjson NVIDIA`
+nvidia_count=`echo "$nvidia_json" | jq '.|length'`
 
-internal=`lspci | grep -E "VGA|3D controller" | head -n 1 | grep -vE "NVIDIA|AMD"`
-[[ -z $internal ]] && exit 0
+for ((i=0; i < $nvidia_count; i++)) do
+	devi=$((i+1))
+	busid=`echo "$nvidia_json" | jq -r ".[$i].busid" | awk -F : '{printf("%d:%d:%d\n", "0x"$1, $2, $3)}'` #sed 's/\./:/'
+	name=`echo "$nvidia_json" | jq -r ".[$i].name"`
+	busid_dec=$busid
+
+	#sed -i -e '/^#Device0 ConnectedMonitor BEGIN$/,/^#Device0 ConnectedMonitor END$/c\\tOption "ConnectedMonitor" "DFP-0"\n\tOption "CustomEDID" "DFP-0:/hive/etc/edid.bin"' /etc/X11/xorg.conf
+	emulated_monitor_string=$'Option "ConnectedMonitor" "DFP-0"\n\tOption "CustomEDID" "DFP-0:/hive/etc/edid.bin"'
+	useDisplayDevice='Option "UseDisplayDevice" "none"'
+	[[ $i == 0 ]] && if [[ $connected_monitor == 1 ]]; then #no connected monitors, emulate connected
+		echo "Connected monitor detected on GPU $busid"
+		emulated_monitor_string=""
+	else
+		echo "Emulating connected monitor on Device$i in /etc/X11/xorg.conf"
+	fi
+
+	#Use it, remove none
+	[[ $i == 0 && -z $internal ]] && useDisplayDevice=""
+
+(cat <<EOF
+#--- $busid $name -------------------------------------------------------------------
+Section "Device"
+	Identifier     "Device$devi"
+	Driver         "nvidia"
+	VendorName     "NVIDIA Corporation"
+	Option         "Coolbits" "31"
+	BusID          "PCI:$busid_dec"
+	$emulated_monitor_string
+EndSection
+
+Section "Screen"
+	Identifier     "Screen$devi"
+	Device         "Device$devi"
+	Option         "Coolbits" "31"
+	$useDisplayDevice
+EndSection
 
 
-busid=`echo $internal | awk '{print $1}' | sed 's/\./:/'`
-
-echo "Detected internal GPU on bus $busid to be the first one"
-sed -i -e 's/#Screen		0  "Screen0" 0 0/Screen		0  "Screen0" 0 0/' /etc/X11/xorg.conf
+EOF
+) >> /etc/X11/xorg.conf
 
 
-sed -i -e "s/PCI:0:02:0/PCI:$busid/" /etc/X11/xorg.conf
+	screens_section+=$"\tScreen $devi \"Screen$devi\" 0 0\n"
 
 
+done
+
+
+
+sed -i -e "s/### SCREENS HERE ###/$screens_section/" /etc/X11/xorg.conf
+
+
+
+
+
+#exit 0
+
+#--use-display-device="DFP-0"
+#--allow-empty-initial-configuration \ #Allow the X server to start even if no connected display devices could be detected.
+#--preserve-driver-name #By default nvidia-xconfig changes the  display  driver  to "nvidia" for all configured X screens; this option preserves the existing driver name of each X screen.
+#nvidia-xconfig \
+#	--enable-all-gpus \
+#	--cool-bits=31 \
+#	--connected-monitor="DFP-0" \
+#	--custom-edid="DFP-0:/hive/etc/edid.bin" \
+#	--preserve-driver-name

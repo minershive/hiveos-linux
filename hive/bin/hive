@@ -38,6 +38,7 @@ export GPU_FIRST_NVIDIA=`lspci | grep -E "VGA|3D controller" | head -n 1 | grep 
 
 RIG_CONF="/hive-config/rig.conf"
 AMD_OC_CONF="/hive-config/amd-oc.conf"
+NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
 
 #[ -t 1 ] &&
 . colors #use them anyway
@@ -191,12 +192,12 @@ agent-screen
 echo2 "> Starting HiveX"
 systemctl start hivex
 
+#give X server some time or nvidia-settings could throw an error
+#amd-oc also there
+sleep 7
 
 #Apply Nvidia OC before miner or it can hang on 13+ GPUs
-if [[ $GPU_COUNT_NVIDIA > 0 ]]; then
-	#give X server some time or nvidia-settings could throw an error
-	sleep 7
-
+if [[ $GPU_COUNT_NVIDIA > 0 && -e $NVIDIA_OC_CONF ]]; then
 	if [[ -z `pidof xinit` ]]; then
 		echo2 "xinit process not found, will not wait for Nvidia OC"
 		break

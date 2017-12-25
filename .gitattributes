@@ -80,24 +80,24 @@ hive/claymore102/epools.txt.example -text
 hive/claymore102/ethdcrminer64 -text svneol=unset#application/x-executable
 hive/claymore102/reboot.sh -text
 hive/claymore102/start.bash -text
-hive/claymorex102/Data1a1.bin -text
-hive/claymorex102/Data1b1.bin -text
-hive/claymorex102/Data1c1.bin -text
-hive/claymorex102/Data1d1.bin -text
-hive/claymorex102/Data1e1.bin -text
-hive/claymorex102/Data1g1.bin -text
-hive/claymorex102/Data1h1.bin -text
-hive/claymorex102/Data1i1.bin -text
-hive/claymorex102/Data3.bin -text
-hive/claymorex102/History.txt -text
-hive/claymorex102/License.txt -text
-hive/claymorex102/Readme!!!.txt -text
-hive/claymorex102/config.txt -text
-hive/claymorex102/epools.txt -text
-hive/claymorex102/epools.txt.example -text
-hive/claymorex102/nsgpucnminer -text svneol=unset#application/x-executable
-hive/claymorex102/reboot.sh -text
-hive/claymorex102/start.bash -text
+hive/claymorex110/Data1a1.bin -text
+hive/claymorex110/Data1b1.bin -text
+hive/claymorex110/Data1c1.bin -text
+hive/claymorex110/Data1d1.bin -text
+hive/claymorex110/Data1e1.bin -text
+hive/claymorex110/Data1g1.bin -text
+hive/claymorex110/Data1h1.bin -text
+hive/claymorex110/Data1i1.bin -text
+hive/claymorex110/Data3.bin -text
+hive/claymorex110/History.txt -text
+hive/claymorex110/License.txt -text
+hive/claymorex110/Readme!!!.txt -text
+hive/claymorex110/config.txt -text
+hive/claymorex110/epools.txt -text
+hive/claymorex110/epools.txt.example -text
+hive/claymorex110/nsgpucnminer -text svneol=unset#application/x-executable
+hive/claymorex110/reboot.sh -text
+hive/claymorex110/start.bash -text
 hive/claymorez126/Data.bin -text
 hive/claymorez126/Data1a1.bin -text
 hive/claymorez126/Data1b1.bin -text
@@ -118,12 +118,12 @@ hive/claymorez126/epools.txt.example -text
 hive/claymorez126/reboot.sh -text
 hive/claymorez126/start.bash -text
 hive/claymorez126/zecminer64 -text svneol=unset#application/x-executable
-hive/dstm056/README -text
-hive/dstm056/json-rpc.txt -text
-hive/dstm056/zm -text svneol=unset#application/x-executable
-hive/dstm056/zm.conf -text
-hive/dstm056/zm.sh -text
-hive/dstm056/zm.try.sh -text
+hive/dstm057/README -text
+hive/dstm057/json-rpc.txt -text
+hive/dstm057/zm -text svneol=unset#application/x-executable
+hive/dstm057/zm.conf -text
+hive/dstm057/zm.sh -text
+hive/dstm057/zm.try.sh -text
 hive/etc/blacklist-hive.conf -text
 hive/etc/crontab.root -text
 hive/etc/edid.bin -text
@@ -146,9 +146,12 @@ hive/etc/logrotate.d/hive -text
 hive/etc/logrotate.d/rsyslog -text
 hive/etc/screenrc -text
 hive/etc/screenrc.miner -text
+hive/etc/systemd-networkd-wait-online.service -text
+hive/etc/wpa_supplicant@wlan0.service -text
 hive/etc/xinitrc -text
 hive/etc/xorg.conf.amd -text
 hive/etc/xorg.conf.nvidia -text
+hive/etc/xorg.conf.nvidia-big -text
 hive/ethminer012/ethminer -text
 hive/ethminer012/ethminer.conf -text
 hive/ethminer012/ethminer.sh -text
@@ -185,6 +188,7 @@ hive/sbin/preclone -text
 hive/sbin/rocm-smi -text
 hive/sbin/sreboot -text
 hive/sbin/update-initgrub -text
+hive/sbin/wait-online -text
 hive/sbin/watchdog-opendev -text
 hive/sbin/watchdog-opendev.sh -text
 hive/sbin/watchdoginua -text svneol=unset#application/x-executable

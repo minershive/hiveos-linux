@@ -12,25 +12,32 @@ echo "OpenVPN config $HIVEOVPN/$conf"
 [ -f /etc/openvpn/client.conf ] && rm /etc/openvpn/client.conf
 ln -sf $HIVEOVPN/$conf /etc/openvpn/client.conf
 
-#CA
-[ ! -f $HIVEOVPN/ca.crt ] && echo "$HIVEOVPN/ca.crt not found" && exit 1
-#echo "ca.crt found"
+
+#certs can be in config
 [ -f /etc/openvpn/ca.crt ] && rm /etc/openvpn/ca.crt
-ln -sf $HIVEOVPN/ca.crt /etc/openvpn/ca.crt
+[ -f /etc/openvpn/client.crt ] && rm /etc/openvpn/client.crt
+[ -f /etc/openvpn/client.key ] && rm /etc/openvpn/client.key
+
+
+#CA
+#[ ! -f $HIVEOVPN/ca.crt ] && echo "$HIVEOVPN/ca.crt not found" && exit 1
+#echo "ca.crt found"
+[ -f $HIVEOVPN/ca.crt ] &&
+	ln -sf $HIVEOVPN/ca.crt /etc/openvpn/ca.crt
 
 #Search for client crt
 crt=`find $HIVEOVPN/ -iname '*.crt' -exec basename {} \; | grep -v ca.crt | head -n 1`
-[[ -z $crt ]] && echo "Client crt not found" && exit 1
-echo "client.crt at $HIVEOVPN/$crt"
-[ -f /etc/openvpn/client.crt ] && rm /etc/openvpn/client.crt
-ln -sf $HIVEOVPN/$crt /etc/openvpn/client.crt
+#[[ -z $crt ]] && echo "Client crt not found" && exit 1
+[[ ! -z $crt ]] &&
+	echo "client.crt at $HIVEOVPN/$crt" &&
+	ln -sf $HIVEOVPN/$crt /etc/openvpn/client.crt
 
 #Search for client key
 key=`find $HIVEOVPN/ -iname '*.key' -exec basename {} \; | head -n 1`
-[[ -z $key ]] && echo "Client key not found" && exit 1
-echo "client.key at $HIVEOVPN/$key"
-[ -f /etc/openvpn/client.key ] && rm /etc/openvpn/client.key
-ln -sf $HIVEOVPN/$key /etc/openvpn/client.key
+#[[ -z $key ]] && echo "Client key not found" && exit 1
+[[ ! -z $key ]] &&
+	echo "client.key at $HIVEOVPN/$key" &&
+	ln -sf $HIVEOVPN/$key /etc/openvpn/client.key
 
 
 #systemctl restart openvpn

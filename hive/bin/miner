@@ -53,7 +53,12 @@ function start() {
 	#hack to preselect window 1
 	#yes, empty bash or it will hang from time to time if start with screen miner instantly
 	screen -dm -c /hive/etc/screenrc.miner bash
-	sleep 0.2 #it needs some time? it happens that you'll have "No screen session found" without sleep
+	for i in {1..25}; do
+		sleep 0.2 #it needs some time? it happens that you'll have "No screen session found" without sleep
+		session_count=`screen -ls miner | grep miner | wc -l`
+		[[ $session_count > 0 ]] && break #echo -e "Found screen miner in $i iterations" &&
+		[[ $session_count == 25 ]] && echo -e "${RED}screen miner not found in 25 iterations, check logs and maybe flash drive speed${NOCOLOR}"
+	done
 	if [[ ! -z $MINER2 ]]; then
 		screen -S miner -X screen 2 $MINER2
 	fi
