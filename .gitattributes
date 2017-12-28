@@ -162,6 +162,27 @@ hive/ewbf034b/miner.cfg -text
 hive/ewbf034b/miner.example.cfg -text
 hive/ewbf034b/miner.global.cfg -text
 hive/ewbf034b/start.sh -text
+hive/opt/esonics/WatchDogUtility/runme.sh -text
+hive/opt/esonics/WatchDogUtility/src/usb/__init__.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/_debug.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/_interop.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/_lookup.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/_objfinalizer.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/backend/__init__.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/backend/libusb0.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/backend/libusb1.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/backend/openusb.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/control.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/core.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/legacy.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/libloader.py -text
+hive/opt/esonics/WatchDogUtility/src/usb/util.py -text
+hive/opt/esonics/WatchDogUtility/src/utility.py -text
+hive/opt/esonics/watchdog-esonics.sh -text
+hive/opt/opendev/watchdog-opendev -text
+hive/opt/opendev/watchdog-opendev.sh -text
+hive/opt/watchdoginua/watchdoginua -text svneol=unset#unset
+hive/opt/watchdoginua/watchdoginua.sh -text
 hive/sbin/amd-info -text
 hive/sbin/amd-oc -text
 hive/sbin/amd-oc-safe -text
@@ -189,10 +210,6 @@ hive/sbin/rocm-smi -text
 hive/sbin/sreboot -text
 hive/sbin/update-initgrub -text
 hive/sbin/wait-online -text
-hive/sbin/watchdog-opendev -text
-hive/sbin/watchdog-opendev.sh -text
-hive/sbin/watchdoginua -text svneol=unset#application/x-executable
-hive/sbin/watchdoginua.sh -text
 hive/sbin/wifi -text
 hive/sbin/wifi-disable -text
 hive/sbin/wolfamdctrl -text svneol=unset#application/x-executable

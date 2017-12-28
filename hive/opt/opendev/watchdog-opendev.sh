@@ -13,8 +13,8 @@ if [[ ! -z $PREVPID ]]; then
 fi
 
 
-c=`lsusb | grep 0483:5740 | wc -l`
-echo "Watchdogs OpenDev found: $c"
+c=`lsusb | grep -E '0483:5740|0483:a26d' | wc -l`
+echo "OpenDev Watchdogs found: $c"
 
 if [ $c -eq 0 ]; then
 	exit 1
@@ -30,12 +30,13 @@ for sysdevpath in $(find /sys/bus/usb/devices/usb*/ -name dev); do
 	#echo $syspath
 	#eval "$(udevadm info -q property --export -p $syspath)" #evals variables in scope
 	eval "$(udevadm info -q property --export -p $syspath | grep -E 'ID_VENDOR_ID|ID_MODEL_ID|DEVNAME|ID_SERIAL')" #evals variables in scope and filter valid vars
-	[[ $ID_VENDOR_ID != 0483 && $ID_MODEL_ID != 5740 ]] && continue
+	[[ $ID_VENDOR_ID != "0483" ]] && continue
+	[[ ! ($ID_MODEL_ID == "5740" || $ID_MODEL_ID == "a26d") ]] && continue
 	#echo "/dev/$devname - $ID_SERIAL"
 	echo "$DEVNAME - $ID_SERIAL"
 
 	#Starting actual daemon for watchdog
 	#path=$(dirname $(realpath $0))
-	nohup /hive/sbin/watchdog-opendev ping $DEVNAME > /dev/null 2>&1 &
+	nohup /hive/opt/opendev/watchdog-opendev ping $DEVNAME > /dev/null 2>&1 &
 done
 

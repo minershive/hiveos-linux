@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-export PATH="./:/hive/bin:/hive/sbin:$PATH"
+#export PATH="./:/hive/bin:/hive/sbin:$PATH"
+source /etc/environment
+export PATH
+export CUDA_DEVICE_ORDER
 
 SLEEP=10 #seconds to sleep over iteration
 OK_MESSAGE_REDUCE=$(( 1 * 60 / $SLEEP )) #e.g. only every 12th message will be displayed to reduce log

@@ -161,8 +161,9 @@ motd
 
 #Run watchdog pinger ASAP. Will detect device.
 echo2 "> Detecting watchdogs"
-watchdoginua.sh
-watchdog-opendev.sh
+echo2 "`/hive/opt/watchdoginua/watchdoginua.sh`"
+echo2 "`/hive/opt/opendev/watchdog-opendev.sh`"
+echo2 "`/hive/opt/esonics/watchdog-esonics.sh`"
 
 echo2 "> Applying crontab"
 crontab /hive/etc/crontab.root

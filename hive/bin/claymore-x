@@ -20,6 +20,8 @@ function xpools {
 
 	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $XPOOLS_TXT ||  "WORKER_NAME not set"
 	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $XPOOLS_TXT || echo "DWAL not set"
+	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $XPOOLS_TXT
+	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $XPOOLS_TXT
 	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $XPOOLS_TXT #|| echo "EMAIL not set"
 
 	return 0
