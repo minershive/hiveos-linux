@@ -89,7 +89,7 @@ function nvidia_stats {
 	#71, 54, 00000000:03:00.0
 	#68, 46, 00000000:06:00.0
 	#68, 83, 00000000:07:00.0
-	stats=`timeout -s9 2 nvidia-smi --format=csv,noheader,nounits --query-gpu=temperature.gpu,fan.speed,gpu_bus_id,utilization.gpu`
+	stats=`timeout -s9 3 nvidia-smi --format=csv,noheader,nounits --query-gpu=temperature.gpu,fan.speed,gpu_bus_id,utilization.gpu`
 
 	[[ $? > 0 ]] && return
 

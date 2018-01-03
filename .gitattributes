@@ -118,12 +118,13 @@ hive/claymorez126/epools.txt.example -text
 hive/claymorez126/reboot.sh -text
 hive/claymorez126/start.bash -text
 hive/claymorez126/zecminer64 -text svneol=unset#application/x-executable
-hive/dstm057/README -text
-hive/dstm057/json-rpc.txt -text
-hive/dstm057/zm -text svneol=unset#application/x-executable
-hive/dstm057/zm.conf -text
-hive/dstm057/zm.sh -text
-hive/dstm057/zm.try.sh -text
+hive/dstm058/LICENSE -text
+hive/dstm058/README -text
+hive/dstm058/json-rpc.txt -text
+hive/dstm058/zm -text svneol=unset#application/x-executable
+hive/dstm058/zm.conf -text
+hive/dstm058/zm.sh -text
+hive/dstm058/zm.try.sh -text
 hive/etc/blacklist-hive.conf -text
 hive/etc/crontab.root -text
 hive/etc/edid.bin -text

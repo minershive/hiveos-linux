@@ -11,18 +11,18 @@ THIS_MINER_NAME="claymore-x"
 
 
 function xpools {
-	[[ -z $XPOOLS_TPL || -z $DWAL ]] &&
+	[[ -z $XPOOLS_TPL ]] && #|| -z $DWAL
 		echo -e "${YELLOW}WARNING: DWAL or XPOOLS_TPL is not set, skipping epools.txt generation${NOCOLOR}" &&
 		return 1
 
 	echo "Creating epools.txt"
 	echo "$XPOOLS_TPL" > $XPOOLS_TXT
 
-	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $XPOOLS_TXT ||  "WORKER_NAME not set"
-	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $XPOOLS_TXT || echo "DWAL not set"
+	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $XPOOLS_TXT || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}"
+	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $XPOOLS_TXT || echo -e "${YELLOW}DWAL not set${NOCOLOR}"
 	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $XPOOLS_TXT
 	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $XPOOLS_TXT
-	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $XPOOLS_TXT #|| echo "EMAIL not set"
+	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $XPOOLS_TXT
 
 	return 0
 }

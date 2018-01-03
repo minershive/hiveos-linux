@@ -136,6 +136,7 @@ for (( i=0; i < $n; ++i )); do
 	x=3
 	[[ $name =~ "1050" ]] && x=2
 	[[ $name =~ "P106-100" ]] && x=2
+	[[ $name =~ "P104-100" ]] && x=1
 
 	[[ ! -z $CLOCK ]] &&
 		nvidia-settings -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]} | grep -v "^$"

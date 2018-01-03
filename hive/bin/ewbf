@@ -44,10 +44,10 @@ function config_gen() {
 	if [[ -z $ZTEMPLATE ]]; then
 		echo -e "${RED}ZTEMPLATE not set{NOCOLOR}"
 	else
-		[[ ! -z $ZWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%ZWAL\%/$ZWAL} #|| "${RED}ZWAL not set${NOCOLOR}"
-		[[ ! -z $DWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%DWAL\%/$DWAL} #|| "${RED}DWAL not set${NOCOLOR}"
-		[[ ! -z $WORKER_NAME ]] && ZTEMPLATE=${ZTEMPLATE/\%WORKER_NAME\%/$WORKER_NAME} #|| echo "${RED}WORKER_NAME not set${NOCOLOR}";
-		[[ ! -z $EMAIL ]] && ZTEMPLATE=${ZTEMPLATE/\%EMAIL\%/$EMAIL} #|| echo "EMAIL not set";
+		[[ ! -z $WORKER_NAME ]] && ZTEMPLATE=${ZTEMPLATE/\%WORKER_NAME\%/$WORKER_NAME} || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}";
+		[[ ! -z $ZWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%ZWAL\%/$ZWAL} || echo -e "${YELLOW}ZWAL not set${NOCOLOR}"
+		[[ ! -z $DWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%DWAL\%/$DWAL} #|| echo -e "${YELLOW}DWAL not set${NOCOLOR}"
+		[[ ! -z $EMAIL ]] && ZTEMPLATE=${ZTEMPLATE/\%EMAIL\%/$EMAIL} #|| echo -e "EMAIL not set";
 
 		#escape variable
 		#ZTEMPLATE=$(sed 's/[]\/$*.^|[]/\\&/g' <<<"$ZTEMPLATE")

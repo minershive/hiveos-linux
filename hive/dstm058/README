@@ -13,7 +13,7 @@ Dependencies
 ============
 
 Linux:
- openssl 1.0
+ openssl 1.0 (for versions <= 0.5.7)
 
 Windows:
  Visual C++ Redistributable for visual studio 2015 (VCRUNTIME140.dll)
