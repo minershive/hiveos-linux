@@ -298,6 +298,50 @@ function loop {
 
 ########################################################################################################################
 
+function oc_if_changed {
+	nvidia_oc=$(echo $body | jq '.nvidia_oc' --raw-output)
+	nvidia_oc_old=`[[ -e $NVIDIA_OC_CONF ]] && cat $NVIDIA_OC_CONF`
+	[[ ! -z $nvidia_oc && $nvidia_oc != "null" && $nvidia_oc != $nvidia_oc_old ]] &&
+		nvidia_oc_changed=1 || nvidia_oc_changed=
+
+	amd_oc=$(echo $body | jq '.amd_oc' --raw-output)
+	amd_oc_old=`[[ -e $AMD_OC_CONF ]] && cat $AMD_OC_CONF`
+	[[ ! -z $amd_oc && $amd_oc != "null" && $amd_oc != $amd_oc_old ]] &&
+		amd_oc_changed=1 || amd_oc_changed=
+
+	[[ $justwrite != 1 && ! -z $nvidia_oc_changed || ! -z $amd_oc_changed ]] &&
+		echo -e "${YELLOW}Stopping miner before Overclocking${NOCOLOR}" &&
+		miner stop
+
+	if [[ ! -z $nvidia_oc_changed ]]; then
+		#echo -e "${YELLOW}Saving Nvidia OC config${NOCOLOR}"
+		echo "$nvidia_oc" > $NVIDIA_OC_CONF && sync
+		if [[ $justwrite != 1 ]]; then
+			nvidia-oc-log
+			exitcode=$?
+			payload=`cat /var/log/nvidia-oc.log`
+			echo "$payload"
+			[[ $exitcode == 0 ]] &&
+				echo "$payload" | message ok "Nvidia settings applied" payload ||
+				echo "$payload" | message warn "Nvidia settings applied with errors, check X server running" payload
+		fi
+	fi
+
+	if [[ ! -z $amd_oc_changed ]]; then
+		#echo -e "${YELLOW}Saving AMD OC config${NOCOLOR}"
+		echo "$amd_oc" > $AMD_OC_CONF && sync
+		if [[ $justwrite != 1 ]]; then
+			amd-oc-safe
+			exitcode=$?
+			payload=`cat /var/log/amd-oc.log`
+			echo "$payload"
+			[[ $exitcode == 0 ]] &&
+				echo "$payload" | message ok "AMD settings applied" payload ||
+				echo "$payload" | message warn "AMD settings applied with errors" payload
+		fi
+	fi
+}
+
 function do_command {
 	#body=$1
 	[[ -z $command ]] && command=`echo $body | jq -r '.command'` #get command for batch
@@ -333,6 +377,7 @@ function do_command {
 		;;
 		config)
 			config=$(echo $body | jq '.config' --raw-output)
+			justwrite=$(echo $body | jq '.justwrite' --raw-output) #don't restart miner, just write config, maybe WD settings will be updated
 			if [[ ! -z $config && $config != "null" ]]; then
 				#scan for password change
 				echo "$config" > /tmp/rig.conf.new
@@ -341,7 +386,7 @@ function do_command {
 				done < /tmp/rig.conf.new
 				rm /tmp/rig.conf.new
 
-				#Password change
+				# Password change ---------------------------------------------------
 				if [[ $RIG_PASSWD != $NEW_PASSWD ]]; then
 					echo -e "${RED}New password:${NOCOLOR} $NEW_PASSWD";
 
@@ -362,24 +407,27 @@ function do_command {
 					#after this there will be new password on server, so all new request should use new one
 				fi
 
-				#Write new config and load it
-				echo "$config" > $RIG_CONF
+				# Write new config and load it ---------------------------------------
+				echo "$config" > $RIG_CONF && sync
 				. $RIG_CONF
 
-				#Save wallet if given
+				# Save wallet if given -----------------------------------------------
 				wallet=$(echo $body | jq '.wallet' --raw-output)
 				[[ ! -z $wallet && $wallet != "null" ]] &&
 					echo "$wallet" > $WALLET_CONF
 
 
-				justwrite=$(echo $body | jq '.justwrite' --raw-output)
+				# Overclocking if given in config --------------------------------------
+				oc_if_changed
 
+
+				# Final actions ---------------------------------------------------------
 				if [[ $justwrite != 1 ]]; then
 					hostname-check
 					miner restart
 				fi
 
-				#Start Watchdog. It will exit if WD_ENABLED=0
+				# Start Watchdog. It will exit if WD_ENABLED=0 ---------------------------
 				[[ $WD_ENABLED=1 ]] && wd restart
 
 				message ok "Rig config changed" 120
@@ -391,7 +439,11 @@ function do_command {
 		wallet)
 			wallet=$(echo $body | jq '.wallet' --raw-output)
 			if [[ ! -z $wallet && $wallet != "null" ]]; then
-				echo "$wallet" > $WALLET_CONF
+				echo "$wallet" > $WALLET_CONF && sync
+
+				justwrite=
+				oc_if_changed
+
 				miner restart
 				[[ $? == 0 ]] && message ok "Wallet changed, miner restarted" 120 || message warn "Error restarting miner"
 			else
@@ -400,8 +452,11 @@ function do_command {
 		;;
 		nvidia_oc)
 			nvidia_oc=$(echo $body | jq '.nvidia_oc' --raw-output)
+			#nvidia_oc_old=`[[ -e $NVIDIA_OC_CONF ]] && cat $NVIDIA_OC_CONF`
+			#if [[ $nvidia_oc == $nvidia_oc_old ]]; then
+			#	echo -e "${YELLOW}Nvidia OC config did not change, skipping${NOCOLOR}";
 			if [[ ! -z $nvidia_oc && $nvidia_oc != "null" ]]; then
-				echo "$nvidia_oc" > $NVIDIA_OC_CONF
+				echo "$nvidia_oc" > $NVIDIA_OC_CONF && sync
 				nohup bash -c '
 					nvidia-oc-log
 					exitcode=$?
@@ -417,8 +472,11 @@ function do_command {
 		;;
 		amd_oc)
 			amd_oc=$(echo $body | jq '.amd_oc' --raw-output)
+			#amd_oc_old=`[[ -e $AMD_OC_CONF ]] && cat $AMD_OC_CONF`
+			#if [[ $amd_oc == $amd_oc_old ]]; then
+			#	echo -e "${YELLOW}AMD OC config did not change, skipping${NOCOLOR}";
 			if [[ ! -z $amd_oc && $amd_oc != "null" ]]; then
-				echo "$amd_oc" > $AMD_OC_CONF
+				echo "$amd_oc" > $AMD_OC_CONF && sync
 				nohup bash -c '
 					amd-oc-safe
 					exitcode=$?
@@ -524,6 +582,9 @@ function do_command {
 			echo -e "${YELLOW}Got unknown command ${CYAN}$command${NOCOLOR}"
 		;;
 	esac
+
+	#Flush buffers if any files changed
+	sync
 }
 
 

@@ -54,4 +54,7 @@ agent-screen
 echo -e "${GREEN}Upgrade complete. Have a happy mining.${NOCOLOR}"
 
 
+#Flush buffers if any files changed
+sync
+
 exit 0

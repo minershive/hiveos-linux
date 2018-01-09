@@ -121,32 +121,44 @@ for (( i=0; i < $n; ++i )); do
 	#not working
 	#nvidia-smi -i ${i} -ac 4004,1911
 
-	nvidia-settings -a [gpu:$i]/GPUPowerMizerMode=1 | grep -v "^$"
+	args=
+	#nvidia-settings -a [gpu:$i]/GPUPowerMizerMode=1 | grep -v "^$"
+	args+=" -a [gpu:$i]/GPUPowerMizerMode=1"
 
 	if [[ -z $FAN || ${FAN[$i]} == 0 ]]; then
-		nvidia-settings -a [gpu:$i]/GPUFanControlState=0 | grep -v "^$"
+		#nvidia-settings -a [gpu:$i]/GPUFanControlState=0 | grep -v "^$"
+		args+=" -a [gpu:$i]/GPUFanControlState=0"
 	else
-		nvidia-settings -a [gpu:$i]/GPUFanControlState=1 | grep -v "^$"
-		nvidia-settings -a [fan:$i]/GPUTargetFanSpeed=${FAN[$i]} | grep -v "^$"
+		#nvidia-settings -a [gpu:$i]/GPUFanControlState=1 | grep -v "^$"
+		#nvidia-settings -a [fan:$i]/GPUTargetFanSpeed=${FAN[$i]} | grep -v "^$"
+		args+=" -a [gpu:$i]/GPUFanControlState=1"
+		args+=" -a [fan:$i]/GPUTargetFanSpeed=${FAN[$i]}"
 	fi
 
 
 	#echo "i=$i x=$x"
 	#GTX 1050 wanted i=2, allothers want i=3
 	x=3
-	[[ $name =~ "1050" ]] && x=2
-	[[ $name =~ "P106-100" ]] && x=2
-	[[ $name =~ "P104-100" ]] && x=1
+	if [[ $name =~ "1050" ]]; then x=2
+	elif [[ $name =~ "P106-100" ]]; then x=2
+	elif [[ $name =~ "P104-100" ]]; then x=1
+	fi
 
 	[[ ! -z $CLOCK ]] &&
-		nvidia-settings -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]} | grep -v "^$"
+		#nvidia-settings -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]} | grep -v "^$"
+		args+=" -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]}"
 
 	[[ ! -z $MEM ]] &&
-		nvidia-settings -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]} | grep -v "^$"
+		#nvidia-settings -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]} | grep -v "^$"
+		args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]}"
 
 
 	[[ ! -z $LOGO_BRIGHTNESS ]] &&
-		nvidia-settings -a [gpu:$i]/GPULogoBrightness=$LOGO_BRIGHTNESS | grep -v "^$"
+		#nvidia-settings -a [gpu:$i]/GPULogoBrightness=$LOGO_BRIGHTNESS | grep -v "^$"
+		args+=" -a [gpu:$i]/GPULogoBrightness=$LOGO_BRIGHTNESS"
+
+	[[ ! -z $args ]]
+		nvidia-settings $args | grep -v "^$"
 done
 
 

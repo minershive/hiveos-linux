@@ -144,4 +144,9 @@ fi
 
 echo "Touching $HELLO_OK"
 touch $HELLO_OK
+
+
+#Flush buffers if any files changed
+sync
+
 exit 0
