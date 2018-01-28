@@ -40,18 +40,18 @@ key=`find $HIVEOVPN/ -iname '*.key' -exec basename {} \; | head -n 1`
 	ln -sf $HIVEOVPN/$key /etc/openvpn/client.key
 
 
-#systemctl restart openvpn
 systemctl restart openvpn@client
 
 touch $VPN_INSTALLED
 
-
+exitcode=1
 #this is stupid, but we need to wait a bit for openvpn to setup
 for i in {1..15}; do
 	count=`echo $(hostname -I) | sed 's/ /\n/g' | wc -l`
 	[[ $count > 1 ]] &&
 		echo "One more interface came up" > /dev/tty1 &&
 		echo "One more interface came up" &&
+		exitcode=0 &&
 		break
 	echo "Waiting interface to come up... $i" > /dev/tty1
 	echo "Waiting interface to come up... $i"
@@ -59,4 +59,4 @@ for i in {1..15}; do
 done
 
 
-exit 0
+exit $exitcode

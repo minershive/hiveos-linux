@@ -264,8 +264,8 @@ function loop {
 
 	exitcode=$?
 	if [[ $exitcode -ne 0 || -z $response ]]; then
-		echo -e "${RED}Error sending stats${NOCOLOR}" && human-curl-error $exitcode
-		echo "[`date`] < Error sending stats (curl code=$exitcode) \"$response\"" >> $LOG
+		echo -e "${RED}Error sending stats${NOCOLOR} $HIVE_HOST_URL" && human-curl-error $exitcode
+		echo "[`date`] < ERROR SENDING STATS TO $HIVE_HOST_URL (curl code=$exitcode) \"$response\"" >> $LOG
 		return $exitcode
 	fi
 
@@ -274,6 +274,7 @@ function loop {
 	echo "[`date`] < $response" >> $LOG #full response even invalid
 
 	error=$(echo $response | jq '.error' --raw-output)
+	[[ $? != 0 ]] && echo -e "${RED}Invalid response${NOCOLOR}: $HIVE_HOST_URL\n$response" && return 1
 	[[ ! -z $error && $error != "null" ]] && echo -e "${RED}Error response${NOCOLOR}: $error" && return 1
 
 	command=$(echo $response | jq '.result.command' --raw-output)
@@ -558,9 +559,11 @@ function do_command {
 			[[ ! -z $clientcrt && $clientcrt != "null" ]] && echo "$clientcrt" > /hive-config/openvpn/$clientcrt_fname
 			[[ ! -z $clientkey && $clientkey != "null" ]] && echo "$clientkey" > /hive-config/openvpn/$clientkey_fname
 
-			payload=`openvpn-install && hostname -I`
+			payload=`openvpn-install`
+			exitcode=$?
+			[[ $exitcode == 0 ]] && payload+=$'\n'"`hostname -I`"
 			echo "$payload"
-			if [[ $? == 0 ]]; then
+			if [[ $exitcode == 0 ]]; then
 				echo "$payload" | message ok "OpenVPN configured" payload
 				hello #to give new ips and openvpn flag
 			else

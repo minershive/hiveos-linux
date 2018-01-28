@@ -1,9 +1,8 @@
-hive/ccminer223-cuda90/*.log
-hive/claymore101/*.log
-hive/claymore102/*.log
-hive/claymorex110/*.log
+hive/ccminer/*.log
+hive/claymore106/*.log
+hive/claymorex112/*.log
 hive/claymorez126/*.log
 hive/dstm058/*.log
-hive/ethminer012/*.log
+hive/ethminer013/*.log
 hive/ewbf034b/*.log
 hive/xmr-stak-cpu150/*.log

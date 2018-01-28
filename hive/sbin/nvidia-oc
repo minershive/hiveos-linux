@@ -141,6 +141,7 @@ for (( i=0; i < $n; ++i )); do
 	x=3
 	if [[ $name =~ "1050" ]]; then x=2
 	elif [[ $name =~ "P106-100" ]]; then x=2
+	elif [[ $name =~ "P106-090" ]]; then x=1
 	elif [[ $name =~ "P104-100" ]]; then x=1
 	fi
 

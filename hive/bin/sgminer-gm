@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-THIS_MINER_NAME="sgminer-gm"
+THIS_MINER_NAME="sgminer"
 [ -t 1 ] && . colors
 
-[[ `ps aux | grep "\./sgminer_gm" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
+[[ `ps aux | grep "\./sgminer" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
 	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
 	exit 1
 
@@ -11,7 +11,7 @@ THIS_MINER_NAME="sgminer-gm"
 function config_gen() {
 	RIG_CONF="/hive-config/rig.conf"
 	WALLET_CONF="/hive-config/wallet.conf"
-	MINER_CONFIG="/hive/sgminer-gm/sgminer-gm.conf"
+	MINER_CONFIG="/hive/sgminer/sgminer.conf"
 
 	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
 	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
@@ -23,32 +23,62 @@ function config_gen() {
 	[[ -z $SGMINER_GM_URL ]] && echo -e "${YELLOW}SGMINER_GM_URL is empty${NOCOLOR}" && return 1
 
 
-	userconf=/hive/sgminer-gm/config_wallet.json
+#	userconf=/hive/sgminer/config_wallet.json
 
-	echo '{' > $userconf
-	echo '"user":"'$SGMINER_GM_TEMPLATE'",' >> $userconf
-	echo '"url":"'$SGMINER_GM_URL'",' >> $userconf
-	[[ ! -z $SGMINER_GM_PASS ]] && 	echo '"pass":"'$SGMINER_GM_PASS'",' >> $userconf
-	[[ ! -z $SGMINER_GM_ALGO ]] && 	echo '"algorithm":"'$SGMINER_GM_ALGO'",' >> $userconf
+#	echo '{' > $userconf
+#	echo '"user":"'$SGMINER_GM_TEMPLATE'",' >> $userconf
+#	echo '"url":"'$SGMINER_GM_URL'",' >> $userconf
+#	[[ ! -z $SGMINER_GM_PASS ]] && 	echo '"pass":"'$SGMINER_GM_PASS'",' >> $userconf
+#	[[ ! -z $SGMINER_GM_ALGO ]] && 	echo '"algorithm":"'$SGMINER_GM_ALGO'",' >> $userconf
+#
+#	if [[ ! -z $SGMINER_GM_USER_CONFIG ]]; then
+#		while read -r line; do
+#			[[ -z $line ]] && continue
+#			echo "$line," >> $userconf
+#		done <<< "$SGMINER_GM_USER_CONFIG"
+#	fi
+#
+#	echo '"_lazyend": "" }' >> $userconf #to fix last coma
+#	jq -s '.[0] * .[1]' /hive/sgminer/config_global.json $userconf > $MINER_CONFIG
+
+	pools='[]'
+	for url in $SGMINER_GM_URL; do
+		pool='{}'
+		pool=`jq --null-input --argjson pool "$pool" --arg user "$SGMINER_GM_TEMPLATE" '$pool + {$user}'`
+		pool=`jq --null-input --argjson pool "$pool" --arg url "$url" '$pool + {$url}'`
+		[[ ! -z $SGMINER_GM_PASS ]] &&
+			pool=`jq --null-input --argjson pool "$pool" --arg pass "$SGMINER_GM_PASS" '$pool + {$pass}'`
+		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
+	done
+
+	pools=`jq --null-input --argjson pools "$pools" '{$pools}'`
+
 	if [[ ! -z $SGMINER_GM_USER_CONFIG ]]; then
 		while read -r line; do
 			[[ -z $line ]] && continue
-			echo "$line," >> $userconf
+			#echo "$line," >> $userconf
+			pools=`jq --null-input --argjson pools "$pools" --argjson line "{$line}" '$pools + $line'`
 		done <<< "$SGMINER_GM_USER_CONFIG"
 	fi
 
-	echo '"_lazyend": "" }' >> $userconf #to fix last coma
+	[[ ! -z $SGMINER_GM_ALGO ]] &&
+		pools=`jq --null-input --argjson pools "$pools" --arg algorithm "$SGMINER_GM_ALGO" '$pools + {$algorithm}'`
 
+#	echo $pools | jq .
 
-	jq -s '.[0] * .[1]' /hive/sgminer-gm/config_global.json $userconf > $MINER_CONFIG
+	config_global=`cat /hive/sgminer/config_global.json`
+
+	conf=`jq -n --argjson g "$config_global" --argjson p "$pools" '$g * $p'`
 
 	#replace tpl values in whole file
-	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $MINER_CONFIG #|| echo "${RED}EWAL not set${NOCOLOR}"
-	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $MINER_CONFIG #|| echo "${RED}DWAL not set${NOCOLOR}"
-	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG #|| echo "${RED}ZWAL not set${NOCOLOR}"
-	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
-	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $MINER_CONFIG
+	[[ ! -z $EWAL ]] && conf=$(sed "s/%EWAL%/$EWAL/g" <<< $conf) #|| echo "${RED}EWAL not set${NOCOLOR}"
+	[[ ! -z $DWAL ]] && conf=$(sed "s/%DWAL%/$DWAL/g" <<< $conf) #|| echo "${RED}DWAL not set${NOCOLOR}"
+	[[ ! -z $ZWAL ]] && conf=$(sed "s/%ZWAL%/$ZWAL/g" <<< $conf) #|| echo "${RED}ZWAL not set${NOCOLOR}"
+	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $conf) #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
+	[[ ! -z $EMAIL ]] && conf=$(sed "s/%EMAIL%/$EMAIL/g" <<< $conf)
 
+#	echo "$conf" | jq .
+	echo "$conf" | jq . > $MINER_CONFIG
 }
 
 
@@ -60,7 +90,7 @@ cd /hive/$THIS_MINER_NAME
 while true
 do
 	miner logrotate $THIS_MINER_NAME
-	/hive/$THIS_MINER_NAME/sgminer-gm.sh $SGMINER_GM_FORK
+	/hive/$THIS_MINER_NAME/sgminer.sh $SGMINER_GM_FORK
 	echo ""
 	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
 	echo ""

@@ -34,7 +34,6 @@ function config_gen() {
 	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $CCMINER_CONFIG_FILE #|| echo "DWAL not set"
 	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $CCMINER_CONFIG_FILE #|| echo "ZWAL not set"
 	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $CCMINER_CONFIG_FILE #|| echo "EWAL not set"
-
 }
 
 
@@ -46,7 +45,7 @@ cd /hive/$THIS_MINER_NAME
 while true
 do
 	miner logrotate $THIS_MINER_NAME
-	/hive/$THIS_MINER_NAME/ccminer.sh
+	/hive/$THIS_MINER_NAME/ccminer.sh $CCMINER_FORK
 	echo ""
 	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
 	echo ""

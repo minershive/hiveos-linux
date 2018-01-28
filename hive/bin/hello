@@ -31,8 +31,7 @@ arg_restartminer=0
 arg_boot=0
 
 #check for arguments
-for var in "$@"
-do
+for var in "$@"; do
     [[ $var == "restartminer" ]] && arg_restartminer=1
     [[ $var == "boot" ]] && arg_boot=1
 done
@@ -91,7 +90,7 @@ echo "$request" | jq -c '.'
 response=$(echo $request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=hello" -H "Content-Type: application/json")
 exitcode=$?
 [[ $exitcode -ne 0 ]] &&
-	echo -e "${RED}Error connecting to Hive server${NOCOLOR}" &&
+	echo -e "${RED}Error connecting to Hive server${NOCOLOR} $HIVE_HOST_URL" &&
 	human-curl-error $exitcode &&
 	exit $exitcode #404 is not a bad exit code
 

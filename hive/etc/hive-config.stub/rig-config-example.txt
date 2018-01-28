@@ -2,6 +2,6 @@
 # Normally the rig will ask for password at first run.
 # Optionally you can put rig ID and password and Save As to "rig.conf" for a fresh start
 
-HIVE_HOST_URL="https://hiveos.farm"
+HIVE_HOST_URL="https://api.hiveos.farm"
 RIG_ID=""
 RIG_PASSWD=""

@@ -120,7 +120,7 @@ function miner_log_basename {
 			log_basename="/hive/ethminer/ethminer"
 			;;
 		"sgminer-gm")
-			log_basename="/hive/sgminer-gm/sgminer-gm"
+			log_basename="/hive/sgminer/sgminer"
 			;;
 		"xmr-stak-cpu")
 			log_basename="/hive/xmr-stak-cpu/xmr-stak-cpu"
@@ -205,8 +205,8 @@ function config() {
 		"ethminer")
 			echo_config_file "/hive/ethminer/ethminer.conf"
 			;;
-		"sgminer-gm")
-			echo_config_file "/hive/sgminer-gm/sgminer-gm.conf"
+		"sgminer")
+			echo_config_file "/hive/sgminer/sgminer.conf"
 			;;
 		"xmr-stak-cpu")
 			echo_config_file "/hive/xmr-stak-cpu/config.txt"

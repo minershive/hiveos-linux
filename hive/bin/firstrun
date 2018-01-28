@@ -97,7 +97,7 @@ while true; do
 	read_passwd
 
 	cat > $RIG_CONF <<FILEEOF
-HIVE_HOST_URL="https://hiveos.farm"
+HIVE_HOST_URL="https://api.hiveos.farm"
 RIG_ID="$id"
 RIG_PASSWD="$passwd"
 FILEEOF
