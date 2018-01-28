@@ -47,4 +47,7 @@ fi
 	echo -e "${RED}/hive/ccminer/$binary does not exist, check installation${NOCOLOR}" &&
 	exit 1
 
+shift #shifts $1 from arguments
+
 ./$binary -c pools.conf $@ | tee ./ccminer.log
+#./$binary -c pools.conf | tee ./ccminer.log
