@@ -1,3 +1,4 @@
+hive/bminer520/*.log
 hive/ccminer/*.log
 hive/claymore106/*.log
 hive/claymorex112/*.log
@@ -6,3 +7,5 @@ hive/dstm058/*.log
 hive/ethminer013/*.log
 hive/ewbf034b/*.log
 hive/xmr-stak-cpu150/*.log
+hive/xmr-stak220/*.log
+hive/xmrig244/*.log

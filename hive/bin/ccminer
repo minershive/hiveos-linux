@@ -3,7 +3,7 @@
 THIS_MINER_NAME="ccminer"
 [ -t 1 ] && . colors
 
-[[ `ps aux | grep "\./ccminer -c pools.conf" | grep -v grep | wc -l` != 0 ]] &&
+[[ `ps aux | grep -E "\./ccminer-.* -c pools.conf" | grep -v grep | wc -l` != 0 ]] &&
 	echo "$THIS_MINER_NAME is already running" &&
 	exit 1
 

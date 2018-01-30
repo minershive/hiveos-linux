@@ -24,7 +24,7 @@ fi
 
 [ -z $MINER ] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
 
-miners_avail=("claymore" "claymore-z" "claymore-x" "ewbf" "ccminer" "ethminer" "sgminer-gm" "xmr-stak-cpu" "dstm")
+miners_avail=("claymore" "claymore-z" "claymore-x" "ewbf" "ccminer" "ethminer" "sgminer-gm" "dstm" "bminer" "xmr-stak" "xmr-stak-cpu" "xmrig")
 if ! printf '%s\n' "${miners_avail[@]}" | grep -xq $MINER ; then
 	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
 	message error "Unknown miner $MINER"
@@ -122,11 +122,20 @@ function miner_log_basename {
 		"sgminer-gm")
 			log_basename="/hive/sgminer/sgminer"
 			;;
+		"dstm")
+			log_basename="/hive/dstm/zm"
+			;;
+		"bminer")
+			log_basename="/hive/bminer/bminer"
+			;;
+		"xmr-stak")
+			log_basename="/hive/xmr-stak/xmr-stak"
+			;;
 		"xmr-stak-cpu")
 			log_basename="/hive/xmr-stak-cpu/xmr-stak-cpu"
 			;;
-		"dstm")
-			log_basename="/hive/dstm/zm"
+		"xmrig")
+			log_basename="/hive/xmrig/xmrig"
 			;;
 		*)
 			echo "Unknown miner $miner to miner_log_basename"
@@ -208,11 +217,23 @@ function config() {
 		"sgminer")
 			echo_config_file "/hive/sgminer/sgminer.conf"
 			;;
+		"dstm")
+			echo_config_file "/hive/dstm/zm.conf"
+			;;
+		"bminer")
+			echo_config_file "/hive/bminer/bminer.conf"
+			;;
+		"xmr-stak")
+			echo_config_file "/hive/xmr-stak/config.txt"
+			echo_config_file "/hive/xmr-stak/amd.txt"
+			echo_config_file "/hive/xmr-stak/nvidia.txt"
+			echo_config_file "/hive/xmr-stak/cpu.txt"
+			;;
 		"xmr-stak-cpu")
 			echo_config_file "/hive/xmr-stak-cpu/config.txt"
 			;;
-		"dstm")
-			echo_config_file "/hive/dstm/zm.conf"
+		"xmrig")
+			echo_config_file "/hive/xmrig/config.json"
 			;;
 		*)
 			echo "Unknown miner $MINER"

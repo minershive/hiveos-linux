@@ -27,6 +27,12 @@ screen_count=`screen -ls | grep "\.agent" | grep -v $PPID | wc -l`
 gpu_stats=
 
 
+#Nvidia indexes in aa [1,2,3] to use in jsons
+#nvidia_indexes=echo "$gpu_stats" | jq '.brand | to_entries[] | select(.value == "nvidia") | .key' | jq -sc '.'
+#nvidia_indexes=`gpu-detect listjson | jq '. | to_entries[] | select(.value.brand == "nvidia") | .key' | jq -sc '.'`
+nvidia_indexes_array=`gpu-detect listjson | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'`
+cpu_indexes_array=`gpu-detect listjson | jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'`
+
 ########################################################################################################################
 
 function miner_stats {
@@ -81,7 +87,7 @@ function miner_stats {
 				echo -e "${YELLOW}Failed to read $miner stats from localhost:4068${NOCOLOR}"
 			else
 				summary=`echo "summary" | nc -w 2 localhost 4068`
-				re=';UPTIME=([0-9]+);' && [[ $summary =~ $re ]] && uptime=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
+				re=';UPTIME=([0-9]+);' && [[ $summary =~ $re ]] && local uptime=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
 				#khs will calculate from cards; re=';KHS=([0-9\.]+);' && [[ $summary =~ $re ]] && khs=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
 				algo=`echo "$summary" | tr ';' '\n' | grep -m1 'ALGO=' | sed -e 's/.*=//'`
 				#stats=`echo $threads | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176' | grep -E 'KHS=' | sed -e 's/.*=//' | jq -cs '{khs:.}'`
@@ -154,23 +160,70 @@ function miner_stats {
 				echo -e "${YELLOW}Failed to read $miner from localhost:43000${NOCOLOR}"
 			else
 				khs=`echo $stats_raw | jq '.result[].sol_ps' | awk '{s+=$1} END {print s/1000}'`
-				uptime=$(( `date +%s` - $(stat -c%X /proc/`pidof zm`) )) #dont think zm will die so soon after getting stats
+				local uptime=$(( `date +%s` - $(stat -c%X /proc/`pidof zm`) )) #dont think zm will die so soon after getting stats
 				#todo: use gpu_stats if busid is known
-				local nvidiastats=`gpu-stats nvidia` #a bit overhead in calling nvidia-smi again, shame on dstm, he gives no temps
+				#local nvidiastats=`gpu-stats nvidia` #a bit overhead in calling nvidia-smi again, shame on dstm, he gives no temps
 				#stats=`echo $stats_raw | jq '{ hs: [.result[].sol_ps], temp: [.result[].temperature], uptime: "'$uptime'"}'`
-				stats=`echo $stats_raw | jq '{ hs: [.result[].sol_ps], uptime: "'$uptime'"}'`
-				stats=`echo "$stats $nvidiastats" | jq -s '.[0] * .[1]'`
+				#stats=$(jq '{ hs: [.result[].sol_ps], uptime: "'$uptime'"}' <<< $stats_raw)
+				#stats=$(jq -s '.[0] * .[1]' <<< "$stats $nvidiastats")
+				local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
+				local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
+				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" '{ hs: [.result[].sol_ps], $temp, $fan, $uptime}' <<< $stats_raw)
+			fi
+		;;
+		bminer) #@see https://www.bminer.me/references/
+			stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:1880/api/status`
+			if [[ $? -ne 0 || -z stats_raw ]]; then
+				echo -e "${YELLOW}Failed to read $miner from localhost:1880${NOCOLOR}"
+			else
+				khs=`echo $stats_raw | jq '.miners[].solver.solution_rate' | awk '{s+=$1} END {print s/1000}'`
+				local uptime=$(( `date +%s` - $(stat -c%X /proc/`pidof bminer | awk '{print $1}'`) )) #in seconds
+				local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
+				local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
+				#stats=$(jq --argjson fan "$fan" --arg uptime "$uptime" '{hs: [.miners[].solver.solution_rate], temp: [.miners[].device.temperature], $fan, $uptime}' <<< $stats_raw)
+				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" '{hs: [.miners[].solver.solution_rate], $temp, $fan, $uptime}' <<< $stats_raw)
+			fi
+		;;
+		xmr-stak)
+			stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:60045/api.json`
+			#echo $stats_raw | jq .
+			if [[ $? -ne 0 || -z stats_raw ]]; then
+				echo -e "${YELLOW}Failed to read $miner from localhost:60045${NOCOLOR}"
+			else
+				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
+				local cpu_temp=`cat /sys/class/thermal/thermal_zone*/temp | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
+				local temp=$(jq '.temp' <<< $gpu_stats)
+				local fan=$(jq '.fan' <<< $gpu_stats)
+				[[ $cpu_indexes_array != '[]' ]] && #remove Internal Gpus
+					temp=$(jq -c "del(.$cpu_indexes_array)" <<< $temp) &&
+					fan=$(jq -c "del(.$cpu_indexes_array)" <<< $fan)
+
+				#temp=$(jq -sc '.[0] + .[1]'  <<< "$temp $cpu_temp")
+				#fan=$(jq -sc '.[0] + .[1]'  <<< "$fan [-1]")
+				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --argjson cpu_temp "$cpu_temp" '{hs: [.hashrate.threads[][0]], $temp, $fan, $cpu_temp, uptime: .connection.uptime}' <<< $stats_raw)
 			fi
 		;;
 		xmr-stak-cpu)
 			stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:60044/api.json`
+			#echo $stats_raw | jq .
 			if [[ $? -ne 0 || -z stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner from localhost:60044${NOCOLOR}"
 			else
 				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 				#to do : lm-sensors
-				coretemps=`cat /sys/class/thermal/thermal_zone*/temp | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
-				stats=`echo $stats_raw | jq '{hs: [.hashrate.threads[][0]], temp: '$coretemps', uptime: .connection.uptime}'`
+				local cpu_temp=`cat /sys/class/thermal/thermal_zone*/temp | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
+				stats=`echo $stats_raw | jq '{hs: [.hashrate.threads[][0]], temp: '$cpu_temp', uptime: .connection.uptime}'`
+			fi
+		;;
+		xmrig)
+			stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:60050`
+			#echo $stats_raw | jq .
+			if [[ $? -ne 0 || -z stats_raw ]]; then
+				echo -e "${YELLOW}Failed to read $miner from localhost:60050${NOCOLOR}"
+			else
+				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
+				local cpu_temp=`cat /sys/class/thermal/thermal_zone*/temp | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
+				stats=`echo $stats_raw | jq '{hs: [.hashrate.threads[][0]], temp: '$cpu_temp', uptime: .connection.uptime}'`
 			fi
 		;;
 		*)
@@ -204,8 +257,8 @@ function loop {
 	HIVE_URL="$HIVE_HOST_URL/worker/api"
 
 	gpu_stats=`gpu-stats`
-	temp=`echo $gpu_stats | jq '.temp'`
-	fan=`echo $gpu_stats | jq '.fan'`
+	local temp=$(jq '.temp' <<< $gpu_stats)
+	local fan=$(jq '.fan' <<< $gpu_stats)
 
 
 	miner2_json=

@@ -4,7 +4,7 @@ THIS_MINER_NAME="xmr-stak-cpu"
 [ -t 1 ] && . colors
 
 
-[[ `ps aux | grep "./xmr-stak-cpua" | grep -v grep | wc -l` != 0 ]] &&
+[[ `ps aux | grep "./xmr-stak-cpu " | grep -v grep | wc -l` != 0 ]] &&
 	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
 	exit 1
 

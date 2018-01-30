@@ -7,6 +7,7 @@
 
 
 busids=()
+brand=()
 temps=()
 fans=()
 load=()
@@ -19,8 +20,8 @@ function putstats {
 	#echo $2
 	#temps+=($1)
 	#fans+=($2)
-	bus_temp_fan+=("$1 $2 $3 $4")
-	#echo "$1 $2 $3 $4"
+	bus_temp_fan+=("$1 $2 $3 $4 $5")
+	#echo "$1 $2 $3 $4 $5"
 }
 
 
@@ -33,7 +34,7 @@ function internal_stats {
 		busid=`echo $line | awk '{print $1}'`
 
 		[[ ! -z $busid ]] &&
-			putstats $busid "0" "0" "0"
+			putstats $busid "cpu" "0" "0" "0"
 	done <<< "$cards"
 }
 
@@ -77,7 +78,7 @@ function amd_stats {
 			echo "Error: temp unknown for card $cardno" >&2
 		fi
 
-		putstats $busid $temp $speed "0"
+		putstats $busid "amd" $temp $speed "0"
 
 
 		#cardcount=$(( cardcount + 1 ))
@@ -111,7 +112,7 @@ function nvidia_stats {
 		busid=${params[2]#00000000:} #trim prefix
 
 			#echo "NVIDIA $busid ${params[0]} ${params[1]}"
-		putstats $busid ${params[0]} ${params[1]} ${params[3]}
+		putstats $busid "nvidia" ${params[0]} ${params[1]} ${params[3]}
 	done <<<"$stats"
 }
 
@@ -139,9 +140,10 @@ sorted=`for s in "${bus_temp_fan[@]}"; do echo "$s"; done | sort`
 while read -r s; do
 	params=(${s// / })
 	busids+=(${params[0]})
-	temps+=(${params[1]})
-	fans+=(${params[2]})
-	load+=(${params[3]})
+	brand+=(${params[1]})
+	temps+=(${params[2]})
+	fans+=(${params[3]})
+	load+=(${params[4]})
 done <<<"$sorted"
 
 #echo "Temp: ${temps[@]}"
@@ -151,6 +153,7 @@ jsontemps=`printf '%s\n' "${temps[@]}" | jq --raw-input . | jq --slurp -c .`
 jsonfans=`printf '%s\n' "${fans[@]}" | jq --raw-input . | jq --slurp -c .`
 jsonload=`printf '%s\n' "${load[@]}" | jq --raw-input . | jq --slurp -c .`
 jsonbusids=`printf '%s\n' "${busids[@]}" | jq --raw-input . | jq --slurp -c .`
+jsonbrand=`printf '%s\n' "${brand[@]}" | jq --raw-input . | jq --slurp -c .`
 
 
 jq -c -n \
@@ -158,7 +161,8 @@ jq -c -n \
 --argjson fan "$jsonfans" \
 --argjson load "$jsonload" \
 --argjson busids "$jsonbusids" \
-'{$temp, $fan, $load, $busids}'
+--argjson brand "$jsonbrand" \
+'{$temp, $fan, $load, $busids, $brand}'
 
 
 

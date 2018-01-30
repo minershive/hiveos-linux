@@ -1,6 +1,7 @@
 * text=auto !eol
 hive/bin/agent -text
 hive/bin/agent-screen -text
+hive/bin/bminer -text
 hive/bin/cache-hive-ip -text
 hive/bin/ccminer -text
 hive/bin/ccminer-update -text
@@ -26,7 +27,16 @@ hive/bin/motd -text
 hive/bin/selfupgrade -text
 hive/bin/sgminer-gm -text
 hive/bin/wd -text
+hive/bin/xmr-stak -text
 hive/bin/xmr-stak-cpu -text
+hive/bin/xmrig -text
+hive/bminer520/LICENSE -text
+hive/bminer520/README -text
+hive/bminer520/bminer -text svneol=unset#unset
+hive/bminer520/bminer.conf -text
+hive/bminer520/bminer.sh -text
+hive/bminer520/firmware.bin -text
+hive/bminer520/mine.sh -text
 hive/ccminer/ccminer.sh -text
 hive/ccminer/cuda -text
 hive/ccminer/cuda-9.0/libcudart.so -text
@@ -543,3 +553,25 @@ hive/xmr-stak-cpu150/config_example.txt -text
 hive/xmr-stak-cpu150/config_global.txt -text
 hive/xmr-stak-cpu150/xmr-stak-cpu -text svneol=unset#application/x-executable
 hive/xmr-stak-cpu150/xmr-stak-cpu.sh -text
+hive/xmr-stak220/amd.txt -text
+hive/xmr-stak220/config.txt -text
+hive/xmr-stak220/config_global.json -text
+hive/xmr-stak220/cpu.txt -text
+hive/xmr-stak220/example.configs/amd.txt -text
+hive/xmr-stak220/example.configs/config.txt -text
+hive/xmr-stak220/example.configs/cpu.txt -text
+hive/xmr-stak220/example.configs/nvidia.txt -text
+hive/xmr-stak220/libhwloc.so.5 -text svneol=unset#application/x-sharedlib
+hive/xmr-stak220/libhwloc.so.5.6.8 -text svneol=unset#application/x-sharedlib
+hive/xmr-stak220/libmicrohttpd.so.10 -text svneol=unset#application/x-sharedlib
+hive/xmr-stak220/libmicrohttpd.so.10.34.0 -text svneol=unset#application/x-sharedlib
+hive/xmr-stak220/libxmrstak_cuda_backend.so -text svneol=unset#application/x-sharedlib
+hive/xmr-stak220/libxmrstak_opencl_backend.so -text svneol=unset#application/x-sharedlib
+hive/xmr-stak220/nvidia.txt -text
+hive/xmr-stak220/xmr-stak -text svneol=unset#application/x-executable
+hive/xmr-stak220/xmr-stak.sh -text
+hive/xmrig244/config-example.json -text
+hive/xmrig244/config.json -text
+hive/xmrig244/config_global.json -text
+hive/xmrig244/xmrig -text svneol=unset#application/x-executable
+hive/xmrig244/xmrig.sh -text

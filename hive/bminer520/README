@@ -1,0 +1,35 @@
+Bminer: When Crypto-mining Made *Fast*
+======================================
+
+Bminer is a highly optimized Equihash miner that runs on modern NVIDIA GPUs (Maxwell and Pascal, i.e. GPUs that have compute capability 5.0 or above). Bminer is one of the *fastest* publicly available Equihash miners today -- we use various techniques including tiling and pipelining to realize the full potentials of the hardware.
+
+Bminer also comes with REST APIs to facilitate production deployments (e.g., mining farms).
+
+Similar to other miners, Bminer contains 2% devfee.
+
+Features
+========
+
+  * Fast
+    * On stock settings:
+    * 735-745 Sol/s on GTX 1080Ti
+    * 450-460 Sol/s on GTX 1070
+    * 315-325 Sol/s on GTX 1060
+  * Secure and reliable
+    * SSL support
+    * Automatic reconnects to recover from transient network failures
+    * Automatic restarts if GPUs hang
+  * Operation friendly
+    * Comes with REST APIs to facilitate production deployments
+
+Quickstart
+==========
+
+To mine [Zcash](https://z.cash) on Windows on [nanopool](https://zec.nanopool.org/):
+
+  * Download and extract Bminer into a folder (e.g. C:\bminer)
+  * Edit mine.bat and change the address to the desired Zcash address that Bminer mines towards
+  * Open command line prompt and run mine.bat.
+  * Enjoy mining :-)
+
+Please see https://www.bminer.me for advanced usages, APIs and updates.
