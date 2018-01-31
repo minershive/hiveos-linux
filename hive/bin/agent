@@ -44,7 +44,7 @@ function miner_stats {
 	case $miner in
 		claymore)
 			stats=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w $API_TIMEOUT localhost 3333 | jq '.result'`
-			if [[ $? -ne 0  || -z stats ]]; then
+			if [[ $? -ne 0  || -z $stats ]]; then
 				echo -e "${YELLOW}Failed to read $miner stats from localhost:3333${NOCOLOR}"
 			else
 				#[ "10.0 - ETH", "83", "67664;48;0", "28076;27236;12351", "891451;29;0", "421143;408550;61758", "67;40;70;45;69;34", "eth-eu1.nanopool.org:9999;sia-eu1.nanopool.org:7777", "0;0;0;0" ]
@@ -55,7 +55,7 @@ function miner_stats {
 		;;
 		claymore-x)
 			stats=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w $API_TIMEOUT localhost 3337 | jq '.result'`
-			if [[ $? -ne 0  || -z stats ]]; then
+			if [[ $? -ne 0  || -z $stats ]]; then
 				echo -e "${YELLOW}Failed to read $miner stats from localhost:3337${NOCOLOR}"
 			else
 				khs=`echo $stats | jq -r '.[2]' | awk -F';' '{print $1/1000}'` #sols to khs
@@ -63,7 +63,7 @@ function miner_stats {
 		;;
 		claymore-z)
 			stats=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w $API_TIMEOUT localhost 3335 | jq '.result'`
-			if [[ $? -ne 0  || -z stats ]]; then
+			if [[ $? -ne 0  || -z $stats ]]; then
 				echo -e "${YELLOW}Failed to read $miner stats from localhost:3335${NOCOLOR}"
 			else
 				khs=`echo $stats | jq -r '.[2]' | awk -F';' '{print $1/1000}'` #sols to khs
@@ -74,7 +74,7 @@ function miner_stats {
 			#stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://localhost:42000/getstat`
 			#curl uses http_proxy env var, we don't need it. --noproxy does not work
 			stats_raw=`echo "GET /getstat" | nc -w $API_TIMEOUT localhost 42000 | tail -n 1`
-			if [[ $? -ne 0  || -z stats_raw ]]; then
+			if [[ $? -ne 0  || -z $stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner stats from localhost:42000${NOCOLOR}"
 			else
 				stats=`echo $stats_raw | jq -c '{speed_sps: [.result[].speed_sps], busid: [.result[].busid[5:]|ascii_downcase], start_time: .result[0].start_time}'`
@@ -83,7 +83,7 @@ function miner_stats {
 		;;
 		ccminer)
 			threads=`echo "threads" | nc -w $API_TIMEOUT localhost 4068` #&& echo $threads
-			if [[ $? -ne 0  || -z threads ]]; then
+			if [[ $? -ne 0  || -z $threads ]]; then
 				echo -e "${YELLOW}Failed to read $miner stats from localhost:4068${NOCOLOR}"
 			else
 				summary=`echo "summary" | nc -w 2 localhost 4068`
@@ -132,21 +132,31 @@ function miner_stats {
 			fi
 		;;
 		ethminer)
-			stats=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w $API_TIMEOUT localhost 3334 | jq '.result'`
-			if [[ $? -ne 0  || -z stats ]]; then
-				echo -e "${YELLOW}Failed to read $miner stats from localhost:3334${NOCOLOR}"
+			stats_raw=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w $API_TIMEOUT localhost 3334 | jq '.result'`
+			if [[ $? -ne 0  || -z $stats_raw ]]; then
+				echo -e "${YELLOW}Failed to read $miner stats_raw from localhost:3334${NOCOLOR}"
 			else
-				khs=`echo $stats | jq -r '.[2]' | awk -F';' '{print $1}'`
-				#`echo $stats | jq -r '.[3]' | awk 'gsub(";", "\n")' | jq -cs .` #send only hashes
+				khs=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $1}'`
+				#`echo $stats_raw | jq -r '.[3]' | awk 'gsub(";", "\n")' | jq -cs .` #send only hashes
+				local tempfans=`echo $stats_raw | jq -r '.[6]'` #"56;26; 48;42"
+				local temp=()
+				local fan=()
+				for tf in $tempfans; do
+					temp+=(`echo $tf | awk -F';' '{print $1}'`)
+					fan+=(`echo $tf | awk -F';' '{print $2}'`)
+				done
+				temp=`printf '%s\n' "${temp[@]}" | jq --raw-input . | jq --slurp -c .`
+				fan=`printf '%s\n' "${fan[@]}" | jq --raw-input . | jq --slurp -c .`
 				stats=$(jq -n \
-					--arg uptime "`echo \"$stats\" | jq -r '.[1]' | awk '{print $1*60}'`" \
-					--argjson khs "`echo \"$stats\" | jq -r '.[3]' | tr ';' '\n' | jq -cs '.'`" \
-					'{$khs, $uptime}')
+					--arg uptime "`echo \"$stats_raw\" | jq -r '.[1]' | awk '{print $1*60}'`" \
+					--argjson hs "`echo \"$stats_raw\" | jq -r '.[3]' | tr ';' '\n' | jq -cs '.'`" \
+					--argjson temp "$temp" --argjson fan "$fan" \
+					'{$hs, $temp, $fan, $uptime}')
 			fi
 		;;
 		sgminer-gm)
 			stats_raw=`echo '{"command":"summary+devs"}' | nc -w $API_TIMEOUT localhost 4028`
-			if [[ $? -ne 0 || -z stats_raw ]]; then
+			if [[ $? -ne 0 || -z $stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner from localhost:4028${NOCOLOR}"
 			else
 				khs=`echo $stats_raw | jq '.["summary"][0]["SUMMARY"][0]["KHS 15s"]'`
@@ -156,7 +166,7 @@ function miner_stats {
 		;;
 		dstm)
 			stats_raw=`echo '{"id":1, "method":"getstat"}' | nc -w $API_TIMEOUT localhost 43000`
-			if [[ $? -ne 0 || -z stats_raw ]]; then
+			if [[ $? -ne 0 || -z $stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner from localhost:43000${NOCOLOR}"
 			else
 				khs=`echo $stats_raw | jq '.result[].sol_ps' | awk '{s+=$1} END {print s/1000}'`
@@ -173,7 +183,7 @@ function miner_stats {
 		;;
 		bminer) #@see https://www.bminer.me/references/
 			stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:1880/api/status`
-			if [[ $? -ne 0 || -z stats_raw ]]; then
+			if [[ $? -ne 0 || -z $stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner from localhost:1880${NOCOLOR}"
 			else
 				khs=`echo $stats_raw | jq '.miners[].solver.solution_rate' | awk '{s+=$1} END {print s/1000}'`
@@ -187,17 +197,22 @@ function miner_stats {
 		xmr-stak)
 			stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:60045/api.json`
 			#echo $stats_raw | jq .
-			if [[ $? -ne 0 || -z stats_raw ]]; then
+			if [[ $? -ne 0 || -z $stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner from localhost:60045${NOCOLOR}"
 			else
 				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 				local cpu_temp=`cat /sys/class/thermal/thermal_zone*/temp | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
-				local temp=$(jq '.temp' <<< $gpu_stats)
-				local fan=$(jq '.fan' <<< $gpu_stats)
-				[[ $cpu_indexes_array != '[]' ]] && #remove Internal Gpus
-					temp=$(jq -c "del(.$cpu_indexes_array)" <<< $temp) &&
-					fan=$(jq -c "del(.$cpu_indexes_array)" <<< $fan)
-
+				head /hive/xmr-stak/xmr-stak.log | grep -q -E "WARNING: backend (NVIDIA|AMD) disabled"
+				if [[ $? -eq 0 ]]; then #gpus disabled
+					local temp='[]'
+					local fan='[]'
+				else
+					local temp=$(jq '.temp' <<< $gpu_stats)
+					local fan=$(jq '.fan' <<< $gpu_stats)
+					[[ $cpu_indexes_array != '[]' ]] && #remove Internal Gpus
+						temp=$(jq -c "del(.$cpu_indexes_array)" <<< $temp) &&
+						fan=$(jq -c "del(.$cpu_indexes_array)" <<< $fan)
+				fi
 				#temp=$(jq -sc '.[0] + .[1]'  <<< "$temp $cpu_temp")
 				#fan=$(jq -sc '.[0] + .[1]'  <<< "$fan [-1]")
 				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --argjson cpu_temp "$cpu_temp" '{hs: [.hashrate.threads[][0]], $temp, $fan, $cpu_temp, uptime: .connection.uptime}' <<< $stats_raw)
@@ -206,7 +221,7 @@ function miner_stats {
 		xmr-stak-cpu)
 			stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:60044/api.json`
 			#echo $stats_raw | jq .
-			if [[ $? -ne 0 || -z stats_raw ]]; then
+			if [[ $? -ne 0 || -z $stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner from localhost:60044${NOCOLOR}"
 			else
 				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
@@ -218,7 +233,7 @@ function miner_stats {
 		xmrig)
 			stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:60050`
 			#echo $stats_raw | jq .
-			if [[ $? -ne 0 || -z stats_raw ]]; then
+			if [[ $? -ne 0 || -z $stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner from localhost:60050${NOCOLOR}"
 			else
 				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`

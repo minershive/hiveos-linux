@@ -38,10 +38,8 @@ hive/bminer520/bminer.sh -text
 hive/bminer520/firmware.bin -text
 hive/bminer520/mine.sh -text
 hive/ccminer/ccminer.sh -text
-hive/ccminer/cuda -text
-hive/ccminer/cuda-9.0/libcudart.so -text
-hive/ccminer/cuda-9.0/libcudart.so.9.0 -text
-hive/ccminer/cuda-9.0/libcudart.so.9.0.176 -text svneol=unset#application/x-sharedlib
+hive/ccminer/cuda/libcudart.so.9.0 -text
+hive/ccminer/cuda/libcudart.so.9.0.176 -text svneol=unset#application/x-sharedlib
 hive/ccminer/pools.conf -text
 hive/claymore106/Data.bin -text
 hive/claymore106/Data1a1.bin -text

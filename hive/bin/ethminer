@@ -21,7 +21,7 @@ function config_gen() {
 
 	#put default config settings
 	#\n--farm-recheck 2000
-	echo -e "--report-hashrate --api-port 3334" > $MINER_CONFIG
+	echo -e "--report-hashrate --api-port 3334 -HWMON" > $MINER_CONFIG
 
 	[[ $ETHMINER_OPENCL == 1 && -z $ETHMINER_CUDA ]] && echo "--opencl" >> $MINER_CONFIG
 	[[ -z $ETHMINER_OPENCL && $ETHMINER_CUDA == 1 ]] && echo "--cuda" >> $MINER_CONFIG
