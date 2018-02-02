@@ -283,7 +283,7 @@ hive/sgminer/djm34/kernel/yescrypt.cl -text
 hive/sgminer/djm34/kernel/yescrypt_essential.cl -text
 hive/sgminer/djm34/kernel/zuikkis.cl -text
 hive/sgminer/djm34/sgminer -text
-hive/sgminer/djm34/sgminer-djm34-0.3 -text svneol=unset#application/x-executable
+hive/sgminer/djm34/sgminer-djm34-0.3-fern -text svneol=unset#application/x-executable
 hive/sgminer/example-eth.json -text
 hive/sgminer/example-gbx.json -text
 hive/sgminer/example-lyra2z.conf -text
