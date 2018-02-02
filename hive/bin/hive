@@ -184,7 +184,7 @@ hello boot
 
 
 echo2 "> Starting agent screen"
-agent-screen
+agent-screen dontattach
 
 
 #remove previous log file for Nvidia OC

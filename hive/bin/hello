@@ -110,6 +110,12 @@ echo "$config" > $RIG_CONF
 . $RIG_CONF
 hostname-check
 
+
+# Timezone ================================================================
+[[ ! -z $TIMEZONE ]] &&
+	timedatectl set-timezone "$TIMEZONE"
+
+
 # Wallet config ================================================================
 wallet=$(echo $response | jq '.result.wallet' --raw-output)
 if [[ ! -z $wallet && $wallet != "null" ]]; then

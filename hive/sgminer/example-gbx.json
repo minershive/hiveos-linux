@@ -12,13 +12,13 @@
   "log": "15",
   "api-listen": true,
   "api-port": 4028,
-  "pools": [
-    {
-      "user": "dimafern.worker",
-      "url": "stratum+tcp://europe.lyra2z-hub.miningpoolhub.com:20581",
-      "pass": "x"
-    }
-  ],
-  "worksize": "32",
-  "algorithm": "lyra2z"
+  "user": "GVtMZsuBrhNx7uFriVhQQMfvFLBxUMaRwC.worker",
+  "url": "stratum+tcp://eu1.altminer.net:10000",
+  "pass": "c=GBX",
+  "algorithm": "neoscrypt",
+  "intensity": "13",
+  "worksize": "256",
+  "gpu-threads": "1",
+  "load-balance": true,
+  "_lazyend": ""
 }

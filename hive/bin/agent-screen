@@ -1,8 +1,25 @@
 #!/usr/bin/env bash
+# !!! also can be started from cron and on startup !!!
+source /etc/environment
+export PATH
+export CUDA_DEVICE_ORDER
 
-screen -x -S agent
+#Check for proxy var. Or agent and others started from here will not see it
+. http_proxy.sh
 
-[[ $? -ne 0 ]] &&
+
+
+
+screen -ls agent | grep -q agent && running=1 || running=0
+
+[[ $1 != "dontattach" ]] &&
+	screen -x -S agent #attach to screen
+
+[[ $running -ne 1 ]] &&
     echo "Starting new agent screen session" &&
-    screen -dm -S agent "agent"
+    screen -dm -S agent "agent" &&
+    exit 1 #was not running, starting
+
 #    screen -dm -S agent bash -c "agent; bash"
+
+exit 0 #all was running
