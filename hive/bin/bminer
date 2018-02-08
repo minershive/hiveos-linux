@@ -33,7 +33,8 @@ function config_gen() {
 	[[ ! -z $ZWAL ]] && tpl=$(sed "s/%ZWAL%/$ZWAL/g" <<< $tpl) #|| echo "${RED}ZWAL not set${NOCOLOR}"
 	[[ ! -z $WORKER_NAME ]] && tpl=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $tpl) #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
 	[[ ! -z $EMAIL ]] && tpl=$(sed "s/%EMAIL%/$EMAIL/g" <<< $tpl)
-	tpl=$(sed 's/@/%40/g; s/\//%2F/g; s/ /%20/g' <<< $tpl) #HTML special chars
+	#tpl=$(sed 's/@/%40/g; s/\//%2F/g; s/ /%20/g' <<< $tpl) #HTML special chars
+	tpl=$(sed 's/\//%2F/g; s/ /%20/g' <<< $tpl)
 
 	[[ ! -z $BMINER_PASS ]] && tpl+=":$BMINER_PASS"
 

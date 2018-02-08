@@ -106,7 +106,8 @@ function miner_stats {
 
 					#cckhs[$i]="84316579.94" #test
 					#check Ghs. 1080ti gives ~64mh (64000kh) on lyra. when it's showing ghs then load is 0 on gpu
-					if [[ `echo ${cckhs[$i]} | awk '{ print ($1 >= 1000000) ? 1 : 0 }'` == 1 ]]; then #hash is in Ghs, >= 1000000 khs
+					#if [[ `echo ${cckhs[$i]} | awk '{ print ($1 >= 1000000) ? 1 : 0 }'` == 1 ]]; then #hash is in Ghs, >= 1000000 khs
+					if [[ `echo ${cckhs[$i]} | awk '{ print ($1 >= 1000) ? 1 : 0 }'` == 1 ]]; then # > 1Mh
 						#[[ -z $nvidiastats ]] && nvidiastats=`gpu-stats nvidia` #a bit overhead in calling nvidia-smi again
 						local busid=`echo ${ccbusids[$i]} | awk '{ printf("%02x:00.0", $1) }'` #ccbus is decimal
 						local load_i=`echo "$gpu_stats" | jq ".busids|index(\"$busid\")"`
@@ -147,9 +148,15 @@ function miner_stats {
 				done
 				temp=`printf '%s\n' "${temp[@]}" | jq --raw-input . | jq --slurp -c .`
 				fan=`printf '%s\n' "${fan[@]}" | jq --raw-input . | jq --slurp -c .`
+
+				#ethminer API can show hashes, but no load... hard to fix it here
+				#local hs=(`echo "$stats_raw" | jq -r '.[3]' | tr ';' ' '`)
+				#echo ${hs[0]}
+
+				local hs=`echo "$stats_raw" | jq -r '.[3]' | tr ';' '\n' | jq -cs '.'`
 				stats=$(jq -n \
 					--arg uptime "`echo \"$stats_raw\" | jq -r '.[1]' | awk '{print $1*60}'`" \
-					--argjson hs "`echo \"$stats_raw\" | jq -r '.[3]' | tr ';' '\n' | jq -cs '.'`" \
+					--argjson hs "$hs" \
 					--argjson temp "$temp" --argjson fan "$fan" \
 					'{$hs, $temp, $fan, $uptime}')
 			fi
@@ -190,8 +197,10 @@ function miner_stats {
 				local uptime=$(( `date +%s` - $(stat -c%X /proc/`pidof bminer | awk '{print $1}'`) )) #in seconds
 				local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
 				local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
+				#fucking bminer sorts it's keys as numerics, not natual, e.g. "1", "10", "11", "2", fix that with sed hack by replacing "1":{ with "01":{
+				local hs=$(echo "$stats_raw" | sed -E 's/"([0-9])":\s*\{/"0\1":\{/g' | jq --sort-keys . | jq -c "[.miners[].solver.solution_rate]")
 				#stats=$(jq --argjson fan "$fan" --arg uptime "$uptime" '{hs: [.miners[].solver.solution_rate], temp: [.miners[].device.temperature], $fan, $uptime}' <<< $stats_raw)
-				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" '{hs: [.miners[].solver.solution_rate], $temp, $fan, $uptime}' <<< $stats_raw)
+				stats=$(jq -nc --argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" '{$hs, $temp, $fan, $uptime}')
 			fi
 		;;
 		xmr-stak)
@@ -202,8 +211,12 @@ function miner_stats {
 			else
 				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 				local cpu_temp=`cat /sys/class/thermal/thermal_zone*/temp | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
-				head /hive/xmr-stak/xmr-stak.log | grep -q -E "WARNING: backend (NVIDIA|AMD) disabled"
-				if [[ $? -eq 0 ]]; then #gpus disabled
+				local gpus_disabled=
+				(head /hive/xmr-stak/xmr-stak.log | grep -q "WARNING: backend AMD disabled") && #AMD disabled found
+				(head /hive/xmr-stak/xmr-stak.log | grep -q "WARNING: backend NVIDIA disabled") && #and nvidia disabled
+				gpus_disabled=1
+				#local amd_on=$(head /hive/xmr-stak/xmr-stak.log | grep -q -E "WARNING: backend (NVIDIA|AMD) disabled")
+				if [[ $gpus_disabled == 1 ]]; then #gpus disabled
 					local temp='[]'
 					local fan='[]'
 				else
