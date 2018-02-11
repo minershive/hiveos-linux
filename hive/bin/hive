@@ -27,6 +27,9 @@ function echo2 {
 #Make directory in RAM
 mkdir /run/hive
 
+#Make directory for miners logs in /var/log/miner
+miner logdirscreate
+
 #ensure we have unix config
 dos2unix-safe /hive-config/rig.conf
 

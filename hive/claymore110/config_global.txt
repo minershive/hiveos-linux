@@ -7,7 +7,7 @@
 -r 1
 
 #Log to the same file
--logfile lastrun_noappend.log
+-logfile /var/log/miner/claymore/lastrun_noappend.log
 
 #Target temp
 -tt 68

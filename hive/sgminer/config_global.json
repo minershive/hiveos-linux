@@ -4,7 +4,7 @@
 	"temp-overheat": "82",
 	"auto-fan": true,
 
-	"log-file": "sgminer.log",
+	"log-file": "/var/log/miner/sgminer/sgminer.log",
 	"log-show-date": true,
 	"text-only": false,
 	"verbose": true,

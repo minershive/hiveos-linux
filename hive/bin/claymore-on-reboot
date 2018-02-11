@@ -3,11 +3,30 @@
 
 CLAYMORE_PATH=$(realpath `dirname $0`)
 
-#save last messages about hanging cards
-if [[ -e $CLAYMORE_PATH/lastrun_noappend.log ]]; then
-	tail -n 100 $CLAYMORE_PATH/lastrun_noappend.log > $CLAYMORE_PATH/lastrun_reboot.log
 
-	lastmsg=`tac $CLAYMORE_PATH/lastrun_reboot.log | grep -m1 -E "WATCHDOG|hangs"`
+CLAYMORE_LOG=$CLAYMORE_PATH
+
+#need to hardcode this
+#(grep claymorex <<< $CLAYMORE_LOG &&
+#	CLAYMORE_LOG=/var/log/miner/claymore-x) ||
+#(grep claymorez <<< $CLAYMORE_LOG &&
+#	CLAYMORE_LOG=/var/log/miner/claymore-z) ||
+#(CLAYMORE_LOG=/var/log/miner/claymore)
+
+if grep -q claymorex <<< $CLAYMORE_LOG; then
+	CLAYMORE_LOG=/var/log/miner/claymore-x
+elif grep -q claymorez <<< $CLAYMORE_LOG; then
+	CLAYMORE_LOG=/var/log/miner/claymore-z
+else
+	CLAYMORE_LOG=/var/log/miner/claymore
+fi
+#echo $CLAYMORE_LOG
+
+#save last messages about hanging cards
+if [[ -e $CLAYMORE_LOG/lastrun_noappend.log ]]; then
+	tail -n 100 $CLAYMORE_LOG/lastrun_noappend.log > $CLAYMORE_LOG/lastrun_reboot.log
+
+	lastmsg=`tac $CLAYMORE_LOG/lastrun_reboot.log | grep -m1 -E "WATCHDOG|hangs"`
 	#echo $lastmsg
 	[[ $lastmsg =~ ^([0-9:]+)[[:space:]]+([a-f0-9]{8})[[:space:]]+(.*) ]]
 
@@ -23,8 +42,8 @@ else
 	lastmsg="Claymore Reboot: $lastmsg"
 fi
 
-if [[ -e $CLAYMORE_PATH/lastrun_reboot.log ]]; then
-	echo -e "=== Last 50 lines of $CLAYMORE_PATH/lastrun_reboot.log ===\n`tail -n 50 $CLAYMORE_PATH/lastrun_reboot.log`" | /hive/bin/message danger "$lastmsg" payload
+if [[ -e $CLAYMORE_LOG/lastrun_reboot.log ]]; then
+	echo -e "=== Last 50 lines of $CLAYMORE_LOG/lastrun_reboot.log ===\n`tail -n 50 $CLAYMORE_LOG/lastrun_reboot.log`" | /hive/bin/message danger "$lastmsg" payload
 else
 	/hive/bin/message danger "$lastmsg"
 fi

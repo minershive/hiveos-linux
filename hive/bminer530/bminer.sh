@@ -7,5 +7,5 @@ MINER_CONFIG_FILE=`dirname $0`/bminer.conf
 conf=`cat $MINER_CONFIG_FILE | grep -v "^$" | grep -v "^#"`
 
 echo $conf
-./bminer `echo $conf` 2>&1 | tee bminer.log
+./bminer `echo $conf` 2>&1 | tee /var/log/miner/bminer/bminer.log
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+MINER_LOGS_BASE_DIR=/var/log/miner
+
 function usage() {
 	bname=`basename $0`
 	echo -e "Usage: ${CYAN}$bname start|stop|restart|log|logrotate|logtruncate${NOCOLOR}"
@@ -24,7 +26,8 @@ fi
 
 [ -z $MINER ] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
 
-miners_avail=("claymore" "claymore-z" "claymore-x" "ewbf" "ccminer" "ethminer" "sgminer-gm" "dstm" "bminer" "xmr-stak" "xmr-stak-cpu" "xmrig")
+#sgminer-gm is deprecated...
+miners_avail=("claymore" "claymore-z" "claymore-x" "ewbf" "ccminer" "ethminer" "sgminer" "sgminer-gm" "dstm" "bminer" "xmr-stak" "xmr-stak-cpu" "xmrig")
 if ! printf '%s\n' "${miners_avail[@]}" | grep -xq $MINER ; then
 	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
 	message error "Unknown miner $MINER"
@@ -102,44 +105,46 @@ function miner_log_basename {
 	log_basename=""
 	case $miner in
 		"claymore")
-			log_basename="/hive/claymore/lastrun_noappend"
+			log_basename="$MINER_LOGS_BASE_DIR/$miner/lastrun_noappend"
 			;;
 		"claymore-x")
-			log_basename="/hive/claymorex/lastrun_noappend"
+			log_basename="$MINER_LOGS_BASE_DIR/$miner/lastrun_noappend"
 			;;
 		"claymore-z")
-			log_basename="/hive/claymorez/lastrun_noappend"
+			log_basename="$MINER_LOGS_BASE_DIR/$miner/lastrun_noappend"
 			;;
-		"ewbf")
-			log_basename="/hive/ewbf/miner"
-			;;
-		"ccminer")
-			log_basename="/hive/ccminer/ccminer"
-			;;
-		"ethminer")
-			log_basename="/hive/ethminer/ethminer"
-			;;
+#		"ewbf")
+#			log_basename="/hive/ewbf/miner"
+#			;;
+#		"ccminer")
+#			log_basename="/hive/ccminer/ccminer"
+#			;;
+#		"ethminer")
+#			log_basename="/hive/ethminer/ethminer"
+#			;;
 		"sgminer-gm")
-			log_basename="/hive/sgminer/sgminer"
+			#log_basename="/hive/sgminer/sgminer"
+			log_basename="$MINER_LOGS_BASE_DIR/sgminer-gm/sgminer"
 			;;
-		"dstm")
-			log_basename="/hive/dstm/zm"
-			;;
-		"bminer")
-			log_basename="/hive/bminer/bminer"
-			;;
-		"xmr-stak")
-			log_basename="/hive/xmr-stak/xmr-stak"
-			;;
-		"xmr-stak-cpu")
-			log_basename="/hive/xmr-stak-cpu/xmr-stak-cpu"
-			;;
-		"xmrig")
-			log_basename="/hive/xmrig/xmrig"
-			;;
+#		"dstm")
+#			log_basename="/hive/dstm/zm"
+#			;;
+#		"bminer")
+#			log_basename="/hive/bminer/bminer"
+#			;;
+#		"xmr-stak")
+#			log_basename="/hive/xmr-stak/xmr-stak"
+#			;;
+#		"xmr-stak-cpu")
+#			log_basename="/hive/xmr-stak-cpu/xmr-stak-cpu"
+#			;;
+#		"xmrig")
+#			log_basename="/hive/xmrig/xmrig"
+#			;;
 		*)
-			echo "Unknown miner $miner to miner_log_basename"
-			return 1
+			log_basename="$MINER_LOGS_BASE_DIR/$miner/$miner"
+			#echo "Unknown miner $miner to miner_log_basename"
+			#return 1
 			;;
 	esac
 	echo $log_basename
@@ -329,6 +334,11 @@ case $1 in
 	logtruncate) #miner logtruncate 2
 		check_second_miner $2
 		log_truncate $MINER
+	;;
+	logdirscreate)
+		for minername in ${miners_avail[@]}; do
+			mkdir -p $MINER_LOGS_BASE_DIR/$minername
+		done
 	;;
 	*)
 		screen -x -S miner

@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Turns sys logs off
+
+#[ -t 1 ] &&
+. colors
+
+
+STARTCMNT="# LOGS OFF START"
+ENDCMNT="# LOGS OFF END"
+
+fstab=`cat /etc/fstab`
+
+echo "$fstab" | grep -q "$STARTCMNT"
+
+[[ $? -eq 0 ]] &&
+	echo "Logs already disabled" &&
+	exit 0
+
+
+echo "$fstab
+
+$STARTCMNT
+tmpfs /tmp tmpfs defaults,noatime,size=100M,mode=1777 0 0
+tmpfs /var/tmp tmpfs defaults,noatime,mode=1777 0 0
+tmpfs /var/log tmpfs defaults,noatime,mode=0755 0 0
+tmpfs /var/log/apt tmpfs defaults,noatime 0 0
+tmpfs /var/log/journal tmpfs defaults,noatime 0 0
+$ENDCMNT" > /etc/fstab
+
+#rm -rf /var/log/*
+mount -t tmpfs -o defaults,noatime,mode=0755 tmpfs /var/log
+
+
+echo -e "Disk logs are ${RED}disabled${NOCOLOR} now. You will have logs only from the last boot.
+To turn them back on run \"logs-on\".
+${YELLOW}Please reboot.${NOCOLOR}"
+

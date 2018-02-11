@@ -6,5 +6,5 @@
 conf=`cat ./zm.conf | grep -v "^$" | grep -v "^#"`
 
 echo $conf
-./zm `echo $conf` 2>&1 | tee zm.log
+./zm `echo $conf` 2>&1 | tee /var/log/miner/dstm/dstm.log
 

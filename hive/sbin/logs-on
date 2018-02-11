@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Turns sys logs ON
+
+#[ -t 1 ] &&
+. colors
+
+
+
+STARTCMNT="# LOGS OFF START"
+ENDCMNT="# LOGS OFF END"
+
+fstab=`cat /etc/fstab`
+
+
+echo "$fstab" | grep -q "$STARTCMNT"
+
+[[ $? -ne 0 ]] &&
+	echo "Logs already enabled" &&
+	exit 0
+
+
+sed "/$STARTCMNT/,/$ENDCMNT/d" <<< "$fstab" > /etc/fstab
+
+
+echo -e "Disk logs are ${GREEN}enabled${NOCOLOR} now. History will stay after reboots.\n${YELLOW}Please reboot.${NOCOLOR}"

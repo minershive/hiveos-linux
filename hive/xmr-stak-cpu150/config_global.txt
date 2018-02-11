@@ -11,6 +11,6 @@
 "verbose_level" : 3,
 "h_print_time" : 60,
 "daemon_mode" : false,
-"output_file" : "xmr-stak-cpu.log",
+"output_file" : "/var/log/miner/xmr-stak-cpu/xmr-stak-cpu.log",
 "httpd_port" : 60044,
 "prefer_ipv4" : true,

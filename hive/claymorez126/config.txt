@@ -6,7 +6,7 @@
 #Reboot on GPU hangs
 -r 1
 
--logfile lastrun_noappend.log
+-logfile /var/log/miner/claymore-z/lastrun_noappend.log
 
 #Target temp
 -tt 68

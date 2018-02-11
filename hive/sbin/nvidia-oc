@@ -110,7 +110,10 @@ for (( i=0; i < $n; ++i )); do
 
 	#power limit
 	if [[ ! -z $PLIMIT && ${PLIMIT[$i]} > 0 ]]; then
-		nvidia-smi -i $i -pl ${PLIMIT[$i]} | grep -v "^$"
+		nvresult=`nvidia-smi -i $i -pl ${PLIMIT[$i]}`
+		[[ $? -ne 0 ]] && color=$RED || color=$NOCOLOR
+		nvresult=`echo "$nvresult" | grep -v "^$"`
+		echo -e "${color}$nvresult${NOCOLOR}"
 	else
 		if [[ $plim != $plim_def ]]; then
 			echo "Restoring default power limit"
@@ -158,8 +161,12 @@ for (( i=0; i < $n; ++i )); do
 		#nvidia-settings -a [gpu:$i]/GPULogoBrightness=$LOGO_BRIGHTNESS | grep -v "^$"
 		args+=" -a [gpu:$i]/GPULogoBrightness=$LOGO_BRIGHTNESS"
 
-	[[ ! -z $args ]]
-		nvidia-settings $args | grep -v "^$"
+	if [[ ! -z $args ]]; then
+		nvresult=`nvidia-settings $args`
+		[[ $? -ne 0 ]] && color=$RED || color=$NOCOLOR
+		nvresult=`echo "$nvresult" | grep -v "^$"`
+		echo -e "${color}$nvresult${NOCOLOR}"
+	fi
 done
 
 

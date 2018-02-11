@@ -49,5 +49,5 @@ fi
 
 shift #shifts $1 from arguments
 
-./$binary -c pools.conf $@ | tee ./ccminer.log
+./$binary -c pools.conf $@ | tee /var/log/miner/ccminer/ccminer.log
 #./$binary -c pools.conf | tee ./ccminer.log

@@ -2,19 +2,18 @@
 # applied on every startup
 
 # clear log file to avoid disk usage
-0 */4 * * * /hive/bin/miner logtruncate
-0 */4 * * * /hive/bin/miner logtruncate 2
+*/15 * * * * /hive/bin/miner logtruncate
+*/15 * * * * /hive/bin/miner logtruncate 2
 
 
 # clear logs to freeup space
 #0 * * * * (rm /var/log/*.1; rm /var/log/*.2; rm /var/log/*.gz; echo "" > /var/log/kern.log; echo "" > /var/log/syslog) > /tmp/cron.rmlogs.log 2>&1
 #rotate every 5 min, kern.log and syslog can grow up to 1.5G each in 15 min
 #since we have pci=noaer, maybe 5 min rotate is too much
-*/10 * * * * /hive/sbin/logrotate
+*/15 * * * * /hive/sbin/logrotate
 
 #clean screen logs
 0 * * * * (for fname in /run/hive/miner.* ; do echo "" > $fname; done)
-
 
 
 # update PCI IDs db

@@ -11,4 +11,4 @@ conf=`cat ./ethminer.conf | grep -v "^$" | grep -v "^#"`
 
 #echo $conf outputs all in one line
 echo $conf
-./ethminer `echo $conf` 2>&1 | tee ethminer.log
+./ethminer `echo $conf` 2>&1 | tee /var/log/miner/ethminer/ethminer.log
