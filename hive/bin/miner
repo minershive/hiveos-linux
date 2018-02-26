@@ -10,6 +10,7 @@ function usage() {
 
 
 RIG_CONF="/hive-config/rig.conf"
+WALLET_CONF="/hive-config/wallet.conf"
 
 #[ -t 1 ] &&
 . colors
@@ -23,6 +24,8 @@ if [ ! -f $RIG_CONF ]; then
 else
 	. $RIG_CONF
 fi
+
+[[ -e $WALLET_CONF ]] && . $WALLET_CONF
 
 [ -z $MINER ] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
 
@@ -198,9 +201,10 @@ function config() {
 	logname=""
 	case $MINER in
 		"claymore")
-			echo_config_file "/hive/claymore/config.txt"
-			echo_config_file "/hive/claymore/epools.txt"
-			echo_config_file "/hive/claymore/dpools.txt"
+			[[ -z $CLAYMORE_VER ]] && CLAYMORE_VER="latest"
+			echo_config_file "/hive/claymore/$CLAYMORE_VER/config.txt"
+			echo_config_file "/hive/claymore/$CLAYMORE_VER/epools.txt"
+			echo_config_file "/hive/claymore/$CLAYMORE_VER/dpools.txt"
 			;;
 		"claymore-x")
 			echo_config_file "/hive/claymorex/config.txt"

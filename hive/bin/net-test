@@ -1,0 +1,181 @@
+#!/usr/bin/env bash
+
+
+source colors
+
+
+HEADER_COLOR=$YELLOW
+CASE_COLOR=$BCYAN
+WARN_COLOR=$LGREEN
+ERROR_COLOR=$BRED
+
+OK=$GREEN"[OK]"$NOCOLOR
+
+FAIL=$RED"[FAIL]"$NOCOLOR
+LAST_RESULT=0
+
+
+unset GREP_OPTIONS
+
+
+LOCAL_IP=`ifconfig | grep -m1 'inet ' | grep -v 127.0.0.1 | cut -d ' ' -f 12 | cut -d ':' -f 2`
+LOCAL_GW=`ip route | awk '/default/ { print $3 }'`
+LOCAL_DNS=`nslookup server | grep Server | cut -d ":" -f 2 | sed -e 's/^[ \t]*//'`
+
+CASE_WIDTH='%-64s'
+
+
+function PrintCase {
+    printf "$CASE_COLOR%-64s" "$1"
+}
+
+
+# ping wrapper
+function Ping {
+	LAST_RESULT=0
+    IP=$2
+    [ -z ${IP} ] && IP=$1
+
+    PrintCase "ping $1"
+    ping -q -c 1 -w 5 $IP > /dev/null 2>&1 && echo -e $OK || { LAST_RESULT=1; echo -e $FAIL; }
+    return $LAST_RESULT
+}
+
+
+# curl wrapper
+function Curl {
+	LAST_RESULT=0
+    IP=$2
+    [ -z ${IP} ] && IP=$1
+
+    PrintCase "curl $1"
+    curl curl --connect-timeout 2 --max-time 15 $IP > /dev/null 2>&1 && echo -e $OK || { LAST_RESULT=1; echo -e $FAIL; }
+    return $LAST_RESULT
+}
+
+
+# nslookup wrapper
+function NSLookup {
+	LAST_RESULT=0
+    IP=$2
+    [ -z ${IP} ] && IP=$1
+
+    PrintCase "nslookup $1"
+    nslookup $IP > /dev/null 2>&1 && echo -e $OK || { LAST_RESULT=1; echo -e $FAIL; }
+    return $LAST_RESULT
+}
+
+
+# check host with dns resolving, ip, http, https cases
+function Connection {
+	LAST_RESULT=0
+    RESULT=0
+    host=$1
+
+    NSLookup $1 $2
+    [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"Please check your DNS server $DNS"$NOCOLOR
+
+    Ping $1 $2
+    [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"Please check your connection settings"$NOCOLOR
+
+    Curl "http://$1" $2
+    [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"HTTP connection failed. Please check Firewall rules or connection setup."$NOCOLOR
+
+    Curl "https://$1" $2
+    [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"HTTPS (SSL) connection failed. Please check Firewall rules or connection setup."$NOCOLOR
+
+	return $LAST_RESULT
+}
+
+
+# connections test cases
+function Connections {
+    echo -e "${YELLOW}Checking network connection:${NOCOLOR}"
+    Ping "$LOCAL_GW (Gateway)" $LOCAL_GW
+    [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"Failed to ping router. Please check your router and physical connection."$NOCOLOR
+
+    Ping "$LOCAL_DNS (DNS)" $LOCAL_DNS
+    [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"Please check your DNS server $LOCAL_DNS"$NOCOLOR
+
+    Ping "8.8.8.8 (Google DNS)" "8.8.8.8"
+    [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"Failed to ping Google DNS. Please check your internet connection"$NOCOLOR
+
+    Connection "google.com"
+
+
+	echo
+    echo -e "${YELLOW}Checking connection to Hive servers:${NOCOLOR}"
+	echo
+    echo -e "${WHITE}>>> api.hiveos.farm${NOCOLOR}"
+    Connection "api.hiveos.farm"
+    Curl "https://api.hiveos.farm:8443" $2; [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"HTTPS (SSL) on port 8443 connection failed. Please check Firewall rules or connection setup."$NOCOLOR
+    Curl "https://api.hiveos.farm:41282" $2; [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"HTTPS (SSL) connection on port 41282 failed. Please check Firewall rules or connection setup."$NOCOLOR
+	echo
+    echo -e "${WHITE}>>> amster.hiveos.farm${NOCOLOR}"
+    Connection "amster.hiveos.farm"
+}
+
+
+# traceroute wrapper
+#function Trace {
+#    IP=$1
+#	traceroute $IP
+#}
+
+
+# restarting network interfaces
+#function RestartNetworking {
+#    if [ $LAST_RESULT -eq 1 ]; 
+#    then
+#    	echo -ne "$WARN_COLOR    connections was fail: restart network"
+#    	LAST_RESULT=0
+#    	sudo ifdown -a && sudo ifup -a &&
+#    	sudo service network-manager restart && echo -e $OK || { LAST_RESULT=1; echo -e $FAIL; }
+#        echo -ne "$NOCOLOR"
+#    else
+#    	exit $LAST_RESULT
+#    fi
+#}
+
+
+# ip route | awk '/default/ { print $3 }'
+
+
+# header
+#echo -e "$HEADER_COLOR=== Hive Network Test ===$NOCOLOR"
+
+echo -e "${YELLOW}Local Network Configuration:${NOCOLOR}"
+
+echo -e "IP:        ${PURPLE}$LOCAL_IP${NOCOLOR}"
+echo -e "Gateway:   $LOCAL_GW"
+echo -e "DNS:       $LOCAL_DNS"
+echo
+
+
+# test connections to hive hosts
+Connections
+
+
+
+# if connections was fail try restart network interfaces
+#RestartNetworking
+# test connections again
+#Connections
+
+# Traceroute to hosts for debuging if connections was not fixed
+#if [ $LAST_RESULT -eq 1 ]; 
+#then
+#	sleep 5
+#	echo
+#    echo -e "$ERROR_COLOR network was not fixed"
+#    echo
+#	Trace "api.hiveos.farm       "
+#	echo
+#	Trace "amster.hiveos.farm    "
+#else
+#	exit $LAST_RESULT
+#fi
+
+
+
+exit $LAST_RESULT

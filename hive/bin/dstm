@@ -12,28 +12,39 @@ function config_gen() {
 	RIG_CONF="/hive-config/rig.conf"
 	WALLET_CONF="/hive-config/wallet.conf"
 	MINER_CONFIG="/hive/$THIS_MINER_NAME/zm.conf"
+	GLOBAL_CONFIG="/hive/$THIS_MINER_NAME/zm-global.conf"
 
+	conf=`cat $GLOBAL_CONFIG`$'\n'$'\n'
 	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
 	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
 
 	. $RIG_CONF
 	. $WALLET_CONF
 
-	#put default config settings
-	#\n--farm-recheck 2000
-	echo -e "--telemetry=127.0.0.1:43000 --time --temp-target 82" > $MINER_CONFIG
 
-	[[ ! -z $DSTM_SERVER ]] && echo "--server $DSTM_SERVER" >> $MINER_CONFIG
-	[[ ! -z $DSTM_PORT ]] && echo "--port $DSTM_PORT" >> $MINER_CONFIG
-	[[ ! -z $DSTM_TEMPLATE ]] && echo "--user $DSTM_TEMPLATE" >> $MINER_CONFIG
-	[[ ! -z $DSTM_PASS ]] && echo "--pass $DSTM_PASS" >> $MINER_CONFIG
-	[[ ! -z $DSTM_USER_CONFIG ]] && echo "$DSTM_USER_CONFIG" >> $MINER_CONFIG
+	if [[ ! -z $DSTM_USER_CONFIG ]]; then
+		echo "$DSTM_USER_CONFIG" | grep -E "\-\-\w+" &&
+			message warn "dstm config override has old syntax, please edit wallet" ||
+			conf+="#User config overrides global"$'\n'$DSTM_USER_CONFIG$'\n'$'\n'
+	fi
+
+	for server in $DSTM_SERVER; do
+		conf+="[POOL]"$'\n'
+		conf+="server=$server"$'\n'
+		[[ ! -z $DSTM_PORT ]] && conf+="port=$DSTM_PORT"$'\n'
+		[[ ! -z $DSTM_TEMPLATE ]] && conf+="user=$DSTM_TEMPLATE"$'\n'
+		[[ ! -z $DSTM_PASS ]] && conf+="pass=$DSTM_PASS"$'\n'
+		conf+=$'\n'
+	done
 
 	#replace tpl values in whole file
-	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG #|| echo "${RED}ZWAL not set${NOCOLOR}"
-	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $MINER_CONFIG #|| echo "${RED}DWAL not set${NOCOLOR}"
-	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
-	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $MINER_CONFIG
+	[[ ! -z $EWAL ]] && conf=$(sed "s/%EWAL%/$EWAL/g" <<< "$conf") #|| echo "${RED}EWAL not set${NOCOLOR}"
+	[[ ! -z $DWAL ]] && conf=$(sed "s/%DWAL%/$DWAL/g" <<< "$conf") #|| echo "${RED}DWAL not set${NOCOLOR}"
+	[[ ! -z $ZWAL ]] && conf=$(sed "s/%ZWAL%/$ZWAL/g" <<< "$conf") #|| echo "${RED}ZWAL not set${NOCOLOR}"
+	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
+	[[ ! -z $EMAIL ]] && conf=$(sed "s/%EMAIL%/$EMAIL/g" <<< "$conf")
+
+	echo "$conf" > $MINER_CONFIG
 }
 
 

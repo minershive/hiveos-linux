@@ -49,7 +49,8 @@ function miner_stats {
 			else
 				#[ "10.0 - ETH", "83", "67664;48;0", "28076;27236;12351", "891451;29;0", "421143;408550;61758", "67;40;70;45;69;34", "eth-eu1.nanopool.org:9999;sia-eu1.nanopool.org:7777", "0;0;0;0" ]
 				khs=`echo $stats | jq -r '.[2]' | awk -F';' '{print $1}'`
-				algo=`cat /hive/claymore/config.txt | grep -m1 --text "^\-dcoin" | sed 's/-dcoin //'`
+				[[ -z $CLAYMORE_VER ]] && CLAYMORE_VER="latest"
+				algo=`cat /hive/claymore/$CLAYMORE_VER/config.txt | grep -m1 --text "^\-dcoin" | sed 's/-dcoin //'`
 				stats=`echo "$stats" "[\"$algo\"]" | jq -s '.[0] + .[1]'` # push algo to end of array
 			fi
 		;;
@@ -454,7 +455,7 @@ function do_command {
 		;;
 		exec)
 			exec=$(echo $body | jq '.exec' --raw-output)
-			payload=`bash -c "$exec" 2>&1`
+			payload=`timeout 360 bash -c "$exec" 2>&1`
 			exitcode=$?
 			echo "$payload"
 			[[ $exitcode -eq 0 ]] &&

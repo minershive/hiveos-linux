@@ -83,16 +83,20 @@ function user_config() {
 function config_gen() {
 	RIG_CONF="/hive-config/rig.conf"
 	WALLET_CONF="/hive-config/wallet.conf"
-	CLAYMORE_CONFIG="/hive/claymore/config.txt"
-	EPOOLS_TXT="/hive/claymore/epools.txt"
-	DPOOLS_TXT="/hive/claymore/dpools.txt"
+
+	. $RIG_CONF
+	. $WALLET_CONF
+	[[ -z $CLAYMORE_VER ]] && CLAYMORE_VER="latest"
+	[[ ! -e "/hive/claymore/$CLAYMORE_VER" ]] && CLAYMORE_VER="latest"
+
+	CLAYMORE_CONFIG="/hive/claymore/$CLAYMORE_VER/config.txt"
+	EPOOLS_TXT="/hive/claymore/$CLAYMORE_VER/epools.txt"
+	DPOOLS_TXT="/hive/claymore/$CLAYMORE_VER/dpools.txt"
 	USER_CONFIG_SEPARATOR="### USER CONFIG ###"
 
 	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
 	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
 
-	. $RIG_CONF
-	. $WALLET_CONF
 
 	[[ -z $WORKER_NAME ]] && echo "ERROR: No WORKER_NAME set" && return 1
 
@@ -118,6 +122,7 @@ export GPU_MAX_ALLOC_PERCENT=100
 export GPU_USE_SYNC_OBJECTS=1
 
 cd /hive/$THIS_MINER_NAME
+cd $CLAYMORE_VER
 while true
 do
 	miner logrotate $THIS_MINER_NAME

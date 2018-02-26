@@ -28,7 +28,7 @@ cp -r /hive/etc/hive-config.stub/* /hive-config/
 echo "" > /root/.bash_history
 echo "" > /home/user/.bash_history
 rm -rf /var/tmp/*
-
+echo "" > /home/user/.ssh/authorized_keys
 
 
 systemctl stop wpa_supplicant@wlan0

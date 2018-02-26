@@ -185,7 +185,8 @@ jq -c -n \
 
 
 #
-#root@w163:~# nvidia-smi --query-gpu=index,gpu_bus_id,gpu_name,power.draw,clocks.sm,clocks.mem,clocks.gr,utilization.gpu,utilization.memory --format=csv
+# nvidia-smi --query-gpu=index,gpu_bus_id,gpu_name,power.draw,clocks.sm,clocks.mem,clocks.gr,utilization.gpu,utilization.memory --format=csv
+#
 #index, timestamp, power.draw [W], clocks.current.sm [MHz], clocks.current.memory [MHz], clocks.current.graphics [MHz]
 #0, 2017/10/04 00:54:27.644, 98.29 W, 1974 MHz, 4151 MHz, 1974 MHz
 #1, 2017/10/04 00:54:27.650, 138.22 W, 2075 MHz, 4252 MHz, 2075 MHz

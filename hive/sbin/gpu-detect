@@ -103,12 +103,16 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 				plim_def=`awk -F', ' '{print $5}' <<< $nvidiainfo`
 				plim_max=`awk -F', ' '{print $6}' <<< $nvidiainfo`
 
+				vbios=""
+				[[ -e /proc/driver/nvidia/gpus/0000:$busid/information ]] &&
+					vbios=`cat /proc/driver/nvidia/gpus/0000:$busid/information | grep "Video BIOS" | awk '{print $3}'`
+
 				additional=" ($mem, $plim_def)"
 				if [[ $1 == "listjson" ]]; then
 					gpus+=(`jq -n -c --arg busid "$busid" --arg name "$name" --arg brand "nvidia" \
-						--arg mem "$mem" \
+						--arg mem "$mem" --arg vbios "$vbios" \
 						--arg plim_min "$plim_min" --arg plim_def "$plim_def" --arg plim_max "$plim_max" \
-						'{$busid, $name, $brand, $mem, $plim_min, $plim_def, $plim_max}'`)
+						'{$busid, $name, $brand, $mem, $vbios, $plim_min, $plim_def, $plim_max}'`)
 					continue
 				fi
 			fi

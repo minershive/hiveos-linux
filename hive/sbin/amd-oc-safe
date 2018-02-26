@@ -7,7 +7,8 @@ AMD_OC_CONF="/hive-config/amd-oc.conf"
 [[ ! -f $AMD_OC_CONF ]] && exit 1
 
 GPU_COUNT_AMD=`gpu-detect AMD`
-[[ -z $GPU_COUNT_AMD || $GPU_COUNT_AMD == 0 ]] && exit 1
+[[ -z $GPU_COUNT_AMD || $GPU_COUNT_AMD == 0 ]] &&
+	exit 0 #it's ok not to have AMDs, but linked empty wallet profile can be sent
 
 echo "> AMD OC"
 
