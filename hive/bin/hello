@@ -38,8 +38,8 @@ done
 
 # Make hello request ================================================================
 
-boot_time=`TZ='UTC' uptime -s`
-#boot_time_ts=`date --date="$boot_time" +"%s"`
+#boot_time=`TZ='UTC' uptime -s`
+boot_time=$(( `date +%s` - `cat /proc/uptime | awk '{printf "%d", $1}'` ))
 
 gpus_json=`gpu-detect listjson`
 #gpus_json=`echo "${gpus[@]}" | jq -R . | jq -s -c .`
@@ -65,14 +65,14 @@ jq -n \
 --arg boot_time "$boot_time" \
 --arg boot_event "$arg_boot" \
 --argjson ip "$ips_json" \
+--argjson net_interfaces "$net_interfaces" \
+--arg openvpn "$openvpn" \
 --argjson gpu "$gpus_json" \
 --arg gpu_count_amd "$gpu_count_amd" \
 --arg gpu_count_nvidia "$gpu_count_nvidia" \
 --arg version "`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`" \
 --arg nvidia_version "`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//'`" \
 --arg amd_version "`dpkg -l amdgpu-pro | tail -n 1 | awk '{print $3}'`" \
---arg openvpn "$openvpn" \
---argjson net_interfaces "$net_interfaces" \
 --arg manufacturer "$mb_manufacturer" --arg product "$mb_product" \
 --arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" \
 --arg kernel "$kernel" \
@@ -80,10 +80,10 @@ jq -n \
 	"method": "hello", "jsonrpc": "2.0", "id": 0,
 	"params": {
 		$rig_id, $passwd,
-		$boot_time, $boot_event, $ip,
+		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
 		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes},
-		$openvpn, $net_interfaces, $kernel, $version, $amd_version, $nvidia_version
+		$kernel, $version, $amd_version, $nvidia_version
 	}
 }'
 )

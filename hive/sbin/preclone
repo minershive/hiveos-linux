@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #Cleans system before cloning
 
+timedatectl set-timezone UTC
+
 /hive/bin/cache-hive-ip
 
 miner stop
