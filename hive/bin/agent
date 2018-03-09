@@ -196,12 +196,19 @@ function miner_stats {
 			if [[ $? -ne 0 || -z $stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner from localhost:1880${NOCOLOR}"
 			else
-				khs=`echo $stats_raw | jq '.miners[].solver.solution_rate' | awk '{s+=$1} END {print s/1000}'`
-				local uptime=$(( `date +%s` - $(stat -c%X /proc/`pidof bminer | awk '{print $1}'`) )) #in seconds
-				local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
-				local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
 				#fucking bminer sorts it's keys as numerics, not natual, e.g. "1", "10", "11", "2", fix that with sed hack by replacing "1":{ with "01":{
-				local hs=$(echo "$stats_raw" | sed -E 's/"([0-9])":\s*\{/"0\1":\{/g' | jq --sort-keys . | jq -c "[.miners[].solver.solution_rate]")
+				stats_raw=$(echo "$stats_raw" | sed -E 's/"([0-9])":\s*\{/"0\1":\{/g' | jq -c --sort-keys .)
+
+				khs=`echo $stats_raw | jq '.miners[].solver.solution_rate' | awk '{s+=$1} END {print s/1000}'`
+				##bminer did not report fans and uptime before 5.5.0
+				##local uptime=$(( `date +%s` - $(stat -c%X /proc/`pidof bminer | awk '{print $1}'`) )) #in seconds
+				##local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
+				##local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
+
+				local uptime=$(( `date +%s` - $(jq '.start_time' <<< "$stats_raw") ))
+				local temp=$(jq -c '[.miners[].device.temperature]' <<< "$stats_raw")
+				local fan=$(jq -c '[.miners[].device.fan_speed]' <<< "$stats_raw")
+				local hs=$(jq -c "[.miners[].solver.solution_rate]" <<< "$stats_raw")
 				#stats=$(jq --argjson fan "$fan" --arg uptime "$uptime" '{hs: [.miners[].solver.solution_rate], temp: [.miners[].device.temperature], $fan, $uptime}' <<< $stats_raw)
 				stats=$(jq -nc --argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" '{$hs, $temp, $fan, $uptime}')
 			fi
@@ -630,15 +637,23 @@ function do_command {
 			fi
 		;;
 		openvpn_set)
-			clientconf=$(echo $body | jq '.clientconf' --raw-output)
-			cacrt=$(echo $body | jq '.cacrt' --raw-output)
-			clientcrt_fname=$(echo $body | jq '.clientcrt_fname' --raw-output)
-			clientcrt=$(echo $body | jq '.clientcrt' --raw-output)
-			clientkey_fname=$(echo $body | jq '.clientkey_fname' --raw-output)
-			clientkey=$(echo $body | jq '.clientkey' --raw-output)
+			local clientconf=$(echo $body | jq '.clientconf' --raw-output)
+			local cacrt=$(echo $body | jq '.cacrt' --raw-output)
+			local clientcrt_fname=$(echo $body | jq '.clientcrt_fname' --raw-output)
+			local clientcrt=$(echo $body | jq '.clientcrt' --raw-output)
+			local clientkey_fname=$(echo $body | jq '.clientkey_fname' --raw-output)
+			local clientkey=$(echo $body | jq '.clientkey' --raw-output)
+			local vpn_login=$(echo $body | jq '.vpn_login' --raw-output)
+			local vpn_password=$(echo $body | jq '.vpn_password' --raw-output)
 
 			systemctl stop openvpn@client
-			(rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf) > /dev/null 2>&1
+			(rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf; rm /hive-config/openvpn/auth.txt) > /dev/null 2>&1
+
+			#add login credentials to config
+			[[ ! -z $vpn_login && $vpn_login != "null" && ! -z $vpn_password && $vpn_password != "null" ]] &&
+				echo "$vpn_login" >> /hive-config/openvpn/auth.txt &&
+				echo "$vpn_password" >> /hive-config/openvpn/auth.txt &&
+				clientconf=$(sed 's/^auth-user-pass.*$/auth-user-pass \/hive-config\/openvpn\/auth.txt/g' <<< "$clientconf")
 
 			echo "$clientconf" > /hive-config/openvpn/client.conf
 			[[ ! -z $cacrt && $cacrt != "null" ]] && echo "$cacrt" > /hive-config/openvpn/ca.crt
@@ -658,7 +673,7 @@ function do_command {
 		;;
 		openvpn_remove)
 			systemctl stop openvpn@client
-			(rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf) > /dev/null 2>&1
+			(rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf; rm /hive-config/openvpn/auth.txt) > /dev/null 2>&1
 			openvpn-install #will remove /tmp/.openvpn-installed file
 			hello
 			message ok "OpenVPN service stopped, certificates removed"

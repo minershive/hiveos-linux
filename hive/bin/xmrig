@@ -47,11 +47,12 @@ EOF
 		echo -e "${RED}No pools configured, using default${NOCOLOR}"
 	else
 		#pass can also contain %var%
+		[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
 		[[ ! -z $EWAL ]] && pools=$(sed "s/%EWAL%/$EWAL/g" <<< $pools) #|| echo "${RED}EWAL not set${NOCOLOR}"
 		[[ ! -z $DWAL ]] && pools=$(sed "s/%DWAL%/$DWAL/g" <<< $pools) #|| echo "${RED}DWAL not set${NOCOLOR}"
 		[[ ! -z $ZWAL ]] && pools=$(sed "s/%ZWAL%/$ZWAL/g" <<< $pools) #|| echo "${RED}ZWAL not set${NOCOLOR}"
-		[[ ! -z $WORKER_NAME ]] && pools=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $pools) #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
 		[[ ! -z $EMAIL ]] && pools=$(sed "s/%EMAIL%/$EMAIL/g" <<< $pools)
+		[[ ! -z $WORKER_NAME ]] && pools=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $pools) #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
 
 		pools=`jq --null-input --argjson pools "$pools" '{"pools": $pools}'`
 		conf=$(jq -s '.[0] * .[1]' <<< "$conf $pools")

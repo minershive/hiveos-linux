@@ -18,11 +18,12 @@ function zpools() {
 	echo "Creating epools.txt"
 	echo "$ZPOOLS_TPL" > $ZPOOLS_TXT
 
-	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $ZPOOLS_TXT ||  echo "${YELLOW}WARNING: WORKER_NAME not set${NOCOLOR}"
-	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $ZPOOLS_TXT || echo -e "${YELLOW}WARNING: ZWAL not set${NOCOLOR}"
-	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $ZPOOLS_TXT #|| echo "DWAL not set"
-	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $ZPOOLS_TXT #|| echo "EWAL not set"
+	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
+	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $ZPOOLS_TXT
+	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $ZPOOLS_TXT
+	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $ZPOOLS_TXT
 	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $ZPOOLS_TXT #|| echo "EMAIL not set"
+	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $ZPOOLS_TXT ||  echo "${YELLOW}WARNING: WORKER_NAME not set${NOCOLOR}"
 
 	return 0
 }

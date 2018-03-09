@@ -1,0 +1,1 @@
+POOL: decred.eu.nicehash.com:3354, WALLET: 33v4eKxAeJxgBEURuvjiYDhBPfRap4K8Lf.worker, PSW: x

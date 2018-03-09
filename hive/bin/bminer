@@ -28,9 +28,10 @@ function config_gen() {
 	conf="-api 127.0.0.1:1880 -max-temperature 82"
 
 	tpl=$BMINER_TEMPLATE
+	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
 	[[ ! -z $EWAL ]] && tpl=$(sed "s/%EWAL%/$EWAL/g" <<< $tpl) #|| echo "${RED}EWAL not set${NOCOLOR}"
-	[[ ! -z $DWAL ]] && tpl=$(sed "s/%DWAL%/$DWAL/g" <<< $tpl) #|| echo "${RED}DWAL not set${NOCOLOR}"
 	[[ ! -z $ZWAL ]] && tpl=$(sed "s/%ZWAL%/$ZWAL/g" <<< $tpl) #|| echo "${RED}ZWAL not set${NOCOLOR}"
+	[[ ! -z $DWAL ]] && tpl=$(sed "s/%DWAL%/$DWAL/g" <<< $tpl) #|| echo "${RED}DWAL not set${NOCOLOR}"
 	[[ ! -z $WORKER_NAME ]] && tpl=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $tpl) #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
 	[[ ! -z $EMAIL ]] && tpl=$(sed "s/%EMAIL%/$EMAIL/g" <<< $tpl)
 	#tpl=$(sed 's/@/%40/g; s/\//%2F/g; s/ /%20/g' <<< $tpl) #HTML special chars

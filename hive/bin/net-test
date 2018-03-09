@@ -49,7 +49,7 @@ function Curl {
     [ -z ${IP} ] && IP=$1
 
     PrintCase "curl $1"
-    curl curl --connect-timeout 2 --max-time 15 $IP > /dev/null 2>&1 && echo -e $OK || { LAST_RESULT=1; echo -e $FAIL; }
+    curl curl --insecure --connect-timeout 4 --max-time 10 $IP > /dev/null 2>&1 && echo -e $OK || { LAST_RESULT=1; echo -e $FAIL; }
     return $LAST_RESULT
 }
 
@@ -110,6 +110,9 @@ function Connections {
     Connection "api.hiveos.farm"
     Curl "https://api.hiveos.farm:8443" $2; [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"HTTPS (SSL) on port 8443 connection failed. Please check Firewall rules or connection setup."$NOCOLOR
     Curl "https://api.hiveos.farm:41282" $2; [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"HTTPS (SSL) connection on port 41282 failed. Please check Firewall rules or connection setup."$NOCOLOR
+	echo
+    echo -e "${WHITE}>>> paris.hiveos.farm${NOCOLOR}"
+    Connection "paris.hiveos.farm"
 	echo
     echo -e "${WHITE}>>> amster.hiveos.farm${NOCOLOR}"
     Connection "amster.hiveos.farm"
