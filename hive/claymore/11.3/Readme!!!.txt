@@ -65,6 +65,8 @@ COMMAND LINE OPTIONS:
 	For solo mining, specify "http://" before address, note that this mode is not intended for proxy or HTTP pools, also "-allpools 1" will be set automatically in this mode.
 	Note: The miner supports all Stratum versions for Ethereum, HTTP mode is necessary for solo mining only. 
 	Using any proxies will reduce effective hashrate by at least 1%, so connect miner to Stratum pools directly. Using HTTP pools will reduce effective hashrate by at least 5%.
+	Miner also supports SSL/TLS encryption for all data between miner and pool (if pool supports encryption over stratum), it significantly improves security.
+	To enable encryption, use "ssl://" or "stratum+ssl://" prefix (or "tls" instead of "ssl"), for example: "-epool ssl://eu1.ethermine.org:5555"
 
 -ewal 	Your Ethereum wallet address. Also worker name and other options if pool supports it. 
 	Pools that require "Login.Worker" instead of wallet address are not supported directly currently, but you can use "-allpools 1" option to mine there.
@@ -134,8 +136,10 @@ COMMAND LINE OPTIONS:
 
 -dcri	Decred/Siacoin/Lbry/Pascal intensity, or Ethereum fine-tuning value in ETH-only ASM mode. Default value is 30, you can adjust this value to get the best Decred/Siacoin/Lbry mining speed without reducing Ethereum mining speed. 
 	You can also specify values for every card, for example "-dcri 30,100,50".
-	You can change the intensity in runtime with "+" and "-" keys and check current statistics with "s" key.
+	You can change the intensity in runtime with "+" and "-" keys and also use "x" key to select single GPU for intensity adjustment.
 	For example, by default (-dcri 30) 390 card shows 29MH/s for Ethereum and 440MH/s for Decred. Setting -dcri 70 causes 24MH/s for Ethereum and 850MH/s for Decred.
+	Use this option in ETH-only ASM mode for fine tuning, read "FINE-TUNING" section below.
+	If you did not specify "-dcri" option in ETH-only ASM mode, miner will detect best -dcri values automatically, you can also press "z" key to do it.
 
 -dcrt	Time period between Decred/Siacoin HTTP requests for new job, in seconds. Default value is 5 seconds.
 
@@ -255,6 +259,8 @@ COMMAND LINE OPTIONS:
 
 -platform	selects GPUs manufacturer. 1 - use AMD GPUs only. 2 - use NVIDIA GPUs only. 3 - use both AMD and NVIDIA GPUs. Default value is "3".
 
+-checkcert	only for SSL connection: verify pool certificate. Default value is "1" (verify), use "-checkcert 0" to skip certificate verification.
+
 
 
 CONFIGURATION FILE
@@ -361,6 +367,8 @@ ETH-only mode when ASM algorithm is used (enabled by default): change "-dcri" op
 NOTE 1: if GPU throttles (overheated) or if you overclocked GPU, best "-dcri" value will be different.
 NOTE 2: speed peak can be rather short, so change "-dcri" value slowly, one-by-one.
 NOTE 3: best -dcri values for ETH-only mode and dual mode can be different.
+NOTE 4: you can use "x" key to select single GPU for -dcri value adjustment.
+NOTE 5: if you did not specify "-dcri" option in ETH-only ASM mode, miner will detect best -dcri values automatically, you can also press "z" key to do it.
 
 
 
@@ -511,6 +519,9 @@ This miner does not use HTTP protocol, it uses Stratum directly. So you should c
 
 - Miner crashed and I cannot restart it until reboot.
   Often when OpenCL fails, you have to reboot the system, not just restart miner. Sometimes even soft reboot won't work and you have to press Reset button. It is because the fail is at drivers level, Windows does not like such things and drivers too.
+
+- EthMan loses rigs with 12 GPUs.
+  Sometimes systems with 12 GPUs and low-end CPU become slow for remote access, you can see problems with EthMan and other remote management software.
 
 
 FAQ #2:
