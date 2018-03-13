@@ -5,8 +5,8 @@ Claymore's Dual Ethereum + Decred/Siacoin/Lbry/Pascal/Blake2s/Keccak AMD+NVIDIA 
 
 LINKS:
 
-GOOGLE: https://drive.google.com/open?id=0B69wv2iqszefdFZUV2toUG5HdlU
 MEGA: https://mega.nz/#F!O4YA2JgD!n2b4iSHQDruEsYUvTQP5_w
+GOOGLE: https://drive.google.com/open?id=0B69wv2iqszefdFZUV2toUG5HdlU
 
 
 

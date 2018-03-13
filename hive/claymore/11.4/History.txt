@@ -1,11 +1,20 @@
 VERSION HISTORY
 
 
+v11.4
+---------------------------------------------------------------------
+
+- fixed issue with stale shares.
+- fixed issue with incorrect shares.
+- a few minor bug fixes and improvements.
+
+
+
 v11.3
 ---------------------------------------------------------------------
 
 - added automatic detection of best -dcri values in ASM ETH-only mode if -dcri option is missed. 
-  Press "s" key to see current values, you can also press "z" key to re-start detection.
+  Press "s" key to see current values, you can also press "z" key to restart detection.
 - improved support for systems with many GPUs (eight and more) and slow CPU: much less CPU load, EthMan works fine now.
 - added assembler kernel for RX550 card. This card is not good for dual mining, but in ETH-only mode ASM kernel is faster by about 7%.
 - added "x" key to select GPU for manual -dcri value adjustment.
