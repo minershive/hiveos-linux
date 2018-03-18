@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+THIS_MINER_NAME="lolminer"
+[ -t 1 ] && . colors
+
+[[ `ps aux | grep "\./lolMiner-mnx" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
+	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
+	exit 1
+
+
+function config_gen() {
+	RIG_CONF="/hive-config/rig.conf"
+	WALLET_CONF="/hive-config/wallet.conf"
+	MINER_CONFIG="/hive/$THIS_MINER_NAME/pool.cfg"
+	GLOBAL_CONFIG="/hive/$THIS_MINER_NAME/pool-global.cfg"
+
+	conf=`cat $GLOBAL_CONFIG`$'\n'$'\n'
+	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
+	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+
+	. $RIG_CONF
+	. $WALLET_CONF
+
+
+	if [[ ! -z $LOLMINER_USER_CONFIG ]]; then
+		conf+="#User config overrides global"$'\n'$LOLMINER_USER_CONFIG$'\n'$'\n'
+	fi
+
+	[[ ! -z $LOLMINER_SERVER ]] && conf+="--server $LOLMINER_SERVER"$'\n'
+	[[ ! -z $LOLMINER_PORT ]] && conf+="--port $LOLMINER_PORT"$'\n'
+	[[ ! -z $LOLMINER_TEMPLATE ]] && conf+="--user $LOLMINER_TEMPLATE"$'\n'
+	[[ ! -z $LOLMINER_PASS ]] && conf+="--pass $LOLMINER_PASS"$'\n'
+	conf+=$'\n'
+
+
+	#replace tpl values in whole file
+	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
+	[[ ! -z $EWAL ]] && conf=$(sed "s/%EWAL%/$EWAL/g" <<< "$conf")
+	[[ ! -z $ZWAL ]] && conf=$(sed "s/%ZWAL%/$ZWAL/g" <<< "$conf")
+	[[ ! -z $DWAL ]] && conf=$(sed "s/%DWAL%/$DWAL/g" <<< "$conf")
+	[[ ! -z $EMAIL ]] && conf=$(sed "s/%EMAIL%/$EMAIL/g" <<< "$conf")
+	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
+
+	echo "$conf" > $MINER_CONFIG
+}
+
+
+config_gen
+
+
+
+cd /hive/$THIS_MINER_NAME
+while true
+do
+	miner logrotate $THIS_MINER_NAME
+	/hive/$THIS_MINER_NAME/lolminer.sh
+	echo ""
+	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
+	echo ""
+	sleep 3
+done

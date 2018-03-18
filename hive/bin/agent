@@ -30,8 +30,10 @@ gpu_stats=
 #Nvidia indexes in aa [1,2,3] to use in jsons
 #nvidia_indexes=echo "$gpu_stats" | jq '.brand | to_entries[] | select(.value == "nvidia") | .key' | jq -sc '.'
 #nvidia_indexes=`gpu-detect listjson | jq '. | to_entries[] | select(.value.brand == "nvidia") | .key' | jq -sc '.'`
-nvidia_indexes_array=`gpu-detect listjson | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'`
-cpu_indexes_array=`gpu-detect listjson | jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'`
+gpu_detect_json=`gpu-detect listjson`
+amd_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]'`
+nvidia_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'`
+cpu_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'`
 
 ########################################################################################################################
 
@@ -211,6 +213,26 @@ function miner_stats {
 				local hs=$(jq -c "[.miners[].solver.solution_rate]" <<< "$stats_raw")
 				#stats=$(jq --argjson fan "$fan" --arg uptime "$uptime" '{hs: [.miners[].solver.solution_rate], temp: [.miners[].device.temperature], $fan, $uptime}' <<< $stats_raw)
 				stats=$(jq -nc --argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" '{$hs, $temp, $fan, $uptime}')
+			fi
+		;;
+		lolminer)
+			stats_raw=`/hive/lolminer/lolHelper`
+			if [[ $? -ne 0 || -z $stats_raw ]]; then
+				echo -e "${YELLOW}Failed to read $miner from lolHelper${NOCOLOR}"
+			else
+				local platform=`tac /hive/lolminer/pool.cfg | grep -m1 "^\-\-platform" | awk '{print toupper($2)}'`
+				khs=`echo $stats_raw | jq '.result[].sol_ps' | awk '{s+=$1} END {print s/1000}'`
+				local uptime=$(( `date +%s` - $(stat -c%X /proc/`pidof lolMiner-mnx`) ))
+				local fan='[]'
+				local temp='[]'
+				if [[ $platform = 0 || ($platform = "AUTO" && $amd_indexes_array != "[]") ]]; then #AMD
+					fan=$(jq -c "[.fan$amd_indexes_array]" <<< $gpu_stats)
+					temp=$(jq -c "[.temp$amd_indexes_array]" <<< $gpu_stats)
+				elif [[ $platform = 1 || ($platform = "AUTO" && $nvidia_indexes_array != "[]") ]]; then #Nvidia
+					fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
+					temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
+				fi
+				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" '{ hs: [.result[].sol_ps], $temp, $fan, $uptime}' <<< $stats_raw)
 			fi
 		;;
 		xmr-stak)

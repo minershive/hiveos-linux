@@ -67,7 +67,7 @@ NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
     termcmd+="nvidia-oc-log;"
 
 
-roxterm --replace --maximise --disable-sm -e bash -c "$termcmd motd; firstrun; bash" &
+roxterm --replace --maximise --disable-sm -e bash -c "$termcmd motd; firstrun; ([ -e /home/user/xinit.user.sh ] && bash /home/user/xinit.user.sh); bash" &
 
 
 

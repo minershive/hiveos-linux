@@ -107,7 +107,10 @@ error=$(echo $response | jq '.error' --raw-output)
 
 # Save config and check it ================================================================
 config=$(echo $response | jq '.result.config' --raw-output)
-[[ -z $config || $config == "null" ]] &&  echo -e "${RED}ERROR:${NOCOLOR} no config field in response" && exit 1
+[[ -z "$config" || "$config" == "null" ]] &&
+	echo "Response body: $response" &&
+	echo -e "${RED}ERROR:${NOCOLOR} no config field in response" &&
+	exit 1
 echo "$config" > $RIG_CONF
 . $RIG_CONF
 hostname-check

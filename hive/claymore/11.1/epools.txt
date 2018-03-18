@@ -1,1 +1,0 @@
-POOL: daggerhashimoto.eu.nicehash.com:3353, WALLET: 33v4eKxAeJxgBEURuvjiYDhBPfRap4K8Lf.worker, PSW: x, ESM: 3, ALLPOOLS: 1

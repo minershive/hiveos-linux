@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+MINER="lolminer"
+LOGS="/var/log/miner/$MINER/$MINER.log"
+
+#[[ ! -e $LOGS ]] && exit 1
+
+#############
+## from log file
+## 19:31:50 Average speed (30s): 17181.3 sol/s | 17371.7 sol/s | 17442.4 sol/s | 17461.1 sol/s | 17388.3 sol/s | 17642.2 sol/s Total: 104487 sol/s
+## to json
+## {"id":1,"result":[{"sol_ps":17181.3},{"sol_ps":17371.7},{"sol_ps":17442.4},{"sol_ps":17461.1},{"sol_ps":17388.3},{"sol_ps":17642.2}]}
+#############
+
+getTotal=`tail -n 100 $LOGS | grep -a "Average speed (10s)" | tail -n 1`
+
+## "--enable-time-print" in cfg must be uncommented !!
+getTime=`echo $getTotal | awk {'print $1'}`
+
+logTime=`date --date="$getTime" +%s`
+curTime=`date +%s`
+
+diffTime=`expr $curTime - $logTime`
+
+## this time should be 3 times longer than "set-long-stats-interval" in cfg.
+## maxDelay=`expr $interval \* 3`
+## for now set it to 90
+maxDelay=90
+
+
+if [ "$diffTime" -lt "$maxDelay" ]; then
+	getStats="{\"id\":1,\"result\":[{\"sol_ps\":"`echo $getTotal | cut -d ":" -f4 | cut -d "T" -f1 | sed 's/ //g' | sed 's/sol\/s|/},{"sol_ps":/g' | sed 's/sol\/s/}]}/g'`
+else
+	getStats=""
+fi
+
+echo "$getStats"
