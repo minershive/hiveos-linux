@@ -5,7 +5,7 @@ THIS_MINER_NAME="optiminer"
 
 [[ ! -e /hive/optiminer ]] && message warn "Please run optiminer-install" && exit 1
 
-[[ `ps aux | grep "\./optiminer" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
+[[ `ps aux | grep "\./optiminer-equihash" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
 	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
 	exit 1
 
@@ -90,8 +90,8 @@ function config_gen() {
 	[[ ! -z $EMAIL ]] && conf=$(sed "s/%EMAIL%/$EMAIL/g" <<< "$conf")
 	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
 
-	sudo echo "$conf" > $MINER_CONFIG
-	sudo chmod +x $MINER_CONFIG
+	echo "$conf" > $MINER_CONFIG
+	chmod +x $MINER_CONFIG
 }
 
 config_gen
@@ -101,7 +101,7 @@ cd /hive/$THIS_MINER_NAME
 while true
 do
 	miner logrotate $THIS_MINER_NAME
-	sudo /hive/$THIS_MINER_NAME/$THIS_MINER_NAME.sh
+	/hive/$THIS_MINER_NAME/$THIS_MINER_NAME.sh
 	echo ""
 	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
 	echo ""
