@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+
+THIS_MINER_NAME="optiminer"
+[ -t 1 ] && . colors
+
+#[[ `ps aux | grep "\./optiminer" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
+#	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
+#	exit 1
+
+
+function config_gen() {
+	RIG_CONF="/hive-config/rig.conf"
+	WALLET_CONF="/hive-config/wallet.conf"
+	MINER_CONFIG="/hive/$THIS_MINER_NAME/$THIS_MINER_NAME.sh"
+	#GLOBAL_CONFIG="/hive/$THIS_MINER_NAME/pool-global.cfg"
+	[[ -z $OPTIMINER_ALGORITHM ]] && OPTIMINER_ALGORITHM="equihash96_5"
+
+	conf="#!/bin/bash"$'\n'$'\n'
+	conf+="# General options"$'\n'$'\n'
+	conf+="MINER=\"$THIS_MINER_NAME\""$'\n'
+	conf+="export GPU_FORCE_64BIT_PTR=1"$'\n'$'\n'
+
+	#conf+=`cat $GLOBAL_CONFIG`$'\n'$'\n'
+	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
+	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+
+	. $RIG_CONF
+	. $WALLET_CONF
+
+	conf+="./optiminer-equihash \\"$'\n'
+
+	[[ ! -z $OPTIMINER_ALGO ]] && conf+="-a $OPTIMINER_ALGO \\"$'\n'
+	[[ ! -z $OPTIMINER_SERVER ]] && conf+="-s $OPTIMINER_SERVER:$OPTIMINER_PORT \\"$'\n'
+	[[ ! -z $OPTIMINER_TEMPLATE ]] && conf+="-u $OPTIMINER_TEMPLATE \\"$'\n'
+	[[ ! -z $OPTIMINER_PASS ]] && conf+="-p $OPTIMINER_PASS \\"$'\n'
+
+	if [[ ! -z $OPTIMINER_USER_CONFIG ]]; then
+		OPTIMINER_USER_CONFIG+=" ###ENDMARKER###"
+		user_algorithm=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '(?<=-a\s)(.+?)\s')
+		if [[ ! -z $user_algorithm ]]; then
+			sed "s/-a $user_algorithm//g" <<< "$OPTIMINER_USER_CONFIG"
+			if [[ ! -z "$(echo $conf | grep -Pow '\-a $OPTIMINER_ALGO')" ]]; then
+				sed "s/-a $OPTIMINER_ALGO/-a $user_algorithm/g" <<< "$conf"
+			else
+				conf+="-a $user_algorithm \\"$'\n'
+			fi
+		fi
+		user_url=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '(?<=-s\s)(.+?)\s')
+		if [[ ! -z $user_url ]]; then
+			sed "s/-s $user_url//g" <<< "$OPTIMINER_USER_CONFIG"
+			if [[ ! -z $(echo $conf | grep -Pow '\-s $OPTIMINER_SERVER') ]]; then
+				sed "s/-s $OPTIMINER_SERVER/-s $user_url/g" <<< "$conf"
+			else
+				conf+="-s $user_url \\"$'\n'
+			fi
+		fi
+		user_name=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '(?<=-u\s)(.+?)\s')
+		if [[ ! -z $user_name ]]; then
+			sed "s/-u $user_name//g" <<< "$OPTIMINER_USER_CONFIG"
+			if [[ ! -z $(echo $conf | grep -Pow '\-u $OPTIMINER_TEMPLATE') ]]; then
+				sed "s/-u $OPTIMINER_TEMPLATE/-u $user_name/g" <<< "$conf"
+			else
+				conf+="-u $user_name \\"$'\n'
+			fi
+		fi
+		user_password=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '(?<=-p\s)(.+?)\s')
+		if [[ ! -z $user_password ]]; then
+			sed "s/-p $user_password//g" <<< "$OPTIMINER_USER_CONFIG"
+			if [[ ! -z $(echo $conf | grep -Pow '\-p $OPTIMINER_PASS') ]]; then
+				sed "s/-p $OPTIMINER_PASS/-p $user_password/g" <<< "$conf"
+			else
+				conf+="-p $user_password \\"$'\n'
+			fi
+		fi
+		sed "s/ ###ENDMARKER###//g" <<< "$OPTIMINER_USER_CONFIG"
+		conf+=$OPTIMINER_USER_CONFIG" \\"$'\n'
+	fi
+
+	# Monitoring port
+	conf+="-m 52749"$'\n'
+	conf+="—log-file /var/log/optiminer/optiminer.log"$'\n'
+	conf+=$'\n'
+
+
+	#replace tpl values in whole file
+	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
+	[[ ! -z $EWAL ]] && conf=$(sed "s/%EWAL%/$EWAL/g" <<< "$conf")
+	[[ ! -z $ZWAL ]] && conf=$(sed "s/%ZWAL%/$ZWAL/g" <<< "$conf")
+	[[ ! -z $DWAL ]] && conf=$(sed "s/%DWAL%/$DWAL/g" <<< "$conf")
+	[[ ! -z $EMAIL ]] && conf=$(sed "s/%EMAIL%/$EMAIL/g" <<< "$conf")
+	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
+
+	echo "$conf" > $MINER_CONFIG
+}
+
+config_gen
+
+
+
+cd /hive/$THIS_MINER_NAME
+while true
+do
+	miner logrotate $THIS_MINER_NAME
+	/hive/$THIS_MINER_NAME/$THIS_MINER_NAME.sh
+	echo ""
+	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
+	echo ""
+	sleep 3
+done

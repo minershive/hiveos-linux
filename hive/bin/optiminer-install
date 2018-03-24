@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+version=2.1.2
+archname="optiminer-equihash-$version.tar.gz"
+url=http://download.optiminer.pl/$archname
+
+tmpdir="/tmp"
+cd $tmpdir
+## Pre-cleaning
+[ -e $archname ] && rm $archname
+
+## Downloading
+echo "> Downloading $url"
+[[ ! -f $archname ]] && wget -c $url || echo "> using cached file"
+[ $? -ne 0 ] && echo "Error downloading $url" && exit 1
+
+
+sleep 2
+
+## Extraction
+echo ""
+echo "> Extracting $archname"
+unpackdir="$tmpdir/optiminer-$version"
+installdir="/hive/optiminer-$version"
+mkdir -p $unpackdir
+tar -C $unpackdir -xvz -f $archname optiminer-equihash --strip-components=1
+
+## Installation
+[[ -e /hive/optiminer ]] && rm -rf /hive/optiminer
+mv $unpackdir $installdir
+ln -s $installdir /hive/optiminer
+[ $? -ne 0 ] && echo "Error extracting $archname" && exit 1
+#rm $archname
+
+## Post-installation
+chmod +x /hive/optiminer/*.sh
+
+
+echo "> Optiminer installed"
