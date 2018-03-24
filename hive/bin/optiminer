@@ -12,7 +12,6 @@ function config_gen() {
 	RIG_CONF="/hive-config/rig.conf"
 	WALLET_CONF="/hive-config/wallet.conf"
 	MINER_CONFIG="/hive/$THIS_MINER_NAME/$THIS_MINER_NAME.sh"
-	#GLOBAL_CONFIG="/hive/$THIS_MINER_NAME/pool-global.cfg"
 	[[ -z $OPTIMINER_ALGORITHM ]] && OPTIMINER_ALGORITHM="equihash96_5"
 
 	conf="#!/bin/bash"$'\n'$'\n'
@@ -20,7 +19,6 @@ function config_gen() {
 	conf+="MINER=\"$THIS_MINER_NAME\""$'\n'
 	conf+="export GPU_FORCE_64BIT_PTR=1"$'\n'$'\n'
 
-	#conf+=`cat $GLOBAL_CONFIG`$'\n'$'\n'
 	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
 	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
 
