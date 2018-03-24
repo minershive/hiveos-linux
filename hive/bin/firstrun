@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #Checks if config exists, ask for rig if no config found
 
 HELLO_OK="/tmp/.hive-hello-ok"
@@ -11,6 +11,16 @@ mkdir -p "/hive-config"
 
 
 [[ $1 == "-f" ]] && echo "Forcing reconfig"
+
+
+
+#Get preconfigured api host
+HIVE_HOST_URL_STR=
+[[ -e /hive-config/rig-config-example.txt ]] &&
+	HIVE_HOST_URL_STR=`cat /hive-config/rig-config-example.txt | grep '^HIVE_HOST_URL='`
+[[ -z $HIVE_HOST_URL_STR ]] &&
+	HIVE_HOST_URL_STR='HIVE_HOST_URL="https://api.hiveos.farm"'
+
 
 
 if [[ ! -f $RIG_CONF ]] || [[ $1 == "-f" ]]; then
@@ -70,7 +80,7 @@ fi
 id=""
 passwd=""
 
-function read_id {
+read_id () {
 	while true; do
 		echo -n "RIG ID: "
 		read id
@@ -79,7 +89,7 @@ function read_id {
 	done
 }
 
-function read_passwd {
+read_passwd () {
 	while true; do
 		echo -n "Password: "
 		read passwd
@@ -91,13 +101,15 @@ function read_passwd {
 }
 
 
+echo $HIVE_HOST_URL_STR
+echo ""
 
 while true; do
 	read_id
 	read_passwd
 
 	cat > $RIG_CONF <<FILEEOF
-HIVE_HOST_URL="https://api.hiveos.farm"
+$HIVE_HOST_URL_STR
 RIG_ID="$id"
 RIG_PASSWD="$passwd"
 FILEEOF

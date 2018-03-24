@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+
+#[ -t 1 ] &&
+. colors
+
+# Set timeout for fan test
+timeout=6
+
+export DISPLAY=:0
+
+
+stop_fans() {
+	if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
+		echo -e "No ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} found"
+		exit 1
+	fi
+
+	if [[ $nvidia_indexes_array != '[]' ]]; then
+		echo -e "${CYAN}Set All NVIDIA Fans to 0...${NOCOLOR}"
+		i=0
+		args=
+		#Concat nvidia-settings for one line
+		while read -r s; do
+			args+=" -a [gpu:$i]/GPUFanControlState=1"
+			args+=" -a [fan:$i]/GPUTargetFanSpeed=0"
+			let i=i+1
+		done <<< "$nvlist"
+
+		if [[ ! -z $args ]]; then
+			#Appling nvidia-settings
+			nvresult=`nvidia-settings $args`
+			[[ $? -ne 0 ]] && color=$RED || color=$NOCOLOR
+			nvresult=`echo "$nvresult" | grep -v "^$" 1>/dev/null`
+			echo -e "${YELLOW}$nvresult${NOCOLOR}"
+		fi
+	fi
+
+	if [[ $amd_indexes_array != '[]'  ]]; then
+		echo -e "${CYAN}Set All AMD Fans to 0...${NOCOLOR}"
+		while read -r s; do
+			#Search amd gpu_id from bus_id and appling fan setting to gpu
+			cardno=`realpath /sys/devices/*/*/*/drm/card* | grep $s | awk -F/card '  { print $2 }'`
+			wolfamdctrl -i $cardno --set-fanspeed 0 1>/dev/null
+		done <<<"$amdlist"
+	fi
+}
+
+
+#get data (bus_id, name, brand) from jsonlist for gpu_id
+test_gpu() {
+#	gpudata=`gpu-detect listjson | jq -r '.['$1'] | join(", ")' `
+#	busid=`awk -F, '{print $1}' <<< "$gpudata"`
+#	name=`awk -F, '{print $2}' <<< "$gpudata"`
+#	brand=`awk -F, '{print $3}' <<< "$gpudata"`
+
+	gpudata=`jq '.['$1']' <<< "$gpu_detect_json"`
+	busid=`jq -r .busid <<< "$gpudata"`
+	name=`jq -r .name <<< "$gpudata"`
+	brand=`jq -r .brand <<< "$gpudata"`
+
+	local COLOR=$YELLOW
+	[[ $brand == "nvidia" ]] && COLOR=$GREEN
+	[[ $brand == "amd" ]] && COLOR=$RED
+
+	[[ $brand == "cpu" ]] && return
+	echo -ne "Spinning fans on GPU ${BLUE}$1${NOCOLOR} $busid ${COLOR}$name${NOCOLOR}\t"
+
+	if [[ $brand == "nvidia" ]]; then
+		#found Nvidia GPU index from bus_id
+		cardno=`nvidia-smi --query-gpu=index,gpu_bus_id --format=csv,noheader | grep $busid | awk -F, '  { print $1 }'`
+		#Appling FAN setting to 100%
+		nvidia-settings -a [gpu:$cardno]/GPUFanControlState=1 -a [fan:$cardno]/GPUTargetFanSpeed=100 1>/dev/null
+		#sleep for (timeout) in sec
+		for i in {1..$timeout}; do
+			echo -n "." && sleep 1
+		done
+		#Set Fan speed to 0% again
+		nvidia-settings -a [gpu:$cardno]/GPUFanControlState=1 -a [fan:$cardno]/GPUTargetFanSpeed=0   1>/dev/null
+		echo -e "${GREEN}OK${NOCOLOR}"
+		sleep 1
+	fi
+
+	if  [[ $brand == "amd" ]]; then
+		#Search AMD gpu index from bus_id
+		cardno=`realpath /sys/devices/*/*/*/drm/card* | grep $busid | awk -F/card '  { print $2 }'`
+		#Apply Fan setting to 100%
+		wolfamdctrl -i $cardno --set-fanspeed 100 1>/dev/null
+		#Sleep for(timeout) in sec
+		for i in {1..$timeout}; do
+			echo -n "." && sleep 1
+		done
+		#Set Fan speed to 0% again
+		wolfamdctrl -i $cardno --set-fanspeed 0  1>/dev/null
+		echo -e "${GREEN}OK${NOCOLOR}"
+		sleep 1
+	fi
+}
+
+
+gpu_detect_json=`gpu-detect listjson`
+amd_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]'`
+nvidia_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'`
+
+#Get list of Nvidia gpu's
+[[ -e /tmp/nvidia_smi_info ]] && nvlist=`cat /tmp/nvidia_smi_info`
+#Get list of AMD gpu's
+[[ -e /tmp/amdmeminfo ]] && amdlist=`cat /tmp/amdmeminfo |awk -F: '{print $2}'`
+
+
+date
+
+echo -e "${YELLOW}================START Search GPU script===========${NOCOLOR}"
+gpu-detect list
+echo ""
+echo -e "> Stopping miner session"
+miner stop
+
+
+if [[ $nvidia_indexes_array != '[]' ]]; then
+	nvidia-persistenced --persistence-mode 1>/dev/null
+	nvidia-smi -pm 1  1>/dev/null
+fi
+
+echo -e "> Stopping Fans"
+echo -e "${YELLOW}Notice: If you have AMD GPU with GPU temp 511 this fan will not be stopped!${NOCOLOR}"
+stop_fans
+
+
+
+#Search CPU index 0 onboard GPU if exist
+first_gpu_brand=$(jq --raw-output '.[0].brand' <<< "$gpu_detect_json")
+#Get count of all GPU's
+gpu_count=$(jq '.|length' <<< "$gpu_detect_json")
+
+
+
+
+if [[ -z $1 ]]; then
+	#Find all gpus
+	#if script run without arguments and no onboard gpu, start from gpu_id index 0 ( else gpu index +1)
+	if [[ $first_gpu_brand != "cpu" ]]; then
+		gpuid=0
+	else
+		gpuid=1
+	fi
+
+	while [[ $gpuid -lt $gpu_count ]]; do
+		#echo -e $gpuid
+		test_gpu $gpuid
+		let gpuid=gpuid+1
+	done
+else
+	#Find only one gpu from command line
+	gpuid=$1
+	test_gpu $gpuid
+fi
+
+
+
+echo -e "> Restoring OC settings..."
+if [[ $nvidia_indexes_array != '[]' ]]; then
+	nvidia-oc 1>/dev/null
+fi
+if [[ $amd_indexes_array != '[]' ]]; then
+	amd-oc 1>/dev/null
+fi
+
+
+echo -e "${GREEN}OK${NOCOLOR}"
+echo -e "> Restarting miner session"
+miner start
+
+
+
+
+
+
+
+
+

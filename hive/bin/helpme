@@ -12,6 +12,7 @@ ${CYAN}selfupgrade${NOCOLOR} - upgrade hive from repository
 ${CYAN}firstrun -f${NOCOLOR} - force rig setup, you will enter ID and password again
 ${CYAN}wifi${NOCOLOR} - to setup WiFi if you have one
 ${PURPLE}net-test${NOCOLOR} - check your network connection
+${PURPLE}gpu-fans-find${NOCOLOR} - find GPU by spinning fans
 ${PURPLE}logs-off${NOCOLOR} - for USB Flash Drives move logs to RAM
 EOF
 )"

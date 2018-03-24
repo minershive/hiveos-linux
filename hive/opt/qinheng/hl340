@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+[[ -z $1 ]] &&
+        echo "Usage: `basename $0` ping|reset[port]" &&
+        exit 1
+
+PORT=/dev/ttyUSB0
+
+[[ ! -z $2 ]] &&
+        PORT=$2 ||
+        echo "No port given, using default"
+
+echo "Using $PORT"
+
+
+
+[[ ! -c $PORT ]] &&
+        echo "$PORT is not a character device" &&
+        exit 1
+
+
+if [[ $1 == "reset" ]]; then
+        echo "Pushing Reset"
+        echo -ne "\xFF" > $PORT
+        exit 0
+fi
+
+
+#if [[ $1 == "power" ]]; then
+#        echo "Pushing Power"
+#        echo -n "~T2" > $PORT
+#        exit 0
+#fi
+
+
+#should be ping here, but will work with any
+#Send 60 second timeout to WD in HEX , if WD dont  received 2*timeout, then WD RESET the MB.
+
+while true
+do
+        echo "Pinging watchdog"
+        echo -ne "\x06" > $PORT
+        sleep 2
+done
