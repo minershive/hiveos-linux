@@ -3,7 +3,7 @@
 THIS_MINER_NAME="optiminer"
 [ -t 1 ] && . colors
 
-[[ ! -e /hive/optiminer ]] && message warn "Please run optiminer-install" && exit 1
+[[ ! -e /hive/optiminer ]] && message warn "Please connect to the rig via SSH-terminal and execute the `optiminer-install` command in the bash" && exit 1
 
 [[ `ps aux | grep "\./optiminer-equihash" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
 	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
