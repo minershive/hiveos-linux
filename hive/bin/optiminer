@@ -101,7 +101,7 @@ cd /hive/$THIS_MINER_NAME
 while true
 do
 	miner logrotate $THIS_MINER_NAME
-	/hive/$THIS_MINER_NAME/$THIS_MINER_NAME.sh
+	sudo /hive/$THIS_MINER_NAME/$THIS_MINER_NAME.sh
 	echo ""
 	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
 	echo ""
