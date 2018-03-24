@@ -17,7 +17,7 @@ mkdir -p "/hive-config"
 #Get preconfigured api host
 HIVE_HOST_URL_STR=
 [[ -e /hive-config/rig-config-example.txt ]] &&
-	HIVE_HOST_URL_STR=`cat /hive-config/rig-config-example.txt | grep '^HIVE_HOST_URL='`
+	HIVE_HOST_URL_STR=`cat /hive-config/rig-config-example.txt | dos2unix | grep '^HIVE_HOST_URL='`
 [[ -z $HIVE_HOST_URL_STR ]] &&
 	HIVE_HOST_URL_STR='HIVE_HOST_URL="https://api.hiveos.farm"'
 
