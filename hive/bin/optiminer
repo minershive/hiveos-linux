@@ -78,7 +78,7 @@ function config_gen() {
 
 	# Monitoring port
 	conf+="-m 52749"$'\n'
-	conf+="—log-file /var/log/optiminer/optiminer.log"$'\n'
+	conf+="--log-file /var/log/optiminer/optiminer.log"$'\n'
 	conf+=$'\n'
 
 
