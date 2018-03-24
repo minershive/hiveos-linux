@@ -242,7 +242,7 @@ function miner_stats {
 			else
 				#optiminer sorts it's keys incorrectly, e.g. "GPU1", "GPU10", "GPU2", fixing that with sed hack by replacing "1":{ with "01":{
 				stats_raw=$(echo "$stats_raw" | sed -E 's/"GPU([0-9])"/"GPU0\1"/g' | jq -c --sort-keys .)
-				local khs=`echo $stats_raw | jq '.solution_rate.Total."60s"'`
+				khs=`echo $stats_raw | jq '.solution_rate.Total."60s"' | awk '{print $1/1000}'`
 				local uptime=`echo $stats_raw | jq '.uptime'`
 				local hs=$(jq -c '[.solution_rate[]."60s"]' <<< "$stats_raw" | sed -E "s/^(\[.*)(,[0-9]+\.[0-9]+)]$/\1]/")
 				[[ -z $OPTIMINER_ALGORITHM ]] && OPTIMINER_ALGORITHM="equihash96_5"
