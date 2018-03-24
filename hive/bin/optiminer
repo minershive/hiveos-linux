@@ -3,9 +3,9 @@
 THIS_MINER_NAME="optiminer"
 [ -t 1 ] && . colors
 
-#[[ `ps aux | grep "\./optiminer" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
-#	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
-#	exit 1
+[[ `ps aux | grep "\./optiminer" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
+	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
+	exit 1
 
 
 function config_gen() {
