@@ -4,14 +4,17 @@ version=2.1.2
 archname="optiminer-equihash-$version.tar.gz"
 url=http://download.optiminer.pl/$archname
 
-tmpdir="/tmp"
+tmpdir="/hive/tmp"
+archpath="$tmpdir/$archname"
+mkdir -p $tmpdir
 cd $tmpdir
 ## Pre-cleaning
-[ -e $archname ] && rm $archname
+#[ -e $archpath ] && rm $archpath
 
 ## Downloading
 echo "> Downloading $url"
-[[ ! -f $archname ]] && wget -c $url || echo "> using cached file"
+[[ -f $archpath ]] && echo "> $archpath found locally, maybe incomplete, trying to recover"
+wget -c $url
 [ $? -ne 0 ] && echo "Error downloading $url" && exit 1
 
 
@@ -22,19 +25,22 @@ echo ""
 echo "> Extracting $archname"
 unpackdir="$tmpdir/optiminer-$version"
 installdir="/hive/optiminer-$version"
+maindir="/hive/optiminer"
 mkdir -p $unpackdir
-tar -C $unpackdir -xvz -f $archname optiminer-equihash --strip-components=1
+tar -C $unpackdir -xvz -f $archpath optiminer-equihash --strip-components=1
 
 ## Installation
-[[ -e /hive/optiminer ]] && rm -rf /hive/optiminer
+[[ -e $maindir ]] && rm -rf $maindir
 mv $unpackdir $installdir
-ln -s $installdir /hive/optiminer
-[ $? -ne 0 ] && echo "Error extracting $archname" && exit 1
-#rm $archname
+ln -s $installdir $maindir
+[ $? -ne 0 ] && echo "Error extracting $archpath" && exit 1
+
+echo "> Removing downloaded $archpath"
+rm -f $archpath
 
 ## Post-installation
-chmod +x /hive/optiminer/*.sh
+chmod +x $maindir/*.sh
 miner logdirscreate
-chown -R user /hive/optiminer*
+chown -R user $maindir*
 
 echo "> Optiminer installed"
