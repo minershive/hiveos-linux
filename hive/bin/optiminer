@@ -29,56 +29,54 @@ function config_gen() {
 
 	conf+="./optiminer-equihash \\"$'\n'
 
+	if [[ ! -z $OPTIMINER_USER_CONFIG ]]; then
+	    # The regular expressions below are required the space char to detect the end of parameter
+		OPTIMINER_USER_CONFIG+=" ###ENDMARKER###"
+
+		## Algorithm
+		user_algorithm=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '((?<=-a\s)(.+?)\s)|((?<=--algorithm\s)(.+?)\s)')
+		if [[ ! -z $user_algorithm ]]; then
+		    OPTIMINER_ALGO=$user_algorithm
+			OPTIMINER_USER_CONFIG=$(sed "s/-a $user_algorithm//g" <<< "$OPTIMINER_USER_CONFIG")
+			OPTIMINER_USER_CONFIG=$(sed "s/--algorithm $user_algorithm//g" <<< "$OPTIMINER_USER_CONFIG")
+		fi
+
+        ## Stratum
+		user_url=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '((?<=-s\s)(.+?)\s)|((?<=--stratum\s)(.+?)\s)')
+		if [[ ! -z $user_url ]]; then
+		    OPTIMINER_SERVER=$user_url
+			OPTIMINER_USER_CONFIG=$(sed "s/-s $user_url//g" <<< "$OPTIMINER_USER_CONFIG")
+			OPTIMINER_USER_CONFIG=$(sed "s/--stratum $user_url//g" <<< "$OPTIMINER_USER_CONFIG")
+		fi
+
+        # Username
+		user_name=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '((?<=-u\s)(.+?)\s)|((?<=--user\s)(.+?)\s)')
+		if [[ ! -z $user_name ]]; then
+		    OPTIMINER_TEMPLATE=$user_name
+			OPTIMINER_USER_CONFIG=$(sed "s/-u $user_name//g" <<< "$OPTIMINER_USER_CONFIG")
+			OPTIMINER_USER_CONFIG=$(sed "s/--user $user_name//g" <<< "$OPTIMINER_USER_CONFIG")
+		fi
+
+        # Password
+		user_password=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '((?<=-p\s)(.+?)\s)|((?<=--password\s)(.+?)\s)')
+		if [[ ! -z $user_password ]]; then
+		    OPTIMINER_PASS=$user_password
+			OPTIMINER_USER_CONFIG=$(sed "s/-p $user_password//g" <<< "$OPTIMINER_USER_CONFIG")
+			OPTIMINER_USER_CONFIG=$(sed "s/--password $user_password//g" <<< "$OPTIMINER_USER_CONFIG")
+		fi
+
+		OPTIMINER_USER_CONFIG=$(sed "s/###ENDMARKER###//g" <<< "$OPTIMINER_USER_CONFIG")
+		OPTIMINER_USER_CONFIG=$(sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/ \\\n/g' <<< "$OPTIMINER_USER_CONFIG")
+	fi
 	[[ ! -z $OPTIMINER_ALGO ]] && conf+="-a $OPTIMINER_ALGO \\"$'\n'
 	[[ ! -z $OPTIMINER_SERVER ]] && conf+="-s $OPTIMINER_SERVER:$OPTIMINER_PORT \\"$'\n'
 	[[ ! -z $OPTIMINER_TEMPLATE ]] && conf+="-u $OPTIMINER_TEMPLATE \\"$'\n'
 	[[ ! -z $OPTIMINER_PASS ]] && conf+="-p $OPTIMINER_PASS \\"$'\n'
 
-	if [[ ! -z $OPTIMINER_USER_CONFIG ]]; then
-		OPTIMINER_USER_CONFIG+=" ###ENDMARKER###"
-		user_algorithm=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '(?<=-a\s)(.+?)\s')
-		if [[ ! -z $user_algorithm ]]; then
-			sed "s/-a $user_algorithm//g" <<< "$OPTIMINER_USER_CONFIG"
-			if [[ ! -z "$(echo $conf | grep -Pow '\-a $OPTIMINER_ALGO')" ]]; then
-				sed "s/-a $OPTIMINER_ALGO/-a $user_algorithm/g" <<< "$conf"
-			else
-				conf+="-a $user_algorithm \\"$'\n'
-			fi
-		fi
-		user_url=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '(?<=-s\s)(.+?)\s')
-		if [[ ! -z $user_url ]]; then
-			sed "s/-s $user_url//g" <<< "$OPTIMINER_USER_CONFIG"
-			if [[ ! -z $(echo $conf | grep -Pow '\-s $OPTIMINER_SERVER') ]]; then
-				sed "s/-s $OPTIMINER_SERVER/-s $user_url/g" <<< "$conf"
-			else
-				conf+="-s $user_url \\"$'\n'
-			fi
-		fi
-		user_name=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '(?<=-u\s)(.+?)\s')
-		if [[ ! -z $user_name ]]; then
-			sed "s/-u $user_name//g" <<< "$OPTIMINER_USER_CONFIG"
-			if [[ ! -z $(echo $conf | grep -Pow '\-u $OPTIMINER_TEMPLATE') ]]; then
-				sed "s/-u $OPTIMINER_TEMPLATE/-u $user_name/g" <<< "$conf"
-			else
-				conf+="-u $user_name \\"$'\n'
-			fi
-		fi
-		user_password=$(echo $OPTIMINER_USER_CONFIG | grep -Pow '(?<=-p\s)(.+?)\s')
-		if [[ ! -z $user_password ]]; then
-			sed "s/-p $user_password//g" <<< "$OPTIMINER_USER_CONFIG"
-			if [[ ! -z $(echo $conf | grep -Pow '\-p $OPTIMINER_PASS') ]]; then
-				sed "s/-p $OPTIMINER_PASS/-p $user_password/g" <<< "$conf"
-			else
-				conf+="-p $user_password \\"$'\n'
-			fi
-		fi
-		sed "s/ ###ENDMARKER###//g" <<< "$OPTIMINER_USER_CONFIG"
-		conf+=$OPTIMINER_USER_CONFIG" \\"$'\n'
-	fi
-
 	# Monitoring port
 	conf+="-m 52749 \\"$'\n'
-	conf+="--log-file /var/log/miner/optiminer/optiminer.log"$'\n'
+	conf+="--log-file /var/log/miner/optiminer/optiminer.log \\"$'\n'
+	conf+=$OPTIMINER_USER_CONFIG$" \\"$'\n'
 	conf+=$'\n'
 
 
