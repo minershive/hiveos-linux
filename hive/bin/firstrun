@@ -15,11 +15,9 @@ mkdir -p "/hive-config"
 
 
 #Get preconfigured api host
-HIVE_HOST_URL_STR=
 [[ -e /hive-config/rig-config-example.txt ]] &&
-	HIVE_HOST_URL_STR=`cat /hive-config/rig-config-example.txt | dos2unix | grep '^HIVE_HOST_URL='`
-[[ -z $HIVE_HOST_URL_STR ]] &&
-	HIVE_HOST_URL_STR='HIVE_HOST_URL="https://api.hiveos.farm"'
+	eval `cat /hive-config/rig-config-example.txt | dos2unix | grep '^HIVE_HOST_URL='`
+[[ -z $HIVE_HOST_URL ]] && HIVE_HOST_URL='https://api.hiveos.farm'
 
 
 
@@ -77,8 +75,24 @@ fi
 
 
 
-id=""
-passwd=""
+url=
+id=
+passwd=
+
+
+
+read_url () {
+	while true; do
+		read url
+		[[ -z $url ]] && break
+		[[ $url =~ ^(http|https)://.+$ ]] &&
+			HIVE_HOST_URL=$url &&
+			echo -e "New server URL: ${YELLOW}$HIVE_HOST_URL${NOCOLOR}" &&
+			break
+		echo "Invalid URL"
+	done
+}
+
 
 read_id () {
 	while true; do
@@ -101,15 +115,16 @@ read_passwd () {
 }
 
 
-echo $HIVE_HOST_URL_STR
-echo ""
 
 while true; do
+	echo -e "Server URL: ${YELLOW}$HIVE_HOST_URL${NOCOLOR}"
+	echo "Press ENTER to continue with this URL or type a new one"
+	read_url
 	read_id
 	read_passwd
 
 	cat > $RIG_CONF <<FILEEOF
-$HIVE_HOST_URL_STR
+HIVE_HOST_URL="$HIVE_HOST_URL"
 RIG_ID="$id"
 RIG_PASSWD="$passwd"
 FILEEOF
