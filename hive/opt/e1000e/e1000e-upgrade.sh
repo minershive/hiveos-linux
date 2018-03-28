@@ -26,6 +26,7 @@ tar xvfz ./$archName
 echo -e "${WHITE}> Building Intel's E1000E driver${NOCOLOR}"
 cd $tmpDir/e1000e-$driverVersion/src
 make
+[ $? -ne 0 ] && echo "${RED}> Driver building error" && exit 1
 
 ## Install
 echo -e "${WHITE}> Intel's E1000E driver kernel integration${NOCOLOR}"

@@ -28,12 +28,12 @@ installdir="/hive/optiminer-$version"
 maindir="/hive/optiminer"
 mkdir -p $unpackdir
 tar -C $unpackdir -xvz -f $archpath optiminer-equihash --strip-components=1
+[ $? -ne 0 ] && echo "Error extracting $archpath" && exit 1
 
 ## Installation
 [[ -e $maindir ]] && rm -rf $maindir
 mv $unpackdir $installdir
 ln -s $installdir $maindir
-[ $? -ne 0 ] && echo "Error extracting $archpath" && exit 1
 
 echo "> Removing downloaded $archpath"
 rm -f $archpath
