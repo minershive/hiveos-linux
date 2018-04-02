@@ -48,7 +48,9 @@ rm /boot/*.old-dkms
 #we don't need i386
 rm -rf /opt/amdgpu-pro/lib/i386-linux-gnu
 
-echo "> Filling with zeros..."
-zerofill
+echo "> Filling with /hive-config"
+zerofill /hive-config
+echo "> Filling with /"
+zerofill /
 echo "Done"
 

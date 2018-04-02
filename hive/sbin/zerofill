@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 #Used for better compression
 
-cat /dev/zero > /big_zero
+#cat /dev/zero > /big_zero
+
+#destination directory
+dest='/'
+[[ ! -z $1 ]] && dest=$1
+
+
+#\\377 is 0xFF in octal. Was requested to write 0xFF for flashdrives
+cat /dev/zero | tr \\000 \\377 > "${dest}big_zero"
+
 sync
 rm /big_zero
 sync
