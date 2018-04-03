@@ -1,0 +1,645 @@
+VERSION HISTORY
+
+
+v11.6
+---------------------------------------------------------------------
+
+- improved hashrate for weak Nvidia cards by about 1%.
+- zero devfee for 3GB cards in Windows 10, same as for all 2GB cards.
+- applied some tricks to increase available memory for 3GB cards in Windows 10 so you can mine ETH a bit longer.
+- now you can press "y" key to turn on "Compute Mode" in AMD drivers for all cards (Windows only).
+- Linux version: removed openssl library dependency.
+- improved "-logfile" option, now you can use it to specify a folder for log files, use slash at the end to do it, for example, "-logfile logs\".
+- added "-epoolsfile" and "-dpoolsfile" options.
+- remote management: now "miner_getstat2" command also returns PCI bus index for every GPU.
+- a few minor bug fixes and improvements.
+
+
+
+v11.5
+---------------------------------------------------------------------
+
+- added "-oldkernels" option (AMD GPUs only), you can try "-oldkernels 1" to use old-style GPU kernels from v10, they can be more stable for hard OC and custom BIOSes.
+- a bit reduced stale shares for Nvidia GPUs.
+
+
+
+v11.4
+---------------------------------------------------------------------
+
+- fixed issue with stale shares.
+- fixed issue with incorrect shares.
+- a few minor bug fixes and improvements.
+
+
+
+v11.3
+---------------------------------------------------------------------
+
+- added automatic detection of best -dcri values in ASM ETH-only mode if -dcri option is missed. 
+  Press "s" key to see current values, you can also press "z" key to restart detection.
+- improved support for systems with many GPUs (eight and more) and slow CPU: much less CPU load, EthMan works fine now.
+- added assembler kernel for RX550 card. This card is not good for dual mining, but in ETH-only mode ASM kernel is faster by about 7%.
+- added "x" key to select GPU for manual -dcri value adjustment.
+- several minor bug fixes and improvements.
+
+
+
+v11.2
+---------------------------------------------------------------------
+
+- some improvements in AMD GPU kernels, it can increase hashrate a bit in some cases.
+- reduced some delays, it will cause a bit less stale shares.
+
+
+
+v11.1
+---------------------------------------------------------------------
+
+- added SSL support with pool certificate verification, it significantly improves security, use "ssl://" prefix for pools that support SSL encryption.
+- added "-checkcert" option.
+- EthMan updated.
+
+
+
+v11.0
+---------------------------------------------------------------------
+
+- added new algorithm for dual mode: blake2s (stratum pools only), use "-dcoin blake2s" option.
+- added new algorithm for dual mode: keccak (stratum pools only), use "-dcoin keccak" option.
+- reduced devfee for dual mode, now it is 1.5%.
+- for 2GB cards devfee is removed completely, i.e. on 2GB cards you can mine all ETH forks without devfee. Check Readme for details.
+- added "-tstart" option.
+- "-asm 2" option value now supports Tahiti, Tonga, Ellesmere, Baffin; in some cases it can be a bit faster in ETH-only mode.
+- removed "-allcoins exp" option value.
+- a few minor bug fixes and improvements.
+
+
+
+v10.6
+---------------------------------------------------------------------
+
+- fixed critical issue in remote management feature (attacker could crash miner even in read-only mode).
+
+
+
+v10.5
+---------------------------------------------------------------------
+
+- applied another workaround for ADL, you must not see "Temperature control thread hangs" message now.
+- added version for CUDA 9.1.
+- now miner shows a warning if you enabled full remote management (-mport > 0) and did not specify -mpsw parameter.
+- now miner shows a warning if you specified default ETH wallet (from default start.bat).
+
+
+
+v10.4
+---------------------------------------------------------------------
+
+- fixed issue with rejected shares in ETH+SIA mode for Vega cards.
+- improved watchdog for temperature/fan management thread.
+
+
+
+v10.3
+---------------------------------------------------------------------
+
+- added support for Adrenalin drivers (GPU sorting, fan/temperature/clocks management).
+- fixed issue with possible GPU crash during miner shutdown.
+- now miner shows PCI bus number for every GPU.
+- a few minor improvements.
+- EthMan: some bug fixes and minor improvements.
+
+
+
+v10.2
+---------------------------------------------------------------------
+
+- fixed critical issues in remote management feature (attacker could crash miner even in read-only mode).
+- now miner supports up to #299 epoch.
+- in rare cases ADL API calls can hang, now watchdog checks it as well.
+- improved "-minspeed" option, check readme for details.
+- added "miner_getstat2" command to remote management, check "API.txt" for details.
+- EthMan: added detailed stats mode in main window.
+
+
+
+v10.1
+---------------------------------------------------------------------
+
+- now if miner has to recreate DAG for devfee, new DAG generation time will be included in devfee time.
+- improved "-gser" option, now you can set custom delay between DAG generation on GPUs, check Readme for details.
+- added detailed stats about rejected shares per GPU ("s" key).
+- added "-logsmaxsize" option.
+- fixed issues with "-r -1" option value.
+- EthMan: added detailed stats mode in web server.
+- a few minor bug fixes and improvements.
+
+
+
+v10.0
+---------------------------------------------------------------------
+
+- added assembler kernels for ETH+LBC mining mode (AMD cards only), major speedup for LBC.
+- about 1% ETH speedup for Vega cards.
+- fixed issues with voltage/clocks management for latest AMD blockchain drivers (not completely).
+- new GPU sorting method for NVIDIA cards. Now GPUs are sorted by physical bus index (it matches AfterBurner list of GPUs).
+- for ETH+LBC mining mode maximal "dcri" value is 1000 now.
+- added "-platform" option.
+- added "ESTALE" option support in failover file epools.txt (see "-estale" option for details).
+- several minor bug fixes and improvements.
+
+
+
+v9.8
+---------------------------------------------------------------------
+
+- added Vega cards support (ASM mode).
+- added fan/OC support for 17.7.2 (and higher) drivers.
+- fixed issue with -ttli and -ttdcr option for Nvidia cards.
+- improved support for systems with more than 10 GPUs, check readme for "-di" and "-mode" options description for details.
+- a few minor bug fixes and improvements.
+
+
+
+v9.7
+---------------------------------------------------------------------
+
+- Added ASM mode for RX460/560 cards, up to 30% speedup for second coin in dual mode.
+- Improved ETH speed for some Nvidia cards.
+- Improved speed in dual mode for Nvidia cards.
+- reduced initialization time.
+- a few minor bug fixes and improvements.
+- EthMan: added ability to select several rigs.
+- EthMan: several minor bug fixes and improvements.
+
+
+
+v9.6
+---------------------------------------------------------------------
+
+- new GPU sorting method for AMD cards. Now GPUs are sorted by physical bus index (it matches AfterBurner list of GPUs). Also the list of temperatures/fans matches the list of GPUs automatically.
+  Therefore "-di detect" and "-gmap" options are not necessary and not supported anymore.
+  WARNING: be careful if you use use separate overclock/temperature settings for every card, due to new sorting method GPUs can get different indexes!
+- added "-minspeed" option to restart miner/system if miner cannot reach specified speed.
+- now watchdog monitors initialization steps too, e.g. it will restart miner even if miner hangs at GPUs initialization.
+- added "-allcoins etc" option for ETC pools that require Username.Worker, in this mode devfee will be mined on some default ETC pools and DAG will not be recreated.
+- added current DAG size info when "s" key is pressed.
+- added 1 minute average speed for ETH when "s" key is pressed.
+- fixed connection timeout issue in Linux version.
+- fixed some issues related to remote management via TCP/IP.
+- added "-ejobtimeout" and "-djobtimeout" options.
+- fixed epoch #0 support.
+- a few minor bug fixes and improvements.
+- EthMan: fixed issue with lost connection to some rigs.
+- EthMan: added password for webserver.
+- EthMan: added separate settings for every event.
+- EthMan: added "retrigger" option for lost connection event.
+
+
+
+v9.5
+---------------------------------------------------------------------
+
+- fixed issue with PASC, miner could check some nonces twice. Effective hashrate must be a bit higher now.
+- improved SIA support for Nicehash, added "mining.extranonce.subscribe" and "client.reconnect" commands support. Effective hashrate must be a bit higher now.
+- a few minor bug fixes and improvements.
+- EthMan: added ability to enable/disable GPUs remotely (see API.txt for tech details).
+- EthMan: added notification for too high fan speed.
+- EthMan: several minor bug fixes and improvements.
+
+
+
+v9.4
+---------------------------------------------------------------------
+
+- added alternative Sia Stratum support (Siamining, Nicehash). Stratum version detection is automatic.
+- improved fans management for latest drivers and Polaris cards.
+- added "-mpsw" option.
+- added shares-per-GPU statistics when "s" key is pressed.
+- Included EthMan v3.0 which supports passwords and email notifications.
+
+
+
+v9.3
+---------------------------------------------------------------------
+
+- improved dual mining speed stability in ASM mode.
+- added "-altnum" option for alternative GPU indexing.
+- a few minor bug fixes and improvements.
+
+
+
+v9.2
+---------------------------------------------------------------------
+
+- improved mining speed stability.
+- added changes in DCR mining protocol.
+- fixed possible issue with rejected DCR shares on Nicehash pool.
+- added pool selection in runtime ("e" and "d" keys).
+- now if devfee mining fails for a long time, miner will not stop mining, it will turn on "-nofee" option temporarily with appropriate warnings, until successful devfee mining.
+- some minor improvements.
+- EthMan: added ReasonID parameter to .bat file which is executed when some rig has problems, check "sample.bat" for details.
+
+
+
+v9.1
+---------------------------------------------------------------------
+
+- added assembler kernels for ETH+SIA and ETH+PASCAL modes (major speedup for SIA and PASCAL).
+- added alternative assembler kernels for Tonga and Polaris cards for ETH-only mode. Use them if you get best speed at "-dcri 1" (i.e. you cannot find speed peak), use "-asm 2" option to enable this mode.
+- a few minor bug fixes and improvements.
+
+
+
+v9.0
+---------------------------------------------------------------------
+
+- added "-asm" option (AMD cards only) which enables assembler GPU kernels. In this mode some tuning is required even in ETH-only mode, use "-dcri" option or or "+/-" keys in runtime to set best speed.
+    Currently only ETH-only and ETH-DCR modes are supported in assembler. Use "-asm 0" if you don't want to use new assembler kernels.
+    If ASM mode is enabled, miner must show "GPU #x: algorithm ASM" at startup.
+- improved ETH mining speed in ASM mode for some cards, also a bit reduced power usage for some cards (fine-tuning is required via "-dcri" or "+/-" keys in runtime). 
+    NOTE 1: if GPU throttles, best "-dcri" value is different.
+    NOTE 2: speed peak can be rather short, so change "-dcri" value slowly.
+- dramatically increased DCR mining speed in assembler mode (up to 70%). Be careful, power usage is higher too.
+- added "-gmap" option.
+- fixed DCR Nicehash support.
+- added "FINE-TUNING" section to Readme file.
+- A lot of minor improvements and bug fixes.
+
+
+
+v8.1
+---------------------------------------------------------------------
+
+- added Ethereum+Pascal mode for NVidia cards.
+- improved "-di detect" option: now after GPU order detection miner starts mining with the detected order.
+- now remote management is working in read-only mode by default.
+- improved "-mport" option, now you can specify network adapter IP for incoming connections for remote management.
+- added "-benchmark" option.
+- fixed issue with "-retrydelay" option.
+- added  "-v" option.
+- a few minor bug fixes and improvements.
+- EthMan: added option for font color selection.
+
+
+
+v8.0
+---------------------------------------------------------------------
+
+- added new coin for dual mode: PASCAL(PASC). Now you can mine Ethereum, Ethereum+Decred, Ethereum+Siacoin, Ethereum+Lbry or Ethereum+Pascal. NOTE: Currently Pascal is not available for NVidia cards.
+- added "-nofee" option.
+- added ability to use environment variables in "epools.txt", "dpools.txt" and "config.txt" files. For example, define "WORKER" environment variable and use it as "%WORKER%" in config.txt.
+- added "License.txt" file.
+- some minor improvements.
+
+
+
+v7.4. This version is assumed to be stable, so it is not marked as "beta".
+---------------------------------------------------------------------
+
+- added "-retrydelay" option. 
+- EthMan: added "View miner console" command.
+
+
+
+v7.3. This version is assumed to be stable, so it is not marked as "beta".
+---------------------------------------------------------------------
+
+- now miner supports HTTP for remote monitoring, you can check miner state remotely via browser, check "-mport" option for details.
+- added temperature management for Linux gpu-pro drivers. Note: root access is required to manage fans speed.
+- added "-fanmin" option.
+- fixed issue with "-allcoins exp" option.
+- EthMan: added options for number of decimal points in displayed statistics.
+- some minor improvements and bug fixes.
+
+
+
+v7.2
+---------------------------------------------------------------------
+
+- added "-lidag" option to reduce intensity of DAG generation, it can help with OC or weak PSU.
+- added temperature/fan monitoring for Linux version for gpu-pro drivers. Only monitoring is supported currently, not management.
+- "r" key reloads pools from epools.txt and dpools.txt in runtime.
+- fixed issue with wrong detection of card names.
+- systems with up to 32 GPUs are supported now (with some minor limitations).
+- Linux version: fixed issue with closing miner with "Ctrl-C".
+- several minor improvements and bug fixes.
+- EthMan: added "total online miners" and "total working gpus" info.
+- EthMan: added color and font size options for the list of miners.
+
+
+
+v7.1. This version is assumed to be stable, so it is not marked as "beta".
+---------------------------------------------------------------------
+
+- now "-etha 2" is set automatically for Linux and 4xx cards. You can change it by specifying "-etha" directly if necessary.
+- if miner manages fans, it returns management back to drivers at closing.
+- added text coloring in Linux version. You can use "-colors 0" option to disable it if necessary.
+- several minor improvements and bug fixes.
+- EthMan: added ability to start .bat file if miner has problems.
+- EthMan: added support for CryptoNote miner.
+
+
+
+v7.0
+---------------------------------------------------------------------
+
+- added new coin for dual mode: LBRY(LBC). Now you can mine Ethereum, Ethereum+Decred, Ethereum+Siacoin or Ethereum+Lbry.
+- some minor improvements and bug fixes.
+
+
+
+v6.4
+---------------------------------------------------------------------
+
+- added "-etha 2" option value for gpu-pro Linux drivers.
+- fixed issue with a bit lower mining speed of previous version (AMD cards).
+- Improved speed by about 3% for NVIDIA 10xx cards in Windows 10 (CUDA 8.0 build).
+- NVIDIA: added build with CUDA 8.0, it is default now, there are also CUDA 6.5 and 7.5 builds in separate folders.
+- NVIDIA: added temperatures/fans monitoring. Note that fans management is not available, only monitoring is possible.
+- EthMan now shows "off" or "stopped" status for disabled/stopped cards in detailed hashrate stats.
+
+
+
+v6.3. This version is assumed to be stable, so it is not marked as "beta".
+---------------------------------------------------------------------
+
+- added support for NVIDIA 10xx cards in Linux.
+- fixed issue with gpu-pro drivers in Linux.
+- minor improvements in OpenCL kernels.
+- bug fixes.
+
+
+
+v6.2
+---------------------------------------------------------------------
+
+- released version for Linux with nvidia support.
+- fixed Ethereum solo mining mode.
+- added "-cvddc" and "-mvddc" options for adjusting voltages for latest AMD 4xx cards.
+- now you can turn on/off cards in runtime with "0"..."9" keys.
+- bug fixes.
+
+
+
+v6.1
+---------------------------------------------------------------------
+
+- fixed issue with high CPU load for NVIDIA cards.
+- NVIDIA: now two builds are available: for CUDA 7.5 and for CUDA 6.5.
+- fixed issue with resetting WattMan settings.
+
+
+
+v6.0
+---------------------------------------------------------------------
+
+- added nVidia support. Tested on 970, 980 and 1070 cards, both single and dual modes are supported. Mixed AMD+nVidia cards are supported too.
+- added temperature management for latest AMD 4xx cards.
+- added "-ttli" option.
+- fixed possible issues with fan management when "-di detect" is used.
+
+
+
+v5.3
+---------------------------------------------------------------------
+
+- added "-di detect" option value to detect correct GPU order for temperatures management.
+- improved Nicehash pool support (mining.extranonce.subscribe).
+- fixed issue with sending config.txt to EthMan.
+- fixed issue in EthMan (possible garbage during remote editing config.txt).
+
+
+
+v5.2
+---------------------------------------------------------------------
+
+- added Stratum for Siacoin. Currently not all Stratum versions are supported, check help page of your pool for details.
+- bug fixes.
+
+
+
+v5.1
+---------------------------------------------------------------------
+
+- fixed issue with crash in Ethereum solo mode.
+- fixed issue in Linux version when http server does not respond.
+- increased timeout to detect bad pool state when no jobs are received for a long time.
+- added FAQ section to readme.
+
+
+
+v5.0
+---------------------------------------------------------------------
+
+- added new coin for dual mode: Siacoin. Now you can mine Ethereum, Ethereum+Decred or Ethereum+Siacoin.
+- added "-dcoin" option to select a coin for dual mode.
+- added "-allcoins exp" option value that allows you to mine Expanse and don't recreate DAG for devfee mining.
+- added Decred support for Nicehash pool.
+- default "-dcrt" option value is "5" now.
+- improved detection of bad pool state: miner will disconnect if pool rejected more than a half of last 10 shares.
+- "s" key: now miner also shows current difficulty so you can calculate how long it will take to find a share or a block.
+- bug fixes.
+
+
+
+v4.7. This version is assumed to be stable, so it is not marked as "beta".
+---------------------------------------------------------------------
+
+- improved stability of Linux version.
+- fixed issue with possible crash if pool sends several jobs at once.
+- added "-li" option.
+- bug fixes.
+- EthMan: added more options for sound notification.
+- EthMan: added option to adjust hashrate warning threshold.
+
+
+
+v4.6
+---------------------------------------------------------------------
+
+- added "-esm 3" option value to support Nicehash Stratum implementation.
+- added "-ttdcr" option.
+- improved "-tstop" option - now you can specify negative values to close miner instead of stopping GPU.
+- added "-fanmax" option.
+- failover if pool rejects too many shares.
+- fixed issue with wrong "-esm" value that miner could show.
+- bug fixes.
+- EthMan: added sound notification.
+
+
+
+v4.5. This version is assumed to be stable, so it is not marked as "beta".
+---------------------------------------------------------------------
+
+- improved "-tstop" option - if it turned off wrong card (see "KNOWN ISSUES" section in readme about possible GPU order issue), it will close miner in 30 seconds.
+- added more statistics for "s" key.
+- added "-logfile" option.
+- fixed issue with "-mclock" and "-cclock" options for some cards.
+- a few minor improvements.
+- bug fixes.
+- EthMan: added more info - number of restarts, number of failovers, number of invalid shares.
+- EthMan: added option to display detailed statistics about GPU hashrates.
+- EthMan: added command "Execute reboot.bat".
+- EthMan: added command "Edit config.txt".
+- EthMan: added "GPU warning temperature" option.
+- EthMan: if some table columns are hidden, webserver won't show them too.
+
+
+
+v4.4
+---------------------------------------------------------------------
+
+- "-tstop" option now stops mining on overheated GPU instead of closing miner.
+- if GPU fan is not available (non-standard cooling), miner still shows temperature.
+- now miner sends also worker name (if specified) when sends current hashrate to pool.
+- now you can specify configuration file name in the command line.
+- improved failover files parsing, now commas can be used as parameter values.
+- Fixed issues with remote control after miner restarting in Linux version.
+- Linux version, "-r 1" option: if "reboot.bash" not found, miner will execute "reboot.sh".
+- EthMan: sending epools.txt and dpools.txt - they are applied in the miner immediately now.
+- EthMan shows the percentage of rejected shares.
+- EthMan: added "Comments" field in miner properties.
+- EthMan: added table header and auto-refresh for web page.
+- EthMan: added warning if some miners in table are red.
+- EthMan: added ability to minimize to system tray.
+- bug fixes.
+
+
+
+v4.3
+---------------------------------------------------------------------
+
+- added "EthMan" - an utility for remote monitoring/management.
+- added "-estale" option to send stale shares for Ethereum, it can increase effective hashrate a bit.
+- now all options can be stored in "config.txt" file.
+- added "-ftime" option.
+- added "-erate" option.
+- added "-tstop" option.
+- now miner sends hashrate to geth in solo mining mode.
+- added "-mport" option for remote management.
+- bug fixes.
+
+
+
+v4.2
+---------------------------------------------------------------------
+
+- added support for Ethereum solo mining.
+- added "-gser" option.
+- added "-eres" option.
+- added "-powlim" option.
+- added "-etht" option.
+- "-tt 1" (default) now does not manage fans but shows GPU temperature and fan status.
+- added support for "client.reconnect" stratum command for Decred.
+
+
+
+v4.1. This version is assumed to be stable, so it is not marked as "beta".
+---------------------------------------------------------------------
+
+- UPDATE: Added build for Linux x64 (tested on Ubuntu 12.04).
+- improved working with DAG on GPUs during epoch changing, it must work fine now.
+- added watchdog for threads that communicate with pools.
+- minor bug fixes.
+
+
+
+v4.0
+---------------------------------------------------------------------
+
+- no DAG files anymore.
+- removed "-dir" option.
+- Bug fixes.
+
+
+
+v3.3
+---------------------------------------------------------------------
+
+- failover for both Ethereum and Decred.
+- added CRC check for DAG files. Now if DAG file is corrupted, miner will detect it and re-create DAG.
+  Don't remove DAG files manually if you think that they can be corrupted - miner will do it automatically if necessary.
+- default value for "-ethi" option is "8" now (instead of "16"), it slightly reduces delays when miner accepts new job.
+- Bug fixes, a few minor improvements.
+
+
+
+v3.2
+---------------------------------------------------------------------
+
+- reduced number of rejected shares for Decred-Stratum.
+- miner sends its current hashrate to pool, some pools have "reported hashrate" column and you can see miner hashrate there.
+- miner shows how long it takes pool to accept share.
+- option "-r 1" closes miner and calls "reboot.bat" if some GPU failed, so you can create "reboot.bat" to perform any actions.
+- Bug fixes, a few minor improvements.
+
+
+
+v3.1
+---------------------------------------------------------------------
+
+- reduced delays at shares sending, it must improve speed on pools a bit.
+
+
+
+v3.0
+---------------------------------------------------------------------
+
+- improved Ethereum mining speed by 1-15% (depends on mining mode and card model, slower card - more speed improvement).
+- added "-etha" option to select Ethereum algorithm optimized for your cards.
+- added "-allcoins" option to support Ethereum forks mining.
+- miner checks all Ethereum shares before sending them to the pool. You will be warned if some GPU finds invalid share, usually due to overclocking.
+- miner disconnects from the pool if there are not any new jobs for a long time.
+- "-tt" option now can set target temperature for every card individually.
+- "-tt" option now can set static fan speeds.
+- fixed issue with -cclock and -mclock options. However, AMD blocked underclocking for some reason, you can overclock only.
+- option "-wd 1" is set by default now.
+- option "-ethi" for values less than "4" now sets very low GPU load to avoid any freezes in Windows. The most low GPU load is "-ethi 0".
+  Also "-ethi" now can set intensity for every card individually.
+  You can also specify negative values, for example, "-ethi -8192", it exactly means "global work size" value that is used in official miner.
+- Bug fixes.
+
+
+
+v2.0
+---------------------------------------------------------------------
+
+- Added Stratum support for Decred.
+- Added "-esm 2" option for "miner-proxy" Stratum version - for such pools like coinotron, coinmine, etc.
+- Default "-dbg" value is "0" now, log file is created by default. You can disable it with "-dbg -1" option.
+- If GPU thread hangs and its speed is not updated, miner shows zero speed for that card.
+- Added "-wd" option.
+- Added "-r" option.
+- Additional checks related to DAG files: checking disc space, removing invalid DAG files.
+- Bug fixes.
+
+
+
+v1.2
+---------------------------------------------------------------------
+
+- Added "-ethi" option.
+- Added coloring.
+- "-mode" option now can be set for every card individually.
+- "-dcri" option now can be set for every card individually.
+- Added "-allpools" option.
+
+
+
+v1.1
+---------------------------------------------------------------------
+
+Fixed issue with rejected shares for dwarfpool (and for other pools that use similar code).
+Fixed issue with f2pool pool.
+Added "-eworker" option.
+"-dcri" option: max value is 500 now.
+Added "Rejected shares" info.
+
+
+
+v1.0
+---------------------------------------------------------------------
+- First version.
+

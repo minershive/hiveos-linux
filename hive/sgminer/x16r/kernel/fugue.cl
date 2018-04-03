@@ -5,7 +5,7 @@
  * ==========================(LICENSE BEGIN)============================
  *
  * Copyright (c) 2007-2010  Projet RNRT SAPHIR
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -13,10 +13,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -670,18 +670,44 @@ __constant const sph_u32 mixtab3_c[] = {
     SMIX(S00, S01, S02, S03); \
   } while (0)
 
-#define FUGUE512_4(x, y, z, w) do { \
-	FUGUE512_3(x, y, z); \
-	TIX4(w, S00, S01, S04, S07, S08, S22, S24, S27, S30); \
-	CMIX36(S33, S34, S35, S01, S02, S03, S15, S16, S17); \
-	SMIX(S33, S34, S35, S00); \
-	CMIX36(S30, S31, S32, S34, S35, S00, S12, S13, S14); \
-	SMIX(S30, S31, S32, S33); \
-	CMIX36(S27, S28, S29, S31, S32, S33, S09, S10, S11); \
-	SMIX(S27, S28, S29, S30); \
-	CMIX36(S24, S25, S26, S28, S29, S30, S06, S07, S08); \
-	SMIX(S24, S25, S26, S27); \
-} while (0)
-
-
-
+  #define FUGUE512_F(w, x, y, z) { \
+  	TIX4(w, S00, S01, S04, S07, S08, S22, S24, S27, S30); \
+  	CMIX36(S33, S34, S35, S01, S02, S03, S15, S16, S17); \
+  	SMIX(S33, S34, S35, S00); \
+  	CMIX36(S30, S31, S32, S34, S35, S00, S12, S13, S14); \
+  	SMIX(S30, S31, S32, S33); \
+  	CMIX36(S27, S28, S29, S31, S32, S33, S09, S10, S11); \
+  	SMIX(S27, S28, S29, S30); \
+  	CMIX36(S24, S25, S26, S28, S29, S30, S06, S07, S08); \
+  	SMIX(S24, S25, S26, S27); \
+  	\
+  	TIX4(x, S24, S25, S28, S31, S32, S10, S12, S15, S18); \
+  	CMIX36(S21, S22, S23, S25, S26, S27, S03, S04, S05); \
+  	SMIX(S21, S22, S23, S24); \
+  	CMIX36(S18, S19, S20, S22, S23, S24, S00, S01, S02); \
+  	SMIX(S18, S19, S20, S21); \
+  	CMIX36(S15, S16, S17, S19, S20, S21, S33, S34, S35); \
+  	SMIX(S15, S16, S17, S18); \
+  	CMIX36(S12, S13, S14, S16, S17, S18, S30, S31, S32); \
+  	SMIX(S12, S13, S14, S15); \
+  	\
+  	TIX4(y, S12, S13, S16, S19, S20, S34, S00, S03, S06); \
+  	CMIX36(S09, S10, S11, S13, S14, S15, S27, S28, S29); \
+  	SMIX(S09, S10, S11, S12); \
+  	CMIX36(S06, S07, S08, S10, S11, S12, S24, S25, S26); \
+  	SMIX(S06, S07, S08, S09); \
+  	CMIX36(S03, S04, S05, S07, S08, S09, S21, S22, S23); \
+  	SMIX(S03, S04, S05, S06); \
+  	CMIX36(S00, S01, S02, S04, S05, S06, S18, S19, S20); \
+  	SMIX(S00, S01, S02, S03); \
+  	\
+  	TIX4(z, S00, S01, S04, S07, S08, S22, S24, S27, S30); \
+  	CMIX36(S33, S34, S35, S01, S02, S03, S15, S16, S17); \
+  	SMIX(S33, S34, S35, S00); \
+  	CMIX36(S30, S31, S32, S34, S35, S00, S12, S13, S14); \
+  	SMIX(S30, S31, S32, S33); \
+  	CMIX36(S27, S28, S29, S31, S32, S33, S09, S10, S11); \
+  	SMIX(S27, S28, S29, S30); \
+  	CMIX36(S24, S25, S26, S28, S29, S30, S06, S07, S08); \
+  	SMIX(S24, S25, S26, S27); \
+  }

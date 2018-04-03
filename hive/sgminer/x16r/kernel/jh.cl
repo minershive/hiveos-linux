@@ -33,6 +33,11 @@
 #define SPH_JH_64   1
 #define SPH_LITTLE_ENDIAN 1
 
+#define SPH_C32(x)	x
+#define SPH_C64(x)	x
+typedef uint sph_u32;
+typedef ulong sph_u64;
+
 /*
  * The internal bitslice representation may use either big-endian or
  * little-endian (true bitslice operations do not care about the bit

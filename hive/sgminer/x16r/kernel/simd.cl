@@ -5,7 +5,7 @@
  * ==========================(LICENSE BEGIN)============================
  *
  * Copyright (c) 2007-2010  Projet RNRT SAPHIR
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -13,10 +13,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -46,7 +46,6 @@ __constant static const s32 SIMD_Q[] = {
 __constant static const s32 SIMD_Q_80[] = {
 	-125, -101, 48, 8, 81, 2, -84, 5, 36, 1, 58, -106, 105, 104, -89, 3, -28, -7, -95, 104, 9, -19, 7, 16, -97, -105, -78, -56, 11, 64, 107, -87, 68, -113, -124, -44, -22, -77, 84, 32, -87, -2, 110, 20, 81, -103, -38, -12, -17, -83, -42, -50, -3, 8, -64, 104, -8, -100, -11, 121, 75, -44, 30, 11, -97, -14, 81, 12, -66, -113, 20, -80, 9, -72, 18, -125, 52, 52, 86, 42, -71, -14, -125, -125, 45, 77, 91, -13, -97, -114, -93, 86, -56, 29, -35, -42, -69, 108, -62, -117, 52, -74, -12, 60, 46, 48, -36, 108, -37, 107, 0, 37, 117, -45, 100, -53, -35, 4, -92, -36, -112, 50, 22, 99, -41, 113, 81, -27, 124, 100, -49, -9, -82, -3, 83, -6, -37, -2, -59, 105, -106, -105, 88, -4, 27, 6, 94, -105, -10, 18, -8, -17, 96, 104, 77, 55, -12, -65, -108, 86, -69, 112, 123, 43, 21, 76, -85, -33, 86, 1, -111, -21, -82, 102, 37, 11, 16, 82, 41, 49, 2, -9, 63, -105, 7, 99, 10, -122, -76, 43, -31, -12, 96, 13, -82, -13, 65, 112, -21, 79, -10, 71, -19, 124, -53, -53, -87, -43, 70, 13, 124, 124, -46, -78, -92, 12, 96, 113, 92, -87, 55, -30, 34, 41, 68, -109, 61, 116, -53, 73, 11, -61, -47, -49, 35, -109, 36, -108, -1, -38, -118, 44, -101, 52, 34, -5, 91, 35, 111, -51, -23, -100, 40, -114, -82, 26
 };
-
 
 /*
  * The powers of 41 modulo 257. We use exponents from 0 to 255, inclusive.
@@ -1696,4 +1695,3 @@ __constant static const u32 SIMD_IV512[] = {
   C32(0x09254899), C32(0xD699C7BC), C32(0x9019B6DC), C32(0x2B9022E4),
   C32(0x8FA14956), C32(0x21BF9BD3), C32(0xB94D0943), C32(0x6FFDDC22)
 };
-

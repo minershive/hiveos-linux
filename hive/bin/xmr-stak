@@ -15,6 +15,7 @@ function config_gen() {
 	RIG_CONF="/hive-config/rig.conf"
 	WALLET_CONF="/hive-config/wallet.conf"
 	MINER_CONFIG="/hive/$THIS_MINER_NAME/config.txt"
+	POOL_CONFIG="/hive/$THIS_MINER_NAME/pools.txt"
 
 	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
 	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
@@ -40,7 +41,7 @@ function config_gen() {
 		grep -q "nicehash.com" <<< $XMR_STAK_URL
 		[[ $? -eq 0 ]] && nicehash="true" || nicehash="false"
 		pool=$(cat <<EOF
-			{"pool_address": "$url", "wallet_address": "$XMR_STAK_TEMPLATE", "pool_password": "$XMR_STAK_PASS", "use_nicehash": $nicehash, "use_tls": $use_tls, "tls_fingerprint": "", "pool_weight": 1 }
+			{"pool_address": "$url", "wallet_address": "$XMR_STAK_TEMPLATE", "pool_password": "$XMR_STAK_PASS", "use_nicehash": $nicehash, "use_tls": $use_tls, "tls_fingerprint": "", "pool_weight": 1, "rig_id": "$WORKER_NAME" }
 EOF
 )
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
@@ -75,6 +76,7 @@ EOF
 
 	#delete { and } lines
 	echo $conf | jq . | sed 1d | sed '$d' > $MINER_CONFIG
+	echo $conf | jq . | sed 1d | sed '$d' > $POOL_CONFIG
 }
 
 
