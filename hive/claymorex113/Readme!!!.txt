@@ -21,11 +21,7 @@ GPU_SINGLE_ALLOC_PERCENT 100
 For multi-GPU systems, set Virtual Memory size in Windows at least 16 GB:
 "Computer Properties / Advanced System Settings / Performance / Advanced / Virtual Memory".
 
-This miner is free-to-use, however, current developer fee is 1% if you use secure SSL/TLS connection to mining pool, every hour the miner mines for 36 seconds for developer. 
-If you use unsecure connection to mining pool, current developer fee is 1.5%, every hour the miner mines for 54 seconds for developer. 
-If you don't agree with the dev fee - don't use this miner, or use "-nofee" option.
-Attempts to cheat and remove dev fee will cause a bit slower mining speed (same as "-nofee 1") though miner will show same hashrate.
-Miner cannot just stop if cheat is detected because creators of cheats would know that the cheat does not work and they would find new tricks. If miner does not show any errors or slowdowns, they are happy.
+Since v11.3 this miner is completely free and has no developer fee.
 
 This version is for recent AMD videocards only: 7xxx, 2xx, 3xx and 4xx, 1GB or more.
 
@@ -44,8 +40,7 @@ COMMAND LINE OPTIONS:
 
 -xpsw 	Password for XMR pool, use "x" as password.
 
--allpools Specify "-allpools 1" if miner does not want to mine on specified pool (because it cannot mine devfee on that pool), but you agree to use some default pools for devfee mining. 
-	Note that if devfee mining pools will stop, entire mining will be stopped too.
+-pow7	option to support Monero hardfork, use "-pow7 1" value to enable it.
 
 -di 	GPU indexes, default is all available GPUs. For example, if you have four GPUs "-di 02" will enable only first and third GPUs (#0 and #2).
 	You can also turn on/off cards in runtime with "0"..."9" keys and check current statistics with "s" key.
@@ -76,10 +71,6 @@ COMMAND LINE OPTIONS:
 -logfile debug log file name. After restart, miner will append new log data to the same file. If you want to clear old log data, file name must contain "noappend" string.
 	If missed, default file name will be used.
 
--nofee	set "1" to cancel my developer fee at all. In this mode some recent optimizations are disabled so mining speed will be slower by about 4%. 
-	By enabling this mode, I will lose 100% of my earnings, you will lose only 2.5-3% of your earnings.
-	So you have a choice: "fastest miner" or "completely free miner but a bit slower".
-	If you want both "fastest" and "completely free" you should find some other miner that meets your requirements, just don't use this miner instead of claiming that I need to cancel/reduce developer fee, saying that 1% developer fee is too much for this miner and so on.
 -li	low intensity mode. Reduces mining intensity, useful if your cards are overheated. Note that mining speed is reduced too. 
 	More value means less heat and mining speed, for example, "-li 10" is less heat and mining speed than "-li 1". You can also specify values for every card, for example "-li 3,10,50".
 	Default value is "0" - no low intensity mode.
@@ -202,13 +193,6 @@ TROUBLESHOOTING
 
 
 FAQ:
-
-Q: Why do I see more shares for devfee than in my mining for the same time?
-A: Most pools support variable diff, they change "target share" after some time after connection. For example, you have very powerful rig, after connection you will send shares very often. It takes some CPU time to check your shares so after some time pool will send higher share target and miner will send less shares (but they will have more value). When pool updates share target you will see "Pool sets new share target" line in the miner. This way pool can adjust the number of shares that miner sends and balance its load.
-So check the log or console text to see current target for main mining thread and for devfee thread. For example:
-DevFee: Pool sets new share target: 0x0083126e (diff: 500H) - this is for devfee mining connection
-Pool sets new share target: 0x0024fa4f (diff: 1772H) - this is for main mining connection
-As you can see, target share for main mining is higher in about 3.5 times, so for main mining miner sends in 3 times less shares (but they have 3x more value) than for devfee mining.
 
 Q: Miner freezes if I put cursor to its window in Windows 10 until any key is pressed. Sometimes miner freezes randomly until any key is pressed.
 A: You should make some changes in Windows:

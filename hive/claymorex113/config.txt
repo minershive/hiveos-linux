@@ -18,5 +18,6 @@
 
 -allpools 1
 
+-pow7 1
 
 ### USER CONFIG ###

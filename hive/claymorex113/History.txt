@@ -1,6 +1,15 @@
 VERSION HISTORY
 
 
+v11.3
+---------------------------------------------------------------------
+
+- removed devfee, miner is completely free now.
+- added "-pow7" option to support Monero hardfork, use "-pow7 1" value to enable it.
+- reduced CPU usage for systems with a lot of GPUs.
+
+
+
 v11.2
 ---------------------------------------------------------------------
 
