@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
-SERVICE_NAME=wpa_supplicant@wlan0
+wlandev=wlan0
+wifidev=`ifconfig ra0 2>/dev/null | grep ra0 | wc -l`
+if [[ $wifidev == 1 ]]; then
+	wlandev=ra0
+fi
+
+
+SERVICE_NAME=wpa_supplicant@$wifidev
 
 systemctl stop $SERVICE_NAME
 

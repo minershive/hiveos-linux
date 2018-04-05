@@ -7,7 +7,7 @@
       "use_tls": false,
       "tls_fingerprint": "",
       "pool_weight": 1,
-      "rig_id": "rig0"
+      "rig_id": "worker"
     }
   ],
   "currency": "monero7",
@@ -22,7 +22,7 @@
   "tls_secure_algo": true,
   "daemon_mode": false,
   "flush_stdout": false,
-  "output_file": "xmr-stak.log",
+  "output_file": "/var/log/miner/xmr-stak/xmr-stak.log",
   "httpd_port": 60045,
   "http_login": "",
   "http_pass": "",

@@ -29,6 +29,11 @@ if [[ $installed == 0 ]]; then
 fi
 
 
+wlandev=wlan0
+wifidev=`ifconfig ra0 2>/dev/null | grep ra0 | wc -l`
+if [[ $wifidev == 1 ]]; then
+	wlandev=ra0
+fi
 
 
 #Wifi setup from config
@@ -46,9 +51,9 @@ function setup_wifi {
 		exit 1
 
 
-	wlanCount=`iwconfig 2>&1 | grep wlan0 | wc -l`
+	wlanCount=`iwconfig 2>&1 | grep $wlandev | wc -l`
 	[[ -z $wlanCount || $wlanCount = 0 ]] &&
-		echo -e "No ${YELLOW}wlan0${NOCOLOR} interface found" &&
+		echo -e "No ${YELLOW}$wlandev${NOCOLOR} interface found" &&
 		wifi-disable && #or the service will wait for interface on boot
 		exit 0
 
@@ -86,9 +91,9 @@ function setup_wifi {
 iwconfig 2>&1 | grep -v "no wireless extensions" | grep -v -e '^$'
 
 
-wlanCount=`iwconfig 2>&1 | grep wlan0 | wc -l`
+wlanCount=`iwconfig 2>&1 | grep $wlandev | wc -l`
 [[ -z $wlanCount || $wlanCount = 0 ]] &&
-	echo -e "No ${YELLOW}wlan0${NOCOLOR} interface found" &&
+		echo -e "No ${YELLOW}$wlandev${NOCOLOR} interface found" &&
 	echo -e "Please check drivers, try ${CYAN}lsusb${NOCOLOR} to check USB device is present" &&
 	exit 1
 
@@ -113,9 +118,9 @@ wpa_passphrase "$WIFI_SSID" "$WIFI_PASSWORD" | tee /etc/wpa_supplicant/wpa_suppl
 echo -e "${YELLOW}Saved to /etc/wpa_supplicant/wpa_supplicant.conf${NOCOLOR}"
 
 
-systemctl enable wpa_supplicant@wlan0
+systemctl enable wpa_supplicant@$wlandev
 #we need to start it or network-online.target will wait for it, enable is not enough
-systemctl restart wpa_supplicant@wlan0
+systemctl restart wpa_supplicant@$wlandev
 
 if [[ $interactive == 1 ]]; then
 
@@ -127,7 +132,7 @@ if [[ $interactive == 1 ]]; then
 
 
 	sleep 4 #to wait for dhcp
-	ifconfig | grep -m1 -A1 wlan0
+		ifconfig | grep -m1 -A1 $wlandev
 
 	echo ""
 	echo -e "${GREEN}WiFi setup done${NOCOLOR}"

@@ -26,15 +26,18 @@
  *       "affine_to_cpu" : false, "sync_mode" : 3,
  *     },
  * ],
+ * If you do not wish to mine with your nVidia GPU(s) then use:
+ * "gpu_threads_conf" :
+ * null,
  */
 
 "gpu_threads_conf" :
 [
   // gpu: GeForce GTX 1050 Ti architecture: 61
-  //      memory: 3972/4038 MiB
+  //      memory: 3974/4040 MiB
   //      smx: 6
   { "index" : 0,
-    "threads" : 56, "blocks" : 18,
+    "threads" : 28, "blocks" : 18,
     "bfactor" : 2, "bsleep" :  0,
     "affine_to_cpu" : false, "sync_mode" : 3,
   },
