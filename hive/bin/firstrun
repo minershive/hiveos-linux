@@ -1,13 +1,32 @@
 #!/usr/bin/env bash
 #Checks if config exists, ask for rig if no config found
 
+[ -t 1 ] && . colors
+
+if [[ -e /hive-config/branding-logo.txt ]]; then
+	BRANDING_LOGO=$(cat /hive-config/branding-logo.txt; echo .) #echo . to preserve new lines
+	BRANDING_LOGO=${BRANDING_LOGO%.} #remove last .
+else
+	BRANDING_LOGO="
+_______ _______ ___ ___ _______
+|   |   |_     _|   |   |    ___|
+|       |_|   |_|   |   |    ___|
+|___|___|_______|\_____/|_______|
+
+"
+fi
+BRANDING_LOGO="${BYELLOW}${BRANDING_LOGO}${NOCOLOR}"
+
+
+#${CYAN}Welcome to Miners Hive.${NOCOLOR}
+
+
 HELLO_OK="/tmp/.hive-hello-ok"
 RIG_CONF="/hive-config/rig.conf"
 NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
 AMD_OC_CONF="/hive-config/amd-oc.conf"
 mkdir -p "/hive-config"
 
-[ -t 1 ] && . colors
 
 
 [[ $1 == "-f" ]] && echo "Forcing reconfig"
@@ -24,32 +43,19 @@ mkdir -p "/hive-config"
 if [[ ! -f $RIG_CONF ]] || [[ $1 == "-f" ]]; then
 	selfupgrade
 	msg=$(cat <<EOF
-$BYELLOW
-_______ _______ ___ ___ _______
-|   |   |_     _|   |   |    ___|
-|       |_|   |_|   |   |    ___|
-|___|___|_______|\_____/|_______|
-
-$CYAN
-Welcome to Miners Hive.
-This is your first boot, no config found at "$RIG_CONF".
+${BRANDING_LOGO}
+${CYAN}This is your first boot, no config found at "$RIG_CONF".
 Please add your rig in your profile on the web, set the name and password for it.
 Then get rig id and give it to me.
 
-$NOCOLOR
+${NOCOLOR}
 EOF
 )
 	echo -e "$msg"
 elif [[ ! -f $HELLO_OK ]]; then
 	msg=$(cat <<EOF
-$BYELLOW
-_______ _______ ___ ___ _______
-|   |   |_     _|   |   |    ___|
-|       |_|   |_|   |   |    ___|
-|___|___|_______|\_____/|_______|
-
-$YELLOW
-Config "$RIG_CONF" exists but during boot the connection to hive server failed.
+${BRANDING_LOGO}
+${YELLOW}Config "$RIG_CONF" exists but during boot the connection to hive server failed.
 Either the server or your network is temporary down.
 If you have changed the password for this rig, then you need to enter credentials again.$NOCOLOR
 Run ${CYAN}hello${NOCOLOR} to try again. Or run ${CYAN}firstrun -f${NOCOLOR} to enter new ID and password.
