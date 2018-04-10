@@ -5,6 +5,7 @@ export PATH="./:/hive/bin:/hive/sbin:$PATH"
 
 #To ensure we can read and write /hive-config
 fsck.fat -a /dev/disk/by-label/HIVE
+#TODO: replace with ntfsfix
 
 
 #systemctl status systemd-networkd

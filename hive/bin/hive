@@ -10,6 +10,26 @@ source /etc/environment
 export PATH
 export CUDA_DEVICE_ORDER
 
+#[ -t 1 ] &&
+. colors #use them anyway
+
+if [[ -e /hive-config/branding-logo.txt ]]; then
+	BRANDING_LOGO=$(cat /hive-config/branding-logo.txt; echo .) #echo . to preserve new lines
+	BRANDING_LOGO=${BRANDING_LOGO%.} #remove last .
+else
+	BRANDING_LOGO="
+_______ _______ ___ ___ _______
+|   |   |_     _|   |   |    ___|
+|       |_|   |_|   |   |    ___|
+|___|___|_______|\_____/|_______|
+
+"
+fi
+BRANDING_LOGO="${BYELLOW}${BRANDING_LOGO}${NOCOLOR}"
+
+
+
+
 #Check for proxy var. Or agent and others started from here will not see it
 . http_proxy.sh
 
@@ -25,7 +45,7 @@ function echo2 {
 #fsck.fat -a /dev/disk/by-label/HIVE
 
 #Make directory in RAM
-mkdir /run/hive
+mkdir -p /run/hive
 
 #Make directory for miners logs in /var/log/miner
 miner logdirscreate
@@ -43,8 +63,6 @@ RIG_CONF="/hive-config/rig.conf"
 AMD_OC_CONF="/hive-config/amd-oc.conf"
 NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
 
-#[ -t 1 ] &&
-. colors #use them anyway
 
 #cd $(dirname $(realpath $0))
 
@@ -58,12 +76,7 @@ uname=`uname -a`
 
 msg=$(cat <<EOF
 $uname
-$BYELLOW
- _______ _______ ___ ___ _______
-|   |   |_     _|   |   |    ___|
-|       |_|   |_|   |   |    ___|
-|___|___|_______|\_____/|_______|
-
+${BRANDING_LOGO}
 ${CYAN}`hostname`${NOCOLOR}
 ${BPURPLE}`hostname -I`${NOCOLOR}
 
