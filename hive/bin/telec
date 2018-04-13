@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# Teleconsole control script
+
+
+MAX_TELEC_IDLE=3600
+
+. colors
+
+
+
+
+if [[ ! -e /usr/local/bin/teleconsole ]]; then
+	echo "${CYAN}> Installing Teleconsole${NOCOLOR}"
+	curl https://www.teleconsole.com/get.sh | sh
+fi
+
+
+#man logfile for teleconsole screen output
+logfile=/run/hive/teleconsole.1
+
+start () {
+	screen -ls teleconsole | grep -q teleconsole && running=1 || running=0
+
+	[[ $running -eq 1 ]] &&
+		echo -e "${YELLOW}Teleconsole session already running${NOCOLOR}" &&
+		exit 1
+
+
+	#[[ -e $logfile ]] && rm $logfile
+	[[ `ls -l /run/hive/teleconsole.* | wc -l` -ne 0 ]] && rm /run/hive/teleconsole.*
+
+	screen -dm -c /hive/etc/screenrc.teleconsole
+	sleep 0.2
+
+	for i in {1..30}; do # wait console init
+		#^MYour Teleconsole ID: ^[[1meu97a28a596ce613ee679c714437899da9ae326e21^[[0m^M
+		buf=`cat $logfile | grep -m1 "Your Teleconsole ID: "`
+		if [[ ! -z $buf ]]; then
+			buf=$(sed "s,$(printf '\033')\\[[0-9;]*[a-zA-Z],,g" <<< "$buf") #sed removes colors
+			sessid=$(awk '{print $NF}' <<< "$buf")
+			[[ -z $sessid ]] && continue #just in case
+			echo -e "${CYAN}TELECONSOLE${NOCOLOR} ${GREEN}$sessid${NOCOLOR}"
+			echo ""
+			#now what?)))) we've just checked that there is a session id in log file
+
+			#cat $logfile | sed -e 's/\[1m/\[32m/' #replace id to green
+			cat $logfile
+
+			exit 0
+		fi
+
+		sleep 0.5
+	done
+
+	cat $logfile
+	echo -e "${YELLOW}Unable to start Teleconsole session${NOCOLOR}"
+}
+
+stop () {
+	screen -S teleconsole -X quit
+	[[ $? -eq 0 ]] &&
+		echo -e "${YELLOW}Teleconsole session closed${NOCOLOR}"
+}
+
+open () {
+	screen -r -S teleconsole
+}
+
+
+#The idea is to watch for file mtime or size and kill idle session
+killidle () {
+	echo "Watching for teleconsole idle"
+	sleep 5
+
+	while true; do
+		sleep 60
+
+		mtime=`stat -c %Y $logfile`
+
+		now=`date +%s`
+		elapsed=$(($now - $mtime))
+		echo "idle for $elapsed seconds"
+
+		if [[ $elapsed -ge $MAX_TELEC_IDLE ]]; then
+			echo -e "${YELLOW}Stopping teleconsole, idle more than $MAX_TELEC_IDLE seconds"
+			stop
+			exit 0
+		fi
+	done
+}
+
+
+
+case $1 in
+	start)
+		start
+	;;
+	stop)
+		stop
+	;;
+	restart)
+		stop
+		start
+	;;
+	open)
+		open
+	;;
+	killidle)
+		killidle
+	;;
+	log) #miner log 2 //can be 2 for other miner, log from miner.1 or miner.2!!!
+		cat $logfile
+	;;
+	*)
+		screen -ls teleconsole | grep -q teleconsole && running=1 || running=0
+
+		[[ $running -eq 1 ]] &&
+			echo -e "${GREEN}Teleconsole session running${NOCOLOR}" ||
+			echo -e "${YELLOW}Teleconsole session is not running${NOCOLOR}"
+
+		echo -e "Usage: ${CYAN}telec start|stop|log|open${NOCOLOR}"
+	;;
+esac

@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+
+# Post installation script for deb package
+
+mkdir -p /run/hive
+
+chown -R user:user /hive
+chown -R root:root /hive/etc/logrotate.d/* #or the rules will not work
+
+#just to ensure log is preserved between boots
+mkdir -p /var/log/journal
+
+
+miner logdirscreate
+
+#can be fat partition, no more messages
+#chown -R user:user /hive-config > /dev/null
+
+
+#Environment
+
+[[ ! -L /etc/environment && -e /hive/etc/environment ]] && #it's not a symlink
+	echo "Linking /etc/environment" &&
+	mv -f /etc/environment /etc/environment~ &&
+	ln -sf /hive/etc/environment /etc/environment
+
+
+
+#Services
+
+[[ ! -f /lib/systemd/system/hive.service ]] &&
+	echo "Linking and enabling hive service" &&
+	ln -s /hive/etc/hive.service /lib/systemd/system/hive.service &&
+	systemctl enable hive
+
+[[ ! -f /lib/systemd/system/hivex.service ]] &&
+	echo "Linking hivex service" &&
+	ln -s /hive/etc/hivex.service /lib/systemd/system/hivex.service
+
+[[ ! -f /lib/systemd/system/hive-console.service ]] &&
+	echo "Linking hive-console service" &&
+	ln -s /hive/etc/hive-console.service /lib/systemd/system/hive-console.service
+
+[[ ! -f /lib/systemd/system/hive-watchdog.service ]] &&
+	echo "Linking hive-watchdog service" &&
+	ln -s /hive/etc/hive-watchdog.service /lib/systemd/system/hive-watchdog.service
+
+if [[ ! -L /lib/systemd/system/systemd-networkd-wait-online.service ]]; then #check for symlink
+	echo "Linking systemd-networkd-wait-online.service"
+	rm /lib/systemd/system/systemd-networkd-wait-online.service > /dev/null 2>&1
+	ln -sf /hive/etc/systemd-networkd-wait-online.service /lib/systemd/system/systemd-networkd-wait-online.service
+fi
+
+if [[ ! -L /lib/systemd/system/wpa_supplicant@wlan0.service ]]; then #check for symlink
+	echo "Linking wpa_supplicant@wlan0.service"
+	rm /lib/systemd/system/wpa_supplicant@wlan0.service > /dev/null 2>&1
+	ln -sf /hive/etc/wpa_supplicant@wlan0.service /lib/systemd/system/wpa_supplicant@wlan0.service
+fi
+
+if [[ ! -L /lib/systemd/system/wpa_supplicant@ra0.service ]]; then #check for symlink
+	echo "Linking wpa_supplicant@ra0.service"
+	rm /lib/systemd/system/wpa_supplicant@ra0.service > /dev/null 2>&1
+	ln -sf /hive/etc/wpa_supplicant@wlan0.service /lib/systemd/system/wpa_supplicant@ra0.service
+fi
+
+
+
+#Cron
+
+#remove system, use our own cron
+[[ -f /etc/cron.hourly/logrotate ]] &&
+	echo "Removing /etc/cron.hourly/logrotate" &&
+	rm /etc/cron.hourly/logrotate
+
+[[ -f /etc/cron.daily/logrotate ]] &&
+	echo "Removing /etc/cron.daily/logrotate" &&
+	rm /etc/cron.daily/logrotate
+
+[[ ! -f /etc/logrotate.d/hive ]] &&
+	echo "Linking hive logrotate" &&
+	ln -sf /hive/etc/logrotate.d/hive /etc/logrotate.d/hive
+
+[[ ! -L /etc/logrotate.d/rsyslog ]] && #check for symlink
+	echo "Linking rsyslog config" &&
+	rm /etc/logrotate.d/rsyslog &&
+	ln -sf /hive/etc/logrotate.d/rsyslog /etc/logrotate.d/rsyslog
+
+crontab /hive/etc/crontab.root
+
+systemctl restart cron.service
+
+#if [[ ! -f /etc/cron.hourly/logrotate ]]; then
+#	if [[ -f /etc/cron.daily/logrotate ]]; then
+#		echo "Moving /etc/cron.daily/logrotate to /etc/cron.hourly/logrotate"
+#		mv /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
+#		#service cron restart
+#		systemctl restart cron.service
+#		/etc/cron.hourly/logrotate
+#	else
+#		echo "WARNING: /etc/cron.daily/logrotate does not exist"
+#	fi
+#fi
+
+
+#MEMORY ALLOC FAILED: mlock failed for xmr-stak-cpu miner
+cat /etc/sysctl.conf | grep -q "vm.nr_hugepages"; [[ $? -eq 1 ]] && (echo "vm.nr_hugepages = 128" >> /etc/sysctl.conf && sysctl -w vm.nr_hugepages=128)
+#cat /etc/security/limits.conf | grep -q "* soft memlock 262144"; [[ $? -eq 1 ]] && echo "* soft memlock 262144" >> /etc/security/limits.conf
+#cat /etc/security/limits.conf | grep -q "* hard memlock 262144"; [[ $? -eq 1 ]] && echo "* hard memlock 262144" >> /etc/security/limits.conf
+
+
+# USB drive optimizations
+cat /etc/fstab | grep "^UUID=2158442c-b245-4f6d-941b-ced5f3d3a427" | grep -q "noatime,commit=120"
+[[ $? -eq 1 ]] && #not found
+    echo "Setting \"noatime,commit=120\" as root FS mount options" &&
+    sed -i 's/^UUID=2158442c-b245-4f6d-941b-ced5f3d3a427.*/UUID=2158442c-b245-4f6d-941b-ced5f3d3a427 \/ ext4 errors=remount-ro,noatime,commit=120 0 1/g' /etc/fstab
+
+#Config directory setup -----------------------------------------------------
+
+[[ ! -d /hive-config ]] && mkdir -p -m 777 /hive-config
+
+cp -r --no-clobber /hive/etc/hive-config.stub/* /hive-config/
+
+
+
+
+#Teleconsole env check -----------------------------------------------------
+cat /root/.bashrc | grep -qE '^# Teleconsole required start' ||
+(echo "Adding environment to /root/.bashrc for Teleconsole";
+echo -e "\n\n# Teleconsole required start
+source /etc/environment
+export PATH
+export CUDA_DEVICE_ORDER
+# Teleconsole required end" >> /root/.bashrc)
+
+
+
+
+
+#will be created from stub
+#[[ ! -e /hive-config/vnc-password.txt ]] &&
+#	cp hive/etc/hive-config.stub/vnc-password.txt /hive-config/vnc-password.txt
+
+
+#Moved to selfupgrade
+#hello
+#miner restart
+
+exit 0

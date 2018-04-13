@@ -1,0 +1,15 @@
+sessionname teleconsole
+
+hardstatus             alwayslastline
+#hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{= kw}%?%-Lw%?%{r}(%{W}%n*%f%t%?(%u)%?%{r})%{w}%?%+Lw%?%?%= %{g}][%{B} %d/%m %{W}%c %{g}]'
+hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{= kw}%?%-Lw%?%{r}[ %{W}%t%?(%u)%?%{r} ]%{w}%?%+Lw%?%?%= %{g}][%{B} %d/%m %{W}%c %{g}]'
+
+deflog on
+logfile /run/hive/teleconsole.%n
+logfile flush 1
+logtstamp off
+#logtstamp after 122
+
+
+screen -t killidle		telec killidle
+screen -t teleconsole	bash -i -c 'teleconsole; telec stop'
