@@ -27,17 +27,45 @@ function config_gen() {
 	[[ -z $ETHMINER_OPENCL && $ETHMINER_CUDA == 1 ]] && echo "--cuda" >> $MINER_CONFIG
 	[[ $ETHMINER_OPENCL == 1 && $ETHMINER_CUDA == 1 ]] && echo "--cuda-opencl" >> $MINER_CONFIG
 
-	if [[ ! -z $ETHMINER_TEMPLATE ]]; then
-		echo -n "-O $ETHMINER_TEMPLATE" >> $MINER_CONFIG
-		[[ ! -z $ETHMINER_PASS ]] && echo -n ":$ETHMINER_PASS" >> $MINER_CONFIG
-		echo -en "\n" >> $MINER_CONFIG
+
+#pre 0.14.0rc0
+#	if [[ ! -z $ETHMINER_TEMPLATE ]]; then
+#		echo -n "-O $ETHMINER_TEMPLATE" >> $MINER_CONFIG
+#		[[ ! -z $ETHMINER_PASS ]] && echo -n ":$ETHMINER_PASS" >> $MINER_CONFIG
+#		echo -en "\n" >> $MINER_CONFIG
+#	fi
+#
+#	if [[ ! -z $ETHMINER_SERVER ]]; then
+#		echo -n "-S $ETHMINER_SERVER" >> $MINER_CONFIG
+#		[[ ! -z $ETHMINER_PORT ]] && echo -n ":$ETHMINER_PORT" >> $MINER_CONFIG
+#		echo -en "\n" >> $MINER_CONFIG
+#	fi
+
+
+	if [[ ! -z $ETHMINER_TEMPLATE && ! -z $ETHMINER_SERVER ]]; then
+		local url=
+		local protocol=
+		local server=
+		grep -q "^stratum.*://" <<< $ETHMINER_SERVER
+		if [[ $? == 0 ]]; then
+			protocol=`awk -F '://' '{print $1"://"}' <<< $ETHMINER_SERVER`
+			server=`awk -F '://' '{print $2}' <<< $ETHMINER_SERVER`
+		else #no protocol in server
+			protocol="stratum+tcp://"
+			server=$ETHMINER_SERVER
+		fi
+	url+=$protocol
+
+	url+=$ETHMINER_TEMPLATE
+	[[ ! -z $ETHMINER_PASS ]] && url+=":$ETHMINER_PASS"
+
+	url+="@$server:$ETHMINER_PORT"
+
+	echo "-P $url" >> $MINER_CONFIG
 	fi
 
-	if [[ ! -z $ETHMINER_SERVER ]]; then
-		echo -n "-S $ETHMINER_SERVER" >> $MINER_CONFIG
-		[[ ! -z $ETHMINER_PORT ]] && echo -n ":$ETHMINER_PORT" >> $MINER_CONFIG
-		echo -en "\n" >> $MINER_CONFIG
-	fi
+
+
 
 	[[ ! -z $ETHMINER_USER_CONFIG ]] && echo "$ETHMINER_USER_CONFIG" >> $MINER_CONFIG
 
