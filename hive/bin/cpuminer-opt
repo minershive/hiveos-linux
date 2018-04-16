@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#
+# CPUminer-opt by JayDDee
+#
+# GitHub src: https://github.com/JayDDee/cpuminer-opt
+# Home page:  https://bitcointalk.org/index.php?topic=1326803.0
+#
+# HiveOS adaptation by HaloGenius
+#
+
+HOMEPREFIX=""
+
+THIS_MINER_NAME="cpuminer-opt"
+[ -t 1 ] && . colors
+
+[[ `ps aux | grep -E "\./cpuminer-opt-.* -c cpuminer.conf" | grep -v grep | wc -l` != 0 ]] &&
+	echo "$THIS_MINER_NAME is already running" &&
+	exit 1
+
+
+function config_gen() {
+	MINER_GLOBAL_CONF=`cat $HOMEPREFIX/hive/cpuminer-opt/config_global.json`
+	RIG_CONF="$HOMEPREFIX/hive-config/rig.conf"
+	WALLET_CONF="$HOMEPREFIX/hive-config/wallet.conf"
+	MINER_CONFIG_FILE="$HOMEPREFIX/hive/cpuminer-opt/cpuminer.conf"
+
+	[ ! -f $RIG_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+
+	. $RIG_CONF
+	. $WALLET_CONF
+
+# First at all we writing user parts
+	conf=$MINER_GLOBAL_CONF
+	#merge user config options into main config
+	if [[ ! -z $CPUMINER_OPT_USER_CONFIG ]]; then
+	    while read -r line; do
+		[[ -z $line ]] && continue
+		conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
+	    done <<< "$CPUMINER_OPT_USER_CONFIG"
+	fi
+
+	[[ ! -z $CPUMINER_OPT_TEMPLATE ]] &&
+		conf=`jq --null-input --argjson conf "$conf" --arg user "$CPUMINER_OPT_TEMPLATE" '$conf + {$user}'`
+
+	[[ ! -z $CPUMINER_OPT_ALGO ]] &&
+		conf=`jq --null-input --argjson conf "$conf" --arg algo "$CPUMINER_OPT_ALGO" '$conf + {$algo}'`
+
+	[[ ! -z $CPUMINER_OPT_URL ]] &&
+		conf=`jq --null-input --argjson conf "$conf" --arg url "$CPUMINER_OPT_URL" '$conf + {$url}'`
+
+	[[ ! -z $CPUMINER_OPT_PASS ]] &&
+		conf=`jq --null-input --argjson conf "$conf" --arg pass "$CPUMINER_OPT_PASS" '$conf + {$pass}'`
+
+	#replace tpl values in whole file
+	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
+	[[ ! -z $EWAL ]] && conf=$(sed "s/%EWAL%/$EWAL/g" <<< "$conf") #|| echo "${RED}EWAL not set${NOCOLOR}"
+	[[ ! -z $DWAL ]] && conf=$(sed "s/%DWAL%/$DWAL/g" <<< "$conf") #|| echo "${RED}DWAL not set${NOCOLOR}"
+	[[ ! -z $ZWAL ]] && conf=$(sed "s/%ZWAL%/$ZWAL/g" <<< "$conf") #|| echo "${RED}ZWAL not set${NOCOLOR}"
+	[[ ! -z $EMAIL ]] && conf=$(sed "s/%EMAIL%/$EMAIL/g" <<< "$conf")
+	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
+
+#	echo $conf | jq .
+	echo $conf | jq . > $MINER_CONFIG_FILE
+}
+
+
+config_gen
+
+
+cd $HOMEPREFIX/hive/$THIS_MINER_NAME
+while true
+do
+	miner logrotate $THIS_MINER_NAME
+	$HOMEPREFIX/hive/$THIS_MINER_NAME/cpuminer.sh
+	echo ""
+	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
+	echo ""
+	sleep 3
+done
