@@ -11,13 +11,16 @@ THIS_MINER_NAME="ethminer"
 function config_gen() {
 	RIG_CONF="/hive-config/rig.conf"
 	WALLET_CONF="/hive-config/wallet.conf"
-	MINER_CONFIG="/hive/ethminer/ethminer.conf"
 
 	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
 	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
 
 	. $RIG_CONF
 	. $WALLET_CONF
+	[[ -z $ETHMINER_VER ]] && ETHMINER_VER="latest"
+	[[ ! -e "/hive/ethminer/$ETHMINER_VER" ]] && ETHMINER_VER="latest"
+
+	MINER_CONFIG="/hive/ethminer/$ETHMINER_VER/ethminer.conf"
 
 	#put default config settings
 	#\n--farm-recheck 2000
@@ -84,10 +87,11 @@ config_gen
 
 
 cd /hive/$THIS_MINER_NAME
+cd $ETHMINER_VER
 while true
 do
 	miner logrotate $THIS_MINER_NAME
-	/hive/$THIS_MINER_NAME/ethminer.sh
+	/hive/$THIS_MINER_NAME/$ETHMINER_VER/ethminer.sh
 	echo ""
 	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
 	echo ""
