@@ -68,9 +68,10 @@ function config_gen() {
 	fi
 
 
-
-
 	[[ ! -z $ETHMINER_USER_CONFIG ]] && echo "$ETHMINER_USER_CONFIG" >> $MINER_CONFIG
+
+	#remove deprecated option
+	sed -i '/--stratum-protocol/d' $MINER_CONFIG
 
 	#replace tpl values in whole file
 	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
