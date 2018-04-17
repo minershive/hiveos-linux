@@ -3,13 +3,13 @@
 	"_comment2" : "may be used in this JSON configuration file",
 
 	"api-bind" : "127.0.0.1:4048",
-	"alow-remote": true,
+	"api-remote": false,
 
-	"url" : "stratum+tcp://hub.miningpoolhub.com:20510",
-	"user" : "HaloGenius.test",
+	"url" : "yescrypt.mine.zpool.ca:6233",
+	"user" : "1FzYy9MmP6g98bFiKwcUJYisFhWXmsDuk7",
 	"pass" : "x",
 
-	"algo" : "neoscrypt",
+	"algo" : "yescrypt",
 	"threads" : 0,
 	"cpu-priority" : 0,
 	"cpu-affinity" : -1,
