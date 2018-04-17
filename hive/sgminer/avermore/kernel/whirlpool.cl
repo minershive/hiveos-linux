@@ -21,7 +21,7 @@
  * ==========================(LICENSE BEGIN)============================
  *
  * Copyright (c) 2007-2010  Projet RNRT SAPHIR
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -29,10 +29,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -1123,17 +1123,36 @@ __constant static const sph_u64 plain_RC[10] = {
 
 /* ====================================================================== */
 
-#define BYTE(x, n)     ((unsigned)((x) >> (8 * (n))) & 0xFF)
+#ifdef NO_AMD_OPS
+	#define B64_0(x)    ((x) & 0xFF)
+	#define B64_1(x)    (((x) >> 8) & 0xFF)
+	#define B64_2(x)    (((x) >> 16) & 0xFF)
+	#define B64_3(x)    (((x) >> 24) & 0xFF)
+	#define B64_4(x)    (((x) >> 32) & 0xFF)
+	#define B64_5(x)    (((x) >> 40) & 0xFF)
+	#define B64_6(x)    (((x) >> 48) & 0xFF)
+	#define B64_7(x)    ((x) >> 56)
+#else
+	#pragma OPENCL EXTENSION cl_amd_media_ops2 : enable
+	#define B64_0(x)    ((uchar)(x))
+	#define B64_1(x)    (amd_bfe((uint)(x), 8U, 8U))
+	#define B64_2(x)    (amd_bfe((uint)(x), 16U, 8U))
+	#define B64_3(x)    (amd_bfe((uint)(x), 24U, 8U))
+	#define B64_4(x)    ((uchar)((x) >> 32U))
+	#define B64_5(x)    (amd_bfe((uint)((x) >> 32U),  8U, 8U))
+	#define B64_6(x)    (amd_bfe((uint)((x) >> 32U), 16U, 8U))
+	#define B64_7(x)    (amd_bfe((uint)((x) >> 32U), 24U, 8U))
+#endif
 
 #define ROUND_ELT(table, in, i0, i1, i2, i3, i4, i5, i6, i7) \
-	(table ## 0[BYTE(in ## i0, 0)] \
-	^ table ## 1[BYTE(in ## i1, 1)] \
-	^ table ## 2[BYTE(in ## i2, 2)] \
-	^ table ## 3[BYTE(in ## i3, 3)] \
-	^ table ## 4[BYTE(in ## i4, 4)] \
-	^ table ## 5[BYTE(in ## i5, 5)] \
-	^ table ## 6[BYTE(in ## i6, 6)] \
-	^ table ## 7[BYTE(in ## i7, 7)])
+	(table ## 0[B64_0(in ## i0)] \
+	^ table ## 1[B64_1(in ## i1)] \
+	^ table ## 2[B64_2(in ## i2)] \
+	^ table ## 3[B64_3(in ## i3)] \
+	^ table ## 4[B64_4(in ## i4)] \
+	^ table ## 5[B64_5(in ## i5)] \
+	^ table ## 6[B64_6(in ## i6)] \
+	^ table ## 7[B64_7(in ## i7)])
 
 #define ROUND(table, in, out, c0, c1, c2, c3, c4, c5, c6, c7)   do { \
 		out ## 0 = ROUND_ELT(table, in, 0, 7, 6, 5, 4, 3, 2, 1) ^ c0; \

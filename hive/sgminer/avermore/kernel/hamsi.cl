@@ -5,7 +5,7 @@
  * ==========================(LICENSE BEGIN)============================
  *
  * Copyright (c) 2007-2010  Projet RNRT SAPHIR
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -13,10 +13,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -229,35 +229,30 @@ __constant static const sph_u32 alpha_f[] = {
 #define SBOX(a, b, c, d)   do { \
     sph_u32 t; \
     t = (a); \
-    (a) &= (c); \
-    (a) ^= (d); \
-    (c) ^= (b); \
-    (c) ^= (a); \
-    (d) |= t; \
-    (d) ^= (b); \
+    (a) = ((a) & (c)) ^ (d); \
+    (c) = (c) ^ (b) ^ (a); \
+    (d) = ((d) | t) ^ (b); \
     t ^= (c); \
     (b) = (d); \
-    (d) |= t; \
-    (d) ^= (a); \
+    (d) = ((d) | t) ^ (a); \
     (a) &= (b); \
     t ^= (a); \
-    (b) ^= (d); \
-    (b) ^= t; \
+    (b) = (b) ^ (d) ^ t; \
     (a) = (c); \
     (c) = (b); \
     (b) = (d); \
-    (d) = SPH_T32(~t); \
+    (d) = (~t); \
   } while (0)
 
 #define HAMSI_L(a, b, c, d)   do { \
     (a) = SPH_ROTL32(a, 13); \
     (c) = SPH_ROTL32(c, 3); \
     (b) ^= (a) ^ (c); \
-    (d) ^= (c) ^ SPH_T32((a) << 3); \
+    (d) ^= (c) ^ ((a) << 3); \
     (b) = SPH_ROTL32(b, 1); \
     (d) = SPH_ROTL32(d, 7); \
     (a) ^= (b) ^ (d); \
-    (c) ^= (d) ^ SPH_T32((b) << 7); \
+    (c) ^= (d) ^ ((b) << 7); \
     (a) = SPH_ROTL32(a, 5); \
     (c) = SPH_ROTL32(c, 22); \
   } while (0)
@@ -448,5 +443,3 @@ __constant static const sph_u32 alpha_f[] = {
     c1 = (h[0x1] ^= hamsi_s01); \
     c0 = (h[0x0] ^= hamsi_s00); \
   } while (0)
-
-

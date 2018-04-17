@@ -30,6 +30,18 @@
  * @author   Thomas Pornin <thomas.pornin@cryptolog.com>
  */
 
+#ifdef NO_AMD_OPS
+	#define BYTE0(x)	((uchar)(x))
+	#define BYTE1(x)	((uchar)(x >> 8))
+	#define BYTE2(x)	((uchar)(x >> 16))
+	#define BYTE3(x)	((uchar)(x >> 24))
+#else
+	#define BYTE0(x)	(amd_bfe((x), 0U, 8U))
+	#define BYTE1(x)	(amd_bfe((x), 8U, 8U))
+	#define BYTE2(x)	(amd_bfe((x), 16U, 8U))
+	#define BYTE3(x)	(amd_bfe((x), 24U, 8U))
+#endif
+
 __constant const sph_u32 IV224[] = {
   SPH_C32(0xf4c9120d), SPH_C32(0x6286f757), SPH_C32(0xee39e01c),
   SPH_C32(0xe074e3cb), SPH_C32(0xa1127c62), SPH_C32(0x9a43d215),
@@ -466,49 +478,49 @@ __constant const sph_u32 mixtab3_c[] = {
     sph_u32 r2 = 0; \
     sph_u32 r3 = 0; \
     sph_u32 tmp; \
-    tmp = mixtab0[x0 >> 24]; \
+    tmp = mixtab0[BYTE3(x0)]; \
     c0 ^= tmp; \
-    tmp = mixtab1[(x0 >> 16) & 0xFF]; \
+    tmp = mixtab1[BYTE2(x0)]; \
     c0 ^= tmp; \
     r1 ^= tmp; \
-    tmp = mixtab2[(x0 >>  8) & 0xFF]; \
+    tmp = mixtab2[BYTE1(x0)]; \
     c0 ^= tmp; \
     r2 ^= tmp; \
-    tmp = mixtab3[x0 & 0xFF]; \
+    tmp = mixtab3[BYTE0(x0)]; \
     c0 ^= tmp; \
     r3 ^= tmp; \
-    tmp = mixtab0[x1 >> 24]; \
+    tmp = mixtab0[BYTE3(x1)]; \
     c1 ^= tmp; \
     r0 ^= tmp; \
-    tmp = mixtab1[(x1 >> 16) & 0xFF]; \
+    tmp = mixtab1[BYTE2(x1)]; \
     c1 ^= tmp; \
-    tmp = mixtab2[(x1 >>  8) & 0xFF]; \
+    tmp = mixtab2[BYTE1(x1)]; \
     c1 ^= tmp; \
     r2 ^= tmp; \
-    tmp = mixtab3[x1 & 0xFF]; \
+    tmp = mixtab3[BYTE0(x1)]; \
     c1 ^= tmp; \
     r3 ^= tmp; \
-    tmp = mixtab0[x2 >> 24]; \
+    tmp = mixtab0[BYTE3(x2)]; \
     c2 ^= tmp; \
     r0 ^= tmp; \
-    tmp = mixtab1[(x2 >> 16) & 0xFF]; \
+    tmp = mixtab1[BYTE2(x2)]; \
     c2 ^= tmp; \
     r1 ^= tmp; \
-    tmp = mixtab2[(x2 >>  8) & 0xFF]; \
+    tmp = mixtab2[BYTE1(x2)]; \
     c2 ^= tmp; \
-    tmp = mixtab3[x2 & 0xFF]; \
+    tmp = mixtab3[BYTE0(x2)]; \
     c2 ^= tmp; \
     r3 ^= tmp; \
-    tmp = mixtab0[x3 >> 24]; \
+    tmp = mixtab0[BYTE3(x3)]; \
     c3 ^= tmp; \
     r0 ^= tmp; \
-    tmp = mixtab1[(x3 >> 16) & 0xFF]; \
+    tmp = mixtab1[BYTE2(x3)]; \
     c3 ^= tmp; \
     r1 ^= tmp; \
-    tmp = mixtab2[(x3 >>  8) & 0xFF]; \
+    tmp = mixtab2[BYTE1(x3)]; \
     c3 ^= tmp; \
     r2 ^= tmp; \
-    tmp = mixtab3[x3 & 0xFF]; \
+    tmp = mixtab3[BYTE0(x3)]; \
     c3 ^= tmp; \
     x0 = ((c0 ^ r0) & SPH_C32(0xFF000000)) \
       | ((c1 ^ r1) & SPH_C32(0x00FF0000)) \
@@ -670,44 +682,15 @@ __constant const sph_u32 mixtab3_c[] = {
     SMIX(S00, S01, S02, S03); \
   } while (0)
 
-  #define FUGUE512_F(w, x, y, z) { \
-  	TIX4(w, S00, S01, S04, S07, S08, S22, S24, S27, S30); \
-  	CMIX36(S33, S34, S35, S01, S02, S03, S15, S16, S17); \
-  	SMIX(S33, S34, S35, S00); \
-  	CMIX36(S30, S31, S32, S34, S35, S00, S12, S13, S14); \
-  	SMIX(S30, S31, S32, S33); \
-  	CMIX36(S27, S28, S29, S31, S32, S33, S09, S10, S11); \
-  	SMIX(S27, S28, S29, S30); \
-  	CMIX36(S24, S25, S26, S28, S29, S30, S06, S07, S08); \
-  	SMIX(S24, S25, S26, S27); \
-  	\
-  	TIX4(x, S24, S25, S28, S31, S32, S10, S12, S15, S18); \
-  	CMIX36(S21, S22, S23, S25, S26, S27, S03, S04, S05); \
-  	SMIX(S21, S22, S23, S24); \
-  	CMIX36(S18, S19, S20, S22, S23, S24, S00, S01, S02); \
-  	SMIX(S18, S19, S20, S21); \
-  	CMIX36(S15, S16, S17, S19, S20, S21, S33, S34, S35); \
-  	SMIX(S15, S16, S17, S18); \
-  	CMIX36(S12, S13, S14, S16, S17, S18, S30, S31, S32); \
-  	SMIX(S12, S13, S14, S15); \
-  	\
-  	TIX4(y, S12, S13, S16, S19, S20, S34, S00, S03, S06); \
-  	CMIX36(S09, S10, S11, S13, S14, S15, S27, S28, S29); \
-  	SMIX(S09, S10, S11, S12); \
-  	CMIX36(S06, S07, S08, S10, S11, S12, S24, S25, S26); \
-  	SMIX(S06, S07, S08, S09); \
-  	CMIX36(S03, S04, S05, S07, S08, S09, S21, S22, S23); \
-  	SMIX(S03, S04, S05, S06); \
-  	CMIX36(S00, S01, S02, S04, S05, S06, S18, S19, S20); \
-  	SMIX(S00, S01, S02, S03); \
-  	\
-  	TIX4(z, S00, S01, S04, S07, S08, S22, S24, S27, S30); \
-  	CMIX36(S33, S34, S35, S01, S02, S03, S15, S16, S17); \
-  	SMIX(S33, S34, S35, S00); \
-  	CMIX36(S30, S31, S32, S34, S35, S00, S12, S13, S14); \
-  	SMIX(S30, S31, S32, S33); \
-  	CMIX36(S27, S28, S29, S31, S32, S33, S09, S10, S11); \
-  	SMIX(S27, S28, S29, S30); \
-  	CMIX36(S24, S25, S26, S28, S29, S30, S06, S07, S08); \
-  	SMIX(S24, S25, S26, S27); \
-  }
+#define FUGUE512_4(x, y, z, w) do { \
+	FUGUE512_3(x, y, z); \
+	TIX4(w, S00, S01, S04, S07, S08, S22, S24, S27, S30); \
+	CMIX36(S33, S34, S35, S01, S02, S03, S15, S16, S17); \
+	SMIX(S33, S34, S35, S00); \
+	CMIX36(S30, S31, S32, S34, S35, S00, S12, S13, S14); \
+	SMIX(S30, S31, S32, S33); \
+	CMIX36(S27, S28, S29, S31, S32, S33, S09, S10, S11); \
+	SMIX(S27, S28, S29, S30); \
+	CMIX36(S24, S25, S26, S28, S29, S30, S06, S07, S08); \
+	SMIX(S24, S25, S26, S27); \
+} while (0)

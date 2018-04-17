@@ -52,23 +52,23 @@ static const __constant ulong SHA512_INIT[8] =
 
 #define ROTR64(x, y)	rotate((x), 64UL - (y))
 
-ulong FAST_ROTR64_LO(const uint2 x, const uint y) { return(as_ulong(amd_bitalign(x.s10, x, y))); }
-ulong FAST_ROTR64_HI(const uint2 x, const uint y) { return(as_ulong(amd_bitalign(x, x.s10, (y - 32)))); }
+#ifdef NO_AMD_OPS
+	#define BSG5_0(x) (ROTR64(x,28) ^ ROTR64(x,34) ^ ROTR64(x,39))
+	#define BSG5_1(x) (ROTR64(x,14) ^ ROTR64(x,18) ^ ROTR64(x,41))
+	#define SSG5_0(x) (ROTR64(x, 1) ^ ROTR64(x ,8) ^ ((x) >> 7))
+	#define SSG5_1(x) (ROTR64(x,19) ^ ROTR64(x,61) ^ ((x) >> 6))
+#else
+	ulong FAST_ROTR64_LO(const uint2 x, const uint y) { return(as_ulong(amd_bitalign(x.s10, x, y))); }
+	ulong FAST_ROTR64_HI(const uint2 x, const uint y) { return(as_ulong(amd_bitalign(x, x.s10, (y - 32)))); }
 
-/*
-#define BSG5_0(x) (FAST_ROTR64_LO(x, 28) ^ FAST_ROTR64_HI(x, 34) ^ FAST_ROTR64_HI(x, 39))
-#define BSG5_1(x) (FAST_ROTR64_LO(x, 14) ^ FAST_ROTR64_LO(x, 18) ^ ROTR64(x, 41))
-#define SSG5_0(x) (FAST_ROTR64_LO(x, 1) ^ FAST_ROTR64_LO(x, 8) ^ ((x) >> 7))
-#define SSG5_1(x) (FAST_ROTR64_LO(x, 19) ^ FAST_ROTR64_HI(x, 61) ^ ((x) >> 6))
-*/
-
-#define BSG5_0(x) (FAST_ROTR64_LO(as_uint2(x), 28) ^ FAST_ROTR64_HI(as_uint2(x), 34) ^ FAST_ROTR64_HI(as_uint2(x), 39))
-#define BSG5_1(x) (FAST_ROTR64_LO(as_uint2(x), 14) ^ FAST_ROTR64_LO(as_uint2(x), 18) ^ FAST_ROTR64_HI(as_uint2(x), 41))
-#define SSG5_0(x) (FAST_ROTR64_LO(as_uint2(x), 1) ^ FAST_ROTR64_LO(as_uint2(x), 8) ^ ((x) >> 7))
-#define SSG5_1(x) (FAST_ROTR64_LO(as_uint2(x), 19) ^ FAST_ROTR64_HI(as_uint2(x), 61) ^ ((x) >> 6))
+	#define BSG5_0(x) (FAST_ROTR64_LO(as_uint2(x), 28) ^ FAST_ROTR64_HI(as_uint2(x), 34) ^ FAST_ROTR64_HI(as_uint2(x), 39))
+	#define BSG5_1(x) (FAST_ROTR64_LO(as_uint2(x), 14) ^ FAST_ROTR64_LO(as_uint2(x), 18) ^ FAST_ROTR64_HI(as_uint2(x), 41))
+	#define SSG5_0(x) (FAST_ROTR64_LO(as_uint2(x), 1) ^ FAST_ROTR64_LO(as_uint2(x), 8) ^ ((x) >> 7))
+	#define SSG5_1(x) (FAST_ROTR64_LO(as_uint2(x), 19) ^ FAST_ROTR64_HI(as_uint2(x), 61) ^ ((x) >> 6))
+#endif
 
 #define CH(X, Y, Z) bitselect(Z, Y, X)
-#define SHA512_MAJ(X, Y, Z) CH((X ^ Z), Y, Z)
+#define SHA_MAJ(X, Y, Z) CH((X ^ Z), Y, Z)
 
 void SHA2_512_STEP2(const ulong *W, uint ord, ulong *r, int i)
 {
@@ -80,7 +80,7 @@ void SHA2_512_STEP2(const ulong *W, uint ord, ulong *r, int i)
 
 	T1 = h + BSG5_1(e) + CH(e, f, g) + W[i] + K512[i];
 	r[(3 + x) & 7] = d + T1;
-	r[(7 + x) & 7] = T1 + BSG5_0(a) + SHA512_MAJ(a, b, c);
+	r[(7 + x) & 7] = T1 + BSG5_0(a) + SHA_MAJ(a, b, c);
 }
 
 void SHA512Block(ulong *data, ulong *buf)
