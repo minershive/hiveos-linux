@@ -8,8 +8,6 @@
 # HiveOS adaptation by HaloGenius
 #
 
-HOMEPREFIX=""
-
 THIS_MINER_NAME="cpuminer-opt"
 [ -t 1 ] && . colors
 
@@ -19,10 +17,10 @@ THIS_MINER_NAME="cpuminer-opt"
 
 
 function config_gen() {
-	MINER_GLOBAL_CONF=`cat $HOMEPREFIX/hive/cpuminer-opt/config_global.json`
-	RIG_CONF="$HOMEPREFIX/hive-config/rig.conf"
-	WALLET_CONF="$HOMEPREFIX/hive-config/wallet.conf"
-	MINER_CONFIG_FILE="$HOMEPREFIX/hive/cpuminer-opt/cpuminer.conf"
+	MINER_GLOBAL_CONF=`cat /hive/cpuminer-opt/config_global.json`
+	RIG_CONF="/hive-config/rig.conf"
+	WALLET_CONF="/hive-config/wallet.conf"
+	MINER_CONFIG_FILE="/hive/cpuminer-opt/cpuminer.conf"
 
 	[ ! -f $RIG_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
 	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
@@ -30,7 +28,7 @@ function config_gen() {
 	. $RIG_CONF
 	. $WALLET_CONF
 
-# First at all we writing user parts
+	# First at all we are writing user parts
 	conf=$MINER_GLOBAL_CONF
 	#merge user config options into main config
 	if [[ ! -z $CPUMINER_OPT_USER_CONFIG ]]; then
@@ -68,11 +66,11 @@ function config_gen() {
 config_gen
 
 
-cd $HOMEPREFIX/hive/$THIS_MINER_NAME
+cd /hive/$THIS_MINER_NAME
 while true
 do
 	miner logrotate $THIS_MINER_NAME
-	$HOMEPREFIX/hive/$THIS_MINER_NAME/cpuminer.sh
+	/hive/$THIS_MINER_NAME/cpuminer.sh
 	echo ""
 	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
 	echo ""

@@ -10,7 +10,7 @@ MAX_TELEC_IDLE=3600
 
 
 if [[ ! -e /usr/local/bin/teleconsole ]]; then
-	echo "${CYAN}> Installing Teleconsole${NOCOLOR}"
+	echo -e "${CYAN}> Installing Teleconsole${NOCOLOR}"
 	curl https://www.teleconsole.com/get.sh | sh
 fi
 
@@ -27,12 +27,12 @@ start () {
 
 
 	#[[ -e $logfile ]] && rm $logfile
-	[[ `ls -l /run/hive/teleconsole.* | wc -l` -ne 0 ]] && rm /run/hive/teleconsole.*
+	[[ `find /run/hive -name "teleconsole.*" | wc -l` -ne 0 ]] && rm /run/hive/teleconsole.*
 
 	screen -dm -c /hive/etc/screenrc.teleconsole
 	sleep 0.2
 
-	for i in {1..30}; do # wait console init
+	for i in {1..60}; do # wait console init
 		#^MYour Teleconsole ID: ^[[1meu97a28a596ce613ee679c714437899da9ae326e21^[[0m^M
 		buf=`cat $logfile | grep -m1 "Your Teleconsole ID: "`
 		if [[ ! -z $buf ]]; then

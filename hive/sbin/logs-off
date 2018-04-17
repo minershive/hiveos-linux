@@ -27,7 +27,12 @@ tmpfs /var/log/apt tmpfs defaults,noatime 0 0
 tmpfs /var/log/journal tmpfs defaults,noatime 0 0
 $ENDCMNT" > /etc/fstab
 
-#rm -rf /var/log/*
+
+#remove disk logs, save space
+rm -r /var/log/*
+mkdir -p /var/log/journal
+
+
 mount -t tmpfs -o defaults,noatime,mode=0755 tmpfs /var/log
 miner logdirscreate
 
