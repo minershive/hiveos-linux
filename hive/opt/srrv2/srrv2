@@ -1,0 +1,41 @@
+#!/bin/bash
+
+[[ -z $1 ]] || [[ -z $2 ]] &&
+	echo "Usage: `basename $0` serial_number slot_number" &&
+	exit 1
+## REQUIRED packages: socat (apt-get install socat)
+
+
+## Other Linux Systems than SimpleMining OS - unhash 3 lines below and hash SimpleMiningOS ones
+srrEnabled="1"
+srrSerial=$1
+srrSlot=$2
+
+echo "srrSerial" $srrSerial
+echo "srrSlot" $srrSlot
+
+if [ "$srrEnabled" -eq 1  ]; then
+	echo "SRR is Enabled"
+else
+	echo "SRR Not configured. SRR Agent will exit in 120 seconds"
+	sleep 120
+	exit
+fi
+
+################################
+## Dont touch anything below :)
+srrSlot=`printf %02X $(( ${srrSlot} - 1 ))`
+firstByte="FF"
+byteCount="0008"
+action="55"
+mac="485053$srrSerial"
+
+checksum=`printf %02X $(( (0x${byteCount:0:2} + 0x${byteCount:2:2} + 0x$action + 0x${mac:0:2} + 0x${mac:2:2} + 0x${mac:4:2} + 0x${mac:6:2} + 0x${mac:8:2} + 0x${mac:10:2} + 0x$srrSlot)%0x100  ))`
+packet="$firstByte$byteCount$action$mac$srrSlot$checksum"
+
+while true
+do
+	echo "SRR, please dont kill me, i will ask again in 2 seconds $packet"
+	echo -n "$packet" | xxd -r -p |socat - UDP-DATAGRAM:255.255.255.255:1051,broadcast > /dev/null
+	sleep 2
+done

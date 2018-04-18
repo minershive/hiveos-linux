@@ -181,6 +181,7 @@ echo2 "`/hive/opt/watchdoginua/watchdoginua.sh`"
 echo2 "`/hive/opt/opendev/watchdog-opendev.sh`"
 echo2 "`/hive/opt/esonics/watchdog-esonics.sh`"
 echo2 "`/hive/opt/qinheng/hl340.sh`"
+echo2 "`/hive/opt/srrv2/srrv2.sh`"
 
 echo2 "> Applying crontab"
 crontab /hive/etc/crontab.root
