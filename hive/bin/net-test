@@ -116,6 +116,9 @@ function Connections {
 	echo
     echo -e "${WHITE}>>> amster.hiveos.farm${NOCOLOR}"
     Connection "amster.hiveos.farm"
+	echo
+    echo -e "${WHITE}>>> helsinki.hiveos.farm${NOCOLOR}"
+    Connection "helsinki.hiveos.farm"
 }
 
 
