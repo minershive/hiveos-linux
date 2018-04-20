@@ -16,6 +16,7 @@ fi
 
 SRRV2_CONF="/hive-config/watchdog_srrv2.txt"
 [ ! -e $SRRV2_CONF ] && echo "Not found config $SRRV2_CONF" && exit 1
+dos2unix-safe $SRRV2_CONF
 
 ENABLE=$(cat $SRRV2_CONF | grep 'ENABLE' | sed 's/ENABLE=//')
 [ $ENABLE != "1" ] && echo "srrv2 disabled" && exit 1
