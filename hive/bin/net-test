@@ -109,7 +109,7 @@ function Connections {
     echo -e "${WHITE}>>> api.hiveos.farm${NOCOLOR}"
     Connection "api.hiveos.farm"
     Curl "https://api.hiveos.farm:8443" $2; [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"HTTPS (SSL) on port 8443 connection failed. Please check Firewall rules or connection setup."$NOCOLOR
-    Curl "https://api.hiveos.farm:41282" $2; [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"HTTPS (SSL) connection on port 41282 failed. Please check Firewall rules or connection setup."$NOCOLOR
+    #Curl "https://api.hiveos.farm:41282" $2; [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"HTTPS (SSL) connection on port 41282 failed. Please check Firewall rules or connection setup."$NOCOLOR
 	echo
     echo -e "${WHITE}>>> paris.hiveos.farm${NOCOLOR}"
     Connection "paris.hiveos.farm"
