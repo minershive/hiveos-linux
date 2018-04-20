@@ -16,13 +16,8 @@ fi
 
 SRRV2_CONF="/hive-config/watchdog_srrv2.txt"
 [ ! -e $SRRV2_CONF ] && echo "Not found config $SRRV2_CONF" && exit 1
-dos2unix-safe $SRRV2_CONF
-
-ENABLE=$(cat $SRRV2_CONF | grep 'ENABLE' | sed 's/ENABLE=//')
+eval "`cat $SRRV2_CONF | dos2unix`"
 [ $ENABLE != "1" ] && echo "srrv2 disabled" && exit 1
 
-SERIAL_NUMBER=$(cat $SRRV2_CONF | grep 'SERIAL_NUMBER' | sed 's/SERIAL_NUMBER=//')
-SLOT_NUMBER=$(cat $SRRV2_CONF | grep 'SLOT_NUMBER' | sed 's/SLOT_NUMBER=//')
 path=$(dirname $(realpath $0))
-
 nohup $path/srrv2 $SERIAL_NUMBER $SLOT_NUMBER > /dev/null 2>&1 &
