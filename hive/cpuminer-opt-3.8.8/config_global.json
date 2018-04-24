@@ -17,5 +17,6 @@
 	"benchmark" : false,
 	"debug" : false,
 	"protocol": false,
-	"quiet" : false
+	"quiet" : false,
+	"max-temp": 80
 }
