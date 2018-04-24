@@ -1,0 +1,26 @@
+#DONT EDIT THIS FILE, IT WILL BE OVERWTITTEN AFTER UPDATE
+
+#Management port, readonly
+-mport -3333
+
+#run reboot.sh on GPU hangs
+-r 1
+
+#Log to the same file
+-logfile /var/log/miner/claymore/lastrun_noappend.log
+
+#Target temp
+-tt 68
+#reduce entire mining intensity (for all coins)
+-ttli 76
+#stop GPU temperature
+-tstop 82
+
+-allpools 1
+
+#Dual coin name
+-dcoin dcr
+
+#Dual coin intensity
+-dcri 20
+
