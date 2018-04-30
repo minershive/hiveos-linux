@@ -7,10 +7,9 @@ RIG_CONF="/hive-config/rig.conf"
 
 . $RIG_CONF
 
-if [  $TABLETKA -eq 1 ];then
+
 
 
 /hive/opt/tabletka/start.sh & 
 
-fi
 exit 0
