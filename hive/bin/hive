@@ -251,6 +251,11 @@ miner start
 	echo2 "> Hashrate Watchdog enabled" &&
 	wd start
 
+#Start OhGodAnETHlargementPill. It will exit if its 0
+if [[ $GPU_COUNT_NVIDIA > 0 ]] &&
+	echo2 "> Start OhGodAnETHlargementPill" &&
+	OHGODAPILL
+
 
 
 echo2 "> Hive Start Finished"
