@@ -221,7 +221,8 @@ function config() {
 			echo_config_file "/hive/ccminer/pools.conf"
 			;;
 		"ethminer")
-			echo_config_file "/hive/ethminer/ethminer.conf"
+			[[ -z $ETHMINER_VER ]] && ETHMINER_VER="latest"
+			echo_config_file "/hive/ethminer/$ETHMINER_VER/ethminer.conf"
 			;;
 		"sgminer")
 			echo_config_file "/hive/sgminer/sgminer.conf"

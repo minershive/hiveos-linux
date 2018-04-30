@@ -59,6 +59,9 @@ function config_gen() {
 		fi
 	url+=$protocol
 
+	ETHMINER_TEMPLATE=$(sed 's/\//%2F/g' <<< $ETHMINER_TEMPLATE) #HTML special chars
+	EMAIL=$(sed 's/@/%40/g' <<< $EMAIL) #HTML special chars
+
 	url+=$ETHMINER_TEMPLATE
 	[[ ! -z $ETHMINER_PASS ]] && url+=":$ETHMINER_PASS"
 

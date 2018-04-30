@@ -35,6 +35,6 @@ for sysdevpath in $(find /sys/bus/usb/devices/usb*/ -name dev); do
 
 	#Starting actual daemon for watchdog
 	#path=$(dirname $(realpath $0))
-	nohup ./hl340 ping $DEVNAME > /dev/null 2>&1 &
+	nohup /hive/opt/qinheng/hl340 ping $DEVNAME > /dev/null 2>&1 &
 done
 
