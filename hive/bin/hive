@@ -252,10 +252,12 @@ miner start
 	wd start
 
 #Start OhGodAnETHlargementPill. It will exit if its 0
-if [[ $GPU_COUNT_NVIDIA > 0 ]] &&
-	echo2 "> Start OhGodAnETHlargementPill" &&
-	ohgodapill
-
+if [[ $GPU_COUNT_NVIDIA > 0 ]]; then
+	echo2 "> Start OhGodAnETHlargementPill"
+	nohup /hive/opt/ohgodapill/run.sh > /dev/null 2>&1 &
+	sleep 1
+	sync
+fi
 
 
 echo2 "> Hive Start Finished"
