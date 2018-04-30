@@ -10,6 +10,6 @@ RIG_CONF="/hive-config/rig.conf"
 
 
 
-/hive/opt/tabletka/start.sh & 
+/hive/opt/ohgodapill/start.sh & 
 
 exit 0

@@ -12,7 +12,7 @@ RIG_CONF="/hive-config/rig.conf"
 while true 
 do
 
-/hive/opt/tabletka/OhGodAnETHlargementPill-r2 > /var/run/hive/OHGODAPILL 
+/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2 > /var/run/hive/ohgodapill 
 sleep 3
 done
 
