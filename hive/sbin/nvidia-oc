@@ -47,6 +47,23 @@ if [[ -z $PLIMIT ]] || [[ $PLIMIT == "" ]]; then
 	PLIMIT=0
 fi
 
+if [[ -z $OHGODAPILL_ENABLED ]] || [[ $OHGODAPILL_ENABLED == "" ]]; then
+	OHGODAPILL_ENABLED = 0
+fi
+
+#Start OhGodAnETHlargementPill. It will exit if its 0
+if [[ $OHGODAPILL_ENABLED == 1 ]]; then
+	echo "> Start OhGodAnETHlargementPill"
+	nohup /hive/opt/ohgodapill/run.sh > /dev/null 2>&1 &
+	sleep 1
+	sync
+else
+	ohgodapill_running=`ps aux | grep /hive/opt/ohgodapill/run.sh | grep -v grep | wc -l`
+	if [[ $ohgodapill_running -ne 0 ]]; then
+		pkill -f '/hive/opt/ohgodapill/run.sh'
+		pkill -f '/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2'
+	fi
+fi
 
 
 
