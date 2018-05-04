@@ -48,7 +48,7 @@ if [[ -z $PLIMIT ]] || [[ $PLIMIT == "" ]]; then
 fi
 
 if [[ -z $OHGODAPILL_ENABLED ]] || [[ $OHGODAPILL_ENABLED == "" ]]; then
-	OHGODAPILL_ENABLED = 0
+	OHGODAPILL_ENABLED=0
 fi
 
 #Start OhGodAnETHlargementPill. It will exit if its 0
