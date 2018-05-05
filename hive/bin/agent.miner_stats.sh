@@ -227,7 +227,7 @@ function miner_stats {
 				echo -e "${YELLOW}Failed to read $miner from localhost:60045${NOCOLOR}"
 			else
 				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
-				local cpu_temp=`cat /sys/class/thermal/thermal_zone*/temp | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
+				local cpu_temp=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
 				local gpus_disabled=
 				(head -n 40 /var/log/miner/xmr-stak/xmr-stak.log | grep -q "WARNING: backend AMD (OpenCL) disabled") && #AMD disabled found
 				(head -n 40 /var/log/miner/xmr-stak/xmr-stak.log | grep -q "WARNING: backend NVIDIA disabled") && #and nvidia disabled
@@ -256,7 +256,7 @@ function miner_stats {
 			else
 				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 				#to do : lm-sensors
-				local cpu_temp=`cat /sys/class/thermal/thermal_zone*/temp | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
+				local cpu_temp=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
 				stats=`echo $stats_raw | jq '{hs: [.hashrate.threads[][0]], temp: '$cpu_temp', uptime: .connection.uptime}'`
 			fi
 		;;
@@ -267,7 +267,7 @@ function miner_stats {
 				echo -e "${YELLOW}Failed to read $miner from localhost:60050${NOCOLOR}"
 			else
 				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
-				local cpu_temp=`cat /sys/class/thermal/thermal_zone*/temp | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
+				local cpu_temp=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
 				stats=`echo $stats_raw | jq '{hs: [.hashrate.threads[][0]], temp: '$cpu_temp', uptime: .connection.uptime}'`
 			fi
 		;;
