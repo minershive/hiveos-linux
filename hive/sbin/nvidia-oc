@@ -32,22 +32,22 @@ if [[ -z $MEM ]]; then
 	#exit
 fi
 
-if [[ -z $CLOCK ]] || [[ $CLOCK == "" ]]; then
+if [[ -z $CLOCK || $CLOCK == "" ]]; then
 	:
 	#CLOCK=0
 	#echo "ERROR: no CLOCK set"
 	#exit
 fi
 
-if [[ -z $FAN ]] || [[ $FAN == "" ]]; then
+if [[ -z $FAN || $FAN == "" ]]; then
 	FAN=0
 fi
 
-if [[ -z $PLIMIT ]] || [[ $PLIMIT == "" ]]; then
+if [[ -z $PLIMIT || $PLIMIT == "" ]]; then
 	PLIMIT=0
 fi
 
-if [[ -z $OHGODAPILL_ENABLED ]] || [[ $OHGODAPILL_ENABLED == "" ]]; then
+if [[ -z $OHGODAPILL_ENABLED || $OHGODAPILL_ENABLED == "" ]]; then
 	OHGODAPILL_ENABLED=0
 fi
 
@@ -56,7 +56,7 @@ OHGODAPILL_RUNNING=`ps aux | grep /hive/opt/ohgodapill/run.sh | grep -v grep | w
 if [[ $OHGODAPILL_ENABLED == 1 ]]; then
 	if [[ $OHGODAPILL_RUNNING -eq 0 ]]; then
 		echo "> Start OhGodAnETHlargementPill"
-		nohup /hive/opt/ohgodapill/run.sh > /dev/null 2>&1 &
+		nohup /hive/opt/ohgodapill/run.sh $OHGODAPILL_ARGS > /dev/null 2>&1 &
 		sleep 1
 		sync
 	fi
@@ -165,6 +165,7 @@ for (( i=0; i < $n; ++i )); do
 	elif [[ $name =~ "P106-100" ]]; then x=2
 	elif [[ $name =~ "P106-090" ]]; then x=1
 	elif [[ $name =~ "P104-100" ]]; then x=1
+	elif [[ $name =~ "P102-100" ]]; then x=1
 	fi
 
 	[[ ! -z $CLOCK ]] &&

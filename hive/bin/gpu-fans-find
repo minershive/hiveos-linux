@@ -71,7 +71,7 @@ test_gpu() {
 		#Appling FAN setting to 100%
 		nvidia-settings -a [gpu:$cardno]/GPUFanControlState=1 -a [fan:$cardno]/GPUTargetFanSpeed=100 1>/dev/null
 		#sleep for (timeout) in sec
-		for i in {1..$timeout}; do
+		for ((i=0; i<$timeout; i++)); do
 			echo -n "." && sleep 1
 		done
 		#Set Fan speed to 0% again
@@ -86,7 +86,7 @@ test_gpu() {
 		#Apply Fan setting to 100%
 		wolfamdctrl -i $cardno --set-fanspeed 100 1>/dev/null
 		#Sleep for(timeout) in sec
-		for i in {1..$timeout}; do
+		for ((i=0; i<$timeout; i++)); do
 			echo -n "." && sleep 1
 		done
 		#Set Fan speed to 0% again
