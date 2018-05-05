@@ -149,6 +149,8 @@ function do_command () {
 			fi
 		;;
 		amd_download)
+	rig_conf="/hive-config/rig.conf"
+	worker_name=`awk -F"=" '/^WORKER_NAME/{print $2}' $rig_conf | sed -e 's/\"//g'`
 			gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
 			listjson=`gpu-detect listjson AMD`
 			gpu_biosid=`echo "$listjson" | jq -r ".[$gpu_index].vbios" | sed -e 's/[\,\.\ ]/_/g'`
@@ -162,7 +164,7 @@ function do_command () {
 				if [[ $exitcode == 0 ]]; then
 					#payload=`cat /tmp/amd.saved.rom | base64`
 					#echo "$payload" | message file "VBIOS $gpu_index" payload
-					cat /tmp/amd.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "vbios-$gpu_index-$gpu_type-$gpu_memsize-$gpu_memvendor-$gpu_biosid.rom" payload
+					cat /tmp/amd.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "vbios-$worker_name-$gpu_index-$gpu_type-$gpu_memsize-$gpu_memvendor-$gpu_biosid.rom" payload
 				else
 					echo "$payload" | message warn "AMD VBIOS saving failed" payload
 				fi
