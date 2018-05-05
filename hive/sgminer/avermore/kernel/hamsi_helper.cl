@@ -10,7 +10,7 @@
  * ==========================(LICENSE BEGIN)============================
  *
  * Copyright (c) 2007-2010  Projet RNRT SAPHIR
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -18,10 +18,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -34,6 +34,13 @@
  *
  * @author   Thomas Pornin <thomas.pornin@cryptolog.com>
  */
+
+#ifdef NO_AMD_OPS
+  #define CHECK_BIT(x, n) (((x) >> n) & 1)
+#else
+  #pragma OPENCL EXTENSION cl_amd_media_ops2 : enable
+  #define CHECK_BIT(x, n) amd_bfe((uint)x, n, 1U)
+#endif
 
 #if SPH_HAMSI_EXPAND_SMALL == 1
 
@@ -8391,24 +8398,26 @@ __constant static const sph_u32 T512[64][16] = {
     mF = 0; \
     for (u = 0; u < 8; u ++) { \
       unsigned db = buf(u); \
-      for (v = 0; v < 8; v ++, db >>= 1) { \
-        sph_u32 dm = SPH_T32(-(sph_u32)(db & 1)); \
-        m0 ^= dm & *tp ++; \
-        m1 ^= dm & *tp ++; \
-        m2 ^= dm & *tp ++; \
-        m3 ^= dm & *tp ++; \
-        m4 ^= dm & *tp ++; \
-        m5 ^= dm & *tp ++; \
-        m6 ^= dm & *tp ++; \
-        m7 ^= dm & *tp ++; \
-        m8 ^= dm & *tp ++; \
-        m9 ^= dm & *tp ++; \
-        mA ^= dm & *tp ++; \
-        mB ^= dm & *tp ++; \
-        mC ^= dm & *tp ++; \
-        mD ^= dm & *tp ++; \
-        mE ^= dm & *tp ++; \
-        mF ^= dm & *tp ++; \
+      for (v = 0; v < 8; v ++) { \
+        if (CHECK_BIT(db, v)) { \
+          m0 ^= tp[0x0]; \
+          m1 ^= tp[0x1]; \
+          m2 ^= tp[0x2]; \
+          m3 ^= tp[0x3]; \
+          m4 ^= tp[0x4]; \
+          m5 ^= tp[0x5]; \
+          m6 ^= tp[0x6]; \
+          m7 ^= tp[0x7]; \
+          m8 ^= tp[0x8]; \
+          m9 ^= tp[0x9]; \
+          mA ^= tp[0xA]; \
+          mB ^= tp[0xB]; \
+          mC ^= tp[0xC]; \
+          mD ^= tp[0xD]; \
+          mE ^= tp[0xE]; \
+          mF ^= tp[0xF]; \
+        } \
+        tp += 16; \
       } \
     } \
   } while (0)

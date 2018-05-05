@@ -5,7 +5,7 @@
  * ==========================(LICENSE BEGIN)============================
  *
  * Copyright (c) 2007-2010  Projet RNRT SAPHIR
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -13,10 +13,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -271,10 +271,21 @@
     w7 = SPH_T64(w7 + SKBI(k, s, 7) + (sph_u64)s); \
   } while (0)
 
-#define TFBIG_MIX(x0, x1, rc)   do { \
-    x0 = SPH_T64(x0 + x1); \
-    x1 = SPH_ROTL64(x1, rc) ^ x0; \
-  } while (0)
+#ifdef NO_AMD_OPS
+  #define TFBIG_MIX(x0, x1, rc)   do { \
+      x0 += x1; \
+      x1 = SPH_ROTL64(x1, rc) ^ x0; \
+    } while (0)
+#else
+  ulong SKEIN_ROT(const uint2 x, const uint y) {
+    if(y < 32) return(as_ulong(amd_bitalign(x, x.s10, 32 - y)));
+    else return(as_ulong(amd_bitalign(x.s10, x, 32 - (y - 32))));
+  }
+  #define TFBIG_MIX(x0, x1, rc)   do { \
+      x0 += x1; \
+      x1 = SKEIN_ROT(as_uint2(x1), rc) ^ x0; \
+    } while (0)
+#endif
 
 #define TFBIG_MIX8(w0, w1, w2, w3, w4, w5, w6, w7, rc0, rc1, rc2, rc3)  do { \
     TFBIG_MIX(w0, w1, rc0); \
@@ -347,4 +358,3 @@ __constant static const sph_u64 SKEIN_IV512[] = {
   SPH_C64(0x5DB62599DF6CA7B0), SPH_C64(0xEABE394CA9D5C3F4),
   SPH_C64(0x991112C71A75B523), SPH_C64(0xAE18A40B660FCC33)
 };
-

@@ -88,9 +88,7 @@ typedef int sph_s32;
 #ifndef SPH_KECCAK_UNROLL
   #define SPH_KECCAK_UNROLL 0
 #endif
-#ifndef SPH_HAMSI_EXPAND_BIG
-  #define SPH_HAMSI_EXPAND_BIG 1
-#endif
+#define SPH_HAMSI_EXPAND_BIG 1
 
 #include "blake.cl"
 #include "bmw.cl"
@@ -143,7 +141,7 @@ typedef union {
 } hash_t;
 
 #ifndef WORKSIZE
-#define WORKSIZE 256
+#define WORKSIZE 64
 #endif
 
 // blake64
@@ -154,29 +152,24 @@ __kernel void search1(__global hash_t* hashes)
   __global hash_t *hash = &(hashes[gid-get_global_offset(0)]);
 
   // blake
-  sph_u64 H0 = SPH_C64(0x6A09E667F3BCC908), H1 = SPH_C64(0xBB67AE8584CAA73B);
-  sph_u64 H2 = SPH_C64(0x3C6EF372FE94F82B), H3 = SPH_C64(0xA54FF53A5F1D36F1);
-  sph_u64 H4 = SPH_C64(0x510E527FADE682D1), H5 = SPH_C64(0x9B05688C2B3E6C1F);
-  sph_u64 H6 = SPH_C64(0x1F83D9ABFB41BD6B), H7 = SPH_C64(0x5BE0CD19137E2179);
-  sph_u64 S0 = 0, S1 = 0, S2 = 0, S3 = 0;
-  sph_u64 T0 = SPH_C64(0xFFFFFFFFFFFFFC00) + (64 << 3), T1 = 0xFFFFFFFFFFFFFFFF;
 
-  if ((T0 = SPH_T64(T0 + 1024)) < 1024)
-    T1 = SPH_T64(T1 + 1);
+  sph_u64 V0 = BLAKE_IV512[0], V1 = BLAKE_IV512[1], V2 = BLAKE_IV512[2], V3 = BLAKE_IV512[3];
+  sph_u64 V4 = BLAKE_IV512[4], V5 = BLAKE_IV512[5], V6 = BLAKE_IV512[6], V7 = BLAKE_IV512[7];
+
+  sph_u64 V8 = CB0, V9 = CB1, VA = CB2, VB = CB3;
+  sph_u64 VC = 0x452821E638D01177UL, VD = 0xBE5466CF34E90E6CUL, VE = CB6, VF = CB7;
 
   sph_u64 M0, M1, M2, M3, M4, M5, M6, M7;
   sph_u64 M8, M9, MA, MB, MC, MD, ME, MF;
-  sph_u64 V0, V1, V2, V3, V4, V5, V6, V7;
-  sph_u64 V8, V9, VA, VB, VC, VD, VE, VF;
 
-  M0 = DEC64E(hash->h8[0]);
-  M1 = DEC64E(hash->h8[1]);
-  M2 = DEC64E(hash->h8[2]);
-  M3 = DEC64E(hash->h8[3]);
-  M4 = DEC64E(hash->h8[4]);
-  M5 = DEC64E(hash->h8[5]);
-  M6 = DEC64E(hash->h8[6]);
-  M7 = DEC64E(hash->h8[7]);
+  M0 = SWAP8(hash->h8[0]);
+  M1 = SWAP8(hash->h8[1]);
+  M2 = SWAP8(hash->h8[2]);
+  M3 = SWAP8(hash->h8[3]);
+  M4 = SWAP8(hash->h8[4]);
+  M5 = SWAP8(hash->h8[5]);
+  M6 = SWAP8(hash->h8[6]);
+  M7 = SWAP8(hash->h8[7]);
   M8 = 0x8000000000000000;
   M9 = 0;
   MA = 0;
@@ -186,16 +179,32 @@ __kernel void search1(__global hash_t* hashes)
   ME = 0;
   MF = 0x200;
 
-  COMPRESS64;
+  bool flag = false;
+  rnds:
+  ROUND_B(0);
+  ROUND_B(1);
+  ROUND_B(2);
+  ROUND_B(3);
+  ROUND_B(4);
+  ROUND_B(5);
+  if(flag) goto end;
+  ROUND_B(6);
+  ROUND_B(7);
+  ROUND_B(8);
+  ROUND_B(9);
+  flag = true;
+  goto rnds;
 
-  hash->h8[0] = ENC64E(H0);
-  hash->h8[1] = ENC64E(H1);
-  hash->h8[2] = ENC64E(H2);
-  hash->h8[3] = ENC64E(H3);
-  hash->h8[4] = ENC64E(H4);
-  hash->h8[5] = ENC64E(H5);
-  hash->h8[6] = ENC64E(H6);
-  hash->h8[7] = ENC64E(H7);
+  end:
+
+  hash->h8[0] = SWAP8(V0 ^ V8 ^ BLAKE_IV512[0]);
+  hash->h8[1] = SWAP8(V1 ^ V9 ^ BLAKE_IV512[1]);
+  hash->h8[2] = SWAP8(V2 ^ VA ^ BLAKE_IV512[2]);
+  hash->h8[3] = SWAP8(V3 ^ VB ^ BLAKE_IV512[3]);
+  hash->h8[4] = SWAP8(V4 ^ VC ^ BLAKE_IV512[4]);
+  hash->h8[5] = SWAP8(V5 ^ VD ^ BLAKE_IV512[5]);
+  hash->h8[6] = SWAP8(V6 ^ VE ^ BLAKE_IV512[6]);
+  hash->h8[7] = SWAP8(V7 ^ VF ^ BLAKE_IV512[7]);
 
   barrier(CLK_GLOBAL_MEM_FENCE);
 }
@@ -208,20 +217,14 @@ __kernel void search2(__global unsigned char* block, __global hash_t* hashes)
     __global hash_t *hash = &(hashes[gid-get_global_offset(0)]);
 
   // blake
-  sph_u64 H0 = SPH_C64(0x6A09E667F3BCC908), H1 = SPH_C64(0xBB67AE8584CAA73B);
-  sph_u64 H2 = SPH_C64(0x3C6EF372FE94F82B), H3 = SPH_C64(0xA54FF53A5F1D36F1);
-  sph_u64 H4 = SPH_C64(0x510E527FADE682D1), H5 = SPH_C64(0x9B05688C2B3E6C1F);
-  sph_u64 H6 = SPH_C64(0x1F83D9ABFB41BD6B), H7 = SPH_C64(0x5BE0CD19137E2179);
-  sph_u64 S0 = 0, S1 = 0, S2 = 0, S3 = 0;
-  sph_u64 T0 = SPH_C64(0xFFFFFFFFFFFFFC00) + (80 << 3), T1 = 0xFFFFFFFFFFFFFFFF;
 
-  if ((T0 = SPH_T64(T0 + 1024)) < 1024)
-    T1 = SPH_T64(T1 + 1);
+  sph_u64 V0 = BLAKE_IV512[0], V1 = BLAKE_IV512[1], V2 = BLAKE_IV512[2], V3 = BLAKE_IV512[3];
+  sph_u64 V4 = BLAKE_IV512[4], V5 = BLAKE_IV512[5], V6 = BLAKE_IV512[6], V7 = BLAKE_IV512[7];
+  sph_u64 V8 = CB0, V9 = CB1, VA = CB2, VB = CB3;
+  sph_u64 VC = 0x452821E638D011F7UL, VD = 0xBE5466CF34E90EECUL, VE = CB6, VF = CB7;
 
   sph_u64 M0, M1, M2, M3, M4, M5, M6, M7;
   sph_u64 M8, M9, MA, MB, MC, MD, ME, MF;
-  sph_u64 V0, V1, V2, V3, V4, V5, V6, V7;
-  sph_u64 V8, V9, VA, VB, VC, VD, VE, VF;
 
   M0 = DEC64BE(block + 0);
   M1 = DEC64BE(block + 8);
@@ -242,16 +245,32 @@ __kernel void search2(__global unsigned char* block, __global hash_t* hashes)
   ME = 0;
   MF = 0x280;
 
-  COMPRESS64;
+  bool flag = false;
+	rnds:
+	ROUND_B(0);
+	ROUND_B(1);
+	ROUND_B(2);
+	ROUND_B(3);
+	ROUND_B(4);
+	ROUND_B(5);
+	if(flag) goto end;
+	ROUND_B(6);
+	ROUND_B(7);
+	ROUND_B(8);
+	ROUND_B(9);
+	flag = true;
+	goto rnds;
 
-  hash->h8[0] = ENC64E(H0);
-  hash->h8[1] = ENC64E(H1);
-  hash->h8[2] = ENC64E(H2);
-  hash->h8[3] = ENC64E(H3);
-  hash->h8[4] = ENC64E(H4);
-  hash->h8[5] = ENC64E(H5);
-  hash->h8[6] = ENC64E(H6);
-  hash->h8[7] = ENC64E(H7);
+	end:
+
+  hash->h8[0] = SWAP8(V0 ^ V8 ^ BLAKE_IV512[0]);
+  hash->h8[1] = SWAP8(V1 ^ V9 ^ BLAKE_IV512[1]);
+  hash->h8[2] = SWAP8(V2 ^ VA ^ BLAKE_IV512[2]);
+  hash->h8[3] = SWAP8(V3 ^ VB ^ BLAKE_IV512[3]);
+  hash->h8[4] = SWAP8(V4 ^ VC ^ BLAKE_IV512[4]);
+  hash->h8[5] = SWAP8(V5 ^ VD ^ BLAKE_IV512[5]);
+  hash->h8[6] = SWAP8(V6 ^ VE ^ BLAKE_IV512[6]);
+  hash->h8[7] = SWAP8(V7 ^ VF ^ BLAKE_IV512[7]);
 
   barrier(CLK_GLOBAL_MEM_FENCE);
 }
@@ -1364,6 +1383,92 @@ __kernel void search8(__global ulong* block, __global hash_t* hashes)
   barrier(CLK_GLOBAL_MEM_FENCE);
 }
 
+// keccak code by mtrlt, adapted and improved by Wolf0
+static const __constant ulong keccakf_rndc[24] = {
+  0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
+  0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
+  0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
+  0x0000000000000088, 0x0000000080008009, 0x000000008000000a,
+  0x000000008000808b, 0x800000000000008b, 0x8000000000008089,
+  0x8000000000008003, 0x8000000000008002, 0x8000000000000080,
+  0x000000000000800a, 0x800000008000000a, 0x8000000080008081,
+  0x8000000000008080, 0x0000000080000001, 0x8000000080008008
+};
+
+#define KECCAKF_1600_RNDC_0		(uint2)(0x00000001,0x00000000)
+#define KECCAKF_1600_RNDC_1		(uint2)(0x00008082,0x00000000)
+#define KECCAKF_1600_RNDC_2		(uint2)(0x0000808a,0x80000000)
+#define KECCAKF_1600_RNDC_3		(uint2)(0x80008000,0x80000000)
+#define KECCAKF_1600_RNDC_4		(uint2)(0x0000808b,0x00000000)
+#define KECCAKF_1600_RNDC_5		(uint2)(0x80000001,0x00000000)
+#define KECCAKF_1600_RNDC_6		(uint2)(0x80008081,0x80000000)
+#define KECCAKF_1600_RNDC_7		(uint2)(0x00008009,0x80000000)
+#define KECCAKF_1600_RNDC_8		(uint2)(0x0000008a,0x00000000)
+#define KECCAKF_1600_RNDC_9		(uint2)(0x00000088,0x00000000)
+#define KECCAKF_1600_RNDC_10	(uint2)(0x80008009,0x00000000)
+#define KECCAKF_1600_RNDC_11	(uint2)(0x8000000a,0x00000000)
+#define KECCAKF_1600_RNDC_12	(uint2)(0x8000808b,0x00000000)
+#define KECCAKF_1600_RNDC_13	(uint2)(0x0000008b,0x80000000)
+#define KECCAKF_1600_RNDC_14	(uint2)(0x00008089,0x80000000)
+#define KECCAKF_1600_RNDC_15	(uint2)(0x00008003,0x80000000)
+#define KECCAKF_1600_RNDC_16	(uint2)(0x00008002,0x80000000)
+#define KECCAKF_1600_RNDC_17	(uint2)(0x00000080,0x80000000)
+#define KECCAKF_1600_RNDC_18	(uint2)(0x0000800a,0x00000000)
+#define KECCAKF_1600_RNDC_19	(uint2)(0x8000000a,0x80000000)
+#define KECCAKF_1600_RNDC_20	(uint2)(0x80008081,0x80000000)
+#define KECCAKF_1600_RNDC_21	(uint2)(0x00008080,0x80000000)
+#define KECCAKF_1600_RNDC_22	(uint2)(0x80000001,0x00000000)
+#define KECCAKF_1600_RNDC_23	(uint2)(0x80008008,0x80000000)
+
+uint2 ROTL64_1(const uint2 x, const uint y) {
+  return(amd_bitalign(x, (uint2)(x.y, x.x), (uint2)(32 - y, 32 - y)));
+}
+uint2 ROTL64_2(const uint2 x, const uint y) {
+  return(amd_bitalign((uint2)(x.y, x.x), x, (uint2)(32 - y, 32 - y)));
+}
+
+#define RND(i) \
+    m0 = s0 ^ s5 ^ s10 ^ s15 ^ s20 ^ ROTL64_1(s2 ^ s7 ^ s12 ^ s17 ^ s22, 1);\
+    m1 = s1 ^ s6 ^ s11 ^ s16 ^ s21 ^ ROTL64_1(s3 ^ s8 ^ s13 ^ s18 ^ s23, 1);\
+    m2 = s2 ^ s7 ^ s12 ^ s17 ^ s22 ^ ROTL64_1(s4 ^ s9 ^ s14 ^ s19 ^ s24, 1);\
+    m3 = s3 ^ s8 ^ s13 ^ s18 ^ s23 ^ ROTL64_1(s0 ^ s5 ^ s10 ^ s15 ^ s20, 1);\
+    m4 = s4 ^ s9 ^ s14 ^ s19 ^ s24 ^ ROTL64_1(s1 ^ s6 ^ s11 ^ s16 ^ s21, 1);\
+\
+    m5 = s1^m0;\
+\
+    s0 ^= m4;\
+    s1 = ROTL64_2(s6^m0, 12);\
+    s6 = ROTL64_1(s9^m3, 20);\
+    s9 = ROTL64_2(s22^m1, 29);\
+    s22 = ROTL64_2(s14^m3, 7);\
+    s14 = ROTL64_1(s20^m4, 18);\
+    s20 = ROTL64_2(s2^m1, 30);\
+    s2 = ROTL64_2(s12^m1, 11);\
+    s12 = ROTL64_1(s13^m2, 25);\
+    s13 = ROTL64_1(s19^m3,  8);\
+    s19 = ROTL64_2(s23^m2, 24);\
+    s23 = ROTL64_2(s15^m4, 9);\
+    s15 = ROTL64_1(s4^m3, 27);\
+    s4 = ROTL64_1(s24^m3, 14);\
+    s24 = ROTL64_1(s21^m0,  2);\
+    s21 = ROTL64_2(s8^m2, 23);\
+    s8 = ROTL64_2(s16^m0, 13);\
+    s16 = ROTL64_2(s5^m4, 4);\
+    s5 = ROTL64_1(s3^m2, 28);\
+    s3 = ROTL64_1(s18^m2, 21);\
+    s18 = ROTL64_1(s17^m1, 15);\
+    s17 = ROTL64_1(s11^m0, 10);\
+    s11 = ROTL64_1(s7^m1,  6);\
+    s7 = ROTL64_1(s10^m4,  3);\
+    s10 = ROTL64_1(m5,  1);\
+    \
+    m5 = s0; m6 = s1; s0 = bitselect(s0^s2,s0,s1); s1 = bitselect(s1^s3,s1,s2); s2 = bitselect(s2^s4,s2,s3); s3 = bitselect(s3^m5,s3,s4); s4 = bitselect(s4^m6,s4,m5);\
+    m5 = s5; m6 = s6; s5 = bitselect(s5^s7,s5,s6); s6 = bitselect(s6^s8,s6,s7); s7 = bitselect(s7^s9,s7,s8); s8 = bitselect(s8^m5,s8,s9); s9 = bitselect(s9^m6,s9,m5);\
+    m5 = s10; m6 = s11; s10 = bitselect(s10^s12,s10,s11); s11 = bitselect(s11^s13,s11,s12); s12 = bitselect(s12^s14,s12,s13); s13 = bitselect(s13^m5,s13,s14); s14 = bitselect(s14^m6,s14,m5);\
+    m5 = s15; m6 = s16; s15 = bitselect(s15^s17,s15,s16); s16 = bitselect(s16^s18,s16,s17); s17 = bitselect(s17^s19,s17,s18); s18 = bitselect(s18^m5,s18,s19); s19 = bitselect(s19^m6,s19,m5);\
+    m5 = s20; m6 = s21; s20 = bitselect(s20^s22,s20,s21); s21 = bitselect(s21^s23,s21,s22); s22 = bitselect(s22^s24,s22,s23); s23 = bitselect(s23^m5,s23,s24); s24 = bitselect(s24^m6,s24,m5);\
+    s0 ^= KECCAKF_1600_RNDC_ ## i;
+
 // keccak64
 __attribute__((reqd_work_group_size(WORKSIZE, 1, 1)))
 __kernel void search9(__global hash_t* hashes)
@@ -1371,42 +1476,77 @@ __kernel void search9(__global hash_t* hashes)
   uint gid = get_global_id(0);
   __global hash_t *hash = &(hashes[gid-get_global_offset(0)]);
 
-  sph_u64 a00 = 0, a01 = 0, a02 = 0, a03 = 0, a04 = 0;
-  sph_u64 a10 = 0, a11 = 0, a12 = 0, a13 = 0, a14 = 0;
-  sph_u64 a20 = 0, a21 = 0, a22 = 0, a23 = 0, a24 = 0;
-  sph_u64 a30 = 0, a31 = 0, a32 = 0, a33 = 0, a34 = 0;
-  sph_u64 a40 = 0, a41 = 0, a42 = 0, a43 = 0, a44 = 0;
+  uint2 s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13;
+  uint2 s14, s15, s16, s17, s18, s19, s20, s21, s22, s23, s24;
 
-  a10 = SPH_C64(0xFFFFFFFFFFFFFFFF);
-  a20 = SPH_C64(0xFFFFFFFFFFFFFFFF);
-  a31 = SPH_C64(0xFFFFFFFFFFFFFFFF);
-  a22 = SPH_C64(0xFFFFFFFFFFFFFFFF);
-  a23 = SPH_C64(0xFFFFFFFFFFFFFFFF);
-  a04 = SPH_C64(0xFFFFFFFFFFFFFFFF);
+  s0 = as_uint2(hash->h8[0]);
+  s1 = as_uint2(hash->h8[1]);
+  s2 = as_uint2(hash->h8[2]);
+  s3 = as_uint2(hash->h8[3]);
+  s4 = as_uint2(hash->h8[4]);
+  s5 = as_uint2(hash->h8[5]);
+  s6 = as_uint2(hash->h8[6]);
+  s7 = as_uint2(hash->h8[7]);
+  s8 = (uint2)(1, 0x80000000U);
+  s9 = s10 = s11 = s12 = s13 = s14 = s15 = s16 = 0;
+  s17 = s18 = s19 = s20 = s21 = s22 = s23 = s24 = 0;
 
-  a00 ^= hash->h8[0];
-  a10 ^= hash->h8[1];
-  a20 ^= hash->h8[2];
-  a30 ^= hash->h8[3];
-  a40 ^= hash->h8[4];
-  a01 ^= hash->h8[5];
-  a11 ^= hash->h8[6];
-  a21 ^= hash->h8[7];
-  a31 ^= 0x8000000000000001;
-  KECCAK_F_1600;
+  uint2 m0, m1, m2, m3, m4, m5, m6;
 
-  // Finalize the "lane complement"
-  a10 = ~a10;
-  a20 = ~a20;
+  RND(0);
+  RND(1);
+  RND(2);
+  RND(3);
+  RND(4);
+  RND(5);
+  RND(6);
+  RND(7);
+  RND(8);
+  RND(9);
+  RND(10);
+  RND(11);
+  RND(12);
+  RND(13);
+  RND(14);
+  RND(15);
+  RND(16);
+  RND(17);
+  RND(18);
+  RND(19);
+  RND(20);
+  RND(21);
+  RND(22);
 
-  hash->h8[0] = a00;
-  hash->h8[1] = a10;
-  hash->h8[2] = a20;
-  hash->h8[3] = a30;
-  hash->h8[4] = a40;
-  hash->h8[5] = a01;
-  hash->h8[6] = a11;
-  hash->h8[7] = a21;
+  m0 = s0 ^ s5 ^ s10 ^ s15 ^ s20 ^ ROTL64_1(s2 ^ s7 ^ s12 ^ s17 ^ s22, 1);
+  m1 = s1 ^ s6 ^ s11 ^ s16 ^ s21 ^ ROTL64_1(s3 ^ s8 ^ s13 ^ s18 ^ s23, 1);
+  m2 = s2 ^ s7 ^ s12 ^ s17 ^ s22 ^ ROTL64_1(s4 ^ s9 ^ s14 ^ s19 ^ s24, 1);
+  m3 = s3 ^ s8 ^ s13 ^ s18 ^ s23 ^ ROTL64_1(s0 ^ s5 ^ s10 ^ s15 ^ s20, 1);
+  m4 = s4 ^ s9 ^ s14 ^ s19 ^ s24 ^ ROTL64_1(s1 ^ s6 ^ s11 ^ s16 ^ s21, 1);
+
+  s0 ^= m4;
+  s1 = ROTL64_2(s6  ^ m0, 12);
+  s6 = ROTL64_1(s9  ^ m3, 20);
+  s9 = ROTL64_2(s22 ^ m1, 29);
+  s2 = ROTL64_2(s12 ^ m1, 11);
+  s4 = ROTL64_1(s24 ^ m3, 14);
+  s8 = ROTL64_2(s16 ^ m0, 13);
+  s5 = ROTL64_1(s3  ^ m2, 28);
+  s3 = ROTL64_1(s18 ^ m2, 21);
+  s7 = ROTL64_1(s10 ^ m4,  3);
+
+  m5 = s0; m6 = s1; s0 = bitselect(s0^s2,s0,s1); s1 = bitselect(s1^s3,s1,s2); s2 = bitselect(s2^s4,s2,s3); s3 = bitselect(s3^m5,s3,s4); s4 = bitselect(s4^m6,s4,m5);
+  s5 = bitselect(s5^s7,s5,s6); s6 = bitselect(s6^s8,s6,s7); s7 = bitselect(s7^s9,s7,s8);
+
+  s0 ^= KECCAKF_1600_RNDC_23;
+
+  hash->h8[0] = as_ulong(s0);
+  hash->h8[1] = as_ulong(s1);
+  hash->h8[2] = as_ulong(s2);
+  hash->h8[3] = as_ulong(s3);
+  hash->h8[4] = as_ulong(s4);
+  hash->h8[5] = as_ulong(s5);
+  hash->h8[6] = as_ulong(s6);
+  hash->h8[7] = as_ulong(s7);
 
   barrier(CLK_GLOBAL_MEM_FENCE);
 }
@@ -2413,21 +2553,37 @@ __kernel void search23(__global hash_t* hashes)
   }
 
   #undef buf
-  #define buf(u) (u == 0 ? 0x80 : 0)
+  #undef CALL_INPUT_BIG_LOCAL
 
-  CALL_INPUT_BIG_LOCAL;
+  #ifdef INPUT_BIG_LOCAL
+    __local sph_u32 *tp = &(T512_L[0]);
+  #else
+    __constant const sph_u32 *tp = &T512[0][0];
+  #endif
+
+  m0 = tp[0x70]; m1 = tp[0x71];
+  m2 = tp[0x72]; m3 = tp[0x73];
+  m4 = tp[0x74]; m5 = tp[0x75];
+  m6 = tp[0x76]; m7 = tp[0x77];
+  m8 = tp[0x78]; m9 = tp[0x79];
+  mA = tp[0x7A]; mB = tp[0x7B];
+  mC = tp[0x7C]; mD = tp[0x7D];
+  mE = tp[0x7E]; mF = tp[0x7F];
+
   P_BIG;
   T_BIG;
 
-  #undef buf
-  #define buf(u) (u == 6 ? 2 : 0)
+  m0 = tp[0x310]; m1 = tp[0x311];
+  m2 = tp[0x312]; m3 = tp[0x313];
+  m4 = tp[0x314]; m5 = tp[0x315];
+  m6 = tp[0x316]; m7 = tp[0x317];
+  m8 = tp[0x318]; m9 = tp[0x319];
+  mA = tp[0x31A]; mB = tp[0x31B];
+  mC = tp[0x31C]; mD = tp[0x31D];
+  mE = tp[0x31E]; mF = tp[0x31F];
 
-  CALL_INPUT_BIG_LOCAL;
   PF_BIG;
   T_BIG;
-
-  #undef buf
-  #undef CALL_INPUT_BIG_LOCAL
 
   for (unsigned u = 0; u < 16; u ++)
     hash->h4[u] = ENC32E(h[u]);
@@ -2482,21 +2638,37 @@ __kernel void search24(__global ulong* block, __global hash_t* hashes)
   }
 
   #undef buf
-  #define buf(u) (u == 0 ? 0x80 : 0)
+  #undef CALL_INPUT_BIG_LOCAL
 
-  CALL_INPUT_BIG_LOCAL;
+  #ifdef INPUT_BIG_LOCAL
+    __local sph_u32 *tp = &(T512_L[0]);
+  #else
+    __constant const sph_u32 *tp = &T512[0][0];
+  #endif
+
+  m0 = tp[0x70]; m1 = tp[0x71];
+  m2 = tp[0x72]; m3 = tp[0x73];
+  m4 = tp[0x74]; m5 = tp[0x75];
+  m6 = tp[0x76]; m7 = tp[0x77];
+  m8 = tp[0x78]; m9 = tp[0x79];
+  mA = tp[0x7A]; mB = tp[0x7B];
+  mC = tp[0x7C]; mD = tp[0x7D];
+  mE = tp[0x7E]; mF = tp[0x7F];
+
   P_BIG;
   T_BIG;
 
-  #undef buf
-  #define buf(u) (u == 6 ? 2 : (u == 7 ? 0x80 : 0))
+  m0 = tp[0x310] ^ tp[0x3F0]; m1 = tp[0x311] ^ tp[0x3F1];
+  m2 = tp[0x312] ^ tp[0x3F2]; m3 = tp[0x313] ^ tp[0x3F3];
+  m4 = tp[0x314] ^ tp[0x3F4]; m5 = tp[0x315] ^ tp[0x3F5];
+  m6 = tp[0x316] ^ tp[0x3F6]; m7 = tp[0x317] ^ tp[0x3F7];
+  m8 = tp[0x318] ^ tp[0x3F8]; m9 = tp[0x319] ^ tp[0x3F9];
+  mA = tp[0x31A] ^ tp[0x3FA]; mB = tp[0x31B] ^ tp[0x3FB];
+  mC = tp[0x31C] ^ tp[0x3FC]; mD = tp[0x31D] ^ tp[0x3FD];
+  mE = tp[0x31E] ^ tp[0x3FE]; mF = tp[0x31F] ^ tp[0x3FF];
 
-  CALL_INPUT_BIG_LOCAL;
   PF_BIG;
   T_BIG;
-
-  #undef buf
-  #undef CALL_INPUT_BIG_LOCAL
 
   for (unsigned u = 0; u < 16; u ++)
     hash->h4[u] = ENC32E(h[u]);

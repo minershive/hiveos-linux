@@ -259,16 +259,33 @@ __constant static const sph_u64 BLAKE_IV512[8] = {
 
 #if SPH_64
 
-#define GB(m0, m1, c0, c1, a, b, c, d)   do { \
-    a = SPH_T64(a + b + (m0 ^ c1)); \
-    d = SPH_ROTR64(d ^ a, 32); \
-    c = SPH_T64(c + d); \
+#ifdef NO_AMD_OPS
+  #define GB(m0, m1, c0, c1, a, b, c, d)   do { \
+    a += b + (m0 ^ c1); \
+    d = as_ulong(as_uint2(d ^ a).s10); \
+    c += d; \
     b = SPH_ROTR64(b ^ c, 25); \
-    a = SPH_T64(a + b + (m1 ^ c0)); \
-    d = SPH_ROTR64(d ^ a, 16); \
-    c = SPH_T64(c + d); \
+    a += b + (m1 ^ c0); \
+    d = as_ulong(as_ushort4(d ^ a).s1230); \
+    c += d; \
     b = SPH_ROTR64(b ^ c, 11); \
   } while (0)
+#else
+  ulong BLAKE_ROTL(const uint2 x, const uint y) {
+    return(as_ulong(amd_bitalign((uint2)(x.y, x.x), x, (uint2)(32 - y, 32 - y))));
+  }
+
+  #define GB(m0, m1, c0, c1, a, b, c, d)   do { \
+      a += b + (m0 ^ c1); \
+      d = as_ulong(as_uint2(d ^ a).s10); \
+      c += d; \
+      b = BLAKE_ROTL(as_uint2(b ^ c), 7U); \
+      a += b + (m1 ^ c0); \
+      d = as_ulong(as_ushort4(d ^ a).s1230); \
+      c += d; \
+      b = BLAKE_ROTL(as_uint2(b ^ c), 21U); \
+    } while (0)
+#endif
 
 #define ROUND_B(r)   do { \
     GB(Mx(r, 0), Mx(r, 1), CBx(r, 0), CBx(r, 1), V0, V4, V8, VC); \
@@ -284,44 +301,6 @@ __constant static const sph_u64 BLAKE_IV512[8] = {
 #endif
 
 #if SPH_64
-
-#define BLAKE_DECL_STATE64 \
-  sph_u64 H0, H1, H2, H3, H4, H5, H6, H7; \
-  sph_u64 S0, S1, S2, S3, T0, T1;
-
-#define BLAKE_READ_STATE64(state)   do { \
-    H0 = (state)->H[0]; \
-    H1 = (state)->H[1]; \
-    H2 = (state)->H[2]; \
-    H3 = (state)->H[3]; \
-    H4 = (state)->H[4]; \
-    H5 = (state)->H[5]; \
-    H6 = (state)->H[6]; \
-    H7 = (state)->H[7]; \
-    S0 = (state)->S[0]; \
-    S1 = (state)->S[1]; \
-    S2 = (state)->S[2]; \
-    S3 = (state)->S[3]; \
-    T0 = (state)->T0; \
-    T1 = (state)->T1; \
-  } while (0)
-
-#define BLAKE_WRITE_STATE64(state)   do { \
-    (state)->H[0] = H0; \
-    (state)->H[1] = H1; \
-    (state)->H[2] = H2; \
-    (state)->H[3] = H3; \
-    (state)->H[4] = H4; \
-    (state)->H[5] = H5; \
-    (state)->H[6] = H6; \
-    (state)->H[7] = H7; \
-    (state)->S[0] = S0; \
-    (state)->S[1] = S1; \
-    (state)->S[2] = S2; \
-    (state)->S[3] = S3; \
-    (state)->T0 = T0; \
-    (state)->T1 = T1; \
-  } while (0)
 
 #define COMPRESS64   do { \
     V0 = H0; \
