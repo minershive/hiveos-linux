@@ -251,6 +251,13 @@ miner start
 	echo2 "> Hashrate Watchdog enabled" &&
 	wd start
 
+#k10temp for cpu temp
+modprobe k10temp
+if [ $(modinfo k10temp | grep alias | wc -l) -lt 12 ]; then
+	echo2 "Install k10temp module..."
+	nohup /hive/opt/k10temp/install.sh > /dev/null 2>&1 &
+fi
+
 
 echo2 "> Hive Start Finished"
 exit 0
