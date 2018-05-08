@@ -151,10 +151,10 @@ function do_command () {
 		amd_download)
 			gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
 			listjson=`gpu-detect listjson AMD`
-			gpu_biosid=`echo "$listjson" | jq -r ".[$gpu_index].vbios" | sed -e 's/[\,\.\ ]/_/g'`
+			gpu_biosid=`echo "$listjson" | jq -r ".[$gpu_index].vbios" | sed -e 's/[\ ]/_/g'`
 			gpu_type=`echo "$listjson" | jq -r ".[$gpu_index].name" | sed -e 's/[\,\.\ ]//g'`
 			gpu_memsize=`echo "$listjson" | jq -r ".[$gpu_index].mem" | sed -e 's/^\(..\).*/\1/' | sed -e 's/.$/G/'`
-			gpu_memtype=`echo "$listjson" | jq -r ".[$gpu_index].mem_type" | sed -e 's/[\,\.\ ]//g'`
+			gpu_memtype=`echo "$listjson" | jq -r ".[$gpu_index].mem_type" | sed -e 's/[\,\.\ ]/_/g'`
 			if [[ ! -z $gpu_index && $gpu_index != "null" ]]; then
 			    payload=`atiflash -s $gpu_index /tmp/amd.saved.rom`
 			    exitcode=$?
@@ -162,7 +162,7 @@ function do_command () {
 				if [[ $exitcode == 0 ]]; then
 					#payload=`cat /tmp/amd.saved.rom | base64`
 					#echo "$payload" | message file "VBIOS $gpu_index" payload
-					cat /tmp/amd.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "vbios-${WORKER_NAME}-$gpu_index-$gpu_type-$gpu_memsize-$gpu_memvendor-$gpu_biosid.rom" payload
+					cat /tmp/amd.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "${WORKER_NAME}-$gpu_index-$gpu_type-$gpu_memsize-$gpu_memtype-$gpu_biosid.rom" payload
 				else
 					echo "$payload" | message warn "AMD VBIOS saving failed" payload
 				fi
