@@ -1,0 +1,2 @@
+EWBF's CUDA Zcash miner: 0.3.4b
+https://bitcointalk.org/index.php?topic=1707546.0

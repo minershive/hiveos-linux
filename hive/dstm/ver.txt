@@ -1,0 +1,2 @@
+dstm's ZCash Cuda miner: 0.6.0
+https://bitcointalk.org/index.php?topic=2021765.0

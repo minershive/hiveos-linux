@@ -1,0 +1,1 @@
+POOL: zec-eu1.nanopool.org:6666, WALLET: t1VS4MURTc5HxV3Hm85HsCXRHHN5Etss9vH/worker/fern@kgroup.biz, PSW: z

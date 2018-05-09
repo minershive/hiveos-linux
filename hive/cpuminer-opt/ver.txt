@@ -1,0 +1,2 @@
+cpuminer-opt: 3.8.8
+https://bitcointalk.org/index.php?topic=1326803.0

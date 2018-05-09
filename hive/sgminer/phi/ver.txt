@@ -1,0 +1,2 @@
+SGMiner PHI1612: 5.6.1
+https://github.com/216k155/sgminer-phi1612-Implemented

@@ -1,0 +1,2 @@
+Ethminer: ver. 0.14.0rc10
+https://github.com/ethereum-mining/ethminer/

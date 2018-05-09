@@ -1,0 +1,21 @@
+#DONT EDIT THIS FILE, IT WILL BE OVERWTITTEN AFTER UPDATE
+
+#Management port
+-mport -3335
+
+#Reboot on GPU hangs
+-r 1
+
+-logfile /var/log/miner/claymore-z/lastrun_noappend.log
+
+#Target temp
+-tt 68
+#reduce entire mining intensity (for all coins)
+-ttli 76
+#stop GPU temperature
+-tstop 82
+
+
+-allpools 1
+
+### USER CONFIG ###

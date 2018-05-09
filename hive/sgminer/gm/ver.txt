@@ -1,0 +1,2 @@
+SGMiner GenesisMining: 5.5.6 (compiled by @dimafern)
+https://github.com/genesismining/sgminer-gm

@@ -1,0 +1,2 @@
+SGMiner djm34: 0.3 (compiled by @dimafern)
+https://github.com/djm34/sgminer-msvc2015

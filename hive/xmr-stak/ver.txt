@@ -1,0 +1,2 @@
+xmr-stak: 2.4.3
+https://github.com/fireice-uk/xmr-stak
