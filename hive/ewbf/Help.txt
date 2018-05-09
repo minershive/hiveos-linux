@@ -1,0 +1,110 @@
+--help, -h          Show short help.
+--server            Stratum server only hostname or ip address.
+--port              Stratum server port.
+--user              Stratum user.
+--pass              Stratum password.
+--cuda_devices      Space-separated list of cuda devices. Without this option all devices are used.
+--solver            Disable benchmark and use specified solver. Allowed values from 0 to 3.
+                    Started from version 0.3.0b this option allow you to set the solver for each card separately at this manner: --solver 0 0 0 0
+                    For example if you have 4 cuda devices and you do not use option --cuda_devices 
+                    then --solver 0 1 2 3 will be applied to devices 0 1 2 3 accordingly.
+                    if you set --solver 0 then this value will be applied to all devices
+                    if you set --cuda_devices 3 2 1 then solver values will be applied in this order.
+--eexit             Exit in case of error. Value 1 exit if miner cannot restart workers.
+                    Value 2 if lost connection with the pool. 3 both cases.
+--log               Create file miner.log in directory of miner.
+                    Allowed values 1 and 2. 1 only errors, 2 will repeat console output.
+--logfile           Set custom filename.
+--config            Specifies the configuration file, when the configuration file is used, all other command-line parameters are ignored.
+--intensity         Specifies maximum intensity, allowed values 1 - 64. Lower value, lower speed and gpu usage.
+--tempunits         Temperature units, allowed values: C for celsius, F for fahrenheit and K for kelvin :)).
+--templimit         Temperature limit, gpu will be stopped if this limit is reached.
+                    And when temperature go below this limit gpu will be runned again.
+                    Note: If this limit is too low and miner stops this gpu too frequently 
+                    and option --eexit equal 1 or 3 then after three unsuccessfull starting attempts miner will exit.
+--api               Enable api without an argument will be listen on 127.0.0.1:42000,
+                    You can set listen address as an argument for example: --api 0.0.0.0:12345
+                    Allowed ports 1000 - 65535.
+
+
+
+
+
+API Description.
+Api establish the tcp connection and send through it json data, like a stratum protocol.
+Every json request and response must be ended with new line symbol \n, this symbol used 
+as a sign of data end. 
+
+Request example: {"id":1, "method":"getstat"}\n
+Respond example: {"id":1, "method":"getstat", "error":null, "result":[{
+		"gpuid":0, 
+		"cudaid":0, 
+		"busid":"0000:01:00.0", 
+		"gpu_status":2, 
+		"solver":0, 
+		"temperature":64, 
+		"gpu_power_usage":150, 
+		"speed_sps":420, 
+		"accepted_shares":1000, 
+		"rejected_shares":1
+	},{
+		"gpuid":1, 
+		"cudaid":1, 
+		"busid":"0000:04:00.0", 
+		"gpu_status":2, 
+		"solver":0, 
+		"temperature":70, 
+		"gpu_power_usage":100, 
+		"speed_sps":410, 
+		"accepted_shares":1111, 
+		"rejected_shares":2
+	}
+]}\n
+
+Method getstat:
+  Request parameters:
+    id       optional,  type: unsigned int,  response will be have this id.
+    method   required,  type: string,        method name
+                      
+  Response parameters:
+    id                          type: unsigned,          id from request or 0 in other case.
+    method                      type: string,            method name
+    error                       type: null, string,      null if no error otherwise message 
+    start_time                  type: unsigned,          time when miner was started (availaible since version 0.3.4b)
+    current_server              type: string,            current server name (availaible since 0.3.4b)
+    available_servers           type: unsigned,          number of available stratum servers (availaible since 0.3.4b)
+    server_status               type: unsigned,          status of current server.  (availaible since 0.3.4b)
+                                                         -1 server error
+                                                         0  server waiting for connection
+                                                         1 server subscribed
+                                                         2 server authorized and works fine
+                                                         3 server start disconnecting
+    result                      type: array of objects,  array contain objects by one for each gpu
+    
+    result[0].gpuid             type: unsigned,          internal gpu identifier
+    result[0].cudaid            type: unsigned,          gpu cuda identifier
+    result[0].busid             type: string,            pci bus id in format: 0000:00:00.0
+    result[0].name              type: string,            name of gpu (availaible since 0.3.4b)
+    result[0].gpu_status        type: unsigned,          status of gpu 
+                                                         0 - gpu launched, but not yet work,
+                                                         1 - gpu launched, but he prepare to work, for example execute benchmark. 
+                                                         2 - gpu works
+                                                         3 - GPU stopped, for example, a temperature limit is reached
+    result[0].solver            type: unsigned,          selected solver
+    result[0].temperature       type: integer,           gpu core temperature
+    result[0].gpu_power_usage   type: unsigned,          gpu power usage in watts, not all devices support this in this case this value will be 0
+    result[0].speed_sps         type: unsigned,          gpu performance in solutions per seconds
+    result[0].accepted_shares   type: unsigned,          amount of accepted shares
+    result[0].rejected_shares   type: unsigned,          amount of rejected shares
+    result[0].start_time        type: unsigned,          the time when the worker was started (availaible since 0.3.4b)
+    
+    Remark: temperature, gpu_power_usage and speed_sps updated every 30 seconds.
+    
+Since version 0.3.4b api is available through simple http request: 
+you can simply make http request to api address in this format: http://127.0.0.1:42000/"method name"
+for example http://127.0.0.1:42000/getstat
+also you can open http://127.0.0.1:42000 this will show you simple web page with miner statistics
+
+At this moment supported only one method "getstat".
+If you have some thoughts about api you can send me personal message https://bitcointalk.org/index.php?action=profile;u=927785
+

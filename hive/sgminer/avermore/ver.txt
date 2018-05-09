@@ -1,0 +1,2 @@
+SGMiner avermore-miner: 1.4
+https://github.com/brian112358/avermore-miner

@@ -1,0 +1,235 @@
+VERSION HISTORY
+
+
+
+v12.6
+---------------------------------------------------------------------
+
+- added Vega cards support (ASM mode).
+- added ASM mode for RX460/560 cards (+20% speed).
+- new GPU sorting method for AMD cards. Now GPUs are sorted by physical bus index (it matches AfterBurner list of GPUs). Also the list of temperatures/fans matches the list of GPUs automatically.
+  Therefore "-di detect" and "-gmap" options are not necessary and not supported anymore.
+  WARNING: be careful if you use use separate overclock/temperature settings for every card, due to new sorting method GPUs can get different indexes!
+- added fan/OC support for 17.7.2 (and higher) drivers.
+- improved support for systems with more than 10 GPUs, check readme for "-di" option description for details.
+- added pool selection in runtime ("e" key).
+- a few minor improvements.
+
+
+
+v12.5 This version is assumed to be stable, so it is not marked as "beta".
+---------------------------------------------------------------------
+
+- added support for latest ZCash forks.
+- improved fans management for latest drivers and Polaris cards.
+- added "-mpsw" option.
+- added shares-per-GPU statistics when "s" key is pressed.
+- Included EthMan v3.0 which supports passwords and email notifications.
+
+
+
+v12.4 This version is assumed to be stable, so it is not marked as "beta".
+---------------------------------------------------------------------
+
+- slightly improved speed for some cards (up to 2%).
+- added "-gmap" option.
+- a few minor improvements.
+
+
+
+v12.3 This version is assumed to be stable, so it is not marked as "beta".
+---------------------------------------------------------------------
+
+- slightly improved speed, about 410H/s on stock 390X, 465H/s on stock Nano, 300H/s on stock 280X, 305H/s on stock RX480.
+- improved stability for high "-i" option values, added "-i 9" option value.
+- fixed a few bugs.
+
+
+
+v12.2 
+---------------------------------------------------------------------
+
+- fixed issue with "-ttli" option.
+- improved "-mport" option, now you can specify network adapter IP for incoming connections for remote management.
+- added "-old 1" option, try to use it if v12.0 works stable for you, but v12.1 is unstable.
+
+
+
+v12.1
+---------------------------------------------------------------------
+
+- slightly improved speed for some cards, about 410H/s on stock 390X, 450H/s on stock Nano, 290H/s on stock 280X, 300H/s on stock RX480.
+- slightly improved stability. If it is still unstable for you, reduce "-i" value.
+- fixed issue with wrong hashrate when "-li" or "-ttli" options enabled.
+
+
+
+v12.0
+---------------------------------------------------------------------
+
+- improved speed, about 405H/s on stock 390X, 450H/s on stock Nano, 290H/s on stock 280X, 295H/s on stock RX480.
+
+
+
+v11.1
+---------------------------------------------------------------------
+
+- improved speed, about 365H/s on stock 390X, 385H/s on stock Nano, 260H/s on stock 280X, 260H/s on stock RX480.
+- improved compatibility.
+- some bug fixes and minor improvements.
+
+
+
+v11.0
+---------------------------------------------------------------------
+
+- improved speed for Hawaii, Fury, Tahiti and Pitcairn cards. About 355H/s on stock 390X, 370H/s on stock Nano, 250H/s on stock 280X.
+- added faster assembler implementation kernels for these cards.
+- added "-asm" option.
+
+
+
+v10.0
+---------------------------------------------------------------------
+
+- improved speed for most cards, up to 8% (depends on card model). About 340H/s on stock 390X, 255H/s on stock RX480, 320H/x on stock Nano.
+- added "-a" option to select best algorithm implementation for your GPU.
+
+
+
+v9.3
+---------------------------------------------------------------------
+
+- improved stability and compatibility with various drivers. 
+- slightly improved mining speed for some cards (1-2%). About 340H/s on stock 390X.
+- fixed issue in Linux version with GPU SEGFAULT and high CPU load.
+- added support for round robin DNS.
+- some bug fixes and minor improvements.
+
+
+
+v9.2
+---------------------------------------------------------------------
+
+- improved speed for some cards up to 7% (depends on card model). About 330H/s on stock 390X, 235H/s on stock RX480, 300H/x on stock Nano.
+- added Linux version.
+- several bug fixes and minor improvements.
+
+
+
+v9.1
+---------------------------------------------------------------------
+
+- additional range checks in code for better stability.
+- reduced devfee, it's 2% now (72sec instead of 90sec) if you use secure SSL/TLS connection, currently Flypool and Suprnova pools support encrypted connections, see Readme for samples. 
+- improved "-di detect" option: now after GPU order detection miner starts mining with the detected order.
+- added ability to use environment variables in "epools.txt" and "config.txt" files. For example, define "WORKER" environment varibale and use it as "%WORKER%" in config.txt.
+
+
+
+v9.0
+---------------------------------------------------------------------
+
+- improved speed by 3-20% (depends on card model). About 310H/s on stock 390X, 220H/s on stock RX480, 295H/x on stock Nano.
+- added "-i 7" and "-i 8" values, about 1% speedup, but can be unstable in some cases.
+- added SSL/TLS encryption support for better security, see "-zpool" option description in Readme file for details.
+- added "License.txt" file that contains the License Agreement.
+- added "-v" option.
+- several bug fixes and minor improvements.
+- EthMan: improved saving options.
+
+
+
+v8.0
+---------------------------------------------------------------------
+
+- improved speed by about 15-25% (depends on card model). Up to 300H/s on stock 390X.
+- added "-i 5" and "-i 6" values, 1-2% speedup, but can be unstable in some cases.
+- now remote management is working in read-only mode by default.
+- some bug fixes and minor improvements.
+
+
+
+v7.0
+---------------------------------------------------------------------
+
+- improved speed by about 15-25% (depends on card model). About 230H/s on stock 390X.
+- added "-benchmark" option.
+
+
+
+v6.0
+---------------------------------------------------------------------
+
+- improved speed by about 20-25% (depends on card model). About 180H/s on stock 390.
+- "-i" parameter values are 0...4 now, default value is "-i 4".
+- fixed issue with mixed cards.
+
+
+
+v5.0
+---------------------------------------------------------------------
+
+- improved speed by about 30-50% (depends on card model). About 145H/s on stock 390X.
+- improved support for Catalyst 16.x and 4xx cards.
+- reduced CPU usage.
+
+
+
+v4.0
+---------------------------------------------------------------------
+
+- improved speed by about 20% (depends on card model). Up to 100H/s on stock 390X on "-i 2" mode.
+- added "-retrydelay" option.
+- added "-nofee" option.
+- various bug fixes.
+- changed coloring.
+- EthMan: added "View miner console" command.
+
+
+
+v3.1
+---------------------------------------------------------------------
+
+- improved stability.
+
+
+
+v3.0
+---------------------------------------------------------------------
+
+- improved speed by 20-30% (depends on card model). Up to 80H/s on stock 390X on "-i 2" mode.
+
+
+
+v2.1
+---------------------------------------------------------------------
+
+- added "-i" option for adjusting mining intensity and CPU usage.
+- improved speed for high intensity mode ("-i 2"), about 60H/s on stock 390X.
+- since nicehash cannot upgrade their ddos protection, now "-allpools 1" is required for this pool.
+
+
+
+v2.0
+---------------------------------------------------------------------
+
+- improved speed by 5-15% (depends on card model).
+
+
+
+v1.1
+---------------------------------------------------------------------
+
+- added Linux version.
+- fixed issue with rejected shares after devfee mining.
+- remove "-allpools 1" option if you use it and mine on miningpoolhub, suprnova, coinmine or nicehash pools.
+- added "XnSub" support for Nicehash.
+- fixed bugs.
+
+
+
+v1.0
+---------------------------------------------------------------------
+- First version.
+

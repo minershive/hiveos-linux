@@ -16,7 +16,6 @@ fork=$1
 
 [[ -z $fork ]] && fork="gm"
 
-#[[ $1 == "nicehash" ]] && binary="sgminer_gm_nicehash"
 #[[ $1 == "gm" ]] && binary="sgminer_gm"
 
 echo "Fork version: $binary"

@@ -1,0 +1,1 @@
+POOL: cryptonight.eu.nicehash.com:3355, WALLET: 33v4eKxAeJxgBEURuvjiYDhBPfRap4K8Lf.worker, PSW: x, ESM: 3, ALLPOOLS: 1
