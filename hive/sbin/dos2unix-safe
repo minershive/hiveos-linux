@@ -2,18 +2,19 @@
 
 [[ -z $1 ]] && echo "No file given" && exit 1
 
-for var in "$@"
-do
-	fname=$var
+for fname in "$@"; do
 	fname=`realpath "$fname"`
 
 	[[ ! -f $fname ]] && echo "No such file" && exit 1
 
 
 	#ensure we have Windows file
-	crlf=`grep -U $'\x0D' $fname | wc -l`
+	#"\x0D" = \r
+#	crlf=`grep -U $'\x0D' $fname | wc -l`
 
-	[[ $crlf > 0 ]] &&
+#	[[ $crlf > 0 ]] &&
+
+	grep -qU $'\x0D' $fname &&
 		#echo "Converting $fname to unix" &&
 		dos2unix $fname
 done

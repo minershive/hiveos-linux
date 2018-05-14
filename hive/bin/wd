@@ -9,8 +9,7 @@ OK_MESSAGE_REDUCE=$(( 1 * 60 / $SLEEP )) #e.g. only every 12th message will be d
 
 RIG_CONF="/hive-config/rig.conf"
 
-#[ -t 1 ] && .
-. /hive/bin/colors
+[ -t 1 ] && . /hive/bin/colors
 
 
 function loadconf() {

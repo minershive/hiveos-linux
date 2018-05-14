@@ -17,7 +17,7 @@ miner logdirscreate
 #chown -R user:user /hive-config > /dev/null
 
 
-#Environment
+# Environment ------------------------------------------------------------------------------------
 
 [[ ! -L /etc/environment && -e /hive/etc/environment ]] && #it's not a symlink
 	echo "Linking /etc/environment" &&
@@ -26,7 +26,7 @@ miner logdirscreate
 
 
 
-#Services
+# Services ---------------------------------------------------------------------------------------
 
 [[ ! -f /lib/systemd/system/hive.service ]] &&
 	echo "Linking and enabling hive service" &&
@@ -65,7 +65,7 @@ fi
 
 
 
-#Cron
+# Cron ---------------------------------------------------------------------------------------
 
 #remove system, use our own cron
 [[ -f /etc/cron.hourly/logrotate ]] &&
@@ -94,7 +94,7 @@ systemctl restart cron.service
 #		echo "Moving /etc/cron.daily/logrotate to /etc/cron.hourly/logrotate"
 #		mv /etc/cron.daily/logrotate /etc/cron.hourly/logrotate
 #		#service cron restart
-#		systemctl restart cron.service
+#		systemcwtl restart cron.service
 #		/etc/cron.hourly/logrotate
 #	else
 #		echo "WARNING: /etc/cron.daily/logrotate does not exist"
@@ -108,13 +108,13 @@ cat /etc/sysctl.conf | grep -q "vm.nr_hugepages"; [[ $? -eq 1 ]] && (echo "vm.nr
 #cat /etc/security/limits.conf | grep -q "* hard memlock 262144"; [[ $? -eq 1 ]] && echo "* hard memlock 262144" >> /etc/security/limits.conf
 
 
-# USB drive optimizations
+# USB drive optimizations --------------------------------------------------------------------------------------
 cat /etc/fstab | grep "^UUID=2158442c-b245-4f6d-941b-ced5f3d3a427" | grep -q "noatime,commit=120"
 [[ $? -eq 1 ]] && #not found
     echo "Setting \"noatime,commit=120\" as root FS mount options" &&
     sed -i 's/^UUID=2158442c-b245-4f6d-941b-ced5f3d3a427.*/UUID=2158442c-b245-4f6d-941b-ced5f3d3a427 \/ ext4 errors=remount-ro,noatime,commit=120 0 1/g' /etc/fstab
 
-#Config directory setup -----------------------------------------------------
+# Config directory setup -----------------------------------------------------------------------
 
 [[ ! -d /hive-config ]] && mkdir -p -m 777 /hive-config
 
@@ -123,7 +123,7 @@ cp -r --no-clobber /hive/etc/hive-config.stub/* /hive-config/
 
 
 
-#Teleconsole env check -----------------------------------------------------
+# Teleconsole env check ------------------------------------------------------------------------
 cat /root/.bashrc | grep -qE '^# Teleconsole required start' ||
 (echo "Adding environment to /root/.bashrc for Teleconsole";
 echo -e "\n\n# Teleconsole required start
@@ -133,6 +133,10 @@ export CUDA_DEVICE_ORDER
 # Teleconsole required end" >> /root/.bashrc)
 
 
+
+# Add chinadogs --------------------------------------------------------------------------------
+[[ ! -e /etc/udev/rules.d/99-chinadogs.rules ]] &&
+	ln -s /hive/etc/udev/rules.d/99-chinadogs.rules /etc/udev/rules.d/99-chinadogs.rules
 
 
 

@@ -1,3 +1,6 @@
+# Rules to make every known chinese watchdog to become /dev/china_dog0
+# Though need to add dev ids to /hive/opt/qinheng/hl340.sh
+
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="5131", ATTRS{idProduct}=="2007", SYMLINK+="china_dog0"
 
 ###maybe work with 0471:2379 Philips (or NXP)

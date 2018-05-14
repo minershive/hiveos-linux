@@ -17,8 +17,14 @@ else
 		echo "Copying $hivefile to /etc/systemd/network/"
 		cp $hivefile /etc/systemd/network/
 	done
+
 	dos2unix-safe /etc/systemd/network/*.network
 	chmod 644 /etc/systemd/network/*.network
+
+	#add new line to prevent systemd stupidity
+	for fname in /etc/systemd/network/*.network; do
+		echo "" >> "$fname"
+	done
 fi
 #cp -f /hive-config/network/10-static.network /etc/systemd/network/10-static.network
 

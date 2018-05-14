@@ -12,7 +12,7 @@ if [[ ! -z $PREVPID ]]; then
 fi
 
 
-c=`lsusb | grep -E '1a86:7523|5131:2007' | wc -l`
+c=`lsusb | grep -E '1a86:7523|5131:2007|0471:2379' | wc -l`
 echo "QinHeng Electronics HL-340 Watchdogs found: $c"
 
 if [ $c -eq 0 ]; then
