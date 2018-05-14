@@ -21,7 +21,7 @@ echo "Using $PORT"
 
 if [[ $1 == "reset" ]]; then
         echo "Pushing Reset"
-        echo -ne "\xFF" > $PORT
+        echo -ne "\xFF\x55" > $PORT
         exit 0
 fi
 
@@ -39,6 +39,6 @@ fi
 while true
 do
         echo "Pinging watchdog"
-        echo -ne "\x06" > $PORT
-        sleep 2
+        echo -ne "\x1E\x00" > $PORT
+        sleep 5
 done
