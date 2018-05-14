@@ -26,7 +26,7 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 
 	filterGrep=""
 	if [[ ! -z $2 && $2 == "AMD" ]]; then
-		list=`lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices"`
+		list=`lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices" | grep -v "RS880"`
 	elif [[ ! -z $2 && $2 == "NVIDIA" ]]; then
 		list=`lspci | grep -E "VGA|3D controller" | grep "NVIDIA" | grep -v "nForce"`
 	else
