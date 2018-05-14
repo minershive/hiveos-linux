@@ -2,6 +2,7 @@
 #Watchdog pinger for OpenDev products
 #MUST BE RUN AS ROOT
 
+DEV_CHINA=/dev/china_dog0
 
 #grep processes but not a self sh script
 PREVPID=`ps aux | grep "hl340" | grep -v 'hl340.sh' | grep -v grep | awk '{print $2}'`
@@ -11,13 +12,19 @@ if [[ ! -z $PREVPID ]]; then
 fi
 
 
-c=`lsusb | grep -E '1a86:7523' | wc -l`
+c=`lsusb | grep -E '1a86:7523|5131:2007' | wc -l`
 echo "QinHeng Electronics HL-340 Watchdogs found: $c"
 
 if [ $c -eq 0 ]; then
 	exit 1
 fi
 
+
+if [ -e $DEV_CHINA ]; then
+    echo "Found on  port $DEV_CHINA"
+    nohup /hive/opt/qinheng/hl340 ping $DEV_CHINA > /dev/null 2>&1 &
+    exit 0
+fi
 
 
 #detect port
