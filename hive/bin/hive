@@ -208,34 +208,38 @@ agent-screen dontattach
 #remove previous log file for Nvidia OC
 [[ -e /var/log/nvidia-oc.log ]] && rm /var/log/nvidia-oc.log
 
-echo2 "> Starting HiveX"
-systemctl start hivex
 
-#give X server some time or nvidia-settings could throw an error
-#amd-oc also there
-sleep 7
 
-#Apply Nvidia OC before miner or it can hang on 13+ GPUs
-if [[ $GPU_COUNT_NVIDIA > 0 && -e $NVIDIA_OC_CONF ]]; then
-	if [[ -z `pidof xinit` ]]; then
-		echo2 "xinit process not found, will not wait for Nvidia OC"
-		break
-	else
-		for i in {1..30}; do #wait for nvidia-oc-log to start at least and create a file
-			[[ -e /var/log/nvidia-oc.log ]] && break #file exists already
-			echo2 "Waiting for /var/log/nvidia-oc.log... $i"
-			sleep 1
-		done
+if [[ $X_DISABLED != 1 ]]; then
+	echo2 "> Starting HiveX"
+	systemctl start hivex
 
-		for i in {1..300}; do
-			#root     11463  0.0  0.0  15572  3136 ?        S    00:28   0:00 /bin/bash /hive/sbin/nvidia-oc
-			nvrunning=`ps aux | grep /hive/sbin/nvidia-oc | grep -v grep | wc -l`
+	#give X server some time or nvidia-settings could throw an error
+	#amd-oc also there
+	sleep 7
 
-			[[ $nvrunning == 0 ]] && break
+	#Apply Nvidia OC before miner or it can hang on 13+ GPUs
+	if [[ $GPU_COUNT_NVIDIA > 0 && -e $NVIDIA_OC_CONF ]]; then
+		if [[ -z `pidof xinit` ]]; then
+			echo2 "xinit process not found, will not wait for Nvidia OC"
+			break
+		else
+			for i in {1..30}; do #wait for nvidia-oc-log to start at least and create a file
+				[[ -e /var/log/nvidia-oc.log ]] && break #file exists already
+				echo2 "Waiting for /var/log/nvidia-oc.log... $i"
+				sleep 1
+			done
 
-			echo2 "Waiting for nvidia-oc to complete... $i"
-			sleep 1
-		done
+			for i in {1..300}; do
+				#root     11463  0.0  0.0  15572  3136 ?        S    00:28   0:00 /bin/bash /hive/sbin/nvidia-oc
+				nvrunning=`ps aux | grep /hive/sbin/nvidia-oc | grep -v grep | wc -l`
+
+				[[ $nvrunning == 0 ]] && break
+
+				echo2 "Waiting for nvidia-oc to complete... $i"
+				sleep 1
+			done
+		fi
 	fi
 fi
 
@@ -251,13 +255,22 @@ miner start
 	echo2 "> Hashrate Watchdog enabled" &&
 	wd start
 
+
 #k10temp for cpu temp
 modprobe k10temp
 if [ $(modinfo k10temp | grep alias | wc -l) -lt 12 ]; then
-	echo2 "Install k10temp module..."
-	nohup /hive/opt/k10temp/install.sh > /dev/null 2>&1 &
+	echo2 "> Installing k10temp module"
+	#nohup /hive/opt/k10temp/install.sh > /dev/null 2>&1 &
+	/hive/opt/k10temp/install.sh
 fi
 
 
 echo2 "> Hive Start Finished"
+
+
+if [[ $X_DISABLED = 1 ]]; then
+	amd-oc-safe
+	systemctl restart hive-console
+fi
+
 exit 0

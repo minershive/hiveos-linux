@@ -9,9 +9,9 @@ export PATH="./:/hive/bin:/hive/sbin:$PATH"
 msg=$(cat <<EOF
 $RED
 
-It seems X server failed to run (or you have stopped it).
+It seems X server failed to run (or you have disabled it).
 This can happen with some GPUs and buggy drivers.
-But you still can use hive in console.
+But you still can use Hive in console.
 
 $NOCOLOR
 EOF
