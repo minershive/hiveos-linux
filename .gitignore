@@ -1,3 +1,5 @@
+.idea
+.DS_Store
 hive/bminer530/*.log
 hive/ccminer/*.log
 hive/claymore110/*.log
