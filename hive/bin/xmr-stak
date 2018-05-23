@@ -87,7 +87,7 @@ cd /hive/$THIS_MINER_NAME
 while true
 do
 	miner logrotate $THIS_MINER_NAME
-	/hive/$THIS_MINER_NAME/xmr-stak.sh
+	/hive/$THIS_MINER_NAME/xmr-stak.sh $XMR_STAK_FORK
 	echo ""
 	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
 	echo ""
