@@ -43,8 +43,12 @@ function miner_stats {
 			if [[ $? -ne 0  || -z $stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner stats from localhost:42000${NOCOLOR}"
 			else
-				stats=`echo $stats_raw | jq -c '{speed_sps: [.result[].speed_sps], busid: [.result[].busid[5:]|ascii_downcase], start_time: .result[0].start_time}'`
 				khs=`echo $stats_raw | jq -r '.result[].speed_sps' | awk '{s+=$1} END {print s/1000}'` #sum up and convert to khs
+				local ac=$(jq '[.result[].accepted_shares] | add' <<< "$stats_raw")
+				local rj=$(jq '[.result[].rejected_shares] | add' <<< "$stats_raw")
+				stats=$(jq -c --arg ac "$ac" --arg rj "$rj" \
+					'{speed_sps: [.result[].speed_sps], busid: [.result[].busid[5:]|ascii_downcase], start_time:
+					.result[0].start_time, ar: [$ac, $rj]}' <<< "$stats_raw")
 			fi
 		;;
 		ccminer)
@@ -56,6 +60,8 @@ function miner_stats {
 				re=';UPTIME=([0-9]+);' && [[ $summary =~ $re ]] && local uptime=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
 				#khs will calculate from cards; re=';KHS=([0-9\.]+);' && [[ $summary =~ $re ]] && khs=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
 				algo=`echo "$summary" | tr ';' '\n' | grep -m1 'ALGO=' | sed -e 's/.*=//'`
+				local ac=`echo "$summary" | tr ';' '\n' | grep -m1 'ACC=' | sed -e 's/.*=//'`
+				local rj=`echo "$summary" | tr ';' '\n' | grep -m1 'REJ=' | sed -e 's/.*=//'`
 				#stats=`echo $threads | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176' | grep -E 'KHS=' | sed -e 's/.*=//' | jq -cs '{khs:.}'`
 				striplines=`echo "$threads" | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176'`
 
@@ -97,7 +103,8 @@ function miner_stats {
 					--argjson khs "`echo ${cckhs[@]} | tr " " "\n" | jq -cs '.'`" \
 					--argjson temp "`echo ${cctemps[@]} | tr " " "\n" | jq -cs '.'`" \
 					--argjson fan "`echo \"$striplines\" | grep 'FAN=' | sed -e 's/.*=//' | jq -cs '.'`" \
-					'{$khs, $temp, $fan, $uptime, $algo}')
+					--arg ac "$ac" --arg rj "$rj" \
+					'{$khs, $temp, $fan, $uptime, $algo, ar: [$ac, $rj]}')
 			fi
 		;;
 		ethminer)
@@ -122,11 +129,15 @@ function miner_stats {
 				#echo ${hs[0]}
 
 				local hs=`echo "$stats_raw" | jq -r '.[3]' | tr ';' '\n' | jq -cs '.'`
+
+				local ac=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $2}'`
+				local rj=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $3}'`
+
 				stats=$(jq -n \
 					--arg uptime "`echo \"$stats_raw\" | jq -r '.[1]' | awk '{print $1*60}'`" \
-					--argjson hs "$hs" \
-					--argjson temp "$temp" --argjson fan "$fan" \
-					'{$hs, $temp, $fan, $uptime}')
+					--argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" \
+					--arg ac "$ac" --arg rj "$rj" \
+					'{$hs, $temp, $fan, $uptime, ar: [$ac, $rj]}')
 			fi
 		;;
 		sgminer-gm)
@@ -153,7 +164,10 @@ function miner_stats {
 				#stats=$(jq -s '.[0] * .[1]' <<< "$stats $nvidiastats")
 				local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
 				local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
-				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" '{ hs: [.result[].sol_ps], $temp, $fan, $uptime}' <<< $stats_raw)
+				local ac=`echo $stats_raw | jq '[.result[].accepted_shares] | add'`
+				local rj=`echo $stats_raw | jq '[.result[].rejected_shares] | add'`
+				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" \
+					'{ hs: [.result[].sol_ps], $temp, $fan, $uptime, ar: [$ac, $rj] }' <<< "$stats_raw")
 			fi
 		;;
 		bminer) #@see https://www.bminer.me/references/
@@ -171,11 +185,15 @@ function miner_stats {
 				##local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
 
 				local uptime=$(( `date +%s` - $(jq '.start_time' <<< "$stats_raw") ))
-				local temp=$(jq -c '[.miners[].device.temperature]' <<< "$stats_raw")
-				local fan=$(jq -c '[.miners[].device.fan_speed]' <<< "$stats_raw")
-				local hs=$(jq -c "[.miners[].solver.solution_rate]" <<< "$stats_raw")
+				#local temp=$(jq -c '[.miners[].device.temperature]' <<< "$stats_raw")
+				#local fan=$(jq -c '[.miners[].device.fan_speed]' <<< "$stats_raw")
+				#local hs=$(jq -c "[.miners[].solver.solution_rate]" <<< "$stats_raw")
 				#stats=$(jq --argjson fan "$fan" --arg uptime "$uptime" '{hs: [.miners[].solver.solution_rate], temp: [.miners[].device.temperature], $fan, $uptime}' <<< $stats_raw)
-				stats=$(jq -nc --argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" '{$hs, $temp, $fan, $uptime}')
+				#--argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan"
+				stats=$(jq -c --arg uptime "$uptime" \
+					'{hs: [.miners[].solver.solution_rate],
+							temp: [.miners[].device.temperature], fan: [.miners[].device.fan_speed], $uptime,
+							ar: [.stratum.accepted_shares, .stratum.rejected_shares]}' <<< "$stats_raw")
 			fi
 		;;
 		lolminer)
@@ -245,7 +263,10 @@ function miner_stats {
 				fi
 				#temp=$(jq -sc '.[0] + .[1]'  <<< "$temp $cpu_temp")
 				#fan=$(jq -sc '.[0] + .[1]'  <<< "$fan [-1]")
-				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --argjson cpu_temp "$cpu_temp" '{hs: [.hashrate.threads[][0]], $temp, $fan, $cpu_temp, uptime: .connection.uptime}' <<< $stats_raw)
+				local ac=$(jq '.results.shares_good' <<< "$stats_raw")
+				local rj=$(( $(jq '.results.shares_total' <<< "$stats_raw") - $ac ))
+				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --argjson cpu_temp "$cpu_temp" --arg ac "$ac" --arg rj "$rj" \
+					'{hs: [.hashrate.threads[][0]], $temp, $fan, $cpu_temp, uptime: .connection.uptime, ar: [$ac, $rj]}' <<< "$stats_raw")
 			fi
 		;;
 		xmrig)
