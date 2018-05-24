@@ -114,6 +114,19 @@ cat /etc/fstab | grep "^UUID=2158442c-b245-4f6d-941b-ced5f3d3a427" | grep -q "no
     echo "Setting \"noatime,commit=120\" as root FS mount options" &&
     sed -i 's/^UUID=2158442c-b245-4f6d-941b-ced5f3d3a427.*/UUID=2158442c-b245-4f6d-941b-ced5f3d3a427 \/ ext4 errors=remount-ro,noatime,commit=120 0 1/g' /etc/fstab
 
+
+#NTFS hive-config mount options
+if cat /etc/fstab | grep -q "^LABEL=HIVE.*ntfs-3g"; then
+	mountopts="errors=remount-ro,fmask=0133,dmask=0022,noatime,remove_hiberfile,nofail"
+	cat /etc/fstab | grep "^LABEL=HIVE" | grep -q "$mountopts"
+	[[ $? -eq 1 ]] && #not found
+		echo "Setting NTFS mount options" &&
+		sed -i 's/^LABEL=HIVE.*/LABEL=HIVE \/hive-config ntfs-3g '$mountopts' 0 2/g' /etc/fstab
+fi
+
+
+
+
 # Config directory setup -----------------------------------------------------------------------
 
 [[ ! -d /hive-config ]] && mkdir -p -m 777 /hive-config

@@ -3,9 +3,43 @@
 export PATH="./:/hive/bin:/hive/sbin:$PATH"
 . colors
 
+
+# FS checking is here as we don't want to have too many services
+# And we need clean fs before cnfig files
 #To ensure we can read and write /hive-config
-fsck.fat -a /dev/disk/by-label/HIVE
-#TODO: replace with ntfsfix
+
+#probably it's mounted with fstab at boot
+if cat /proc/mounts | grep /hive-config; then
+	echo "> Unmounting /hive-config"
+	#umount /hive-config
+	systemctl stop hive\\x2dconfig.mount
+else
+	echo "> /hive-config was not mounted, skipping unmount"
+fi
+
+
+
+echo "> Checking /hive-config"
+eval `blkid /dev/disk/by-label/HIVE | tr " " "\n" | grep TYPE=`
+if [[ $TYPE = "ntfs" ]]; then
+	ntfsfix --clear-dirty /dev/disk/by-label/HIVE
+elif [[ $TYPE = "fat" ]]; then
+	fsck.fat -a /dev/disk/by-label/HIVE
+else
+	echo -e "${RED}Unknown filsystem type \"$TYPE\" for /dev/disk/by-label/HIVE${NOCOLOR}"
+fi
+
+# Mounting
+echo "> Mounting /hive-config"
+#mount /hive-config
+systemctl start hive\\x2dconfig.mount
+exitcode=$?
+if [[ $exitcode == 0 ]]; then #|| $exitcode == 16  - 16 already mounted for 'mount' command, for service this does not work
+	echo -e "${GREEN}Mounted /hive-config${NOCOLOR}"
+else
+	echo -e "${RED}Unable to mount /hive-config${NOCOLOR}"
+	exit 1
+fi
 
 
 #systemctl status systemd-networkd

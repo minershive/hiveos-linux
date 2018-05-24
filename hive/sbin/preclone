@@ -3,7 +3,18 @@
 
 timedatectl set-timezone UTC
 
+
+
+hostname=worker
+if ! grep -q "127.0.0.1 $hostname" "/etc/hosts"; then
+	printf "\n127.0.0.1 $hostname\n" >> /etc/hosts
+fi
+hostnamectl set-hostname "$hostname"
+
+
 /hive/bin/cache-hive-ip
+
+
 
 miner stop
 screen -S agent -X quit
@@ -43,6 +54,7 @@ chown -R root:root /hive/etc/logrotate.d/*
 
 #no AMD in updates
 rm /etc/apt/sources.list.d/amdgpu-pro.list
+rm /etc/apt/sources.list.d/amdgpu-pro-local.list
 #old DKMS images, they are big!
 rm /boot/*.old-dkms
 #we don't need i386

@@ -12,25 +12,33 @@ function echo2 {
 }
 
 
-host=8.8.8.8
+host=1.1.1.1
+#nslookuphost=hiveos.farm
+nslookuphost=hiveos.farm
 #wifi_active=`systemctl is-active wpa_supplicant@wlan0.service`
 
 
-pingcheck() {
-	ping -n -c 1 -w 1 $1 >/dev/null 2>&1
+check_online() {
+#	ping -n -c 1 -w 1 $host > /dev/null 2>&1
 # returns "Network unreachable" and does not wait
+#	sleep 1
+
+	#ICMP can be blocked in datacenters so we need to use something else
+
+	timeout 5 nslookup $nslookuphost > /dev/null 2>&1
+	exitcode=$?
+	[[ $exitcode -ne 0 ]] && echo "nslookup $nslookuphost failed"
+	return $exitcode
 }
 
 # Do you want a timeout ?
-for i in {1..30}; do
-  pingcheck $host &&
-	echo2 "${GREEN}Network is online${NOCOLOR}" &&
-  	exit 0
+for i in {1..6}; do
+	check_online &&
+		echo2 "${GREEN}Network is online${NOCOLOR}" &&
+		exit 0
 
-  [[ $i -ge 5 ]] &&
-  	echo2 "Waiting for online... $i"
-
-  sleep 1
+	[[ $i -ge 1 ]] &&
+		echo2 "Waiting for online... $i"
 done
 
 

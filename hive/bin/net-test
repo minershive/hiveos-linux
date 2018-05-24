@@ -97,10 +97,10 @@ function Connections {
     Ping "$LOCAL_DNS (DNS)" $LOCAL_DNS
     [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"Please check your DNS server $LOCAL_DNS"$NOCOLOR
 
-    Ping "8.8.8.8 (Google DNS)" "8.8.8.8"
+    Ping "1.1.1.1 (Cloudflare)" "1.1.1.1"
     [ $LAST_RESULT -eq 1 ] && echo -e $ERROR_COLOR"Failed to ping Google DNS. Please check your internet connection"$NOCOLOR
 
-    Connection "google.com"
+    Connection "hiveos.farm"
 
 
 	echo

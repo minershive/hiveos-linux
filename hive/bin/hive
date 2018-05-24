@@ -13,6 +13,26 @@ export CUDA_DEVICE_ORDER
 #[ -t 1 ] &&
 . colors #use them anyway
 
+function echo2 {
+	echo -e "$1" > /dev/tty1
+	echo -e "$1"
+}
+
+
+cat /proc/mounts | grep -q /hive-config
+if [[ $? -ne 0 ]]; then #0 - mounted (grep ok), 1 - grep not found (unmounted)
+	echo2 "${RED}Config directory /hive-config is not mounted, please check filesystem.${NOCOLOR}"
+	echo2 "${RED}This needs to be fixed for proper system operation.${NOCOLOR}"
+	echo2 "${YELLOW}Alt+F2 to switch to other terminal and login.${NOCOLOR}"
+
+	#nohup sudo -i bash > /dev/null 2>&1 &
+	#systemctl restart hive-console
+
+	exit 1
+fi
+
+
+
 if [[ -e /hive-config/branding-logo.txt ]]; then
 	BRANDING_LOGO=$(cat /hive-config/branding-logo.txt; echo .) #echo . to preserve new lines
 	BRANDING_LOGO=${BRANDING_LOGO%.} #remove last .
@@ -34,15 +54,6 @@ BRANDING_LOGO="${BYELLOW}${BRANDING_LOGO}${NOCOLOR}"
 . http_proxy.sh
 
 
-function echo2 {
-	echo -e "$1" > /dev/tty1
-	echo -e "$1"
-}
-
-
-#To ensure we can read and write /hive-config
-#Moved to netpre
-#fsck.fat -a /dev/disk/by-label/HIVE
 
 #Make directory in RAM
 mkdir -p /run/hive

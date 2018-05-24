@@ -224,6 +224,9 @@ function config() {
 		"sgminer")
 			echo_config_file "/hive/sgminer/sgminer.conf"
 			;;
+		"sgminer-gm")
+			echo_config_file "/hive/sgminer/sgminer.conf"
+			;;
 		"dstm")
 			echo_config_file "/hive/dstm/zm.conf"
 			;;
