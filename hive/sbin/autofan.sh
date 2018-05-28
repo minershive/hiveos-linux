@@ -26,14 +26,12 @@ fi
 
 if (( $nvidia_cards_number > 0 )); then
   echo "You have $nvidia_cards_number Nvidia GPU's"
+  nvidia-smi -pm 1
+  $NS -a GPUPowerMizerMode=1
 fi
 if (( $amd_cards_number > 0 )); then
   echo "You have $amd_cards_number AMD GPU's"
 fi
-
-exit 1
-nvidia-smi -pm 1
-$NS -a GPUPowerMizerMode=1
 
 # Default settings
 mode="auto"
