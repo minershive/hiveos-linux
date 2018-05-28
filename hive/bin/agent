@@ -111,7 +111,7 @@ function loop {
 	#log request
 	echo "[`date`] > `echo $request | jq '.' -c`" >> $LOG
 	#echo "[`date`] > $request" >> $LOG
-	echo -e "[`date`]\r\n"$request > $HIVE_GPU_STATS_LOG
+	echo -e "[`date`]\r\n"$request > "$HIVE_GPU_STATS_LOG"
 
 	response=$(echo $request | curl --insecure -L --data @- \
 	--connect-timeout 7 --max-time 15 --silent \
