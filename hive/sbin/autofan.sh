@@ -5,30 +5,30 @@ export DISPLAY=":0"
 
 NS='/usr/bin/nvidia-settings'
 
-# TODO remove this after debugging
+# TODO this block must be refactored to library functions
 
-amd_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]'`
-nvidia_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'`
-cpu_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'`
+amd_indexes_query='[ . | to_entries[] | select(.value.brand == "amd") | .key ]'
+amd_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$amd_indexes_query"`
+amd_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$amd_indexes_query | length"`
 
-# TODO get this from $HIVE_GPU_STATS
-echo $nvidia_indexes_array
-echo $amd_indexes_array
-echo $cpu_indexes_array
-# TODO parse it from variables above
-NUM_NVIDIA_CARDS=`nvidia-smi -L | wc -l`
-NUM_AMD_CARDS=`nvidia-smi -L | wc -l`
+nvidia_indexes_query='[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'
+nvidia_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query"`
+nvidia_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query | length"`
+
+cpu_indexes_query='[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'
+cpu_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query"`
+cpu_cores_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query | length"`
 
 if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
     echo -e "No ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} found"
     exit 1
 fi
 
-if (( $NUM_NVIDIA_CARDS > 0 )); then
-  echo "You have $NUM_NVIDIA_CARDS Nvidia GPU's"
+if (( $nvidia_cards_number > 0 )); then
+  echo "You have $nvidia_cards_number Nvidia GPU's"
 fi
-if (( $NUM_AMD_CARDS > 0 )); then
-  echo "You have $NUM_AMD_CARDS AMD GPU's"
+if (( $amd_cards_number > 0 )); then
+  echo "You have $amd_cards_number AMD GPU's"
 fi
 
 exit 1
