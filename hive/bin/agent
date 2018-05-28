@@ -30,10 +30,9 @@ gpu_stats=
 #Nvidia indexes in aa [1,2,3] to use in jsons
 #nvidia_indexes=echo "$gpu_stats" | jq '.brand | to_entries[] | select(.value == "nvidia") | .key' | jq -sc '.'
 #nvidia_indexes=`gpu-detect listjson | jq '. | to_entries[] | select(.value.brand == "nvidia") | .key' | jq -sc '.'`
-gpu_detect_json=`gpu-detect listjson`
-amd_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]'`
-nvidia_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'`
-cpu_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'`
+amd_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]'`
+nvidia_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'`
+cpu_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'`
 
 ########################################################################################################################
 
