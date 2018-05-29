@@ -21,17 +21,17 @@ cpu_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query"`
 cpu_cores_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query | length"`
 
 if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
-    echo -e "No ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found"
+    echo -e "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found"
     exit 1
 fi
 
 if (( $nvidia_cards_number > 0 )); then
-  echo "You have $nvidia_cards_number Nvidia GPU's"
+  echo -e "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number"
   nvidia-smi -pm 1
   $NS -a GPUPowerMizerMode=1
 fi
 if (( $amd_cards_number > 0 )); then
-  echo "You have $amd_cards_number AMD GPU's"
+  echo -e "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number"
 fi
 
 # Default settings
