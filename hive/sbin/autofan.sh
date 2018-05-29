@@ -35,27 +35,32 @@ if (( $amd_cards_number > 0 )); then
 fi
 
 # Default settings
-mode="auto"
-targettemp="60"
-fanpercent="80"
+mode_default="auto"
+mode=$mode_default
+
+targettemp_default="60"
+targettemp=$targettemp_default
+
+fanpercent_default="80"
+fanpercent=$fanpercent_default
 
 usage ()
 {
     echo "⚞ HIVE-GPU-AUTOFANS ⚟"
     echo
-    echo "usage: $0 -m=(auto|constant) [-t=TEMP] [-s=SPEED]"
+    echo "usage: $0 -m=(auto|constant) [-t=TEMP] [-mt=TEMP] [-Mt=TEMP] [-s=SPEED]"
     echo
     echo "Description:"
-    echo "  -m|--mode      coolers adjustment:"
-    echo "      auto            (recommended) automatic coolers adjustment. By default it holds 65C but you may change this through '-t'"
+    echo "  -m|--mode      coolers adjustment (default: $mode_default)"
+    echo "      auto            (recommended) automatic coolers adjustment. By default it holds ${targettemp_default}C but you may change this through '-t'"
     echo "      constant         constant coolers speed. Set the value via '-s'"
     echo
-    echo "  -t|--gputemp   target temperature"
+    echo "  -t|--gputemp   target temperature (default: ${targettemp_default}C)"
     echo "      TEMP            integer value. Temperature in Celsius"
     echo "  -m             minimal temperature (cannot be lower than 10%)"
     echo "  -M             maximal temperature when the miner will stopped"
     echo
-    echo "  -s|--fanspeed  fans speed. Default value: 80%"
+    echo "  -s|--fanspeed  fans speed (default: $fanpercent_default%)"
     echo "      SPEED           integer value. Speed in percents"
     exit
 }
