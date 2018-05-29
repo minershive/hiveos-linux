@@ -13,6 +13,13 @@ AMDMEMINFO_FILE=/tmp/amdmeminfo
 NVIDIASMI_FILE=/tmp/nvidia_smi_info
 
 
+# Wait 4 sec for another amdmeminfo process to finish
+for value in {1..40}; do
+	[[ -z `pidof amdmeminfo` ]] && break
+	sleep 0.1
+done
+
+
 if [[ $1 == "list" || $1 == "listjson" ]]; then
 	#gpu_count_amd=`gpu-detect AMD`
 	#if [[ $gpu_count_amd > 0 ]]; then
@@ -53,10 +60,6 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 		#echo $busid
 
 		if [[ $gputype == "AMD" ]]; then
-			for value in {1..30}; do #wait 3 sec for another amdmeminfo process to finish
-				[[ -z `pidof amdmeminfo` ]] && break
-				sleep 0.1
-			done
 			[[ ! -f $AMDMEMINFO_FILE ]] && amdmeminfo -q -s > $AMDMEMINFO_FILE
 			#GPU1:09.00.0:Radeon RX 470:113-1E3471U.O69:0x506066f2:SK Hynix H5GC4H24AJR
 			#GPU0:07.00.0:Radeon RX 470:113-1E3471U.O69:0x506066f2:SK Hynix H5GC4H24AJR
