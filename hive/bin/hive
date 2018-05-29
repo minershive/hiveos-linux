@@ -38,7 +38,7 @@ if [[ -e /hive-config/branding-logo.txt ]]; then
 	BRANDING_LOGO=${BRANDING_LOGO%.} #remove last .
 else
 	BRANDING_LOGO="
-_______ _______ ___ ___ _______
+ _______ _______ ___ ___ _______
 |   |   |_     _|   |   |    ___|
 |       |_|   |_|   |   |    ___|
 |___|___|_______|\_____/|_______|
@@ -207,6 +207,10 @@ hello boot
 	. $RIG_CONF #will be needed to start WD later
 
 
+# Setup locale maybe on the very first run
+[[ ! -z $SYSTEM_LANG ]] &&
+	locale-setup "$SYSTEM_LANG" &&
+	export $SYSTEM_LANG
 
 #AMD OC in hivex now
 #Nvidia OC will be run by xinit

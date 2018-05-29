@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+SYSTEM_LANG=$1
+
+# Silently skip empty set
+[[ -z $SYSTEM_LANG || $SYSTEM_LANG == "--help" ]] &&
+	echo "Please give some locale like de_DE.utf8" &&
+	exit 1
+
+locale -a | grep -q "^$SYSTEM_LANG\$"
+if [[ $? != 0 ]]; then
+	echo "> Generating $SYSTEM_LANG locale"
+	locale-gen --keep-existing $SYSTEM_LANG
+fi
+
+# Already set
+[[ $SYSTEM_LANG == $LANG ]] && exit 1
+
+echo "> Setting system default locale"
+update-locale LANG="$SYSTEM_LANG"
+localectl set-locale LANG="$SYSTEM_LANG"

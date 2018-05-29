@@ -121,6 +121,10 @@ hostname-check
 [[ ! -z $TIMEZONE ]] &&
 	timedatectl set-timezone "$TIMEZONE"
 
+# Locale ================================================================
+[[ ! -z $SYSTEM_LANG ]] &&
+	locale-setup "$SYSTEM_LANG"
+
 
 # Wallet config ================================================================
 wallet=$(echo $response | jq '.result.wallet' --raw-output)
