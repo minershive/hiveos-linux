@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 source /etc/environment
+. colors
 
 export DISPLAY=":0"
 
@@ -20,7 +21,7 @@ cpu_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query"`
 cpu_cores_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query | length"`
 
 if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
-    echo -e "No ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} found"
+    echo -e "No ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found"
     exit 1
 fi
 
