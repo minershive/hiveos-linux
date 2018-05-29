@@ -39,7 +39,6 @@ mode="auto"
 targettemp="60"
 fanpercent="80"
 
-
 usage ()
 {
     echo "⚞ HIVE-GPU-AUTOFANS ⚟"
@@ -124,52 +123,50 @@ set_requested_fans_speed ()
     esac
 }
 
-<-----
+# Arguments parsing and validating
+#if [[ -z "$1" ]]; then
+#    echo -e "(EE) Error: invalid arguments. Please see available arguments below \n\n"
+#    usage;
+#    exit 1;
+#fi
+
+# TODO refactor this to function
 for i in "$@"
 do
+echo -e "[DEBUG] i = $i\n"
 case $i in
     -m=*|--mode=*)
-    MODE="${i#*=}"
+    mode="${i#*=}"
+    if [[ "auto" != $mode && "constant" != $mode ]]; then
+        echo -e "(EE) The value '$mode' is invalid. Please see available arguments and values below \n\n"
+        usage;
+        exit 1
+    fi
     shift # past argument=value
     ;;
+
     -s=*|--fanspeed=*)
-    FANSPEED="${i#*=}"
+    fanpercent="${i#*=}"
     shift # past argument=value
     ;;
+
     -t=*|--gputemp=*)
-    GPUTEMP="${i#*=}"
+    targettemp="${i#*=}"
     shift # past argument=value
     ;;
+
     --default)
     DEFAULT=YES
     shift # past argument with no value
     ;;
+
     *)
-          # unknown option
+    # unknown option
+    echo -e "(EE) Error at '$i'. Invalid arguments. Please see available arguments below \n\n"
+    usage;
+    exit 1
     ;;
 esac
-done
-if [[ -n $1 ]]; then
-    echo "Last line of file specified as non-opt/last argument:"
-    tail -1 $1
-fi
------>
-
-if [[ -z "$1" ]]; then
-    echo "(EE) Error: invalid arguments"
-    echo
-    usage;
-    exit 1;
-fi
-
-while [ -n "$1" ]; do
-	case $1 in
-	 	-m) mode="$2"; shift ;;
-		-s) fanpercent=$2; break ;;
-		-t) targettemp=$2; break ;;
-		*) usage; exit 1 ;;
-	esac
-	shift
 done
 
 # main method
