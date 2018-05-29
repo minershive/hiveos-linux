@@ -44,18 +44,20 @@ usage ()
 {
     echo "⚞ HIVE-GPU-AUTOFANS ⚟"
     echo
-    echo "usage: $0 -m (auto|constant) [-t] [-s]"
+    echo "usage: $0 -m=(auto|constant) [-t=TEMP] [-s=SPEED]"
     echo
     echo "Description:"
-    echo "  -m   coolers adjustment: auto, constant"
-    echo "     auto        (recommended) automatic coolers adjustment. By default it holds 65C but you may change this through '-t'"
-    echo "     constant    constant coolers speed. Set the value via '-s'"
+    echo "  -m|--mode      coolers adjustment:"
+    echo "      auto            (recommended) automatic coolers adjustment. By default it holds 65C but you may change this through '-t'"
+    echo "      constant         constant coolers speed. Set the value via '-s'"
     echo
-    echo "  -t   target temperature"
-    echo "  -m   minimal temperature (cannot be lower than 10%)"
-    echo "  -M   maximal temperature when the miner will stopped"
+    echo "  -t|--gputemp   target temperature"
+    echo "      TEMP            integer value. Temperature in Celsius"
+    echo "  -m             minimal temperature (cannot be lower than 10%)"
+    echo "  -M             maximal temperature when the miner will stopped"
     echo
-    echo "  -s   fans speed. Default value: 80%"
+    echo "  -s|--fanspeed  fans speed. Default value: 80%"
+    echo "      SPEED           integer value. Speed in percents"
     exit
 }
 
