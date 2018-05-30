@@ -39,6 +39,7 @@ fi
 mode_default="auto"
 mode=$mode_default
 
+# Probably Nvidia and AMD will have different default settings
 targettemp_default="60"
 targettemp=$targettemp_default
 mintemp_default=10
