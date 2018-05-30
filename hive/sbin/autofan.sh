@@ -75,38 +75,35 @@ usage ()
 }
 
 
-# TODO get list from `gpu-detect`
+# TODO merge with amd_auto_fan_control
 nvidia_auto_fan_control ()
 {
-    for ((i=0; i<$NUM_NVIDIA_CARDS;i++))
-    {
-        GPU_TEMP=`nvidia-smi -i $i --query-gpu=temperature.gpu --format=csv,noheader`
-        FAN_SPEED=`nvidia-smi -i $i --query-gpu=fan.speed --format=csv,noheader,nounits`
-        if (($GPU_TEMP < (( $targettemp - 10)) )); then
-            let "TARGET_FAN_SPEED = GPU_TEMP"
-            (($GPU_TEMP!=$FAN_SPEED)) && $NS -a [gpu:$i]/GPUFanControlState=1 -a [fan-$i]/GPUTargetFanSpeed=$TARGET_FAN_SPEED > /dev/null 2>&1
+# Пример {
+# TODO уточнить у Димы, принимать ли майнерскую статистику за приоритет
+    args=
+    for index in ${nvidia_indexes_array[@]}
+    do
+        gpu_temperature=temperatures_array[index]
+        gpu_fan_speed=fans_array[index]
+        echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
+
+        if (( $gpu_temperature < (($targettemp - 10)) )); then
+            # no reasons to change fan speed
+            let "TARGET_FAN_SPEED = gpu_fan_speed"
         else
-            if (($GPU_TEMP < $targettemp)); then
-                let "TARGET_FAN_SPEED = GPU_TEMP + 10"
-                (($TARGET_FAN_SPEED != $FAN_SPEED)) && $NS -a [gpu:$i]/GPUFanControlState=1 -a [fan-$i]/GPUTargetFanSpeed=$TARGET_FAN_SPEED > /dev/null 2>&1
+            # this action is going in a period from ($targettemp - 10) to $targettemp
+            if (($gpu_temperature < $targettemp)); then
+                let "TARGET_FAN_SPEED = gpu_fan_speed + 10"
             else
-                let "TARGET_FAN_SPEED = GPU_TEMP + 30"
+                let "TARGET_FAN_SPEED = gpu_fan_speed + 30"
                 if (($TARGET_FAN_SPEED > 100)); then
                     TARGET_FAN_SPEED=100
                 fi
-                (($TARGET_FAN_SPEED != $FAN_SPEED)) && $NS -a [gpu:$i]/GPUFanControlState=1 -a [fan-$i]/GPUTargetFanSpeed=$TARGET_FAN_SPEED > /dev/null 2>&1
             fi
         fi
-        echo "GPU:$i T=$GPU_TEMP FAN=$TARGET_FAN_SPEED%"
-    }
-# TODO уточнить у Димы, принимать ли майнерскую статистику за приоритет
-    for index in ${nvidia_indexes_array[@]}
-    do
-        # TODO set speed from wolfamdctrl (look at the gpu-fans-find)
-        echo -e "temp $index ${temperatures_array[index]}"
-        echo -e "fan $index ${fans_array[index]}\n"
+        args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan-$index]/GPUTargetFanSpeed=$TARGET_FAN_SPEED"
     done
-
+    $NS $args > /dev/null 2>&1
 }
 
 # TODO get list from `gpu-detect`
