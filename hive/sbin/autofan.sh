@@ -16,9 +16,10 @@ nvidia_indexes_query='[ . | to_entries[] | select(.value.brand == "nvidia") | .k
 nvidia_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query"`
 nvidia_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query | length"`
 
-cpu_indexes_query='[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'
-cpu_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query"`
-cpu_cores_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query | length"`
+# TODO cpus maybe required to use autofans too
+#cpu_indexes_query='[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'
+#cpu_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r "$cpu_indexes_query"`
+#cpu_cores_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query | length"`
 
 if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
     echo -e "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found"
