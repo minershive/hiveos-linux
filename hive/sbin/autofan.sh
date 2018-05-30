@@ -40,6 +40,10 @@ mode=$mode_default
 
 targettemp_default="60"
 targettemp=$targettemp_default
+mintemp_default=10
+mintemp=$mintemp_default
+maxtemp_default=79
+maxtemp=$maxtemp-default
 
 fanpercent_default="80"
 fanpercent=$fanpercent_default
@@ -57,8 +61,12 @@ usage ()
     echo
     echo "  -t|--gputemp   target temperature (default: ${targettemp_default}C)"
     echo "      TEMP            integer value. Temperature in Celsius"
-    echo "  -m             minimal temperature (cannot be lower than 10%)"
-    echo "  -M             maximal temperature when the miner will stopped"
+    echo
+    echo "  -mt|--mintemp  minimal temperature (cannot be lower than $mintemp_default%)"
+    echo "      TEMP            integer value. Temperature in Celsius"
+    echo
+    echo "  -Mt|--maxtemp  maximal temperature when the miner will stopped (default: $maxtemp_default)"
+    echo "      TEMP            integer value. Temperature in Celsius"
     echo
     echo "  -s|--fanspeed  fans speed (default: $fanpercent_default%)"
     echo "      SPEED           integer value. Speed in percents"
@@ -157,6 +165,19 @@ case $i in
 
     -t=*|--gputemp=*)
     targettemp="${i#*=}"
+    shift # past argument=value
+    ;;
+
+    -mt=*|--mintemp=*)
+    mintemp="${i#*=}"
+    if (( $mintemp < $mintemp_default )); then
+        mintemp=$mintemp_default
+    fi
+    shift # past argument=value
+    ;;
+
+    -Mt=*|--maxtemp=*)
+    maxtemp="${i#*=}"
     shift # past argument=value
     ;;
 
