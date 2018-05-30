@@ -113,6 +113,8 @@ amd_auto_fan_control ()
 
 auto_fan_control() {
 	while true;	do
+        temperatures_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".params.temp | .[]"`)
+        fans_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".params.fan | .[]"`)
         if (( $nvidia_cards_number > 0 )); then
             nvidia_auto_fan_control;
         fi
