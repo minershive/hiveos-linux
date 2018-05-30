@@ -113,8 +113,12 @@ amd_auto_fan_control ()
 
 auto_fan_control() {
 	while true;	do
-        nvidia_auto_fan_control;
-        amd_auto_fan_control;
+        if (( $nvidia_cards_number > 0 )); then
+            nvidia_auto_fan_control;
+        fi
+        if (( $amd_cards_number > 0 )); then
+            amd_auto_fan_control;
+        fi
 		sleep 10
 	done
 }
