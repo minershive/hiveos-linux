@@ -9,11 +9,11 @@ NS='/usr/bin/nvidia-settings'
 # TODO this block must be refactored to library functions
 
 amd_indexes_query='[ . | to_entries[] | select(.value.brand == "amd") | .key ]'
-amd_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$amd_indexes_query"`
+amd_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r "$amd_indexes_query | .[]"`
 amd_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$amd_indexes_query | length"`
 
 nvidia_indexes_query='[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'
-nvidia_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query"`
+nvidia_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r "$nvidia_indexes_query| .[]"`
 nvidia_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query | length"`
 
 # TODO cpus maybe required to use autofans too
@@ -99,16 +99,25 @@ nvidia_auto_fan_control ()
         fi
         echo "GPU:$i T=$GPU_TEMP FAN=$TARGET_FAN_SPEED%"
     }
+# TODO уточнить у Димы, принимать ли майнерскую статистику за приоритет
+    for index in ${nvidia_indexes_array[@]}
+    do
+        # TODO set speed from wolfamdctrl (look at the gpu-fans-find)
+        echo -e "temp $index ${temperatures_array[index]}"
+        echo -e "fan $index ${fans_array[index]}\n"
+    done
+
 }
 
 # TODO get list from `gpu-detect`
 amd_auto_fan_control ()
 {
-    for ((i=0; i<$NUM_AMD_CARDS;i++))
-    {
+    for index in ${amd_indexes_array[@]}
+    do
         # TODO set speed from wolfamdctrl (look at the gpu-fans-find)
-        echo "GPU:$i T=$GPU_TEMP FAN=$TARGET_FAN_SPEED%"
-    }
+        echo -e "temp $index ${temperatures_array[index]}"
+        echo -e "fan $index ${fans_array[index]}\n"
+    done
 }
 
 auto_fan_control() {
