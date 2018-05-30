@@ -149,12 +149,20 @@ auto_fan_control() {
 
 set_constant_fan_speeds ()
 {
-	for ((i=0; i<$NUM_CARDS;i++))
-	{
-		# TODO split by videocard vendors
-		$NS -a [gpu:$i]/GPUFanControlState=1 -a [fan-$i]/GPUTargetFanSpeed=$fanpercent > /dev/null 2>&1
-		echo "GPU:$i FAN=$fanpercent%"
-	}
+    if (( $nvidia_cards_number > 0 )); then
+        args=
+        for index in ${nvidia_indexes_array[@]}
+        do
+            args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan-$index]/GPUTargetFanSpeed=$fanpercent"
+        done
+        $NS $args > /dev/null 2>&1
+    fi
+    if (( $amd_cards_number > 0 )); then
+        for index in ${amd_indexes_array[@]}
+        do
+            wolfamdctrl -i $index --set-fanspeed $fanpercent 1>/dev/null
+        done
+    fi
 }
 
 set_requested_fans_speed ()
