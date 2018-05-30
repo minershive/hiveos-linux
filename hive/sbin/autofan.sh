@@ -107,14 +107,29 @@ nvidia_auto_fan_control ()
     $NS $args > /dev/null 2>&1
 }
 
-# TODO get list from `gpu-detect`
 amd_auto_fan_control ()
 {
     for index in ${amd_indexes_array[@]}
     do
-        # TODO set speed from wolfamdctrl (look at the gpu-fans-find)
-        echo -e "temp $index ${temperatures_array[index]}"
-        echo -e "fan $index ${fans_array[index]}\n"
+        gpu_temperature=temperatures_array[index]
+        gpu_fan_speed=fans_array[index]
+        echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
+
+        if (( $gpu_temperature < (($targettemp - 10)) )); then
+            # no reasons to change fan speed
+            let "TARGET_FAN_SPEED = gpu_fan_speed"
+        else
+            # this action is going in a period from ($targettemp - 10) to $targettemp
+            if (($gpu_temperature < $targettemp)); then
+                let "TARGET_FAN_SPEED = gpu_fan_speed + 10"
+            else
+                let "TARGET_FAN_SPEED = gpu_fan_speed + 30"
+                if (($TARGET_FAN_SPEED > 100)); then
+                    TARGET_FAN_SPEED=100
+                fi
+            fi
+        fi
+        wolfamdctrl -i $index --set-fanspeed $TARGET_FAN_SPEED 1>/dev/null
     done
 }
 
