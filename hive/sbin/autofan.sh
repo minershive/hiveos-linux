@@ -86,7 +86,7 @@ get_fan_speed () {
     local temperature=$1
     local gpu_fan_speed=$2
     local target_fan_speed=$mintemp
-    if (( $temperature < (($targettemp - 10)) )); then
+    if (( $temperature < ($targettemp - 10) )); then
         # no reasons to change fan speed
         target_fan_speed=$gpu_fan_speed
     else
@@ -142,9 +142,9 @@ nvidia_auto_fan_control ()
     args=
     for index in ${nvidia_indexes_array[@]}
     do
-        local gpu_temperature=temperatures_array[index]
+        local gpu_temperature=${temperatures_array[index]}
+        local gpu_fan_speed=${fans_array[index]}
         event_by_temperature $gpu_temperature
-        local gpu_fan_speed=fans_array[index]
         echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
         local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed)
         args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan-$index]/GPUTargetFanSpeed=$TARGET_FAN_SPEED"
@@ -161,9 +161,9 @@ amd_auto_fan_control ()
     local -n fans_array=$2
     for index in ${amd_indexes_array[@]}
     do
-        local gpu_temperature=temperatures_array[index]
+        local gpu_temperature=${temperatures_array[index]}
+        local gpu_fan_speed=${fans_array[index]}
         event_by_temperature $gpu_temperature
-        local gpu_fan_speed=fans_array[index]
         echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
         local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed)
         wolfamdctrl -i $index --set-fanspeed $TARGET_FAN_SPEED 1>/dev/null
