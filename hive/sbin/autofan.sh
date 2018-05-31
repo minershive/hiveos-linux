@@ -94,6 +94,9 @@ get_fan_speed () {
         if (( $temperature < $targettemp )); then
             target_fan_speed=($gpu_fan_speed + 5)
         else
+            target_fan_speed=($gpu_fan_speed + 10)
+        fi
+        if (( $temperature < ($maxtemp-5) )); then
             target_fan_speed=($gpu_fan_speed + 30)
         fi
     fi
