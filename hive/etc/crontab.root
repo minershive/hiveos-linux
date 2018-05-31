@@ -21,7 +21,7 @@
 
 
 # update DNS cache, just in case IP changes once in a lifetime
-0 * * * * /hive/bin/cache-hive-ip
+*/30 * * * * /hive/bin/cache-hive-ip
 
 
 #check agent is running...
