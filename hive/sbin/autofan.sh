@@ -120,12 +120,10 @@ action_by_event() {
         if (( $miners_started <1 )); then
             miner start
         fi
-        break
         ;;
 
         "miner-stop")
         miner stop
-        break
         ;;
     esac
 }
