@@ -103,19 +103,32 @@ get_fan_speed () {
     echo $target_fan_speed
 }
 
+###
+# What we must to do if temperature reached some limits
+actions_by_speed() {
+    local temperature=$1
+    local miners_started=`screen -ls | grep miner | wc -l`
+    if (( $temperature < $targettemp )); then
+        if (( $miners_started <1 )); then
+            miner start
+        fi
+    fi
+    if (( $temperature >= $maxtemp )); then
+        miner stop
+    fi
+ }
 
 # TODO merge with amd_auto_fan_control
 nvidia_auto_fan_control ()
 {
 # Пример {
-# TODO уточнить у Димы, принимать ли майнерскую статистику за приоритет
     args=
     for index in ${nvidia_indexes_array[@]}
     do
         local gpu_temperature=temperatures_array[index]
+        actions_by_speed $gpu_temperature
         local gpu_fan_speed=fans_array[index]
         echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
-
         local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed)
         args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan-$index]/GPUTargetFanSpeed=$TARGET_FAN_SPEED"
     done
@@ -127,6 +140,7 @@ amd_auto_fan_control ()
     for index in ${amd_indexes_array[@]}
     do
         local gpu_temperature=temperatures_array[index]
+        actions_by_speed $gpu_temperature
         local gpu_fan_speed=fans_array[index]
         echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
         local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed)
