@@ -135,6 +135,10 @@ action_by_event() {
 nvidia_auto_fan_control ()
 {
 # Пример {
+    # TODO getting "not a valid identifier" here in runtime, but its works
+    local -n temperatures_array=$1
+    # TODO getting "not a valid identifier" here in runtime, but its works
+    local -n fans_array=$2
     args=
     for index in ${nvidia_indexes_array[@]}
     do
@@ -151,6 +155,10 @@ nvidia_auto_fan_control ()
 
 amd_auto_fan_control ()
 {
+    # TODO getting "not a valid identifier" here in runtime, but its works
+    local -n temperatures_array=$1
+    # TODO getting "not a valid identifier" here in runtime, but its works
+    local -n fans_array=$2
     for index in ${amd_indexes_array[@]}
     do
         local gpu_temperature=temperatures_array[index]
@@ -165,13 +173,13 @@ amd_auto_fan_control ()
 
 auto_fan_control() {
 	while true;	do
-        temperatures_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".params.temp | .[]"`)
-        fans_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".params.fan | .[]"`)
+        declare -a temperatures_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".params.temp | .[]"`)
+        declare -a fans_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".params.fan | .[]"`)
         if (( $nvidia_cards_number > 0 )); then
-            nvidia_auto_fan_control;
+            nvidia_auto_fan_control $temperatures_array $fans_array;
         fi
         if (( $amd_cards_number > 0 )); then
-            amd_auto_fan_control;
+            amd_auto_fan_control $temperatures_array $fans_array;
         fi
 		sleep 10
 	done
