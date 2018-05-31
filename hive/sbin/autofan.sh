@@ -91,7 +91,7 @@ get_fan_speed () {
         target_fan_speed=$gpu_fan_speed
     else
         # this action is going in a period from ($targettemp - 10) to $targettemp
-        if ((temperature < $targettemp)); then
+        if (( $temperature < $targettemp )); then
             target_fan_speed=($gpu_fan_speed + 5)
         else
             target_fan_speed=($gpu_fan_speed + 30)
