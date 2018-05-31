@@ -135,7 +135,6 @@ action_by_event() {
 # TODO merge with amd_auto_fan_control
 nvidia_auto_fan_control ()
 {
-# Пример {
     # TODO getting "not a valid identifier" here in runtime, but its works
     local -n temperatures_array=$1
     # TODO getting "not a valid identifier" here in runtime, but its works
