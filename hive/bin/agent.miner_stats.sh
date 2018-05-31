@@ -8,7 +8,7 @@ function miner_stats {
 	stats=
 	case $miner in
 		claymore)
-			stats=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w $API_TIMEOUT localhost 3333 | jq '.result'`
+			stats=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat2"}' | nc -w $API_TIMEOUT localhost 3333 | jq '.result'`
 			if [[ $? -ne 0  || -z $stats ]]; then
 				echo -e "${YELLOW}Failed to read $miner stats from localhost:3333${NOCOLOR}"
 			else
