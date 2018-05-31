@@ -105,18 +105,31 @@ get_fan_speed () {
 
 ###
 # What we must to do if temperature reached some limits
-actions_by_speed() {
+event_by_temperature() {
     local temperature=$1
-    local miners_started=`screen -ls | grep miner | wc -l`
-    if (( $temperature < $targettemp )); then
+    AUTOFAN_MINER="miner-start"
+    if (( $temperature >= $maxtemp )); then
+        AUTOFAN_MINER="miner-stop"
+    fi
+}
+
+action_by_event() {
+    case $AUTOFAN_MINER in
+        "miner-start")
+        local miners_started=`screen -ls | grep miner | wc -l`
         if (( $miners_started <1 )); then
             miner start
         fi
-    fi
-    if (( $temperature >= $maxtemp )); then
+        break
+        ;;
+
+        "miner-stop")
         miner stop
-    fi
- }
+        break
+        ;;
+    esac
+}
+
 
 # TODO merge with amd_auto_fan_control
 nvidia_auto_fan_control ()
@@ -126,13 +139,14 @@ nvidia_auto_fan_control ()
     for index in ${nvidia_indexes_array[@]}
     do
         local gpu_temperature=temperatures_array[index]
-        actions_by_speed $gpu_temperature
+        event_by_temperature $gpu_temperature
         local gpu_fan_speed=fans_array[index]
         echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
         local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed)
         args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan-$index]/GPUTargetFanSpeed=$TARGET_FAN_SPEED"
     done
     $NS $args > /dev/null 2>&1
+    action_by_event
 }
 
 amd_auto_fan_control ()
@@ -140,12 +154,13 @@ amd_auto_fan_control ()
     for index in ${amd_indexes_array[@]}
     do
         local gpu_temperature=temperatures_array[index]
-        actions_by_speed $gpu_temperature
+        event_by_temperature $gpu_temperature
         local gpu_fan_speed=fans_array[index]
         echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
         local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed)
         wolfamdctrl -i $index --set-fanspeed $TARGET_FAN_SPEED 1>/dev/null
     done
+    action_by_event
 }
 
 auto_fan_control() {
