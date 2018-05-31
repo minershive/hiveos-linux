@@ -219,7 +219,6 @@ set_requested_fans_speed ()
 # TODO refactor this to function
 for i in "$@"
 do
-echo -e "[DEBUG] i = $i\n"
 case $i in
     -m=*|--mode=*)
     mode="${i#*=}"
@@ -271,4 +270,3 @@ done
 # main method
 set_requested_fans_speed
 
-exit;
