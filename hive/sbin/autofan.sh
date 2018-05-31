@@ -75,6 +75,34 @@ usage ()
     exit
 }
 
+###
+# Getting fan speed
+# (required) temperature - current GPU chipset temperature
+# (required) gpu_fan_speed - current card's fan speed in percents
+#
+# Result:
+# The speed of fan in percents
+get_fan_speed () {
+    local temperature=$1
+    local gpu_fan_speed=$2
+    local target_fan_speed=$mintemp
+    if (( $temperature < (($targettemp - 10)) )); then
+        # no reasons to change fan speed
+        target_fan_speed=$gpu_fan_speed
+    else
+        # this action is going in a period from ($targettemp - 10) to $targettemp
+        if ((temperature < $targettemp)); then
+            target_fan_speed=($gpu_fan_speed + 5)
+        else
+            target_fan_speed=($gpu_fan_speed + 30)
+        fi
+    fi
+    if (($target_fan_speed > 100)); then
+        target_fan_speed=100
+    fi
+    echo $target_fan_speed
+}
+
 
 # TODO merge with amd_auto_fan_control
 nvidia_auto_fan_control ()
@@ -84,24 +112,11 @@ nvidia_auto_fan_control ()
     args=
     for index in ${nvidia_indexes_array[@]}
     do
-        gpu_temperature=temperatures_array[index]
-        gpu_fan_speed=fans_array[index]
+        local gpu_temperature=temperatures_array[index]
+        local gpu_fan_speed=fans_array[index]
         echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
 
-        if (( $gpu_temperature < (($targettemp - 10)) )); then
-            # no reasons to change fan speed
-            let "TARGET_FAN_SPEED = gpu_fan_speed"
-        else
-            # this action is going in a period from ($targettemp - 10) to $targettemp
-            if (($gpu_temperature < $targettemp)); then
-                let "TARGET_FAN_SPEED = gpu_fan_speed + 10"
-            else
-                let "TARGET_FAN_SPEED = gpu_fan_speed + 30"
-                if (($TARGET_FAN_SPEED > 100)); then
-                    TARGET_FAN_SPEED=100
-                fi
-            fi
-        fi
+        local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed)
         args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan-$index]/GPUTargetFanSpeed=$TARGET_FAN_SPEED"
     done
     $NS $args > /dev/null 2>&1
@@ -111,24 +126,10 @@ amd_auto_fan_control ()
 {
     for index in ${amd_indexes_array[@]}
     do
-        gpu_temperature=temperatures_array[index]
-        gpu_fan_speed=fans_array[index]
+        local gpu_temperature=temperatures_array[index]
+        local gpu_fan_speed=fans_array[index]
         echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
-
-        if (( $gpu_temperature < (($targettemp - 10)) )); then
-            # no reasons to change fan speed
-            let "TARGET_FAN_SPEED = gpu_fan_speed"
-        else
-            # this action is going in a period from ($targettemp - 10) to $targettemp
-            if (($gpu_temperature < $targettemp)); then
-                let "TARGET_FAN_SPEED = gpu_fan_speed + 10"
-            else
-                let "TARGET_FAN_SPEED = gpu_fan_speed + 30"
-                if (($TARGET_FAN_SPEED > 100)); then
-                    TARGET_FAN_SPEED=100
-                fi
-            fi
-        fi
+        local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed)
         wolfamdctrl -i $index --set-fanspeed $TARGET_FAN_SPEED 1>/dev/null
     done
 }
