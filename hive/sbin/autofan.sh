@@ -45,7 +45,7 @@ targettemp=$targettemp_default
 mintemp_default=10
 mintemp=$mintemp_default
 maxtemp_default=79
-maxtemp=$maxtemp-default
+maxtemp=$maxtemp_default
 
 fanpercent_default="80"
 fanpercent=$fanpercent_default
