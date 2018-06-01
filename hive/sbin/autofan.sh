@@ -35,17 +35,17 @@ function echo2 {
 }
 
 if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
-    echo2 -e "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found"
+    echo2 "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found"
     exit 1
 fi
 
 if (( $nvidia_cards_number > 0 )); then
-  echo2 -e "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number"
+  echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number"
   nvidia-smi -pm 1
   $NS -a GPUPowerMizerMode=1
 fi
 if (( $amd_cards_number > 0 )); then
-  echo2 -e "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number"
+  echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number"
 fi
 
 # Default settings
