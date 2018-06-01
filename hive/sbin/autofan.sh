@@ -109,7 +109,7 @@ get_fan_speed () {
     local gpu_fan_speed=$3
     local gpu_bus_id=$4
     local gpu_card_name=$5
-    local target_fan_speed=$mintemp
+    local target_fan_speed=$fanpercent_default
     local log_message=
     if (( $temperature < $targettemp - 10 )); then
         # no reasons to change fan speed
