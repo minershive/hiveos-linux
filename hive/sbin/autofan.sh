@@ -183,7 +183,7 @@ nvidia_auto_fan_control ()
         local card_bus_id=${card_bus_ids_array[index]}
         event_by_temperature $gpu_temperature
 #        echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
-        local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed $card_bus_id $card_name)
+        local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $card_name)
         args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan-$index]/GPUTargetFanSpeed=$TARGET_FAN_SPEED"
     done
     $NS $args > /dev/null 2>&1
@@ -205,7 +205,7 @@ amd_auto_fan_control ()
         local card_bus_id=${card_bus_ids_array[index]}
         event_by_temperature $gpu_temperature
 #        echo -e "GPU:$index Card name:$card_name Bus ID: $card_bus_id T=$gpu_temperature FAN=$gpu_fan_speed%"
-        local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed $card_bus_id $card_name)
+        local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $card_name)
         wolfamdctrl -i $index --set-fanspeed $TARGET_FAN_SPEED 1>/dev/null
     done
     action_by_event
