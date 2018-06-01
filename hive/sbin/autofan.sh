@@ -5,6 +5,7 @@ source /etc/environment
 export DISPLAY=":0"
 
 NS='/usr/bin/nvidia-settings'
+AUTOFAN_LOG="/var/log/hive-autofan.log"
 
 # TODO this block must be refactored to library functions
 
@@ -27,6 +28,7 @@ nvidia_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query
 function echo2 {
 	echo -e "$1" > /dev/tty1
 	echo -e "$1"
+	echo -e "$1" >> $AUTOFAN_LOG
 }
 
 if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
