@@ -23,7 +23,8 @@ nvidia_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query
 #cpu_cores_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query | length"`
 
 declare -a card_bus_ids_array=(`echo "$HIVE_GPU_DETECT_JSON" | jq -r '[ . | to_entries[] | select(.value) | .value.busid ] | .[]'`)
-declare -a card_names_array=(`echo "$HIVE_GPU_DETECT_JSON" | jq '[ . | to_entries[] | select(.value) | .value.name ] | .[]'`)
+# TODO There is must be the way to remove space or use the whole value inside the quotes
+#declare -a card_names_array=(`echo "$HIVE_GPU_DETECT_JSON" | jq '[ . | to_entries[] | select(.value) | .value.name ] | .[]'`)
 
 ###
 # Log write
@@ -164,7 +165,9 @@ nvidia_auto_fan_control ()
         # TODO Theese fields maybe moved inside `get_fan_speed` replaced by on nvidia_indexes_array[@] as argument
         local gpu_temperature=${temperatures_array[index]}
         local gpu_fan_speed=${fans_array[index]}
-        local card_name=${card_names_array[index]}
+        # TODO broken, spaces trouble
+#        local card_name=${card_names_array[index]}
+        local card_name=
         local card_bus_id=${card_bus_ids_array[index]}
         event_by_temperature $gpu_temperature
 #        echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
@@ -182,7 +185,9 @@ amd_auto_fan_control ()
         # TODO Theese fields maybe moved inside `get_fan_speed` replaced by on amd_indexes_array[@] as argument
         local gpu_temperature=${temperatures_array[index]}
         local gpu_fan_speed=${fans_array[index]}
-        local card_name=${card_names_array[index]}
+        # TODO broken, spaces trouble
+#        local card_name=${card_names_array[index]}
+        local card_name=
         local card_bus_id=${card_bus_ids_array[index]}
         event_by_temperature $gpu_temperature
 #        echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
