@@ -190,7 +190,7 @@ amd_auto_fan_control ()
         local card_name=
         local card_bus_id=${card_bus_ids_array[index]}
         event_by_temperature $gpu_temperature
-#        echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
+#        echo -e "GPU:$index Card name:$card_name Bus ID: $card_bus_id T=$gpu_temperature FAN=$gpu_fan_speed%"
         local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed $card_bus_id $card_name)
         wolfamdctrl -i $index --set-fanspeed $TARGET_FAN_SPEED 1>/dev/null
     done
