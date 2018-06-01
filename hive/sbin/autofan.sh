@@ -108,20 +108,20 @@ get_fan_speed () {
     local gpu_card_name=$4
     local target_fan_speed=$mintemp
     local log_message=
-    if (( $temperature < ($targettemp - 10) )); then
+    if (( $temperature < $(($targettemp - 10)) )); then
         # no reasons to change fan speed
         target_fan_speed=$gpu_fan_speed
     else
         # this action is going in a period from ($targettemp - 10) to $targettemp
         if (( $temperature < $targettemp )); then
-            target_fan_speed=($gpu_fan_speed + $fan_change_step)
-            log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) greater than "$(($targettemp - 10))" but still below target temperature($targettemp). Fan speed raised to $target_fan_speed%"
+            target_fan_speed=$(( $gpu_fan_speed + $(( $fan_change_step/2 )) ))
+            log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) greater than "$(( $targettemp - 10 ))" but still below target temperature($targettemp). Fan speed raised to $target_fan_speed%"
         else
-            target_fan_speed=($gpu_fan_speed + $(( 2 * $fan_change_step )) )
+            target_fan_speed=$(( $gpu_fan_speed + $(( 2 * $fan_change_step )) ))
             log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) greater than target temperature($targettemp). Fan speed raised to $target_fan_speed%"
         fi
-        if (( $temperature < ($maxtemp-5) )); then
-            target_fan_speed=($gpu_fan_speed + $(( 3 * $fan_change_step )) )
+        if (( $temperature < $(( $maxtemp-5 )) )); then
+            target_fan_speed=$(( $gpu_fan_speed + $(( 3 * $fan_change_step )) ))
             log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) nearby maximum temperature($maxtemp). Fan speed raised to $target_fan_speed%"
         fi
     fi
