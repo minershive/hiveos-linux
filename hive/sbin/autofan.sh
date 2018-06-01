@@ -21,18 +21,26 @@ nvidia_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query
 #cpu_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r "$cpu_indexes_query"`
 #cpu_cores_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query | length"`
 
+###
+# Log write
+# TODO This must be refactored to lib-function
+function echo2 {
+	echo -e "$1" > /dev/tty1
+	echo -e "$1"
+}
+
 if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
-    echo -e "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found"
+    echo2 -e "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found"
     exit 1
 fi
 
 if (( $nvidia_cards_number > 0 )); then
-  echo -e "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number"
+  echo2 -e "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number"
   nvidia-smi -pm 1
   $NS -a GPUPowerMizerMode=1
 fi
 if (( $amd_cards_number > 0 )); then
-  echo -e "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number"
+  echo2 -e "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number"
 fi
 
 # Default settings
