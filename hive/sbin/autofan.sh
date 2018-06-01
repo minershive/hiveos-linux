@@ -31,8 +31,10 @@ declare -a card_bus_ids_array=(`echo "$HIVE_GPU_DETECT_JSON" | jq -r '[ . | to_e
 # TODO This must be refactored to lib-function
 function echo2 {
 	echo -e "$1" > /dev/tty1
-	echo -e "$1"
 	echo -e "$1" >> $AUTOFAN_LOG
+    # TODO this line maybe getting troubles
+    # look at get_fan_speed for example
+    # echo -e "$1"
 }
 
 if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
