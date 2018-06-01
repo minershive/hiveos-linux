@@ -124,7 +124,7 @@ get_fan_speed () {
         target_fan_speed=100
         log_message="${RED}GPU[$gpu_card_name, $gpu_bus_id]'s fan speed now $target_fan_speed%${NOCOLOR}"
     fi
-    if [[ -z $log_message ]]; then
+    if [[ -n "$log_message" ]]; then
         echo2 $log_message
     fi
     echo $target_fan_speed
