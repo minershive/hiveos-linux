@@ -22,8 +22,8 @@ nvidia_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query
 #cpu_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r "$cpu_indexes_query"`
 #cpu_cores_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query | length"`
 
-card_bus_ids_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r '[ . | to_entries[] | select(.value) | .value.busid ]'`
-card_names_array= `echo "$HIVE_GPU_DETECT_JSON" | jq -r '[ . | to_entries[] | select(.value) | .value.name ]'`
+card_bus_ids_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r '[ . | to_entries[] | select(.value) | .value.busid ] | .[]'`
+card_names_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r '[ . | to_entries[] | select(.value) | .value.name ] | .[]'`
 
 ###
 # Log write
