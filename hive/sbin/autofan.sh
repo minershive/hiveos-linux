@@ -63,29 +63,34 @@ maxtemp=$maxtemp_default
 
 fanpercent_default="80"
 fanpercent=$fanpercent_default
+fan_change_step_default="10"
+fan_change_step=$fan_change_step_default
 
 usage ()
 {
     echo "⚞ HIVE-GPU-AUTOFANS ⚟"
     echo
-    echo "usage: $0 -m=(auto|constant) [-t=TEMP] [-mt=TEMP] [-Mt=TEMP] [-s=SPEED]"
+    echo "usage: $0 -m=(auto|constant) [-t=TEMP] [-mt=TEMP] [-Mt=TEMP] [-s=SPEED] [-c=STEP]"
     echo
     echo "Description:"
-    echo "  -m|--mode      coolers adjustment (default: $mode_default)"
+    echo "  -m|--mode        coolers adjustment (default: $mode_default)"
     echo "      auto            (recommended) automatic coolers adjustment. By default it holds ${targettemp_default}C but you may change this through '-t'"
     echo "      constant         constant coolers speed. Set the value via '-s'"
     echo
-    echo "  -t|--gputemp   target temperature (default: ${targettemp_default}C)"
+    echo "  -t|--gputemp     target temperature (default: ${targettemp_default}C)"
     echo "      TEMP            integer value. Temperature in Celsius"
     echo
-    echo "  -mt|--mintemp  minimal temperature (cannot be lower than $mintemp_default%)"
+    echo "  -mt|--mintemp    minimal temperature (cannot be lower than $mintemp_default%)"
     echo "      TEMP            integer value. Temperature in Celsius"
     echo
-    echo "  -Mt|--maxtemp  maximal temperature when the miner will stopped (default: $maxtemp_default)"
+    echo "  -Mt|--maxtemp    maximal temperature when the miner will stopped (default: $maxtemp_default)"
     echo "      TEMP            integer value. Temperature in Celsius"
     echo
-    echo "  -s|--fanspeed  fans speed (default: $fanpercent_default%)"
+    echo "  -s|--fanspeed    fans speed (default: $fanpercent_default%)"
     echo "      SPEED           integer value. Speed in percents"
+    echo
+    echo "  -c|--changestep  fans speed change step (default: $fan_change_step_default%)"
+    echo "      STEP           integer value. Speed in percents"
     exit
 }
 
@@ -109,14 +114,14 @@ get_fan_speed () {
     else
         # this action is going in a period from ($targettemp - 10) to $targettemp
         if (( $temperature < $targettemp )); then
-            target_fan_speed=($gpu_fan_speed + 5)
+            target_fan_speed=($gpu_fan_speed + $fan_change_step)
             log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) greater than "$(($targettemp - 10))" but still below target temperature($targettemp). Fan speed raised to $target_fan_speed%"
         else
-            target_fan_speed=($gpu_fan_speed + 10)
+            target_fan_speed=($gpu_fan_speed + $(( 2 * $fan_change_step )) )
             log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) greater than target temperature($targettemp). Fan speed raised to $target_fan_speed%"
         fi
         if (( $temperature < ($maxtemp-5) )); then
-            target_fan_speed=($gpu_fan_speed + 30)
+            target_fan_speed=($gpu_fan_speed + $(( 3 * $fan_change_step )) )
             log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) nearby maximum temperature($maxtemp). Fan speed raised to $target_fan_speed%"
         fi
     fi
@@ -260,6 +265,11 @@ case $i in
 
     -s=*|--fanspeed=*)
     fanpercent="${i#*=}"
+    shift # past argument=value
+    ;;
+
+    -c=*|--changestep=*)
+    fan_change_step="${i#*=}"
     shift # past argument=value
     ;;
 
