@@ -22,6 +22,9 @@ nvidia_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query
 #cpu_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r "$cpu_indexes_query"`
 #cpu_cores_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query | length"`
 
+card_bus_ids_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r '[ . | to_entries[] | select(.value) | .value.busid ]'`
+card_names_array= `echo "$HIVE_GPU_DETECT_JSON" | jq -r '[ . | to_entries[] | select(.value) | .value.name ]'`
+
 ###
 # Log write
 # TODO This must be refactored to lib-function
@@ -95,7 +98,10 @@ usage ()
 get_fan_speed () {
     local temperature=$1
     local gpu_fan_speed=$2
+    local gpu_bus_id=$3
+    local gpu_card_name=$4
     local target_fan_speed=$mintemp
+    local log_message=
     if (( $temperature < ($targettemp - 10) )); then
         # no reasons to change fan speed
         target_fan_speed=$gpu_fan_speed
@@ -103,15 +109,22 @@ get_fan_speed () {
         # this action is going in a period from ($targettemp - 10) to $targettemp
         if (( $temperature < $targettemp )); then
             target_fan_speed=($gpu_fan_speed + 5)
+            log_message="GPU[$gpu_card_name, $gpu_bus_id]'s temperature(~ $temperature) greater than "$($targettemp - 10)" but still below target temperature("$($targettemp)"). Fan speed raised to $target_fan_speed%"
         else
             target_fan_speed=($gpu_fan_speed + 10)
+            log_message="GPU[$gpu_card_name, $gpu_bus_id]'s temperature(~ $temperature) greater than target temperature("$($targettemp)"). Fan speed raised to $target_fan_speed%"
         fi
         if (( $temperature < ($maxtemp-5) )); then
             target_fan_speed=($gpu_fan_speed + 30)
+            log_message="GPU[$gpu_card_name, $gpu_bus_id]'s temperature(~ $temperature) nearby maximum temperature($maxtemp). Fan speed raised to $target_fan_speed%"
         fi
     fi
     if (($target_fan_speed > 100)); then
         target_fan_speed=100
+        log_message="${RED}GPU[$gpu_card_name, $gpu_bus_id]'s fan speed now $target_fan_speed%${NOCOLOR}"
+    fi
+    if [[ -z $log_message ]]; then
+        echo2 $log_message
     fi
     echo $target_fan_speed
 }
@@ -148,11 +161,14 @@ nvidia_auto_fan_control ()
     args=
     for index in ${nvidia_indexes_array[@]}
     do
+        # TODO Theese fields maybe moved inside `get_fan_speed` replaced by on nvidia_indexes_array[@] as argument
         local gpu_temperature=${temperatures_array[index]}
         local gpu_fan_speed=${fans_array[index]}
+        local card_name=${card_names_array[index]}
+        local card_bus_id=${card_bus_ids_array[index]}
         event_by_temperature $gpu_temperature
 #        echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
-        local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed)
+        local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed $card_bus_id $card_name)
         args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan-$index]/GPUTargetFanSpeed=$TARGET_FAN_SPEED"
     done
     $NS $args > /dev/null 2>&1
@@ -163,11 +179,14 @@ amd_auto_fan_control ()
 {
     for index in ${amd_indexes_array[@]}
     do
+        # TODO Theese fields maybe moved inside `get_fan_speed` replaced by on amd_indexes_array[@] as argument
         local gpu_temperature=${temperatures_array[index]}
         local gpu_fan_speed=${fans_array[index]}
+        local card_name=${card_names_array[index]}
+        local card_bus_id=${card_bus_ids_array[index]}
         event_by_temperature $gpu_temperature
 #        echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
-        local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed)
+        local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_fan_speed $card_bus_id $card_name)
         wolfamdctrl -i $index --set-fanspeed $TARGET_FAN_SPEED 1>/dev/null
     done
     action_by_event
