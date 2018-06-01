@@ -103,9 +103,10 @@ usage ()
 # The speed of fan in percents
 get_fan_speed () {
     local temperature=$1
-    local gpu_fan_speed=$2
-    local gpu_bus_id=$3
-    local gpu_card_name=$4
+    local temperature_previous=$2
+    local gpu_fan_speed=$3
+    local gpu_bus_id=$4
+    local gpu_card_name=$5
     local target_fan_speed=$mintemp
     local log_message=
     if (( $temperature < $(($targettemp - 10)) )); then
@@ -128,6 +129,10 @@ get_fan_speed () {
     if (($target_fan_speed > 100)); then
         target_fan_speed=100
         log_message="${RED}GPU[$gpu_card_name, $gpu_bus_id]'s fan speed now $target_fan_speed%${NOCOLOR}"
+    fi
+    if (( $temperature < $temperature_previous )); then
+        target_fan_speed=$(( $gpu_fan_speed - $fan_change_step/2 ))
+        log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) less than previous value ($temperature_previous). Fan speed decreased to $target_fan_speed%"
     fi
     if [[ -n "$log_message" ]]; then
         echo2 $log_message
