@@ -245,6 +245,7 @@ set_constant_fan_speeds ()
 
 set_requested_fans_speed ()
 {
+    echo2 "----- Autofan started -----\n"
     case $mode in
         "constant") set_constant_fan_speeds ;;
         "auto") auto_fan_control ;;
