@@ -79,13 +79,13 @@ usage ()
     echo "      auto            (recommended) automatic coolers adjustment. By default it holds ${targettemp_default}C but you may change this through '-t'"
     echo "      constant         constant coolers speed. Set the value via '-s'"
     echo
-    echo "  -t|--gputemp     target temperature (default: ${targettemp_default}C)"
+    echo "  -t|--gputemp     target temperature (default: ${targettemp_default}℃)"
     echo "      TEMP            integer value. Temperature in Celsius"
     echo
-    echo "  -mt|--mintemp    minimal temperature (cannot be lower than $mintemp_default%)"
+    echo "  -mt|--mintemp    minimal temperature (cannot be lower than $mintemp_default ℃)"
     echo "      TEMP            integer value. Temperature in Celsius"
     echo
-    echo "  -Mt|--maxtemp    maximal temperature when the miner will stopped (default: $maxtemp_default)"
+    echo "  -Mt|--maxtemp    maximal temperature when the miner will stopped (default: $maxtemp_default ℃)"
     echo "      TEMP            integer value. Temperature in Celsius"
     echo
     echo "  -s|--fanspeed    fans speed (default: $fanpercent_default%)"
@@ -125,7 +125,7 @@ get_fan_speed () {
         fi
         if (( $temperature < $maxtemp - 5 )); then
             target_fan_speed=$(( $gpu_fan_speed + 3 * $fan_change_step ))
-            echo2 "GPU[$gpu_bus_id]'s temperature(~ $temperature) nearby maximum temperature($maxtemp). Fan speed raised to $target_fan_speed%"
+            echo2 "GPU[$gpu_bus_id]'s temperature(~ $temperature ℃) greater than maximum temperature($maxtemp ℃). Fan speed raised to $target_fan_speed%"
         fi
     fi
     if (($target_fan_speed > 100)); then
