@@ -65,7 +65,7 @@ maxtemp=$maxtemp_default
 
 fanpercent_default="80"
 fanpercent=$fanpercent_default
-fan_change_step_default="10"
+fan_change_step_default="5"
 fan_change_step=$fan_change_step_default
 
 usage ()
