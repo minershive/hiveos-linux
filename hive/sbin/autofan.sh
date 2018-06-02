@@ -176,7 +176,7 @@ nvidia_auto_fan_control ()
         # TODO Theese fields maybe moved inside `get_fan_speed` replaced by on nvidia_indexes_array[@] as argument
         local gpu_temperature=${temperatures_array[index]}
         local gpu_temperature_previous=${temperatures_array_previous[index]}
-        if [[ -n $gpu_temperature_previous ]]; then gpu_temperature_previous=0; fi
+        if [[ -z $gpu_temperature_previous ]]; then gpu_temperature_previous=0; fi
         local gpu_fan_speed=${fans_array[index]}
         # TODO broken, spaces trouble
 #        local card_name=${card_names_array[index]}
