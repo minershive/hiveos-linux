@@ -110,7 +110,7 @@ get_fan_speed () {
     local gpu_bus_id=$4
     local gpu_card_name=$5
     local target_fan_speed=$fanpercent_default
-    local log_message=
+
     if (( $temperature < $targettemp - 10 )); then
         # no reasons to change fan speed
         target_fan_speed=$gpu_fan_speed
@@ -118,26 +118,23 @@ get_fan_speed () {
         # this action is going in a period from ($targettemp - 10) to $targettemp
         if (( $temperature < $targettemp )); then
             target_fan_speed=$(( $gpu_fan_speed + $fan_change_step/2 ))
-            log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) greater than "$(( $targettemp - 10 ))" but still below target temperature($targettemp). Fan speed raised to $target_fan_speed%"
+            echo2 "GPU[$gpu_bus_id]'s temperature(~ $temperature) greater than "$(( $targettemp - 10 ))" but still below target temperature($targettemp). Fan speed raised to $target_fan_speed%"
         else
             target_fan_speed=$(( $gpu_fan_speed + 2 * $fan_change_step ))
-            log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) greater than target temperature($targettemp). Fan speed raised to $target_fan_speed%"
+            echo2 "GPU[$gpu_bus_id]'s temperature(~ $temperature) greater than target temperature($targettemp). Fan speed raised to $target_fan_speed%"
         fi
         if (( $temperature < $maxtemp - 5 )); then
             target_fan_speed=$(( $gpu_fan_speed + 3 * $fan_change_step ))
-            log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) nearby maximum temperature($maxtemp). Fan speed raised to $target_fan_speed%"
+            echo2 "GPU[$gpu_bus_id]'s temperature(~ $temperature) nearby maximum temperature($maxtemp). Fan speed raised to $target_fan_speed%"
         fi
     fi
     if (($target_fan_speed > 100)); then
         target_fan_speed=100
-        log_message="${RED}GPU[$gpu_card_name, $gpu_bus_id]'s fan speed now $target_fan_speed%${NOCOLOR}"
+        echo2 "${RED}GPU[$gpu_card_name, $gpu_bus_id]'s fan speed now $target_fan_speed%${NOCOLOR}"
     fi
     if (( $temperature < $temperature_previous )); then
         target_fan_speed=$(( $gpu_fan_speed - $fan_change_step/2 ))
-        log_message="GPU[$gpu_bus_id]'s temperature(~ $temperature) less than previous value ($temperature_previous). Fan speed decreased to $target_fan_speed%"
-    fi
-    if [[ -n "$log_message" ]]; then
-        echo2 $log_message
+        echo2 "GPU[$gpu_bus_id]'s temperature(~ $temperature) less than previous value ($temperature_previous). Fan speed decreased to $target_fan_speed%"
     fi
     echo $target_fan_speed
 }
