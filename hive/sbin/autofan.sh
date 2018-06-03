@@ -111,16 +111,16 @@ get_fan_speed () {
     local gpu_card_name=$5
     local target_fan_speed=$fanpercent_default
 
-    if (( $temperature < $targettemp - 5 )); then
+    if (( $temperature < $targettemp - 2 )); then
         # no reasons to change fan speed
         target_fan_speed=$gpu_fan_speed
     else
-        # this action is going in a period from ($targettemp - 5) to ($targettemp + 5)
-        if (( $temperature >= $targettemp - 5 && $temperature <= $targettemp + 5 )); then
+        # this action is going in a period from ($targettemp - 2) to ($targettemp + 2)
+        if (( $temperature >= $targettemp - 2 && $temperature <= $targettemp + 2 )); then
             target_fan_speed=$(( $gpu_fan_speed + $fan_change_step ))
             echo2 "GPU[$gpu_bus_id]'s temperature(~ $temperature ℃) nearby target temperature ($targettemp ℃). Fan speed raised a little to $target_fan_speed%"
         else
-            if (( $temperature > $targettemp + 5 )); then
+            if (( $temperature > $targettemp + 2 )); then
                 target_fan_speed=$(( $gpu_fan_speed + 2 * $fan_change_step ))
                 echo2 "GPU[$gpu_bus_id]'s temperature(~ $temperature ℃) greater than target temperature($targettemp ℃). Fan speed raised to $target_fan_speed%"
             fi
