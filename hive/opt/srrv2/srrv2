@@ -1,7 +1,7 @@
 #!/bin/bash
 
 [[ -z $1 ]] || [[ -z $2 ]] &&
-	echo "Usage: `basename $0` serial_number slot_number" &&
+	echo "Usage: `basename $0` serial_number slot_number eb_serial" &&
 	exit 1
 ## REQUIRED packages: socat (apt-get install socat)
 
@@ -10,9 +10,11 @@
 srrEnabled="1"
 srrSerial=$1
 srrSlot=$2
+ebSerial=$3
 
-echo "srrSerial" $srrSerial
-echo "srrSlot" $srrSlot
+echo "srrSerial " $srrSerial
+echo "srrSlot " $srrSlot
+echo "ebSerial " $ebSerial
 
 if [ "$srrEnabled" -eq 1  ]; then
 	echo "SRR is Enabled"
@@ -22,20 +24,38 @@ else
 	exit
 fi
 
-################################
-## Dont touch anything below :)
-srrSlot=`printf %02X $(( ${srrSlot} - 1 ))`
-firstByte="FF"
-byteCount="0008"
-action="55"
-mac="485053$srrSerial"
 
-checksum=`printf %02X $(( (0x${byteCount:0:2} + 0x${byteCount:2:2} + 0x$action + 0x${mac:0:2} + 0x${mac:2:2} + 0x${mac:4:2} + 0x${mac:6:2} + 0x${mac:8:2} + 0x${mac:10:2} + 0x$srrSlot)%0x100  ))`
-packet="$firstByte$byteCount$action$mac$srrSlot$checksum"
+if [ ${#ebSerial} == 6 ]; then
+	## For Extension Board ports only
+	ebSlot=`printf %02X $(( ${slot} - 1 ))`
+	firstByte="FF"
+	byteCount="000b"
+	action="5c"
+	mac="485053$srrSerial"
+	checksum=`printf %02X $(( (0x${byteCount:0:2} + 0x${byteCount:2:2} + 0x$action + 0x${mac:0:2} + 0x${mac:2:2} + 0x${mac:4:2} + 0x${mac:6:2} + 0x${mac:8:2} + 0x${mac:10:2} + 0x${ebSerial:0:2} + 0x${ebSerial:2:2} + 0x${ebSerial:4:2} + 0x$ebSlot)%0x100  ))`
+	packet2="$firstByte$byteCount$action$mac$ebSerial$ebSlot$checksum"
 
-while true
-do
-	echo "SRR, please dont kill me, i will ask again in 2 seconds $packet"
-	echo -n "$packet" | xxd -r -p |socat - UDP-DATAGRAM:255.255.255.255:1051,broadcast > /dev/null
-	sleep 2
-done
+	while true
+	do
+		echo "Sending keepallive packet to EB:$ebSerial attached to SRR:$srrSerial on slot:$slot. Message:$packet2"
+		echo -n "$packet2" | xxd -r -p |socat - UDP-DATAGRAM:255.255.255.255:1051,broadcast > /dev/null &
+		sleep 2
+	done
+else
+	## For SRR ports only
+	srrSlot=`printf %02X $(( ${slot} - 1 ))`
+	firstByte="FF"
+	byteCount="0008"
+	action="55"
+	mac="485053$srrSerial"
+	checksum=`printf %02X $(( (0x${byteCount:0:2} + 0x${byteCount:2:2} + 0x$action + 0x${mac:0:2} + 0x${mac:2:2} + 0x${mac:4:2} + 0x${mac:6:2} + 0x${mac:8:2} + 0x${mac:10:2} + 0x$srrSlot)%0x100  ))`
+	packet1="$firstByte$byteCount$action$mac$srrSlot$checksum"
+
+	while true
+	do
+		echo "Sending keepallive packet to SRR:$srrSerial on slot:$slot. Message: $packet1"
+		echo -n "$packet1" | xxd -r -p |socat - UDP-DATAGRAM:255.255.255.255:1051,broadcast > /dev/null &
+		sleep 2
+	done
+fi
+
