@@ -5,6 +5,7 @@
 # ENABLE=0/1
 # SERIAL_NUMBER=000123
 # SLOT_NUMBER=1-8
+# EB_SERIAL=123456
 
 
 #grep processes but not a self sh script
