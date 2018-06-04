@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 THIS_MINER_NAME="xmr-stak"
+API_SOCKET=60045
+
 [ -t 1 ] && . colors
 
 
@@ -86,6 +88,11 @@ config_gen
 cd /hive/$THIS_MINER_NAME
 while true
 do
+	#try to release TIME_WAIT sockets
+	for con in `netstat -anp | grep TIME_WAIT | grep ${API_SOCKET} | awk '{print $5}' `; do
+	    killcx $con lo
+	done
+	
 	miner logrotate $THIS_MINER_NAME
 	/hive/$THIS_MINER_NAME/xmr-stak.sh $XMR_STAK_FORK
 	echo ""
