@@ -1,0 +1,4 @@
+POOL: daggerhashimoto.eu.nicehash.com:3353, WALLET: 34um6A8dmT4JHWNuAvqigsERsD61toVAbY.hiveos, PSW: x, ESM: 3, ALLPOOLS: 1
+POOL: daggerhashimoto.us.nicehash.com:3353, WALLET: 34um6A8dmT4JHWNuAvqigsERsD61toVAbY.hiveos, PSW: x, ESM: 3, ALLPOOLS: 1
+POOL: daggerhashimoto.in.nicehash.com:3353, WALLET: 34um6A8dmT4JHWNuAvqigsERsD61toVAbY.hiveos, PSW: x, ESM: 3, ALLPOOLS: 1
+POOL: daggerhashimoto.br.nicehash.com:3353, WALLET: 34um6A8dmT4JHWNuAvqigsERsD61toVAbY.hiveos, PSW: x, ESM: 3, ALLPOOLS: 1

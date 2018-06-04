@@ -1,0 +1,13 @@
+# WARNING! Remove "#" characters to enable lines, with "#" they are disabled and will be ignored by miner! Check README for details.
+# WARNING! Miner loads options from this file only if there are not any options in the command line!
+
+#-epool us1.ethpool.org:3333
+#-ewal 0xD69af2A796A737A103F12d2f0BCC563a13900E6F
+#-epsw x
+#-dpool stratum+tcp://yiimp.ccminer.org:4252
+#-dwal DsUt9QagrYLvSkJHXCvhfiZHKafVtzd7Sq4
+#-dpsw x
+#-esm 1
+#-mode 0
+#-tt 70
+#-asm 0
