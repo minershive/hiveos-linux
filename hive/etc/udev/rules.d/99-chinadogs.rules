@@ -7,4 +7,4 @@ SUBSYSTEM=="hidraw", ATTRS{idVendor}=="5131", ATTRS{idProduct}=="2007", SYMLINK+
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0471", ATTRS{idProduct}=="2379", SYMLINK+="china_dog0"
 
 #ttyUSB dogs
-SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523",  SYMLINK+="china_dog"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523",  SYMLINK+="china_dog0"
