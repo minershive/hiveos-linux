@@ -9,6 +9,7 @@
 source /etc/environment
 export PATH
 export CUDA_DEVICE_ORDER
+export HOME=/home/user #required by ccminer
 
 #[ -t 1 ] &&
 . colors #use them anyway
@@ -67,8 +68,8 @@ dos2unix-safe /hive-config/rig.conf
 
 export GPU_COUNT_AMD=`gpu-detect AMD`
 export GPU_COUNT_NVIDIA=`gpu-detect NVIDIA`
-export GPU_FIRST_AMD=`lspci | grep -E "VGA|3D controller" | head -n 1 | grep AMD | wc -l`
-export GPU_FIRST_NVIDIA=`lspci | grep -E "VGA|3D controller" | head -n 1 | grep NVIDIA | wc -l`
+export GPU_FIRST_AMD=`gpu-detect AMD_FIRST`
+export GPU_FIRST_NVIDIA=`gpu-detect NVIDIA_FIRST`
 
 RIG_CONF="/hive-config/rig.conf"
 AMD_OC_CONF="/hive-config/amd-oc.conf"

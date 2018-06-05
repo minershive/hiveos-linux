@@ -44,6 +44,7 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 
 	gpu_brand_i=-1
 	while read -r s; do
+		[[ -z $s ]] && continue
 		unset gputype
 		[[ $s =~ "NVIDIA" && ! $s =~ "nForce" ]] && gputype="NVIDIA" && COLOR=$GREEN && gpu_brand_i=$((gpu_brand_i+1))
 		[[ $s =~ "Advanced Micro Devices" ]] && gputype="AMD" && COLOR=$RED && gpu_brand_i=$((gpu_brand_i+1))
@@ -146,9 +147,17 @@ elif [[ $1 == "listnvidia" ]]; then
 		echo $s | sed -e "s/^00000000://" | sed -e "s/,\s/ /"
 	done <<<"$list"
 	exit 0
+elif [[ $1 == "AMD" ]]; then
+	lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices" | grep -v "RS880" | wc -l
+elif [[ $1 == "AMD_FIRST" ]]; then
+	lspci | grep -E "VGA|3D controller" | head -n 1 | grep "Advanced Micro Devices" | grep -v "RS880" | wc -l
+elif [[ $1 == "NVIDIA" ]]; then
+	lspci | grep -E "VGA|3D controller" | grep "NVIDIA" | grep -v "nForce" | wc -l
+elif [[ $1 == "NVIDIA_FIRST" ]]; then
+	lspci | grep -E "VGA|3D controller" | head -n 1 | grep "NVIDIA" | grep -v "nForce" | wc -l
+else
+	#default, just grep
+	lspci | grep -E "(VGA|3D controller).*$1" | wc -l
 fi
 
 
-
-#default, just grep
-lspci | grep -E "(VGA|3D controller).*$1" | wc -l
