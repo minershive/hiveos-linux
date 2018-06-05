@@ -1,0 +1,14 @@
+# This is an example config for SRRv2 Watchdog
+# Copy this config to the root of Hive Config directory as watchdog_srrv2.txt
+# (/hive-config in Linux or just HIVE drive in Windows)
+
+ENABLE=1
+
+# Device serial number
+SERIAL_NUMBER=1234
+
+# The slot where this rig is connected, 1-8
+SLOT_NUMBER=1
+
+# Extension board serial if you have one
+EB_SERIAL=
