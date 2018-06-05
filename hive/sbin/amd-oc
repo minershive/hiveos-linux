@@ -131,9 +131,11 @@ for bdir in $busids_dirs; do
 
 
 
-	[[ $AGGRESSIVE == 1 ]] &&
-		. /hive/sbin/amd-oc.aggressive.sh ||
+	if [[ $AGGRESSIVE == 1 ]]; then
+		. /hive/sbin/amd-oc.aggressive.sh
+	else
 		. /hive/sbin/amd-oc.classic.sh
+	fi
 
 
 	if [[ ! -z $coreState || ! -z $memoryState ]]; then
