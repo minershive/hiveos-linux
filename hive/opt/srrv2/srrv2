@@ -9,10 +9,10 @@
 ## Other Linux Systems than SimpleMining OS - unhash 3 lines below and hash SimpleMiningOS ones
 srrEnabled="1"
 srrSerial=$1
-srrSlot=$2
+slot=$2
 ebSerial=$3
 
-echo "srrSerial " $srrSerial
+echo "serial " $serial
 echo "srrSlot " $srrSlot
 echo "ebSerial " $ebSerial
 
