@@ -108,6 +108,11 @@ function loop {
 
 	echo $request | jq '.' -c
 
+	if [[ -z $RIG_ID ]]; then
+		echo -e "${YELLOW}No RIG_ID, skipping sending stats${NOCOLOR}"
+		return
+	fi
+
 	#log request
 	echo "[`date`] > `echo $request | jq '.' -c`" >> $LOG
 	#echo "[`date`] > $request" >> $LOG
