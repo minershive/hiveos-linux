@@ -12,8 +12,8 @@ srrSerial=$1
 slot=$2
 ebSerial=$3
 
-echo "serial " $serial
-echo "srrSlot " $srrSlot
+echo "srrSerial " $srrSerial
+echo "slot " $slot
 echo "ebSerial " $ebSerial
 
 if [ "$srrEnabled" -eq 1  ]; then
