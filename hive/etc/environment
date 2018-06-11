@@ -1,3 +1,6 @@
 #ln -sf /hive/etc/environment /etc/environment
+# Please do not use the char "$" here or variable size will grow toward infinity
 PATH="./:/hive/bin:/hive/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
 CUDA_DEVICE_ORDER=PCI_BUS_ID
+HIVE_GPU_STATS_LOG="/run/hive/gpustats.json"
+HIVE_GPU_DETECT_JSON=`gpu-detect listjson`
