@@ -333,7 +333,7 @@ auto_fan_control() {
             amd_auto_fan_control
         fi
         declare -a temperatures_array_previous=(${temperatures_array[@]})
-		sleep 10
+		sleep 10 #мало чтобы видеть эффект
 	done
 }
 
