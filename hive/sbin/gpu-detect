@@ -9,8 +9,8 @@ fi
 #[[ -t 1 || $2 == "--colors" ]] && . colors
 
 
-AMDMEMINFO_FILE=/tmp/amdmeminfo
-NVIDIASMI_FILE=/tmp/nvidia_smi_info
+AMDMEMINFO_FILE=/run/hive/amdmeminfo
+NVIDIASMI_FILE=/run/hive/nvidia_smi_info
 
 
 # Wait 4 sec for another amdmeminfo process to finish
