@@ -10,8 +10,15 @@ export DISPLAY=":0"
 NS='/usr/bin/nvidia-settings'
 AUTOFAN_LOG="/var/log/hive-autofan.log"
 
-# TODO this block must be refactored to library functions
+#пути к файлам конфигурации
+AMD_OC_CONF="/hive-test/amd-oc.conf"
+NVIDIA_OC_CONF="/hive-test/nvidia-oc.conf"
+RIG_CONF="/hive-test/rig.conf"
+#вопрос по конфам. если заданные юзером условия едины для всех карт, то может один конфиг?
+#
 
+# TODO this block must be refactored to library functions
+#gpu_detect_json=`gpu-detect listjson`
 amd_indexes_query='[ . | to_entries[] | select(.value.brand == "amd") | .key ]'
 amd_indexes_array=`echo "$gpu_detect_json" | jq -r "$amd_indexes_query | .[]"`
 amd_cards_number=`echo "$gpu_detect_json" | jq -c "$amd_indexes_query | length"`
@@ -40,36 +47,59 @@ function echo2 {
     # echo -e "$1"
 }
 
+
 if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
     echo2 "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found"
     exit 1
 fi
 
-if (( $nvidia_cards_number > 0 )); then
-  echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number"
-  nvidia-smi -pm 1
-  $NS -a GPUPowerMizerMode=1
-fi
-if (( $amd_cards_number > 0 )); then
-  echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number"
-fi
+#if (( $nvidia_cards_number > 0 )); then
+#  echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number"
+#  nvidia-smi -pm 1 ######## имеет ли смысл, если работает в связке с nvidia-oc?
+#  $NS -a GPUPowerMizerMode=1 # аналогично, что и выше
+#fi 
+#
+[[ $nvidia_cards_number > 0 ]] && echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number" 
 
-# Default settings
-mode_default="auto"
-mode=$mode_default
+#if (( $amd_cards_number > 0 )); then
+#  echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number"
+#fi 
+#
+[[ $amd_cards_number > 0 ]] && echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number" 
 
-# Probably Nvidia and AMD will have different default settings
-targettemp_default=65
-targettemp=$targettemp_default
-mintemp_default=10
-mintemp=$mintemp_default
-maxtemp_default=79
-maxtemp=$maxtemp_default
+##все параметры из файлов конфигурации. либо юзерские настройки, либо авто.
+				# Default settings
+				#если параметров нет, скрипт ничего не делает. предыдущие настройки (если были) сохраняются в базе на стороне сервера. но при включении 
+# фиксированных оборотов или управления биосом ВК высылаются пустые настройки автофана в конф?
+				mode_default="auto"
+				mode=$mode_default #for del?
 
-fanpercent_default="80"
-fanpercent=$fanpercent_default
-fan_change_step_default="5"
-fan_change_step=$fan_change_step_default
+				# Probably Nvidia and AMD will have different default settings
+				#получить переменные из файлов конфигурации
+				#согласовать имена переменных!
+				#MIN_SPEED=40		минимальная сокрость кулеров %
+				#температуры: применяется диапазон от мин до макс. при снижении температуры ниже мин, скорость кулеров замедляется, применяя МИН_КОЭФ (и коэфф-ты уменьшаются на 1).
+				# при  увеличении выше макс, скорость увеличивается применяя МАКС_КОЭФ (и увеличиваем коэфф-ты +2)
+				#MIN_TEMP=60 	#эти данные берем из конфига	
+				#MAX_TEMP=65	#эти данные берем из конфига
+				#коэфф-ты не редактируются пользователем, а снижаются/увеличиваются логикой. есть порог снижения/увеличения МИН_КОЭФ (70/90)
+				#MIN_COEF=80 	#эти данные можно зафиксировать, при перезагрузке рига будут по дефолту
+				#MAX_COEF=110
+				#майнер-стоп включен постоянно или задается пользователем? 
+				#MINER_STOP=1 если включен постоянно, то переменную не вводить, т.е. лимит температуры запредельный фактически отключает опцию
+				#CRITICAL_TEMP_MINER_STOP=75
+				targettemp_default=65
+				targettemp=$targettemp_default
+				mintemp_default=10
+				mintemp=$mintemp_default
+				maxtemp_default=79
+				maxtemp=$maxtemp_default
+
+				fanpercent_default="80"
+				fanpercent=$fanpercent_default
+				fan_change_step_default="5"
+				fan_change_step=$fan_change_step_default
+###########
 
 usage ()
 {
@@ -106,16 +136,19 @@ usage ()
 #
 # Result:
 # The speed of fan in percents
+
+
 get_fan_speed () {
     local temperature=$1
     local temperature_previous=$2
     local gpu_fan_speed=$3
     local gpu_bus_id=$4
-    local gpu_card_name=$5
+    local gpu_card_name=$5 
     local target_fan_speed=$fanpercent_default
 
     if (( $temperature < $targettemp - 2 )); then
         # no reasons to change fan speed
+		
         target_fan_speed=$gpu_fan_speed
     else
         # this action is going in a period from ($targettemp - 2) to ($targettemp + 2)
@@ -137,36 +170,106 @@ get_fan_speed () {
         target_fan_speed=100
         echo2 "${RED}GPU[$gpu_card_name, $gpu_bus_id]'s fan speed now $target_fan_speed%${NOCOLOR}"
     fi
-    if (( $temperature < $temperature_previous )); then
+    if (( $temperature < $temperature_previous )); then 
         target_fan_speed=$(( $gpu_fan_speed - $fan_change_step/2 ))
         echo2 "GPU[$gpu_bus_id]'s temperature(~ $temperature) less than previous value ($temperature_previous). Fan speed decreased to $target_fan_speed%"
     fi
+	#ниже диапазона
+	#if [[ $temperature -lt $MIN_TEMP ]]; then
+	##проверка условия майнер-старт в функции event_by_temperature
+	#снижение коэффициентов (ввести функцию event_by_temp_limit)
+	# [[ CHANGE_COEF_FLAG != 1 ]] && CHANGE_COEF_FLAG=0 #LOW, не снижается, если одна из карт достигла макс температуры.
+	# target_fan_speed=$(($temperature * ($MIN_COEF-($MIN_TEMP - $temperature) * 2)/100))
+	#лимит вентиляторов
+	#[[ $target_fan_speed -le $MIN_SPEED ]] && target_fan_speed=$MIN_SPEED
+	#
+	#в диапазоне
+	#elif [[ $temperature -ge $MIN_TEMP  &&  $temperature -le $MAX_TEMP ]]; then
+	#	target_fan_speed=$((  $temperature *(($temperature - $MIN_TEMP) * 4 + $MIN_COEF)/100 ))
+	#				если темп снизилась на градус, снижаем кулер на 1%
+	#				if [[ -n $temperature_previous && $(( $temperature+1 )) -eq $temperature_previous && $MAX_TEMP -ge $temperature_previous ]]; then
+	#							target_fan_speed=$(( $gpu_fan_speed-1 )) 
+	#							echo2 "GPU[$gpu_bus_id]'s temperature(~ $temperature ℃). Fan speed raised to $target_fan_speed%"
+	#				иначе, если не изменилась - кулер без измененний
+	#				elif [[ -n $temperature_previous && $GPU_TEMP -eq $temperature_previous ]]; then
+	#						target_fan_speed=$gpu_fan_speed
+	#						echo2 "GPU[$gpu_bus_id]'s temperature(~ $temperature ℃). Fan speed still $target_fan_speed%"
+	#				fi	
+	#
+	#выше диапазона
+	#elif [[ $temperature -gt $MAX_TEMP ]]; then
+	#проверка условия майнер-стоп в функции event_by_temperature()
+	#увеличение коэффициентов (ввести функцию event_by_temp_limit)
+	# CHANGE_COEF_FLAG=1	#HIGH
+	# target_fan_speed=$(( $temperature *(($temperature - $MAX_TEMP) * 4 + $MAX_COEF)/100 ))
+	#
+	#fi
+	# [[ $target_fan_speed -gt 100 ]] && target_fan_speed=100 && echo2 "${RED}GPU[$gpu_card_name, $gpu_bus_id]'s fan speed now $target_fan_speed%${NOCOLOR}"
     echo $target_fan_speed
 }
 
 ###
 # What we must to do if temperature reached some limits
 event_by_temperature() {
-    local temperature=$1
-    AUTOFAN_MINER="miner-start"
-    if (( $temperature >= $maxtemp )); then
-        AUTOFAN_MINER="miner-stop"
-    fi
+    #local temperature=$1
+    #AUTOFAN_MINER="miner-start" 
+	# AUTOFAN_MINER="none" 
+	
+	# нет проверки условия старта майнера, все ли карты остыли? 
+	# цикл проверки 
+	if [[ ! `screen -ls | grep "miner"` ]]; then   #если майнер не запущен
+								local gpu_temp_all
+								for gpu_temp_all in ${temperatures_array[@]} #берем температуру каждой карты из массива (массив общий амд/нвидиа?)
+								do 
+									if [[ $gpu_temp_all > $mintemp ]]; then  #и проверяем остыла до нижнего предела или нет
+											AUTOFAN_MINER=$AUTOFAN_MINER && break; #если какая то карта не остыла - выходим из проверки с сохранением переменной
+    								else AUTOFAN_MINER="miner-start" #если остыли все, запускаем майнер
+								done
+	fi
+	# 
+    #if (( $temperature >= $maxtemp )); then
+    #    AUTOFAN_MINER="miner-stop"
+    #fi
+	
+	#new code
+	 [[ $1 -ge $maxtemp ]] && AUTOFAN_MINER="miner-stop"
+	# 
 }
+
+event_by_temp_limit () {
+if [[ $CHANGE_COEF_FLAG==0 ]]; then
+        [[ `screen -ls miner | grep "miner"` ]] && [[  $MIN_COEF > 70 ]] && MIN_COEF=$(( $MIN_COEF-1 )) && MAX_COEF=$(( $MAX_COEF-1 )) && 
+						echo2 "MIN_COEF raised to $MIN_COEF. MAX_COEF raised to $MAX_COEF."
+else [[  $MIN_COEF -lt 90 ]] && MIN_COEF=$(( $MIN_COEF+2 )) && MAX_COEF=$(( $MAX_COEF+2 )) && echo2 "MIN_COEF raised to $MIN_COEF. MAX_COEF raised to $MAX_COEF."
+# передать данные на сервер? 
+#записать в файл конфига. amd|nvidia? или пусть после перезагрузки с дефолта начинает работать?
+#sed -i "s/\(MIN_COEF *= *\).*/\1$MIN_COEF/" $CONF_FILE && sed -i "s/\(MAX_COEF *= *\).*/\1$MAX_COEF/" $CONF_FILE
+CHANGE_COEF_FLAG=
+}
+
 
 action_by_event() {
     case $AUTOFAN_MINER in
         "miner-start")
-        local miners_started=`screen -ls | grep miner | wc -l`
-        if (( $miners_started <1 )); then
-            miner start
-        fi
+        #local miners_started=`screen -ls | grep miner | wc -l`
+        #if (( $miners_started <1 )); then 
+        #    miner start
+			
+        #fi
+		#new code
+		#
+		 [[ ! `screen -ls | grep "miner"` ]] && miner start
+		 [[ $WD_ENABLED==1 ]] && wd start
         ;;
 
         "miner-stop")
-        miner stop
+         [[ `screen -ls | grep "miner"` ]] && miner stop && wd stop
+		#disable watchdog too иначе запустит майнер
+		
         ;;
     esac
+	#обнуляем значение после выполнения условия
+	AUTOFAN_MINER=
 }
 
 
@@ -183,7 +286,7 @@ nvidia_auto_fan_control ()
         local gpu_fan_speed=${fans_array[index]}
         # TODO broken, spaces trouble
 #        local card_name=${card_names_array[index]}
-        local card_name=
+        local card_name=    #зачем пустая переменная?
         local card_bus_id=${card_bus_ids_array[index]}
         event_by_temperature $gpu_temperature
 #        echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
@@ -192,6 +295,7 @@ nvidia_auto_fan_control ()
     done
     $NS $args > /dev/null 2>&1
     action_by_event
+	event_by_temp_limit
 }
 
 amd_auto_fan_control ()
@@ -216,10 +320,13 @@ amd_auto_fan_control ()
 }
 
 auto_fan_control() {
+
+#подключем конфиг, если температуры пустые, то спать
 	while true;	do
         declare -a temperatures_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".params.temp | .[]"`)
         declare -a fans_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".params.fan | .[]"`)
         if (( $nvidia_cards_number > 0 )); then
+		# проверить есть ли настройки
             nvidia_auto_fan_control
         fi
         if (( $amd_cards_number > 0 )); then
@@ -232,6 +339,9 @@ auto_fan_control() {
 
 set_constant_fan_speeds ()
 {
+#функцию упразднить?
+#за запуск фиксированных оборотов пусть отвечает nvidia-oc amd-oc-safe
+#при изменении настроек ОС пользователем в админке агент применит настройки и автофану ничего не нужно делать
     if (( $nvidia_cards_number > 0 )); then
         args=
         for index in ${nvidia_indexes_array[@]}
@@ -250,11 +360,13 @@ set_constant_fan_speeds ()
 
 set_requested_fans_speed ()
 {
+# см. коммент set_constant_fan_speeds
     echo2 "----- Autofan started -----\n"
     case $mode in
         "constant") set_constant_fan_speeds ;;
         "auto") auto_fan_control ;;
     esac
+
 }
 
 # Arguments parsing and validating
@@ -322,4 +434,3 @@ done
 
 # main method
 set_requested_fans_speed
-
