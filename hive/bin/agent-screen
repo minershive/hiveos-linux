@@ -3,8 +3,6 @@
 source /etc/environment
 export PATH
 export CUDA_DEVICE_ORDER
-export HIVE_GPU_STATS_LOG
-export HIVE_GPU_DETECT_JSON
 
 #Check for proxy var. Or agent and others started from here will not see it
 . http_proxy.sh
