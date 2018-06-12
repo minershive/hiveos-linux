@@ -14,7 +14,7 @@ AUTOFAN_LOG="/var/log/hive-autofan.log"
 AMD_OC_CONF="/hive-test/amd-oc.conf"
 NVIDIA_OC_CONF="/hive-test/nvidia-oc.conf"
 RIG_CONF="/hive-test/rig.conf"
-#вопрос по конфам. если заданные юзером условия едины для всех карт, то может один конфиг?
+#вопрос по конфам. если заданные юзером условия едины для всех карт, то может один конфиг для автофана?
 #
 
 # TODO this block must be refactored to library functions
