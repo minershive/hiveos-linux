@@ -41,7 +41,11 @@ done
 #boot_time=`TZ='UTC' uptime -s`
 boot_time=$(( `date +%s` - `cat /proc/uptime | awk '{printf "%d", $1}'` ))
 
-gpus_json=`gpu-detect listjson`
+if [[ -e /run/hive/gpu-detect.json ]]; then #this is needed only when upgrading version. later we can remove this
+	gpus_json=`cat /run/hive/gpu-detect.json`
+else
+	gpus_json=`gpu-detect listjson`
+fi
 #gpus_json=`echo "${gpus[@]}" | jq -R . | jq -s -c .`
 gpu_count_amd=`gpu-detect AMD`
 gpu_count_nvidia=`gpu-detect NVIDIA`

@@ -66,6 +66,7 @@ miner logdirscreate
 dos2unix-safe /hive-config/rig.conf
 
 
+gpu-detect listjson > /run/hive/gpu-detect.json
 export GPU_COUNT_AMD=`gpu-detect AMD`
 export GPU_COUNT_NVIDIA=`gpu-detect NVIDIA`
 export GPU_FIRST_AMD=`gpu-detect AMD_FIRST`
