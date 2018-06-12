@@ -102,9 +102,9 @@ amd_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(
 nvidia_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'`
 
 #Get list of Nvidia gpu's
-[[ -e /tmp/nvidia_smi_info ]] && nvlist=`cat /tmp/nvidia_smi_info`
+[[ -e /run/hive/nvidia_smi_info ]] && nvlist=`cat /run/hive/nvidia_smi_info`
 #Get list of AMD gpu's
-[[ -e /tmp/amdmeminfo ]] && amdlist=`cat /tmp/amdmeminfo |awk -F: '{print $2}'`
+[[ -e /run/hive/amdmeminfo ]] && amdlist=`cat /run/hive/amdmeminfo |awk -F: '{print $2}'`
 
 
 date
