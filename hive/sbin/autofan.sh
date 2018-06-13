@@ -2,6 +2,9 @@
 source /etc/environment
 . colors
 
+gpu_detect_json=`cat /run/hive/gpu-detect.json`
+HIVE_GPU_STATS_LOG="/run/hive/gpustats.json"
+
 export DISPLAY=":0"
 
 NS='/usr/bin/nvidia-settings'
@@ -10,21 +13,21 @@ AUTOFAN_LOG="/var/log/hive-autofan.log"
 # TODO this block must be refactored to library functions
 
 amd_indexes_query='[ . | to_entries[] | select(.value.brand == "amd") | .key ]'
-amd_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r "$amd_indexes_query | .[]"`
-amd_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$amd_indexes_query | length"`
+amd_indexes_array=`echo "$gpu_detect_json" | jq -r "$amd_indexes_query | .[]"`
+amd_cards_number=`echo "$gpu_detect_json" | jq -c "$amd_indexes_query | length"`
 
 nvidia_indexes_query='[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'
-nvidia_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r "$nvidia_indexes_query| .[]"`
-nvidia_cards_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$nvidia_indexes_query | length"`
+nvidia_indexes_array=`echo "$gpu_detect_json" | jq -r "$nvidia_indexes_query| .[]"`
+nvidia_cards_number=`echo "$gpu_detect_json" | jq -c "$nvidia_indexes_query | length"`
 
 # TODO cpus maybe required to use autofans too
 #cpu_indexes_query='[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'
-#cpu_indexes_array=`echo "$HIVE_GPU_DETECT_JSON" | jq -r "$cpu_indexes_query"`
-#cpu_cores_number=`echo "$HIVE_GPU_DETECT_JSON" | jq -c "$cpu_indexes_query | length"`
+#cpu_indexes_array=`echo "$gpu_detect_json" | jq -r "$cpu_indexes_query"`
+#cpu_cores_number=`echo "$gpu_detect_json" | jq -c "$cpu_indexes_query | length"`
 
-declare -a card_bus_ids_array=(`echo "$HIVE_GPU_DETECT_JSON" | jq -r '[ . | to_entries[] | select(.value) | .value.busid ] | .[]'`)
+declare -a card_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid ] | .[]'`)
 # TODO There is must be the way to remove space or use the whole value inside the quotes
-#declare -a card_names_array=(`echo "$HIVE_GPU_DETECT_JSON" | jq '[ . | to_entries[] | select(.value) | .value.name ] | .[]'`)
+#declare -a card_names_array=(`echo "$gpu_detect_json" | jq '[ . | to_entries[] | select(.value) | .value.name ] | .[]'`)
 
 ###
 # Log write

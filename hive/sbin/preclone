@@ -24,6 +24,8 @@ systemctl stop hivex
 find /hive -type f -name "*.log" -exec rm -f {} \;
 find /hive -type f -name "*.~" -exec rm -f {} \;
 
+find /hive/ccminer -type f -name "ccminer_*" -exec rm -f {} \;
+
 
 rm -r /var/log/*
 #rm /var/log/*.1; rm /var/log/*.2; rm /var/log/*.gz; echo "" > /var/log/kern.log; echo "" > /var/log/syslog
