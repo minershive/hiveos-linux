@@ -18,5 +18,6 @@
 	"debug" : false,
 	"protocol": false,
 	"quiet" : false,
-	"max-temp": 80
+	"max-temp": 80,
+        "retries": 5
 }
