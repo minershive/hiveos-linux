@@ -51,14 +51,14 @@ declare -a card_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entrie
 function echo2 {
 	echo -e "$1" > /dev/tty1
 	echo -e "$1" >> $AUTOFAN_LOG
-    echo -e "$1"
+	echo -e "$1"
 }
 
 check_gpu () {
 
 if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
-    echo2 "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found"
-    exit 1
+	echo2 "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found"
+	exit 1
 fi
 [[ $nvidia_cards_number > 0 ]] && echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number" && nvidia-smi -pm 1 > /dev/null 2>&1 && $NS -a GPUPowerMizerMode=1 > /dev/null 2>&1
 [[ $amd_cards_number > 0 ]] && echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number" 
@@ -67,11 +67,11 @@ echo2 "AUTOFAN CURRENT SETTINGS:\n  MIN_TEMP=$MIN_TEMP\n  TARGET_TEMP=$TARGET_TE
 }
 
 get_fan_speed () {
-    local temperature=$1
-    local temperature_previous=$2
-    local gpu_fan_speed=$3
-    local gpu_bus_id=$4
-    local gpu_card_name=$5 
+	local temperature=$1
+	local temperature_previous=$2
+	local gpu_fan_speed=$3
+	local gpu_bus_id=$4
+	local gpu_card_name=$5
 
 	if [[ $temperature -lt $MIN_TEMP ]]; then
 	 [[ $CHANGE_COEF_FLAG -ne 1 ]] && CHANGE_COEF_FLAG=0
@@ -95,7 +95,7 @@ get_fan_speed () {
 		
 	fi
 	 [[ $target_fan_speed -gt 100 ]] && target_fan_speed=100  && echo2 "${RED}GPU[$gpu_card_name, $gpu_bus_id]: WARNING: Maximum fan speed!${NOCOLOR}"
-    #echo $target_fan_speed
+	#echo $target_fan_speed
 }
 
 ###
@@ -108,7 +108,7 @@ event_by_temperature() {
 								do 
 									if [[ $gpu_temp_all > $MIN_TEMP ]]; then 
 											AUTOFAN_MINER=$AUTOFAN_MINER && break
-    								else AUTOFAN_MINER="miner-start"
+									else AUTOFAN_MINER="miner-start"
 									fi
 								done
 	fi
@@ -118,7 +118,7 @@ event_by_temperature() {
 event_by_temp_limit () {
 
 if [[ $CHANGE_COEF_FLAG == 0  ]]; then
-        if [[ `screen -ls | grep "miner"` ]]; then
+		if [[ `screen -ls | grep "miner"` ]]; then
 			if [[  $MIN_COEF > 70 ]]; then
 				MIN_COEF=$(( $MIN_COEF-1 )) 
 				MAX_COEF=$(( $MAX_COEF-1 ))
@@ -134,15 +134,15 @@ CHANGE_COEF_FLAG=
 
 action_by_event() {
 	. $RIG_CONF
-    case $AUTOFAN_MINER in
-        "miner-start")
+	case $AUTOFAN_MINER in
+		"miner-start")
 		 [[ ! `screen -ls | grep "miner"` ]] && miner start && echo2 "${GREEN}Miner started ${NOCOLOR}"
 		 [[ $WD_ENABLED==1 ]] && wd start
-        ;;
-        "miner-stop")
-         [[ `screen -ls | grep "miner"` ]] && miner stop && wd stop && echo2 "${RED}Miner stopped ${NOCOLOR}"
-        ;;
-    esac
+		;;
+		"miner-stop")
+		 [[ `screen -ls | grep "miner"` ]] && miner stop && wd stop && echo2 "${RED}Miner stopped ${NOCOLOR}"
+		;;
+	esac
 	AUTOFAN_MINER=
 }
 
@@ -150,50 +150,50 @@ action_by_event() {
 # TODO merge with amd_auto_fan_control
 nvidia_auto_fan_control ()
 {
-    args=
-    for index in ${nvidia_indexes_array[@]}
-    do
-        # TODO Theese fields maybe moved inside `get_fan_speed` replaced by on nvidia_indexes_array[@] as argument
-        local gpu_temperature=${temperatures_array[index]}
-        local gpu_temperature_previous=${temperatures_array_previous[index]}
-        if [[ -z $gpu_temperature_previous ]]; then gpu_temperature_previous=0; fi
-        local gpu_fan_speed=${fans_array[index]}
-        # TODO broken, spaces trouble
+	args=
+	for index in ${nvidia_indexes_array[@]}
+	do
+		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on nvidia_indexes_array[@] as argument
+		local gpu_temperature=${temperatures_array[index]}
+		local gpu_temperature_previous=${temperatures_array_previous[index]}
+		if [[ -z $gpu_temperature_previous ]]; then gpu_temperature_previous=0; fi
+		local gpu_fan_speed=${fans_array[index]}
+		# TODO broken, spaces trouble
 #        local card_name=${card_names_array[index]}
-        local card_name=    
-        local card_bus_id=${card_bus_ids_array[index]}
-        event_by_temperature $gpu_temperature
-        #echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
-        #local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $card_name)
+		local card_name=
+		local card_bus_id=${card_bus_ids_array[index]}
+		event_by_temperature $gpu_temperature
+		#echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
+		#local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $card_name)
 		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $card_name
-        #args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan-$index]/GPUTargetFanSpeed=$TARGET_FAN_SPEED"
+		#args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan-$index]/GPUTargetFanSpeed=$TARGET_FAN_SPEED"
 		args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan:$index]/GPUTargetFanSpeed=$target_fan_speed"
-    done
-    $NS $args > /dev/null 2>&1
-    #action_by_event
+	done
+	$NS $args > /dev/null 2>&1
+	#action_by_event
 }
 
 amd_auto_fan_control ()
 {
-    for index in ${amd_indexes_array[@]}
-    do
-        # TODO Theese fields maybe moved inside `get_fan_speed` replaced by on amd_indexes_array[@] as argument
-        local gpu_temperature=${temperatures_array[index]}
-        local gpu_temperature_previous=${temperatures_array_previous[index]}
-        if [[ -z $gpu_temperature_previous ]]; then gpu_temperature_previous=0; fi
-        local gpu_fan_speed=${fans_array[index]}
-        # TODO broken, spaces trouble
+	for index in ${amd_indexes_array[@]}
+	do
+		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on amd_indexes_array[@] as argument
+		local gpu_temperature=${temperatures_array[index]}
+		local gpu_temperature_previous=${temperatures_array_previous[index]}
+		if [[ -z $gpu_temperature_previous ]]; then gpu_temperature_previous=0; fi
+		local gpu_fan_speed=${fans_array[index]}
+		# TODO broken, spaces trouble
 #        local card_name=${card_names_array[index]}
-        local card_name=
-        local card_bus_id=${card_bus_ids_array[index]}
-        event_by_temperature $gpu_temperature
-        #echo -e "GPU:$index Card name:$card_name Bus ID: $card_bus_id T=$gpu_temperature FAN=$gpu_fan_speed%"
-        #local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $card_name)
+		local card_name=
+		local card_bus_id=${card_bus_ids_array[index]}
+		event_by_temperature $gpu_temperature
+		#echo -e "GPU:$index Card name:$card_name Bus ID: $card_bus_id T=$gpu_temperature FAN=$gpu_fan_speed%"
+		#local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $card_name)
 		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $card_name
-        #wolfamdctrl -i $index --set-fanspeed $TARGET_FAN_SPEED 1>/dev/null
+		#wolfamdctrl -i $index --set-fanspeed $TARGET_FAN_SPEED 1>/dev/null
 		wolfamdctrl -i $index --set-fanspeed $target_fan_speed 1>/dev/null
-    done
-    #action_by_event
+	done
+	#action_by_event
 }
 
 auto_fan_control() {
