@@ -40,7 +40,28 @@ function config_gen() {
 
 config_gen
 
+scratch_path="$HOME/.cache/boolberry"
+algo=`cat $CCMINER_CONFIG_FILE | jq ".algo" --raw-output`
+pool_url=`cat $CCMINER_CONFIG_FILE | jq ".pools[].url" --raw-output`
 
+if [[ ${algo} == "wildkeccak" ]]; then
+  if [[ -f ${scratch_path}/scratchpad.bin ]]; then
+	 # check if url changed then remove old scratchpad.bin
+	 if [[ -f $scratch_path/pool_url.txt ]]; then
+	   # scratchpad file and active pool found
+	   url=`cat $scratch_path/pool_url.txt`
+	   if [[ $pool_url != $url ]]; then
+		 # previous pool and new one are not the same - delete old scratchpad file
+		 rm ~/.cache/boolberry/scratchpad.bin
+	   fi
+	 fi
+  fi
+  if [[ ! -d ${scratch_path} ]]; then
+	 mkdir ${scratch_path}
+  fi
+  # update active pool
+  echo $pool_url > $scratch_path/pool_url.txt
+fi
 
 cd /hive/$THIS_MINER_NAME
 while true
