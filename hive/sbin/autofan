@@ -21,7 +21,7 @@ MIN_FAN=40
 TARGET_TEMP=
 CRITICAL_TEMP=75
 NO_AMD=0
-#CHANGE_COEF_FLAG=
+#
 
 ###
 # Log write
@@ -215,7 +215,7 @@ auto_fan_control() {
 	[[ -f $CONF_FILE ]] && . $CONF_FILE
 		echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}\n"
 		#check if exist .conf
-		if [[ -n $TARGET_TEMP && -f $CONF_FILE ]]; then 
+		if [[ -n $TARGET_TEMP && -f $CONF_FILE && -f $HIVE_GPU_STATS_LOG ]]; then 
 			MIN_TEMP=$(( TARGET_TEMP-5 ))
 			declare -a temperatures_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".temp | .[]"`)
 			declare -a fans_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".fan | .[]"`)
