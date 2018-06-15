@@ -23,6 +23,9 @@ CRITICAL_TEMP=75
 NO_AMD=0
 #
 
+
+SLEEP_TIME=20
+
 ###
 # Log write
 function echo2 {
@@ -34,52 +37,52 @@ function echo2 {
 
 #check $gpu_detect_json and do nothing while not exist
 while true; do 
-		if [ -f $gpu_detect_json ]; then
-			gpu_detect_json=`cat $gpu_detect_json`
-			# TODO this block must be refactored to library functions
-			amd_indexes_query='[ . | to_entries[] | select(.value.brand == "amd") | .key ]'
-			amd_indexes_array=`echo "$gpu_detect_json" | jq -r "$amd_indexes_query | .[]"`
-			amd_cards_number=`echo "$gpu_detect_json" | jq -c "$amd_indexes_query | length"`
+	if [ -f $gpu_detect_json ]; then
+		gpu_detect_json=`cat $gpu_detect_json`
+		# TODO this block must be refactored to library functions
+		amd_indexes_query='[ . | to_entries[] | select(.value.brand == "amd") | .key ]'
+		amd_indexes_array=`echo "$gpu_detect_json" | jq -r "$amd_indexes_query | .[]"`
+		amd_cards_number=`echo "$gpu_detect_json" | jq -c "$amd_indexes_query | length"`
 
-			nvidia_indexes_query='[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'
-			nvidia_indexes_array=`echo "$gpu_detect_json" | jq -r "$nvidia_indexes_query| .[]"`
-			nvidia_cards_number=`echo "$gpu_detect_json" | jq -c "$nvidia_indexes_query | length"`
+		nvidia_indexes_query='[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'
+		nvidia_indexes_array=`echo "$gpu_detect_json" | jq -r "$nvidia_indexes_query| .[]"`
+		nvidia_cards_number=`echo "$gpu_detect_json" | jq -c "$nvidia_indexes_query | length"`
 
-			# TODO cpus maybe required to use autofans too
-			#cpu_indexes_query='[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'
-			#cpu_indexes_array=`echo "$gpu_detect_json" | jq -r "$cpu_indexes_query"`
-			#cpu_cores_number=`echo "$gpu_detect_json" | jq -c "$cpu_indexes_query | length"`
-			declare -a card_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid ] | .[]'`)
-			# TODO There is must be the way to remove space or use the whole value inside the quotes
-			#declare -a card_names_array=(`echo "$gpu_detect_json" | jq '[ . | to_entries[] | select(.value) | .value.name ] | .[]'`)
-			break
-		else
-			echo2 "${RED}No $gpu_detect_json file exist${NOCOLOR}\n"
-		fi
+		# TODO cpus maybe required to use autofans too
+		#cpu_indexes_query='[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'
+		#cpu_indexes_array=`echo "$gpu_detect_json" | jq -r "$cpu_indexes_query"`
+		#cpu_cores_number=`echo "$gpu_detect_json" | jq -c "$cpu_indexes_query | length"`
+		declare -a card_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid ] | .[]'`)
+		# TODO There is must be the way to remove space or use the whole value inside the quotes
+		#declare -a card_names_array=(`echo "$gpu_detect_json" | jq '[ . | to_entries[] | select(.value) | .value.name ] | .[]'`)
+		break
+	else
+		echo2 "${RED}No $gpu_detect_json file exist${NOCOLOR}\n"
+	fi
 	sleep 10
 done
 
 
 check_gpu () {
-
-if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
-	echo2 "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found\n"
-	exit 1
-fi
-[[ $nvidia_cards_number > 0 ]] && echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number\n" && nvidia-smi -pm 1 > /dev/null 2>&1 && $NS -a GPUPowerMizerMode=1 > /dev/null 2>&1
-[[ $amd_cards_number > 0 ]] && echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number\n" 
-#check config
-if [ ! -f $CONF_FILE ]; then 
-	echo2 "${RED}No config $CONF_FILE${NOCOLOR}\n" 
-	else 
-	. $CONF_FILE
-	MIN_TEMP=$(( TARGET_TEMP-5 ))
-	echo2 "${PURPLE} TARGET TEMP: $TARGET_TEMP°C\n MINER STOP TEMP: $CRITICAL_TEMP°C${NOCOLOR}\n"
-fi
+	if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
+		echo2 "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found\n"
+		exit 1
+	fi
+	[[ $nvidia_cards_number > 0 ]] && echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number\n" && nvidia-smi -pm 1 > /dev/null 2>&1 && $NS -a GPUPowerMizerMode=1 > /dev/null 2>&1
+	[[ $amd_cards_number > 0 ]] && echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number\n"
+	#check config
+	if [ ! -f $CONF_FILE ]; then
+		echo2 "${RED}No config $CONF_FILE${NOCOLOR}\n"
+	else
+		. $CONF_FILE
+		MIN_TEMP=$(( TARGET_TEMP-5 ))
+		echo2 "${PURPLE} TARGET TEMP: $TARGET_TEMP°C\n MINER STOP TEMP: $CRITICAL_TEMP°C${NOCOLOR}\n"
+	fi
 }
 
-get_fan_speed () {
 
+
+get_fan_speed () {
 	local temperature=$1
 	local temperature_previous=$2
 	local gpu_fan_speed=$3
@@ -87,31 +90,46 @@ get_fan_speed () {
 	local i=$5
 
 	if [[ $temperature -lt $MIN_TEMP ]]; then
-			[[ $CHANGE_COEF_FLAG -ne 1 ]] && CHANGE_COEF_FLAG=0
-			target_fan_speed=$(($temperature * ($MIN_COEF-($MIN_TEMP - $temperature) * 2)/100))
-			[[ $target_fan_speed -le $MIN_FAN ]] && target_fan_speed=$MIN_FAN
+		[[ $CHANGE_COEF_FLAG -ne 1 ]] && CHANGE_COEF_FLAG=0
+		target_fan_speed=$(($temperature * ($MIN_COEF-($MIN_TEMP - $temperature) * 2)/100))
+		[[ $target_fan_speed -le $MIN_FAN ]] && target_fan_speed=$MIN_FAN
 	elif [[ $temperature -ge $MIN_TEMP  &&  $temperature -le $TARGET_TEMP ]]; then
 		target_fan_speed=$((  $temperature *(($temperature - $MIN_TEMP) * 4 + $MIN_COEF)/100 ))
-				if [[ -n $temperature_previous && $(( $temperature+1 )) -eq $temperature_previous && $TARGET_TEMP -ge $temperature_previous ]]; then
-								target_fan_speed=$(( $gpu_fan_speed-1 )) 
-				elif [[ -n $temperature_previous && $temperature -eq $temperature_previous ]]; then
-							target_fan_speed=$gpu_fan_speed
-				fi
+		if [[ -n $temperature_previous && $(( $temperature+1 )) -eq $temperature_previous && $TARGET_TEMP -ge $temperature_previous ]]; then
+						target_fan_speed=$(( $gpu_fan_speed-1 ))
+		elif [[ -n $temperature_previous && $temperature -eq $temperature_previous ]]; then
+					target_fan_speed=$gpu_fan_speed
+		fi
 	elif [[ $temperature -gt $TARGET_TEMP ]]; then
 		CHANGE_COEF_FLAG=1
 		target_fan_speed=$(( $temperature *(($temperature - $TARGET_TEMP) * 4 + $MAX_COEF)/100 ))
-		
 	fi
-	[[ $target_fan_speed -gt 100 ]] && target_fan_speed=100  && echo2 "${RED}GPU[$gpu_card_name, $gpu_bus_id]: WARNING: Maximum fan speed!${NOCOLOR}\n"
+
+
+	[[ $target_fan_speed -gt 100 ]] &&
+		target_fan_speed=100
+		#echo2 "${RED}GPU $i [$gpu_bus_id]: WARNING: Maximum fan speed!${NOCOLOR}\n"
+
 	#coloring
 	echo_temp="$temperature°C"
 	[[ $temperature > $TARGET_TEMP ]] && echo_temp="${RED}$temperature°C${NOCOLOR}"
 	[[ $temperature < $MIN_TEMP ]] && echo_temp="${BLUE}$temperature°C${NOCOLOR}"
+
 	echo_fan="$target_fan_speed%"
 	[[ $target_fan_speed > $gpu_fan_speed ]] && echo_fan="${RED}$target_fan_speed%${NOCOLOR}"
 	[[ $target_fan_speed < $gpu_fan_speed ]] && echo_fan="${GREEN}$target_fan_speed%${NOCOLOR}"
-	[[ $6 -eq "Nvidia" ]] && gpu_info+="GPU_$i ${GREEN}$6${NOCOLOR} [$gpu_bus_id]: $echo_temp $echo_fan\n" || gpu_info+="GPU_$i$ ${RED}$6${NOCOLOR} [$gpu_bus_id]: $echo_temp $echo_fan\n"
+
+	[[ $6 -eq "Nvidia" ]] &&
+		gpu_info+="GPU $i ${GREEN}$6${NOCOLOR} [$gpu_bus_id]: $echo_temp $echo_fan" ||
+		gpu_info+="GPU $i$ ${RED}$6${NOCOLOR} [$gpu_bus_id]: $echo_temp $echo_fan"
+
+	[[ $target_fan_speed == 100 ]] &&
+		gpu_info+=" ${RED}MAX${NOCOLOR}"
+
+	gpu_info+="\n"
 }
+
+
 
 ###
 # What we must to do if temperature reached some limits
@@ -130,25 +148,27 @@ event_by_temperature() {
 	[[ $1 -ge $CRITICAL_TEMP ]] && AUTOFAN_MINER="miner-stop" 
 }
 
-event_by_temp_limit () {
 
-if [[ $CHANGE_COEF_FLAG == 0 ]]; then
-		if [[ `screen -ls | grep "miner"` ]]; then
-			if [[ $MIN_COEF > 70 ]]; then
-				MIN_COEF=$(( $MIN_COEF-1 )) 
-				MAX_COEF=$(( $MAX_COEF-1 ))
-				echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}\n"
+
+event_by_temp_limit () {
+	if [[ $CHANGE_COEF_FLAG == 0 ]]; then
+			if [[ `screen -ls | grep "miner"` ]]; then
+				if [[ $MIN_COEF > 70 ]]; then
+					MIN_COEF=$(( $MIN_COEF-1 ))
+					MAX_COEF=$(( $MAX_COEF-1 ))
+					echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}\n"
+				fi
 			fi
-		fi
-elif [[ $CHANGE_COEF_FLAG == 1 ]]; then
-	min_coef_limit=$(( 10100/($TARGET_TEMP+1)-34 ))
-	[[ $MIN_COEF -lt $min_coef_limit ]] && MIN_COEF=$(( $MIN_COEF+2 )) && MAX_COEF=$(( $MAX_COEF+2 )) && echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}\n"
-fi
-CHANGE_COEF_FLAG=
+	elif [[ $CHANGE_COEF_FLAG == 1 ]]; then
+		min_coef_limit=$(( 10100/($TARGET_TEMP+1)-34 ))
+		[[ $MIN_COEF -lt $min_coef_limit ]] && MIN_COEF=$(( $MIN_COEF+2 )) && MAX_COEF=$(( $MAX_COEF+2 )) && echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}\n"
+	fi
+	CHANGE_COEF_FLAG=
 }
 
-action_by_event() {
 
+
+action_by_event() {
 	case $AUTOFAN_MINER in
 		"miner-start")
 		[[ ! `screen -ls | grep "miner"` ]] && miner start && echo2 "${GREEN}Miner started ${NOCOLOR}\n"
@@ -188,6 +208,8 @@ nvidia_auto_fan_control ()
 	[[ -n $args ]] && $NS $args > /dev/null 2>&1
 }
 
+
+
 amd_auto_fan_control ()
 {
 	for index in ${amd_indexes_array[@]}
@@ -209,8 +231,9 @@ amd_auto_fan_control ()
 	done
 }
 
-auto_fan_control() {
 
+
+auto_fan_control() {
 	while true;	do
 	[[ -f $CONF_FILE ]] && . $CONF_FILE
 		echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}\n"
@@ -231,9 +254,12 @@ auto_fan_control() {
 			action_by_event
 			event_by_temp_limit
 		fi
-	sleep 20 
+	#sleep $SLEEP_TIME
+	read -t $SLEEP_TIME
 	done
 }
+
+
 
 case $1 in
 	-scr)

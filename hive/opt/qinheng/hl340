@@ -4,7 +4,7 @@
         echo "Usage: `basename $0` ping|reset[port]" &&
         exit 1
 
-PORT=/dev/ttyUSB0
+PORT=/dev/china_dog0
 
 [[ ! -z $2 ]] &&
         PORT=$2 ||
