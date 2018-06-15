@@ -46,8 +46,9 @@ function miner_stats {
 				khs=`echo $stats_raw | jq -r '.result[].speed_sps' | awk '{s+=$1} END {print s/1000}'` #sum up and convert to khs
 				local ac=$(jq '[.result[].accepted_shares] | add' <<< "$stats_raw")
 				local rj=$(jq '[.result[].rejected_shares] | add' <<< "$stats_raw")
-				stats=$(jq -c --arg ac "$ac" --arg rj "$rj" \
-					'{speed_sps: [.result[].speed_sps], busid: [.result[].busid[5:]|ascii_downcase], start_time:
+				local fan=$(jq '.fan' <<< $gpu_stats)
+				stats=$(jq -c --arg ac "$ac" --arg rj "$rj"  --argjson fan "$fan"\
+					'{speed_sps: [.result[].speed_sps], temp: [.result[].temperature], $fan, busid: [.result[].busid[5:]|ascii_downcase], start_time:
 					.result[0].start_time, ar: [$ac, $rj]}' <<< "$stats_raw")
 			fi
 		;;
