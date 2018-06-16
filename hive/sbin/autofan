@@ -8,7 +8,7 @@ HIVE_GPU_STATS_LOG="/run/hive/gpu-stats.json"
 export DISPLAY=":0"
 
 NS='/usr/bin/nvidia-settings'
-AUTOFAN_LOG="/var/log/hive-autofan.log"
+#AUTOFAN_LOG="/var/log/hive-autofan.log"
 
 RIG_CONF="/hive-config/rig.conf"
 CONF_FILE="/hive-config/autofan.conf"
@@ -33,8 +33,8 @@ NO_AMD=0
 # Log write
 function echo2 {
 	#echo -e "$1" > /dev/tty1
-	echo -e "$1" >> $AUTOFAN_LOG
-	echo -en "$1"
+	#echo -e "$1" >> $AUTOFAN_LOG
+	echo -e "$1"
 }
 
 
@@ -60,7 +60,7 @@ while true; do
 		#declare -a card_names_array=(`echo "$gpu_detect_json" | jq '[ . | to_entries[] | select(.value) | .value.name ] | .[]'`)
 		break
 	else
-		echo2 "${RED}No $gpu_detect_json file exist${NOCOLOR}\n"
+		echo2 "${RED}No $gpu_detect_json file exist${NOCOLOR}"
 	fi
 	sleep 10
 done
@@ -68,18 +68,23 @@ done
 
 check_gpu () {
 	if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
-		echo2 "No one ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards found\n"
+		echo2 "No ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards detected"
 		exit 1
 	fi
-	[[ $nvidia_cards_number > 0 ]] && echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number\n" && nvidia-smi -pm 1 > /dev/null 2>&1 && $NS -a GPUPowerMizerMode=1 > /dev/null 2>&1
-	[[ $amd_cards_number > 0 ]] && echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number\n"
+
+	[[ $nvidia_cards_number > 0 ]] &&
+		echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number" && nvidia-smi -pm 1 > /dev/null 2>&1 && $NS -a GPUPowerMizerMode=1 > /dev/null 2>&1
+
+	[[ $amd_cards_number > 0 ]] &&
+		echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number"
+
 	#check config
 	if [ ! -f $CONF_FILE ]; then
-		echo2 "${RED}No config $CONF_FILE${NOCOLOR}\n"
+		echo2 "${RED}No config $CONF_FILE${NOCOLOR}"
 	else
 		. $CONF_FILE
 		MIN_TEMP=$(( TARGET_TEMP-5 ))
-		echo2 "${PURPLE} TARGET TEMP: $TARGET_TEMP°C\n MINER STOP TEMP: $CRITICAL_TEMP°C${NOCOLOR}\n"
+		echo2 "${PURPLE} TARGET TEMP: $TARGET_TEMP°C\n MINER STOP TEMP: $CRITICAL_TEMP°C${NOCOLOR}"
 	fi
 }
 
@@ -135,16 +140,15 @@ get_fan_speed () {
 ###
 # What we must to do if temperature reached some limits
 event_by_temperature() {
-
-	if [[ ! `screen -ls | grep "miner"` ]]; then  
-				local gpu_temp_all
-				for gpu_temp_all in ${temperatures_array[@]}
-				do 
-					if [[ $gpu_temp_all > $MIN_TEMP ]]; then 
-							AUTOFAN_MINER=$AUTOFAN_MINER && break
-					else AUTOFAN_MINER="miner-start"
-					fi
-				done
+	if [[ ! `screen -ls | grep "miner"` ]]; then
+		local gpu_temp_all
+		for gpu_temp_all in ${temperatures_array[@]}
+		do
+			if [[ $gpu_temp_all > $MIN_TEMP ]]; then
+					AUTOFAN_MINER=$AUTOFAN_MINER && break
+			else AUTOFAN_MINER="miner-start"
+			fi
+		done
 	fi
 	[[ $1 -ge $CRITICAL_TEMP ]] && AUTOFAN_MINER="miner-stop" 
 }
@@ -160,12 +164,13 @@ min_coef_limit=
 				if [[ $MIN_COEF -gt $(( $MIN_FAN*100/$MIN_TEMP+2 )) ]]; then
 					MIN_COEF=$(( $MIN_COEF-1 ))
 					MAX_COEF=$(( $MAX_COEF-1 ))
-					echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}\n"
+					echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}"
 				fi
 			fi
 	elif [[ $CHANGE_COEF_FLAG == 1 ]]; then
 		#min_coef_limit_HI
-		[[ $MIN_COEF -lt $(( 10100/($TARGET_TEMP+1)-34 )) ]] && MIN_COEF=$(( $MIN_COEF+2 )) && MAX_COEF=$(( $MAX_COEF+2 )) && echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}\n"
+		[[ $MIN_COEF -lt $(( 10100/($TARGET_TEMP+1)-34 )) ]] && MIN_COEF=$(( $MIN_COEF+2 )) && MAX_COEF=$(( $MAX_COEF+2 )) &&
+			echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}"
 	fi
 	CHANGE_COEF_FLAG=
 
@@ -176,11 +181,17 @@ min_coef_limit=
 action_by_event() {
 	case $AUTOFAN_MINER in
 		"miner-start")
-		[[ ! `screen -ls | grep "miner"` ]] && miner start && echo2 "${GREEN}Miner started ${NOCOLOR}\n"
-		[[ -f $RIG_CONF ]] && . $RIG_CONF && [[ $WD_ENABLED==1 ]] && wd start
+			[[ ! `screen -ls | grep "miner"` ]] &&
+				miner start &&
+				echo2 "${GREEN}Miner started ${NOCOLOR}"
+
+			[[ -f $RIG_CONF ]] && . $RIG_CONF && [[ $WD_ENABLED==1 ]] &&
+				wd start
 		;;
+
 		"miner-stop")
-		 [[ `screen -ls | grep "miner"` ]] && miner stop && wd stop && echo2 "${RED}Miner stopped ${NOCOLOR}\n"
+			[[ `screen -ls | grep "miner"` ]] && miner stop && wd stop &&
+				echo2 "${RED}Miner stopped ${NOCOLOR}"
 		;;
 	esac
 	AUTOFAN_MINER=
@@ -231,44 +242,61 @@ amd_auto_fan_control ()
 
 auto_fan_control() {
 	while true;	do
-	[[ -f $CONF_FILE ]] && . $CONF_FILE
-		echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}\n"
+		TARGET_TEMP= #unset tt if it's not in config anymore
+		[[ -f $CONF_FILE ]] && . $CONF_FILE
+
+		echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
 		#check if exist .conf
 		if [[ -n $TARGET_TEMP && -f $CONF_FILE && -f $HIVE_GPU_STATS_LOG ]]; then 
 			MIN_TEMP=$(( TARGET_TEMP-5 ))
 			declare -a temperatures_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".temp | .[]"`)
 			declare -a fans_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".fan | .[]"`)
 			gpu_info=
+
 			if (( $nvidia_cards_number > 0 )); then
 				nvidia_auto_fan_control
 			fi
+
 			if [[ $amd_cards_number > 0 && $NO_AMD == 0 ]]; then #enable AMD 
 				amd_auto_fan_control
 			fi
+
 			echo2 "$gpu_info"
+
 			declare -a temperatures_array_previous=(${temperatures_array[@]})
+
 			action_by_event
 			event_by_temp_limit
 		fi
-	#sleep $SLEEP_TIME
-	read -t $SLEEP_TIME 
+
+		#sleep $SLEEP_TIME
+		read -t $SLEEP_TIME
 	done
 }
 
 
 
 case $1 in
-	-scr)
-		screen -x -S autofan
+	run)
+		#check running
+#		process_count=`ps aux | grep "autofan" | grep -v grep | grep -v $$ | wc -l`
+#		if [[ $process_count -gt 1 ]]; then #this process and another
+#			echo -e "${RED}Autofan is already running${NOCOLOR}\nRun ${CYAN}autofan screen${NOCOLOR} to open it"
+#			exit 1
+#		fi
+
+		check_gpu
+		auto_fan_control
 	;;
-	
+
 	*)
-	#check double
-		screen_count=`screen -ls | grep "\.autofan" | grep -v $PPID | wc -l`
-		if [[ $screen_count -gt 0 ]]; then
-			echo -e "${RED}Autofan screen is already running${NOCOLOR}\nRun ${CYAN}autofan -scr${NOCOLOR} to resume screen"
-			exit 1
+		session_count=`screen -ls autofan | grep autofan | wc -l`
+		if [[ $session_count > 0 ]]; then
+			screen -x -S autofan
+		else #start new screen
+			screen -dm -S autofan autofan run
+			echo2 "Autofan screen stared"
 		fi
-		check_gpu && auto_fan_control
 	;;
+
 esac
