@@ -15,21 +15,24 @@ CONF_FILE="/hive-config/autofan.conf"
 
 MIN_COEF=80
 MAX_COEF=110
+SLEEP_TIME=20
 
 #settings (autofan.conf file content)
+#minimal fan speed
 MIN_FAN=40
+#target GPU temperature
 TARGET_TEMP=
+#temperature of stop miner
 CRITICAL_TEMP=75
+#AMD fan control (AMD control enable-0/AMD control disable-1)
 NO_AMD=0
-#
+##########
 
-
-SLEEP_TIME=20
 
 ###
 # Log write
 function echo2 {
-	echo -e "$1" > /dev/tty1
+	#echo -e "$1" > /dev/tty1
 	echo -e "$1" >> $AUTOFAN_LOG
 	echo -en "$1"
 }
@@ -94,9 +97,9 @@ get_fan_speed () {
 		target_fan_speed=$(($temperature * ($MIN_COEF-($MIN_TEMP - $temperature) * 2)/100))
 		[[ $target_fan_speed -le $MIN_FAN ]] && target_fan_speed=$MIN_FAN
 	elif [[ $temperature -ge $MIN_TEMP  &&  $temperature -le $TARGET_TEMP ]]; then
-		target_fan_speed=$((  $temperature *(($temperature - $MIN_TEMP) * 4 + $MIN_COEF)/100 ))
+		target_fan_speed=$(( $temperature *(($temperature - $MIN_TEMP) * 4 + $MIN_COEF)/100 ))
 		if [[ -n $temperature_previous && $(( $temperature+1 )) -eq $temperature_previous && $TARGET_TEMP -ge $temperature_previous ]]; then
-						target_fan_speed=$(( $gpu_fan_speed-1 ))
+					target_fan_speed=$(( $gpu_fan_speed-1 ))
 		elif [[ -n $temperature_previous && $temperature -eq $temperature_previous ]]; then
 					target_fan_speed=$gpu_fan_speed
 		fi
@@ -105,26 +108,24 @@ get_fan_speed () {
 		target_fan_speed=$(( $temperature *(($temperature - $TARGET_TEMP) * 4 + $MAX_COEF)/100 ))
 	fi
 
-
 	[[ $target_fan_speed -gt 100 ]] &&
 		target_fan_speed=100
-		#echo2 "${RED}GPU $i [$gpu_bus_id]: WARNING: Maximum fan speed!${NOCOLOR}\n"
 
 	#coloring
 	echo_temp="$temperature°C"
-	[[ $temperature > $TARGET_TEMP ]] && echo_temp="${RED}$temperature°C${NOCOLOR}"
-	[[ $temperature < $MIN_TEMP ]] && echo_temp="${BLUE}$temperature°C${NOCOLOR}"
+	[[ $temperature -gt $TARGET_TEMP ]] && echo_temp="${RED}$temperature°C${NOCOLOR}"
+	[[ $temperature -lt $MIN_TEMP ]] && echo_temp="${BLUE}$temperature°C${NOCOLOR}"
 
 	echo_fan="$target_fan_speed%"
-	[[ $target_fan_speed > $gpu_fan_speed ]] && echo_fan="${RED}$target_fan_speed%${NOCOLOR}"
-	[[ $target_fan_speed < $gpu_fan_speed ]] && echo_fan="${GREEN}$target_fan_speed%${NOCOLOR}"
+	[[ $target_fan_speed -gt $gpu_fan_speed || $target_fan_speed -eq 100 ]] && echo_fan="${RED}$target_fan_speed%${NOCOLOR}"
+	[[ $target_fan_speed -lt $gpu_fan_speed ]] && echo_fan="${GREEN}$target_fan_speed%${NOCOLOR}"
 
 	[[ $6 -eq "Nvidia" ]] &&
 		gpu_info+="GPU $i ${GREEN}$6${NOCOLOR} [$gpu_bus_id]: $echo_temp $echo_fan" ||
-		gpu_info+="GPU $i$ ${RED}$6${NOCOLOR} [$gpu_bus_id]: $echo_temp $echo_fan"
+		gpu_info+="GPU $i ${RED}$6${NOCOLOR} [$gpu_bus_id]: $echo_temp $echo_fan"
 
-	[[ $target_fan_speed == 100 ]] &&
-		gpu_info+=" ${RED}MAX${NOCOLOR}"
+#	[[ $target_fan_speed == 100 ]] &&
+#		gpu_info+=" ${RED}MAX${NOCOLOR}"
 
 	gpu_info+="\n"
 }
@@ -136,14 +137,14 @@ get_fan_speed () {
 event_by_temperature() {
 
 	if [[ ! `screen -ls | grep "miner"` ]]; then  
-								local gpu_temp_all
-								for gpu_temp_all in ${temperatures_array[@]}
-								do 
-									if [[ $gpu_temp_all > $MIN_TEMP ]]; then 
-											AUTOFAN_MINER=$AUTOFAN_MINER && break
-									else AUTOFAN_MINER="miner-start"
-									fi
-								done
+				local gpu_temp_all
+				for gpu_temp_all in ${temperatures_array[@]}
+				do 
+					if [[ $gpu_temp_all > $MIN_TEMP ]]; then 
+							AUTOFAN_MINER=$AUTOFAN_MINER && break
+					else AUTOFAN_MINER="miner-start"
+					fi
+				done
 	fi
 	[[ $1 -ge $CRITICAL_TEMP ]] && AUTOFAN_MINER="miner-stop" 
 }
@@ -151,19 +152,23 @@ event_by_temperature() {
 
 
 event_by_temp_limit () {
+
+min_coef_limit=
 	if [[ $CHANGE_COEF_FLAG == 0 ]]; then
 			if [[ `screen -ls | grep "miner"` ]]; then
-				if [[ $MIN_COEF > 70 ]]; then
+				#min_coef_limit_LOW
+				if [[ $MIN_COEF -gt $(( $MIN_FAN*100/$MIN_TEMP+2 )) ]]; then
 					MIN_COEF=$(( $MIN_COEF-1 ))
 					MAX_COEF=$(( $MAX_COEF-1 ))
 					echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}\n"
 				fi
 			fi
 	elif [[ $CHANGE_COEF_FLAG == 1 ]]; then
-		min_coef_limit=$(( 10100/($TARGET_TEMP+1)-34 ))
-		[[ $MIN_COEF -lt $min_coef_limit ]] && MIN_COEF=$(( $MIN_COEF+2 )) && MAX_COEF=$(( $MAX_COEF+2 )) && echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}\n"
+		#min_coef_limit_HI
+		[[ $MIN_COEF -lt $(( 10100/($TARGET_TEMP+1)-34 )) ]] && MIN_COEF=$(( $MIN_COEF+2 )) && MAX_COEF=$(( $MAX_COEF+2 )) && echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}\n"
 	fi
 	CHANGE_COEF_FLAG=
+
 }
 
 
@@ -193,14 +198,9 @@ nvidia_auto_fan_control ()
 		local gpu_temperature_previous=${temperatures_array_previous[index]}
 		if [[ -z $gpu_temperature_previous ]]; then gpu_temperature_previous=0; fi
 		local gpu_fan_speed=${fans_array[index]}
-		# TODO broken, spaces trouble
-		#local card_name=${card_names_array[index]}
-		#local card_name=
 		local card_bus_id=${card_bus_ids_array[index]}
 		local brand="Nvidia"
 		event_by_temperature $gpu_temperature
-		#echo -e "GPU:$index T=$gpu_temperature FAN=$gpu_fan_speed%"
-		#local TARGET_FAN_SPEED=$(get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $card_name)
 		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $index $brand
 		#not set fan_speed if not changed
 		[[ $target_fan_speed -ne $gpu_fan_speed ]] && args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan:$index]/GPUTargetFanSpeed=$target_fan_speed"
@@ -219,9 +219,6 @@ amd_auto_fan_control ()
 		local gpu_temperature_previous=${temperatures_array_previous[index]}
 		if [[ -z $gpu_temperature_previous ]]; then gpu_temperature_previous=0; fi
 		local gpu_fan_speed=${fans_array[index]}
-		# TODO broken, spaces trouble
-		#local card_name=${card_names_array[index]}
-		#local card_name=
 		local card_bus_id=${card_bus_ids_array[index]}
 		local brand="   ADM"
 		event_by_temperature $gpu_temperature
@@ -230,7 +227,6 @@ amd_auto_fan_control ()
 		[[ $target_fan_speed -ne $gpu_fan_speed ]] && wolfamdctrl -i $index --set-fanspeed $target_fan_speed 1>/dev/null
 	done
 }
-
 
 
 auto_fan_control() {
@@ -255,7 +251,7 @@ auto_fan_control() {
 			event_by_temp_limit
 		fi
 	#sleep $SLEEP_TIME
-	read -t $SLEEP_TIME
+	read -t $SLEEP_TIME 
 	done
 }
 
