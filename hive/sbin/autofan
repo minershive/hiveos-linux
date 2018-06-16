@@ -168,7 +168,7 @@ min_coef_limit=
 		[[ $MIN_COEF -lt $(( 10100/($TARGET_TEMP+1)-34 )) ]] && MIN_COEF=$(( $MIN_COEF+2 )) && MAX_COEF=$(( $MAX_COEF+2 )) && echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}\n"
 	fi
 	CHANGE_COEF_FLAG=
-	echo "MIN_COEF=$MIN_COEF MAX_COEF=$MAX_COEF hi=$(( 10100/($TARGET_TEMP+1)-34 )) low=$(( $MIN_FAN*100/$MIN_TEMP+2 ))"
+
 }
 
 
