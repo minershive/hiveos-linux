@@ -184,12 +184,34 @@ function miner_stats {
 				#stats=`echo $stats_raw | jq '{ hs: [.result[].sol_ps], temp: [.result[].temperature], uptime: "'$uptime'"}'`
 				#stats=$(jq '{ hs: [.result[].sol_ps], uptime: "'$uptime'"}' <<< $stats_raw)
 				#stats=$(jq -s '.[0] * .[1]' <<< "$stats $nvidiastats")
-				local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
-				local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
+				#local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
+				#local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
 				local ac=`echo $stats_raw | jq '[.result[].accepted_shares] | add'`
 				local rj=`echo $stats_raw | jq '[.result[].rejected_shares] | add'`
-				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" \
-					'{ hs: [.result[].sol_ps], $temp, $fan, $uptime, ar: [$ac, $rj] }' <<< "$stats_raw")
+				#All fans speed array
+				local fan=$(jq -r ".fan | .[]" <<< $gpu_stats)
+				#DSTM's busid array
+				local bus_id_array=$(jq -r '[.result[].gpu_pci_bus_id]' <<< "$stats_raw")
+				#All busid array
+				local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid[1:2] ] | .[]'`)
+				#Formating arrays
+				bus_id_array=`sed 's/\n/ /' <<< $bus_id_array`
+				fan=`sed 's/\n/ /' <<< $fan`
+				IFS=', ' read -r -a bus_id_array <<< "$bus_id_array"
+				IFS=' ' read -r -a fan <<< "$fan"
+				#busid's equality
+				local fans_array=
+				for ((i = 0; i < ${#all_bus_ids_array[@]}; i++)) 
+					do
+						for ((j = 0; j < ${#bus_id_array[@]}; j++))
+							do
+								if [ "${all_bus_ids_array[$i]}" == "${bus_id_array[$j]}" ]; then
+									fans_array+=("${fan[$i]}")
+								fi
+							done
+					done
+				stats=$(jq --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" --arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" \
+					'{ hs: [.result[].sol_ps], temp: [.result[].temperature], $fan, $uptime, ar: [$ac, $rj] }' <<< "$stats_raw")
 			fi
 		;;
 		bminer) #@see https://www.bminer.me/references/
