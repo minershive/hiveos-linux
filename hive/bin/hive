@@ -273,6 +273,11 @@ miner start
 	wd start
 
 
+
+
+echo2 "> Starting autofan"
+autofan
+
 #k10temp for cpu temp
 modprobe k10temp
 if [ $(modinfo k10temp | grep alias | wc -l) -lt 12 ]; then
