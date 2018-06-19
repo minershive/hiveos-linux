@@ -46,8 +46,30 @@ function miner_stats {
 				khs=`echo $stats_raw | jq -r '.result[].speed_sps' | awk '{s+=$1} END {print s/1000}'` #sum up and convert to khs
 				local ac=$(jq '[.result[].accepted_shares] | add' <<< "$stats_raw")
 				local rj=$(jq '[.result[].rejected_shares] | add' <<< "$stats_raw")
-				stats=$(jq -c --arg ac "$ac" --arg rj "$rj" \
-					'{speed_sps: [.result[].speed_sps], busid: [.result[].busid[5:]|ascii_downcase], start_time:
+				#All fans speed array
+				local fan=$(jq -r ".fan | .[]" <<< $gpu_stats)
+				#EWBF's busid array
+				local bus_id_array=$(jq -r '[.result[].busid[5:]] | .[]' <<< "$stats_raw")
+				#All busid array
+				local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid ] | .[]'`)
+				#Formating arrays
+				bus_id_array=`sed 's/\n/ /' <<< $bus_id_array`
+				fan=`sed 's/\n/ /' <<< $fan`
+				IFS=' ' read -r -a bus_id_array <<< "$bus_id_array"
+				IFS=' ' read -r -a fan <<< "$fan"
+				#busid's equality
+				local fans_array=
+				for ((i = 0; i < ${#all_bus_ids_array[@]}; i++)) 
+					do
+						for ((j = 0; j < ${#bus_id_array[@]}; j++))
+							do
+								if [ "${all_bus_ids_array[$i]}" == "${bus_id_array[$j]}" ]; then
+									fans_array+=("${fan[$i]}")
+								fi
+							done
+					done
+				stats=$(jq -c --arg ac "$ac" --arg rj "$rj"  --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`"\
+					'{speed_sps: [.result[].speed_sps], temp: [.result[].temperature], $fan, busid: [.result[].busid[5:]|ascii_downcase], start_time:
 					.result[0].start_time, ar: [$ac, $rj]}' <<< "$stats_raw")
 			fi
 		;;
@@ -162,12 +184,34 @@ function miner_stats {
 				#stats=`echo $stats_raw | jq '{ hs: [.result[].sol_ps], temp: [.result[].temperature], uptime: "'$uptime'"}'`
 				#stats=$(jq '{ hs: [.result[].sol_ps], uptime: "'$uptime'"}' <<< $stats_raw)
 				#stats=$(jq -s '.[0] * .[1]' <<< "$stats $nvidiastats")
-				local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
-				local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
+				#local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
+				#local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
 				local ac=`echo $stats_raw | jq '[.result[].accepted_shares] | add'`
 				local rj=`echo $stats_raw | jq '[.result[].rejected_shares] | add'`
-				stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" \
-					'{ hs: [.result[].sol_ps], $temp, $fan, $uptime, ar: [$ac, $rj] }' <<< "$stats_raw")
+				#All fans speed array
+				local fan=$(jq -r ".fan | .[]" <<< $gpu_stats)
+				#DSTM's busid array
+				local bus_id_array=$(jq -r '[.result[].gpu_pci_bus_id]' <<< "$stats_raw")
+				#All busid array
+				local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid[1:2] ] | .[]'`)
+				#Formating arrays
+				bus_id_array=`sed 's/\n/ /' <<< $bus_id_array`
+				fan=`sed 's/\n/ /' <<< $fan`
+				IFS=', ' read -r -a bus_id_array <<< "$bus_id_array"
+				IFS=' ' read -r -a fan <<< "$fan"
+				#busid's equality
+				local fans_array=
+				for ((i = 0; i < ${#all_bus_ids_array[@]}; i++)) 
+					do
+						for ((j = 0; j < ${#bus_id_array[@]}; j++))
+							do
+								if [ "${all_bus_ids_array[$i]}" == "${bus_id_array[$j]}" ]; then
+									fans_array+=("${fan[$i]}")
+								fi
+							done
+					done
+				stats=$(jq --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" --arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" \
+					'{ hs: [.result[].sol_ps], temp: [.result[].temperature], $fan, $uptime, ar: [$ac, $rj] }' <<< "$stats_raw")
 			fi
 		;;
 		bminer) #@see https://www.bminer.me/references/
