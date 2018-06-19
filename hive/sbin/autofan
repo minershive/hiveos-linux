@@ -3,7 +3,7 @@ source /etc/environment
 . colors
 
 gpu_detect_json="/run/hive/gpu-detect.json"
-HIVE_GPU_STATS_LOG="/run/hive/gpu-stats.json"
+gpu_stats_json="/run/hive/gpu-stats.json"
 
 export DISPLAY=":0"
 
@@ -17,17 +17,23 @@ MIN_COEF=80
 MAX_COEF=110
 SLEEP_TIME=20
 
-#settings (autofan.conf file content)
-#minimal fan speed
-MIN_FAN=40
+#######################################################################
+#settings (autofan.conf file content), default values
 #target GPU temperature
-TARGET_TEMP=
+DEF_TARGET_TEMP=
+#minimal fan speed
+DEF_MIN_FAN=30
+DEF_MAX_FAN=100
 #temperature of stop miner
-CRITICAL_TEMP=75
+DEF_CRITICAL_TEMP=85
 #AMD fan control (AMD control enable-0/AMD control disable-1)
-NO_AMD=0
-##########
+DEF_NO_AMD=0
+#######################################################################
 
+
+
+#we will restart miner only it was stopped by this script
+miner_stopped_by_overheat=0
 
 ###
 # Log write
@@ -81,10 +87,6 @@ check_gpu () {
 	#check config
 	if [ ! -f $CONF_FILE ]; then
 		echo2 "${RED}No config $CONF_FILE${NOCOLOR}"
-	else
-		. $CONF_FILE
-		MIN_TEMP=$(( TARGET_TEMP-5 ))
-		echo2 "${PURPLE} TARGET TEMP: $TARGET_TEMP°C\n MINER STOP TEMP: $CRITICAL_TEMP°C${NOCOLOR}"
 	fi
 }
 
@@ -100,7 +102,7 @@ get_fan_speed () {
 	if [[ $temperature -lt $MIN_TEMP ]]; then
 		[[ $CHANGE_COEF_FLAG -ne 1 ]] && CHANGE_COEF_FLAG=0
 		target_fan_speed=$(($temperature * ($MIN_COEF-($MIN_TEMP - $temperature) * 2)/100))
-		[[ $target_fan_speed -le $MIN_FAN ]] && target_fan_speed=$MIN_FAN
+		#[[ $target_fan_speed -le $MIN_FAN ]] && target_fan_speed=$MIN_FAN
 	elif [[ $temperature -ge $MIN_TEMP  &&  $temperature -le $TARGET_TEMP ]]; then
 		target_fan_speed=$(( $temperature *(($temperature - $MIN_TEMP) * 4 + $MIN_COEF)/100 ))
 		if [[ -n $temperature_previous && $(( $temperature+1 )) -eq $temperature_previous && $TARGET_TEMP -ge $temperature_previous ]]; then
@@ -108,11 +110,14 @@ get_fan_speed () {
 		elif [[ -n $temperature_previous && $temperature -eq $temperature_previous ]]; then
 					target_fan_speed=$gpu_fan_speed
 		fi
+
 	elif [[ $temperature -gt $TARGET_TEMP ]]; then
 		CHANGE_COEF_FLAG=1
 		target_fan_speed=$(( $temperature *(($temperature - $TARGET_TEMP) * 4 + $MAX_COEF)/100 ))
 	fi
-
+	#set MIN_FAN speed if need
+	[[ $target_fan_speed -lt $MIN_FAN ]] && 
+		target_fan_speed=$MIN_FAN
 	[[ $target_fan_speed -gt 100 ]] &&
 		target_fan_speed=100
 
@@ -122,12 +127,13 @@ get_fan_speed () {
 	[[ $temperature -lt $MIN_TEMP ]] && echo_temp="${BLUE}$temperature°C${NOCOLOR}"
 
 	echo_fan="$target_fan_speed%"
-	[[ $target_fan_speed -gt $gpu_fan_speed || $target_fan_speed -eq 100 ]] && echo_fan="${RED}$target_fan_speed%${NOCOLOR}"
-	[[ $target_fan_speed -lt $gpu_fan_speed ]] && echo_fan="${GREEN}$target_fan_speed%${NOCOLOR}"
+	[[ $target_fan_speed -gt $gpu_fan_speed ]] && echo_fan="${YELLOW}$target_fan_speed% ↑${NOCOLOR}"
+	[[ $target_fan_speed -lt $gpu_fan_speed ]] && echo_fan="${GREEN}$target_fan_speed% ↓${NOCOLOR}"
+	[[ $target_fan_speed -eq 100 ]] && echo_fan="${RED}$target_fan_speed%${NOCOLOR}"
 
-	[[ $6 -eq "Nvidia" ]] &&
+	[[ $6 == "Nvidia" ]] &&
 		gpu_info+="GPU $i ${GREEN}$6${NOCOLOR} [$gpu_bus_id]: $echo_temp $echo_fan" ||
-		gpu_info+="GPU $i ${RED}$6${NOCOLOR} [$gpu_bus_id]: $echo_temp $echo_fan"
+		gpu_info+="GPU $i ${RED}$6   ${NOCOLOR} [$gpu_bus_id]: $echo_temp $echo_fan"
 
 #	[[ $target_fan_speed == 100 ]] &&
 #		gpu_info+=" ${RED}MAX${NOCOLOR}"
@@ -139,70 +145,98 @@ get_fan_speed () {
 
 ###
 # What we must to do if temperature reached some limits
-event_by_temperature() {
-	if [[ ! `screen -ls | grep "miner"` ]]; then
-		local gpu_temp_all
-		for gpu_temp_all in ${temperatures_array[@]}
-		do
-			if [[ $gpu_temp_all > $MIN_TEMP ]]; then
-					AUTOFAN_MINER=$AUTOFAN_MINER && break
-			else AUTOFAN_MINER="miner-start"
+check_overheat() {
+	if [[ $miner_stopped_by_overheat -eq 1 && ! `screen -ls | grep "miner"` ]]; then
+#	if [[ true ]]; then
+		local t
+		local allisok=1
+		for t in ${temperatures_array[@]}; do
+			if [[ $t -ge $(($CRITICAL_TEMP - 10)) ]]; then #cold enough to start miner again
+				allisok=0
+				break
+			fi
+		done
+		if [[ $allisok == 1 ]]; then
+			miner_stopped_by_overheat=0 #let's forget about this
+			do_miner_action "miner-start"
+			local msg="GPU cooled down, mining resumed"
+			echo -en "${GREEN}"
+			message ok "$msg"
+			echo -en "${NOCOLOR}"
+			#echo2 "${GREEN}$msg${NOCOLOR}"
+		fi
+	elif [[ $miner_stopped_by_overheat -eq 0 ]]; then
+		local t
+		for t in ${temperatures_array[@]}; do
+			if [[ $t -ge $CRITICAL_TEMP ]]; then
+				miner_stopped_by_overheat=1
+				do_miner_action "miner-stop"
+				local msg="GPU reached ${CRITICAL_TEMP}°C, mining stopped"
+				echo -en "${RED}"
+				message warning "$msg"
+				echo -en "${NOCOLOR}"
+				#echo2 "${RED}$msg${NOCOLOR}"
+				break
 			fi
 		done
 	fi
-	[[ $1 -ge $CRITICAL_TEMP ]] && AUTOFAN_MINER="miner-stop" 
+}
+
+
+do_miner_action() {
+	case $1 in
+		"miner-start")
+			if [[ ! `screen -ls | grep "miner"` ]]; then
+				miner start
+				#echo2 "${GREEN}Miner started${NOCOLOR}"
+			fi
+
+			if [[ -f $RIG_CONF ]]; then
+				. $RIG_CONF
+				[[ $WD_ENABLED==1 ]] &&
+					wd start
+			fi
+		;;
+
+		"miner-stop")
+			if [[ `screen -ls | grep "miner"` ]]; then
+				miner stop
+				wd stop
+				#echo2 "${RED}Miner stopped${NOCOLOR}"
+			fi
+		;;
+	esac
 }
 
 
 
 event_by_temp_limit () {
-
-min_coef_limit=
+	min_coef_limit=
 	if [[ $CHANGE_COEF_FLAG == 0 ]]; then
-			if [[ `screen -ls | grep "miner"` ]]; then
-				#min_coef_limit_LOW
-				if [[ $MIN_COEF -gt $(( $MIN_FAN*100/$MIN_TEMP+2 )) ]]; then
-					MIN_COEF=$(( $MIN_COEF-1 ))
-					MAX_COEF=$(( $MAX_COEF-1 ))
-					echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}"
-				fi
+		if [[ `screen -ls | grep "miner"` ]]; then
+			#min_coef_limit_LOW
+			if [[ $MIN_COEF -gt $(( $MIN_FAN*100/$MIN_TEMP+2 )) ]]; then
+				MIN_COEF=$(( $MIN_COEF-1 ))
+				MAX_COEF=$(( $MAX_COEF-1 ))
+				echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF (↓)${NOCOLOR}\n"
 			fi
+		fi
 	elif [[ $CHANGE_COEF_FLAG == 1 ]]; then
 		#min_coef_limit_HI
 		[[ $MIN_COEF -lt $(( 10100/($TARGET_TEMP+1)-34 )) ]] && MIN_COEF=$(( $MIN_COEF+2 )) && MAX_COEF=$(( $MAX_COEF+2 )) &&
-			echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF${NOCOLOR}"
+			echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF (↑)${NOCOLOR}\n"
 	fi
 	CHANGE_COEF_FLAG=
-
 }
 
 
-
-action_by_event() {
-	case $AUTOFAN_MINER in
-		"miner-start")
-			[[ ! `screen -ls | grep "miner"` ]] &&
-				miner start &&
-				echo2 "${GREEN}Miner started ${NOCOLOR}"
-
-			[[ -f $RIG_CONF ]] && . $RIG_CONF && [[ $WD_ENABLED==1 ]] &&
-				wd start
-		;;
-
-		"miner-stop")
-			[[ `screen -ls | grep "miner"` ]] && miner stop && wd stop &&
-				echo2 "${RED}Miner stopped ${NOCOLOR}"
-		;;
-	esac
-	AUTOFAN_MINER=
-}
 
 
 # TODO merge with amd_auto_fan_control
-nvidia_auto_fan_control ()
-{
+nvidia_auto_fan_control () {
 	args=
-	for index in ${nvidia_indexes_array[@]}
+	#prev condition doesn't work on mixed rig and built-in vga
+	for (( index = 0; index < $nvidia_cards_number; index++ ))
 	do
 		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on nvidia_indexes_array[@] as argument
 		local gpu_temperature=${temperatures_array[index]}
@@ -211,7 +245,7 @@ nvidia_auto_fan_control ()
 		local gpu_fan_speed=${fans_array[index]}
 		local card_bus_id=${card_bus_ids_array[index]}
 		local brand="Nvidia"
-		event_by_temperature $gpu_temperature
+		#event_by_temperature $gpu_temperature
 		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $index $brand
 		#not set fan_speed if not changed
 		[[ $target_fan_speed -ne $gpu_fan_speed ]] && args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan:$index]/GPUTargetFanSpeed=$target_fan_speed"
@@ -221,9 +255,8 @@ nvidia_auto_fan_control ()
 
 
 
-amd_auto_fan_control ()
-{
-	for index in ${amd_indexes_array[@]}
+amd_auto_fan_control () {
+	for (( index=0; index < $amd_cards_number; index++ ))
 	do
 		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on amd_indexes_array[@] as argument
 		local gpu_temperature=${temperatures_array[index]}
@@ -231,8 +264,8 @@ amd_auto_fan_control ()
 		if [[ -z $gpu_temperature_previous ]]; then gpu_temperature_previous=0; fi
 		local gpu_fan_speed=${fans_array[index]}
 		local card_bus_id=${card_bus_ids_array[index]}
-		local brand="   ADM"
-		event_by_temperature $gpu_temperature
+		local brand="AMD   "
+		#event_by_temperature $gpu_temperature
 		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $index $brand
 		#not set fan_speed if not changed
 		[[ $target_fan_speed -ne $gpu_fan_speed ]] && wolfamdctrl -i $index --set-fanspeed $target_fan_speed 1>/dev/null
@@ -243,21 +276,49 @@ amd_auto_fan_control ()
 auto_fan_control() {
 	while true;	do
 		TARGET_TEMP= #unset tt if it's not in config anymore
+		CRITICAL_TEMP=
+		MIN_FAN=
+		MAX_FAN=
+		NO_AMD=
 		[[ -f $CONF_FILE ]] && . $CONF_FILE
 
+		#set default values
+		[[ -z $TARGET_TEMP ]] && TARGET_TEMP=$DEF_TARGET_TEMP
+		[[ -z $CRITICAL_TEMP ]] && CRITICAL_TEMP=$DEF_CRITICAL_TEMP
+		[[ -z $MIN_FAN ]] && MIN_FAN=$DEF_MIN_FAN
+		[[ -z $MAX_FAN ]] && MAX_FAN=$DEF_MAX_FAN
+		[[ -z $NO_AMD ]] && NO_AMD=$DEF_NO_AMD
+
+
 		echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
+		echo2 "${GREEN}¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯${NOCOLOR}"
 		#check if exist .conf
-		if [[ -n $TARGET_TEMP && -f $CONF_FILE && -f $HIVE_GPU_STATS_LOG ]]; then 
+
+		declare -a temperatures_array=(`cat $gpu_stats_json | tail -1 | jq -r ".temp | .[]"`)
+
+		if [[ -n $TARGET_TEMP && -f $CONF_FILE && -f $gpu_stats_json ]]; then
 			MIN_TEMP=$(( TARGET_TEMP-5 ))
-			declare -a temperatures_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".temp | .[]"`)
-			declare -a fans_array=(`cat $HIVE_GPU_STATS_LOG | tail -1 | jq -r ".fan | .[]"`)
+
+
+			if [[ $PREV_TARGET_TEMP != $TARGET_TEMP || $PREV_CRITICAL_TEMP != $CRITICAL_TEMP || $PREV_MIN_FAN != $MIN_FAN || $PREV_MAX_FAN != $MAX_FAN ]]; then
+				echo2 "${PURPLE}Target temp $TARGET_TEMP°C, Miner stop at $CRITICAL_TEMP°C, Min Fan $MIN_FAN%, Max Fan $MAX_FAN%${NOCOLOR}"
+				PREV_TARGET_TEMP=$TARGET_TEMP
+				PREV_CRITICAL_TEMP=$CRITICAL_TEMP
+				PREV_MIN_FAN=$MIN_FAN
+				PREV_MAX_FAN=$MAX_FAN
+
+			fi
+
+
+
+			declare -a fans_array=(`cat $gpu_stats_json | tail -1 | jq -r ".fan | .[]"`)
 			gpu_info=
 
 			if (( $nvidia_cards_number > 0 )); then
 				nvidia_auto_fan_control
 			fi
 
-			if [[ $amd_cards_number > 0 && $NO_AMD == 0 ]]; then #enable AMD 
+			if [[ $amd_cards_number > 0 && $NO_AMD == 0 ]]; then #enabled AMD
 				amd_auto_fan_control
 			fi
 
@@ -265,9 +326,12 @@ auto_fan_control() {
 
 			declare -a temperatures_array_previous=(${temperatures_array[@]})
 
-			action_by_event
 			event_by_temp_limit
 		fi
+
+
+		check_overheat
+
 
 		#sleep $SLEEP_TIME
 		read -t $SLEEP_TIME
@@ -295,7 +359,7 @@ case $1 in
 			screen -x -S autofan
 		else #start new screen
 			screen -dm -S autofan autofan run
-			echo2 "Autofan screen stared"
+			echo2 "Autofan screen started"
 		fi
 	;;
 
