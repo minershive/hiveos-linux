@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source /etc/environment
+#source /etc/environment
 . colors
 
 gpu_detect_json="/run/hive/gpu-detect.json"
@@ -13,9 +13,11 @@ NS='/usr/bin/nvidia-settings'
 RIG_CONF="/hive-config/rig.conf"
 CONF_FILE="/hive-config/autofan.conf"
 
-MIN_COEF=80
-MAX_COEF=110
-SLEEP_TIME=20
+#MIN_COEF=80
+#MAX_COEF=100
+#SLEEP_TIME=20
+DEF_SLEEP_TIME=20
+
 
 #######################################################################
 #settings (autofan.conf file content), default values
@@ -93,43 +95,62 @@ check_gpu () {
 
 
 get_fan_speed () {
-	local temperature=$1
-	local temperature_previous=$2
-	local gpu_fan_speed=$3
+	local cur_temp=$1
+	local prev_temp=$2
+	local cur_fan_speed=$3
 	local gpu_bus_id=$4
 	local i=$5
 
-	if [[ $temperature -lt $MIN_TEMP ]]; then
-		[[ $CHANGE_COEF_FLAG -ne 1 ]] && CHANGE_COEF_FLAG=0
-		target_fan_speed=$(($temperature * ($MIN_COEF-($MIN_TEMP - $temperature) * 2)/100))
-		#[[ $target_fan_speed -le $MIN_FAN ]] && target_fan_speed=$MIN_FAN
-	elif [[ $temperature -ge $MIN_TEMP  &&  $temperature -le $TARGET_TEMP ]]; then
-		target_fan_speed=$(( $temperature *(($temperature - $MIN_TEMP) * 4 + $MIN_COEF)/100 ))
-		if [[ -n $temperature_previous && $(( $temperature+1 )) -eq $temperature_previous && $TARGET_TEMP -ge $temperature_previous ]]; then
-					target_fan_speed=$(( $gpu_fan_speed-1 ))
-		elif [[ -n $temperature_previous && $temperature -eq $temperature_previous ]]; then
-					target_fan_speed=$gpu_fan_speed
-		fi
-
-	elif [[ $temperature -gt $TARGET_TEMP ]]; then
-		CHANGE_COEF_FLAG=1
-		target_fan_speed=$(( $temperature *(($temperature - $TARGET_TEMP) * 4 + $MAX_COEF)/100 ))
+	#check current temp and set fan speed
+	if [[ $cur_temp -gt $TARGET_TEMP ]]; then
+			if [[ $cur_temp -lt $prev_temp ]]; then 
+					target_fan_speed=$(( $cur_fan_speed-1 ))
+			elif [[ $cur_temp -ge $prev_temp ]]; then
+					target_fan_speed=$(( $cur_fan_speed+($cur_temp-$TARGET_TEMP) ))
+			fi
+	elif [[ $cur_temp -lt $TARGET_TEMP ]]; then
+			if [[ $cur_temp -gt $prev_temp ]]; then 
+					target_fan_speed=$(( $cur_fan_speed+1 ))
+			elif [[ $cur_temp -le $prev_temp ]]; then
+					target_fan_speed=$(( $cur_fan_speed+($cur_temp-$TARGET_TEMP) ))
+			fi
 	fi
-	#set MIN_FAN speed if need
+	#doing nothing
+	[[ $cur_temp -eq $TARGET_TEMP ]] && target_fan_speed=$cur_fan_speed
+
+	#set MIN_FAN & MAX_FAN speed if need
 	[[ $target_fan_speed -lt $MIN_FAN ]] && 
 		target_fan_speed=$MIN_FAN
-	[[ $target_fan_speed -gt 100 ]] &&
-		target_fan_speed=100
+	[[ $target_fan_speed -gt $MAX_FAN ]] &&
+		target_fan_speed=$MAX_FAN
 
-	#coloring
-	echo_temp="$temperature°C"
-	[[ $temperature -gt $TARGET_TEMP ]] && echo_temp="${RED}$temperature°C${NOCOLOR}"
-	[[ $temperature -lt $MIN_TEMP ]] && echo_temp="${BLUE}$temperature°C${NOCOLOR}"
-
+	#coloring and set sleep time
+	echo_temp="$cur_temp°C"
+	
+	#sleep 15
+	[[ $cur_temp -lt $TARGET_TEMP && $cur_temp -ne $(( $TARGET_TEMP-1 )) ]] && 
+			echo_temp="${BLUE}$cur_temp°C${NOCOLOR}" && NEW_SLEEP_TIME=$(( $DEF_SLEEP_TIME/4*3 ))
+	
+	#sleep 20
+	[[ $cur_temp -eq $(( $TARGET_TEMP-1 )) ]] && 
+			echo_temp="${CYAN}$cur_temp°C${NOCOLOR}"
+	
+	#sleep 10
+	[[ $cur_temp -gt $TARGET_TEMP && $cur_temp -ne $(( $TARGET_TEMP+1 )) ]] && 
+			echo_temp="${RED}$cur_temp°C${NOCOLOR}" && NEW_SLEEP_TIME=$(( $DEF_SLEEP_TIME/2 ))
+	
+	#sleep 15
+	[[ $cur_temp -eq $(( $TARGET_TEMP+1 )) ]] && 
+			echo_temp="${YELLOW}$cur_temp°C${NOCOLOR}" && NEW_SLEEP_TIME=$(( $DEF_SLEEP_TIME/4*3 ))
+	
+	#choice less sleep_time
+	[[ -n $NEW_SLEEP_TIME && $NEW_SLEEP_TIME -lt $SLEEP_TIME ]] && SLEEP_TIME=$NEW_SLEEP_TIME && NEW_SLEEP_TIME=
+	
+	
 	echo_fan="$target_fan_speed%"
-	[[ $target_fan_speed -gt $gpu_fan_speed ]] && echo_fan="${YELLOW}$target_fan_speed% ↑${NOCOLOR}"
-	[[ $target_fan_speed -lt $gpu_fan_speed ]] && echo_fan="${GREEN}$target_fan_speed% ↓${NOCOLOR}"
-	[[ $target_fan_speed -eq 100 ]] && echo_fan="${RED}$target_fan_speed%${NOCOLOR}"
+	[[ $target_fan_speed -gt $cur_fan_speed ]] && echo_fan="${YELLOW}$target_fan_speed% ↑${NOCOLOR}"
+	[[ $target_fan_speed -lt $cur_fan_speed ]] && echo_fan="${GREEN}$target_fan_speed% ↓${NOCOLOR}"
+	[[ $target_fan_speed -eq $MAX_FAN ]] && echo_fan="${RED}$target_fan_speed%${NOCOLOR}"
 
 	[[ $6 == "Nvidia" ]] &&
 		gpu_info+="GPU $i ${GREEN}$6${NOCOLOR} [$gpu_bus_id]: $echo_temp $echo_fan" ||
@@ -137,10 +158,8 @@ get_fan_speed () {
 
 #	[[ $target_fan_speed == 100 ]] &&
 #		gpu_info+=" ${RED}MAX${NOCOLOR}"
-
 	gpu_info+="\n"
 }
-
 
 
 ###
@@ -210,33 +229,12 @@ do_miner_action() {
 
 
 
-event_by_temp_limit () {
-	min_coef_limit=
-	if [[ $CHANGE_COEF_FLAG == 0 ]]; then
-		if [[ `screen -ls | grep "miner"` ]]; then
-			#min_coef_limit_LOW
-			if [[ $MIN_COEF -gt $(( $MIN_FAN*100/$MIN_TEMP+2 )) ]]; then
-				MIN_COEF=$(( $MIN_COEF-1 ))
-				MAX_COEF=$(( $MAX_COEF-1 ))
-				echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF (↓)${NOCOLOR}\n"
-			fi
-		fi
-	elif [[ $CHANGE_COEF_FLAG == 1 ]]; then
-		#min_coef_limit_HI
-		[[ $MIN_COEF -lt $(( 10100/($TARGET_TEMP+1)-34 )) ]] && MIN_COEF=$(( $MIN_COEF+2 )) && MAX_COEF=$(( $MAX_COEF+2 )) &&
-			echo2 "${CYAN}Technical info: min=$MIN_COEF max=$MAX_COEF (↑)${NOCOLOR}\n"
-	fi
-	CHANGE_COEF_FLAG=
-}
-
-
-
-
 # TODO merge with amd_auto_fan_control
 nvidia_auto_fan_control () {
 	args=
-	#prev condition doesn't work on mixed rig and built-in vga
-	for (( index = 0; index < $nvidia_cards_number; index++ ))
+	#set start index
+	i=0
+	for index in ${nvidia_indexes_array[@]}
 	do
 		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on nvidia_indexes_array[@] as argument
 		local gpu_temperature=${temperatures_array[index]}
@@ -246,9 +244,10 @@ nvidia_auto_fan_control () {
 		local card_bus_id=${card_bus_ids_array[index]}
 		local brand="Nvidia"
 		#event_by_temperature $gpu_temperature
-		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $index $brand
+		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $i $brand
 		#not set fan_speed if not changed
-		[[ $target_fan_speed -ne $gpu_fan_speed ]] && args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan:$index]/GPUTargetFanSpeed=$target_fan_speed"
+		[[ $target_fan_speed -ne $gpu_fan_speed ]] && args+=" -a [gpu:$i]/GPUFanControlState=1 -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
+		i=$(( $i+1 ))
 	done
 	[[ -n $args ]] && $NS $args > /dev/null 2>&1
 }
@@ -256,7 +255,7 @@ nvidia_auto_fan_control () {
 
 
 amd_auto_fan_control () {
-	for (( index=0; index < $amd_cards_number; index++ ))
+	for index in ${amd_indexes_array[@]}
 	do
 		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on amd_indexes_array[@] as argument
 		local gpu_temperature=${temperatures_array[index]}
@@ -280,6 +279,7 @@ auto_fan_control() {
 		MIN_FAN=
 		MAX_FAN=
 		NO_AMD=
+		
 		[[ -f $CONF_FILE ]] && . $CONF_FILE
 
 		#set default values
@@ -288,6 +288,7 @@ auto_fan_control() {
 		[[ -z $MIN_FAN ]] && MIN_FAN=$DEF_MIN_FAN
 		[[ -z $MAX_FAN ]] && MAX_FAN=$DEF_MAX_FAN
 		[[ -z $NO_AMD ]] && NO_AMD=$DEF_NO_AMD
+		SLEEP_TIME=$DEF_SLEEP_TIME
 
 
 		echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
@@ -297,7 +298,7 @@ auto_fan_control() {
 		declare -a temperatures_array=(`cat $gpu_stats_json | tail -1 | jq -r ".temp | .[]"`)
 
 		if [[ -n $TARGET_TEMP && -f $CONF_FILE && -f $gpu_stats_json ]]; then
-			MIN_TEMP=$(( TARGET_TEMP-5 ))
+			#MIN_TEMP=$(( TARGET_TEMP-5 ))
 
 
 			if [[ $PREV_TARGET_TEMP != $TARGET_TEMP || $PREV_CRITICAL_TEMP != $CRITICAL_TEMP || $PREV_MIN_FAN != $MIN_FAN || $PREV_MAX_FAN != $MAX_FAN ]]; then
@@ -326,7 +327,6 @@ auto_fan_control() {
 
 			declare -a temperatures_array_previous=(${temperatures_array[@]})
 
-			event_by_temp_limit
 		fi
 
 
@@ -334,6 +334,7 @@ auto_fan_control() {
 
 
 		#sleep $SLEEP_TIME
+		#echo "SLEEP_TIME=$SLEEP_TIME"
 		read -t $SLEEP_TIME
 	done
 }
