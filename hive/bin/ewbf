@@ -26,6 +26,15 @@ function config_gen() {
 
 	cat $EWBF_GLOBAL_CONFIG > $EWBF_CONFIG
 
+	if [[ ! -z $EWBF_FORK ]] || [[ $EWBF_FORK != "legacy" ]]; then
+	    if [[ ! -z $EWBF_ALGO ]]; then
+		algo=$EWBF_ALGO
+	    else
+		algo="zhash"
+	    fi
+	    echo -e "\nalgo\t" $algo  >> $EWBF_CONFIG
+	fi
+
 	[[ ! -z $EWBF_USER_CONFIG ]] && echo -e "#USER CONFIG\n$EWBF_USER_CONFIG" >> $EWBF_CONFIG
 
 	echo -e "\n[server]"  >> $EWBF_CONFIG
@@ -67,6 +76,11 @@ function config_gen() {
 
 config_gen
 
+if [[ -z $EWBF_FORK ]]; then
+	FORK="legacy"
+else
+	FORK=$EWBF_FORK
+fi
 
 cd /hive/$THIS_MINER_NAME
 while true
@@ -77,7 +91,7 @@ do
 	done
 
 	/hive/bin/miner logrotate $THIS_MINER_NAME
-	/hive/$THIS_MINER_NAME/miner
+	/hive/$THIS_MINER_NAME/miner.sh $FORK
 	echo ""
 	echo -e "${YELLOW}$THIS_MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
 	echo ""
