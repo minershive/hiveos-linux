@@ -255,7 +255,7 @@ nvidia_auto_fan_control () {
 
 
 amd_auto_fan_control () {
-	for for index in ${amd_indexes_array[@]}
+	for index in ${amd_indexes_array[@]}
 	do
 		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on amd_indexes_array[@] as argument
 		local gpu_temperature=${temperatures_array[index]}
