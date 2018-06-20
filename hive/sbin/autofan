@@ -232,8 +232,9 @@ do_miner_action() {
 # TODO merge with amd_auto_fan_control
 nvidia_auto_fan_control () {
 	args=
-	#prev condition doesn't work on mixed rig and built-in vga
-	for (( index = 0; index < $nvidia_cards_number; index++ ))
+	#set start index
+	i=0
+	for index in ${nvidia_indexes_array[@]}
 	do
 		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on nvidia_indexes_array[@] as argument
 		local gpu_temperature=${temperatures_array[index]}
@@ -243,9 +244,10 @@ nvidia_auto_fan_control () {
 		local card_bus_id=${card_bus_ids_array[index]}
 		local brand="Nvidia"
 		#event_by_temperature $gpu_temperature
-		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $index $brand
+		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $i $brand
 		#not set fan_speed if not changed
-		[[ $target_fan_speed -ne $gpu_fan_speed ]] && args+=" -a [gpu:$index]/GPUFanControlState=1 -a [fan:$index]/GPUTargetFanSpeed=$target_fan_speed"
+		[[ $target_fan_speed -ne $gpu_fan_speed ]] && args+=" -a [gpu:$i]/GPUFanControlState=1 -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
+		i=$(( $i+1 ))
 	done
 	[[ -n $args ]] && $NS $args > /dev/null 2>&1
 }
@@ -253,7 +255,7 @@ nvidia_auto_fan_control () {
 
 
 amd_auto_fan_control () {
-	for (( index=0; index < $amd_cards_number; index++ ))
+	for for index in ${amd_indexes_array[@]}
 	do
 		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on amd_indexes_array[@] as argument
 		local gpu_temperature=${temperatures_array[index]}
