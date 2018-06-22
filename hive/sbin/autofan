@@ -25,6 +25,7 @@ DEF_SLEEP_TIME=20
 DEF_TARGET_TEMP=
 #minimal fan speed
 DEF_MIN_FAN=30
+#maximum fan speed
 DEF_MAX_FAN=100
 #temperature of stop miner
 DEF_CRITICAL_TEMP=85
@@ -165,7 +166,7 @@ get_fan_speed () {
 ###
 # What we must to do if temperature reached some limits
 check_overheat() {
-	if [[ $miner_stopped_by_overheat -eq 1 && ! `screen -ls | grep "miner"` ]]; then
+	if [[ $miner_stopped_by_overheat == 1 && ! `screen -ls | grep "miner"` ]]; then
 #	if [[ true ]]; then
 		local t
 		local allisok=1
@@ -184,7 +185,7 @@ check_overheat() {
 			echo -en "${NOCOLOR}"
 			#echo2 "${GREEN}$msg${NOCOLOR}"
 		fi
-	elif [[ $miner_stopped_by_overheat -eq 0 ]]; then
+	elif [[ $miner_stopped_by_overheat == 0 ]]; then
 		local t
 		for t in ${temperatures_array[@]}; do
 			if [[ $t -ge $CRITICAL_TEMP ]]; then
@@ -292,7 +293,7 @@ auto_fan_control() {
 
 
 		echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
-		echo2 "${GREEN}¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯${NOCOLOR}"
+		#echo2 "${GREEN}¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯${NOCOLOR}"
 		#check if exist .conf
 
 		declare -a temperatures_array=(`cat $gpu_stats_json | tail -1 | jq -r ".temp | .[]"`)
@@ -307,7 +308,6 @@ auto_fan_control() {
 				PREV_CRITICAL_TEMP=$CRITICAL_TEMP
 				PREV_MIN_FAN=$MIN_FAN
 				PREV_MAX_FAN=$MAX_FAN
-
 			fi
 
 

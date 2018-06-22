@@ -46,6 +46,7 @@ function miner_stats {
 				khs=`echo $stats_raw | jq -r '.result[].speed_sps' | awk '{s+=$1} END {print s/1000}'` #sum up and convert to khs
 				local ac=$(jq '[.result[].accepted_shares] | add' <<< "$stats_raw")
 				local rj=$(jq '[.result[].rejected_shares] | add' <<< "$stats_raw")
+
 				#All fans speed array
 				local fan=$(jq -r ".fan | .[]" <<< $gpu_stats)
 				#EWBF's busid array
@@ -57,20 +58,24 @@ function miner_stats {
 				fan=`sed 's/\n/ /' <<< $fan`
 				IFS=' ' read -r -a bus_id_array <<< "$bus_id_array"
 				IFS=' ' read -r -a fan <<< "$fan"
-				#busid's equality
+				#busid equality
 				local fans_array=
-				for ((i = 0; i < ${#all_bus_ids_array[@]}; i++)) 
-					do
-						for ((j = 0; j < ${#bus_id_array[@]}; j++))
-							do
-								if [ "${all_bus_ids_array[$i]}" == "${bus_id_array[$j]}" ]; then
-									fans_array+=("${fan[$i]}")
-								fi
-							done
+				for ((i = 0; i < ${#all_bus_ids_array[@]}; i++)); do
+					for ((j = 0; j < ${#bus_id_array[@]}; j++)); do
+						if [ "${all_bus_ids_array[$i]}" == "${bus_id_array[$j]}" ]; then
+							fans_array+=("${fan[$i]}")
+						fi
 					done
-				stats=$(jq -c --arg ac "$ac" --arg rj "$rj"  --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`"\
-					'{speed_sps: [.result[].speed_sps], temp: [.result[].temperature], $fan, busid: [.result[].busid[5:]|ascii_downcase], start_time:
-					.result[0].start_time, ar: [$ac, $rj]}' <<< "$stats_raw")
+				done
+
+				local uptime=$(( `date +%s` - $(jq '.result[0].start_time' <<< "$stats_raw") ))
+				[[ -z $EWBF_ALGO ]] && EWBF_ALGO="equihash"
+
+				stats=$(jq -c --arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" --arg algo "$EWBF_ALGO"  \
+						--argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
+					'{hs: [.result[].speed_sps], temp: [.result[].temperature], $fan,
+						$uptime, ar: [$ac, $rj]}' <<< "$stats_raw")
+				#busid: [.result[].busid[5:]|ascii_downcase]
 			fi
 		;;
 		ccminer)
@@ -179,15 +184,11 @@ function miner_stats {
 			else
 				khs=`echo $stats_raw | jq '.result[].sol_ps' | awk '{s+=$1} END {print s/1000}'`
 				local uptime=$(( `date +%s` - $(stat -c%X /proc/`pidof zm`) )) #dont think zm will die so soon after getting stats
-				#todo: use gpu_stats if busid is known
-				#local nvidiastats=`gpu-stats nvidia` #a bit overhead in calling nvidia-smi again, shame on dstm, he gives no temps
-				#stats=`echo $stats_raw | jq '{ hs: [.result[].sol_ps], temp: [.result[].temperature], uptime: "'$uptime'"}'`
-				#stats=$(jq '{ hs: [.result[].sol_ps], uptime: "'$uptime'"}' <<< $stats_raw)
-				#stats=$(jq -s '.[0] * .[1]' <<< "$stats $nvidiastats")
 				#local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
 				#local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
 				local ac=`echo $stats_raw | jq '[.result[].accepted_shares] | add'`
 				local rj=`echo $stats_raw | jq '[.result[].rejected_shares] | add'`
+
 				#All fans speed array
 				local fan=$(jq -r ".fan | .[]" <<< $gpu_stats)
 				#DSTM's busid array
@@ -199,17 +200,17 @@ function miner_stats {
 				fan=`sed 's/\n/ /' <<< $fan`
 				IFS=', ' read -r -a bus_id_array <<< "$bus_id_array"
 				IFS=' ' read -r -a fan <<< "$fan"
-				#busid's equality
+
+				#busid equality
 				local fans_array=
-				for ((i = 0; i < ${#all_bus_ids_array[@]}; i++)) 
-					do
-						for ((j = 0; j < ${#bus_id_array[@]}; j++))
-							do
-								if [ "${all_bus_ids_array[$i]}" == "${bus_id_array[$j]}" ]; then
-									fans_array+=("${fan[$i]}")
-								fi
-							done
+				for ((i = 0; i < ${#all_bus_ids_array[@]}; i++)); do
+					for ((j = 0; j < ${#bus_id_array[@]}; j++)); do
+						if [ "${all_bus_ids_array[$i]}" == "${bus_id_array[$j]}" ]; then
+							fans_array+=("${fan[$i]}")
+						fi
 					done
+				done
+
 				stats=$(jq --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" --arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" \
 					'{ hs: [.result[].sol_ps], temp: [.result[].temperature], $fan, $uptime, ar: [$ac, $rj] }' <<< "$stats_raw")
 			fi

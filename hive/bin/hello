@@ -18,7 +18,7 @@ mkdir -p "/hive-config/openvpn"
 . $RIG_CONF
 
 [[ -z $PROJECT_HASH && -z $RIG_ID ]] && echo "Please use PROJECT_HASH or RIG_ID in config" && exit 1
-[[ -z $PROJECT_HASH  && -z $RIG_PASSWD ]] && echo "No RIG_PASSWD in config" && exit 1
+[[ ! -z $RIG_ID  && -z $RIG_PASSWD ]] && echo "No RIG_PASSWD in config" && exit 1
 [[ -z $HIVE_HOST_URL ]] && echo "No HIVE_HOST_URL in config" && exit 1
 
 
