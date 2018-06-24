@@ -50,6 +50,11 @@ echo -e "${YELLOW}> Restarting agent${NOCOLOR}"
 screen -S agent -X quit
 agent-screen
 
+#Restart autofan
+echo -e "${YELLOW}> Restarting autofan${NOCOLOR}"
+screen -S autofan -X quit
+autofan
+
 
 echo -e "${GREEN}Upgrade complete. Have a happy mining.${NOCOLOR}"
 
