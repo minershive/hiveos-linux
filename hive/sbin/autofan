@@ -175,7 +175,8 @@ get_fan_speed () {
 	fi
 #end_if_AMD
 #if GPU disable
-[[ -z $cur_temp ]] && target_fan_speed=$MAX_FAN
+	[[ -z $cur_temp ]] && 
+		target_fan_speed=$MAX_FAN
 #
 }
 
