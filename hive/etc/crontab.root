@@ -2,8 +2,7 @@
 # applied on every startup
 
 # clear log file to avoid disk usage
-*/15 * * * * /hive/bin/miner logtruncate
-*/15 * * * * /hive/bin/miner logtruncate 2
+*/15 * * * * /hive/bin/miner logtruncateall
 
 
 # clear logs to freeup space

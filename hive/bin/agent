@@ -44,14 +44,25 @@ cpu_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(
 
 ########################################################################################################################
 
+function reset_miner_vars() {
+	#reset all miner vars
+	for i in {1..32}; do
+		eval unset MINER$i
+	done
+}
+
+
 function loop {
 	date
 
 	[ ! -f $RIG_CONF ] && echo -e "No config $RIG_CONF" && return
 
+	reset_miner_vars
+
 	#each time read config again
 	. $RIG_CONF
 	. $WALLET_CONF
+
 
 	[ -z $MINER ] && MINER="claymore"
 	HIVE_URL="$HIVE_HOST_URL/worker/api"
@@ -62,20 +73,41 @@ function loop {
 	local fan=$(jq '.fan' <<< $gpu_stats)
 	local power=$(jq '.power' <<< $gpu_stats)
 
+#	miner2_json=
+#	if [[ ! -z $MINER2 ]]; then
+#		miner_stats $MINER2 2
+#		khs2=$khs
+#		miner2_json=$(jq -n --arg miner2 "$MINER2" --arg total_khs2 "$khs" --argjson miner_stats2 "$stats" \
+#			'{"params": {$miner2, $total_khs2, $miner_stats2}}')
+#	fi
 
-	miner2_json=
-	if [[ ! -z $MINER2 ]]; then
-		miner_stats $MINER2 2
-		khs2=$khs
-		miner2_json=$(jq -n --arg miner2 "$MINER2" --arg total_khs2 "$khs" --argjson miner_stats2 "$stats" \
-			'{"params": {$miner2, $total_khs2, $miner_stats2}}')
-	fi
+	# Get other miners stats
+	local mindex
+	for mindex in {32..2}; do
+		eval minerval=\$MINER$mindex
+		if [[ ! -z $minerval ]]; then
+			miner_stats $minerval $mindex
+			eval khs$mindex=\$khs
+			miner_json=$(jq -n -c --arg miner$mindex "$minerval" --arg total_khs$mindex "$khs" --argjson miner_stats$mindex "$stats" \
+				'{"params": {$miner'$mindex', $total_khs'$mindex', $miner_stats'$mindex'}}')
+			eval miner${mindex}_json="\$miner_json"
+		fi
+	done
+
 
 	miner_stats $MINER #khs and stats are global
 
 	echo -en "Hashrate ${CYAN}$MINER${NOCOLOR} `[[ $khs > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs${NOCOLOR} kH/s"
-	[[ ! -z $MINER2 ]] &&
-		echo -en " ${CYAN}$MINER2${NOCOLOR} `[[ $khs2 > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs2${NOCOLOR} kH/s"
+	for mindex in {2..32}; do
+		#[[ ! -z $MINER2 ]] &&
+		#	echo -en " ${CYAN}$MINER2${NOCOLOR} `[[ $khs2 > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs2${NOCOLOR} kH/s"
+		eval minerval=\$MINER$mindex
+		if [[ ! -z $minerval ]]; then
+			eval khs_i=\$khs$mindex
+			echo -en ", ${CYAN}$minerval${NOCOLOR} `[[ $khs_i > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs_i${NOCOLOR} kH/s"
+		fi
+	done
+
 	echo -en "\n"
 	echo $khs > /run/hive/khs
 
@@ -105,8 +137,16 @@ function loop {
 	}'
 	)
 
-	[[ ! -z $miner2_json ]] && #add miner2 stats to json
-		request=`echo "$request" "$miner2_json" | jq -s '.[0] * .[1]'`
+
+	# Add other miners stats to json
+	for mindex in {2..32}; do
+		#[[ ! -z $miner2_json ]] && #add miner2 stats to json
+		#	request=`echo "$request" "$miner2_json" | jq -s '.[0] * .[1]'`
+		eval miner_json="\$miner${mindex}_json"
+		[[ ! -z $miner_json ]] && #add miner2 stats to json
+			request=`echo "$request" "$miner_json" | jq -s '.[0] * .[1]'`
+	done
+
 
 	echo $request | jq '.' -c
 
