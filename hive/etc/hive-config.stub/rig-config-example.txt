@@ -4,14 +4,14 @@
 
 HIVE_HOST_URL="https://api.hiveos.farm"
 
-# Find out your PROJECT_HASH in project settings
+# Find out your hash in farm's settings on the web
 # The rig will autoregister itself in your account after the first run
-PROJECT_HASH=
+FARM_HASH=
 
 # Password used for the rig
 RIG_PASSWD=
 
-# If you know rig id before creation you can set it here leaving PROJECT_HASH blank
+# If you know rig id before creation you can set it here leaving FARM_HASH blank
 RIG_ID=
 
 # Disable GUI (x server), uncomment to disable it
