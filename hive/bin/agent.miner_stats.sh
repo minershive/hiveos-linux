@@ -2,7 +2,7 @@
 
 function miner_stats {
 	local miner=$1
-	local mindex=$2 #empty or 2
+	local mindex=$2 #empty or 2, 3, 4, ...
 
 	khs=0
 	stats=

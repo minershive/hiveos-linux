@@ -21,7 +21,9 @@ function echo2 {
 
 
 cat /proc/mounts | grep -q /hive-config
-if [[ $? -ne 0 ]]; then #0 - mounted (grep ok), 1 - grep not found (unmounted)
+if [[ $? -ne 0 && ! -e /hive-config/rig.conf ]]; then
+	#0 - mounted (grep ok), 1 - grep not found (unmounted)
+	#checking for rig.conf is for very old systems without a mounted config partition
 	echo2 "${RED}Config directory /hive-config is not mounted, please check filesystem.${NOCOLOR}"
 	echo2 "${RED}This needs to be fixed for proper system operation.${NOCOLOR}"
 	echo2 "${YELLOW}Alt+F2 to switch to other terminal and login.${NOCOLOR}"

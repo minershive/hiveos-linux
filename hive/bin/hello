@@ -17,7 +17,9 @@ mkdir -p "/hive-config/openvpn"
 
 . $RIG_CONF
 
-[[ -z $PROJECT_HASH && -z $RIG_ID ]] && echo "Please use PROJECT_HASH or RIG_ID in config" && exit 1
+[[ ! -z $PROJECT_HASH ]] && FARM_HASH=$PROJECT_HASH #compat
+
+[[ -z $FARM_HASH && -z $RIG_ID ]] && echo "Please use FARM_HASH or RIG_ID in config" && exit 1
 [[ ! -z $RIG_ID  && -z $RIG_PASSWD ]] && echo "No RIG_PASSWD in config" && exit 1
 [[ -z $HIVE_HOST_URL ]] && echo "No HIVE_HOST_URL in config" && exit 1
 
@@ -65,7 +67,7 @@ request=$(
 jq -n \
 --arg rig_id "$RIG_ID" \
 --arg passwd "$RIG_PASSWD" \
---arg project_hash "$PROJECT_HASH" \
+--arg farm_hash "$FARM_HASH" \
 --arg boot_time "$boot_time" \
 --arg boot_event "$arg_boot" \
 --argjson ip "$ips_json" \
@@ -83,7 +85,7 @@ jq -n \
 '{
 	"method": "hello", "jsonrpc": "2.0", "id": 0,
 	"params": {
-		$rig_id, $passwd, $project_hash,
+		$rig_id, $passwd, $farm_hash,
 		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
 		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes},
