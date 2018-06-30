@@ -6,6 +6,7 @@ RIG_CONF="/hive-config/rig.conf"
 NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
 AMD_OC_CONF="/hive-config/amd-oc.conf"
 WALLET_CONF="/hive-config/wallet.conf"
+AUTOFAN_CONF="/hive-config/autofan.conf"
 LOG="/var/log/hive-agent.log"
 
 API_TIMEOUT=15 #timeout to wait for miner API response, can take very long time on 13+ gpus

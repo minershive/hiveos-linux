@@ -8,6 +8,7 @@ RIG_CONF="/hive-config/rig.conf"
 NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
 AMD_OC_CONF="/hive-config/amd-oc.conf"
 WALLET_CONF="/hive-config/wallet.conf"
+AUTOFAN_CONF="/hive-config/autofan.conf"
 VPN_INSTALLED="/tmp/.openvpn-installed"
 mkdir -p "/hive-config"
 mkdir -p "/hive-config/openvpn"
@@ -152,6 +153,13 @@ if [[ ! -z $amd_oc && $amd_oc != "null" ]]; then
 	echo "$amd_oc" > $AMD_OC_CONF
 else
 	[[ -f $AMD_OC_CONF ]] && rm $AMD_OC_CONF
+fi
+
+# Autofan config ================================================================
+autofan=$(echo $response | jq '.result.autofan' --raw-output)
+if [[ ! -z $autofan && $autofan != "null" ]]; then
+	echo "Saving Autofan config"
+	echo "$autofan" > $AUTOFAN_CONF
 fi
 
 # Post actions =================================================================
