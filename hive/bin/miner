@@ -154,13 +154,15 @@ function miner_log_basename {
 #			log_basename="/hive/xmrig/xmrig"
 #			;;
 		"custom")
-			if [[ -e /hive/custom/custom.conf ]]; then
-				source /hive/custom/custom.conf
+			if [[ -z $CUSTOM_MINER ]]; then
+				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
+			elif [[ -e /hive/custom/$CUSTOM_MINER/manifest.conf ]]; then
+				source /hive/custom/$CUSTOM_MINER/manifest.conf
 			fi
-			if [[ ! -z $CUSTOM_LOG_BASENAME ]]; then
-				log_basename=$CUSTOM_LOG_BASENAME
+			if [[ -z $CUSTOM_LOG_BASENAME ]]; then
+				echo -e "${RED}\$CUSTOM_LOG_BASENAME is not defined${NOCOLOR}"
 			else
-				log_basename="$MINER_LOGS_BASE_DIR/$miner/$miner"
+				log_basename=$CUSTOM_LOG_BASENAME
 			fi
 			;;
 		*)
@@ -274,13 +276,15 @@ function config() {
 			echo_config_file "/hive/cpuminer-opt/cpuminer.conf"
 			;;
 		"custom")
-			if [[ -e /hive/custom/custom.conf ]]; then
-				source /hive/custom/custom.conf
+			if [[ -z $CUSTOM_MINER ]]; then
+				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
+			elif [[ -e /hive/custom/$CUSTOM_MINER/manifest.conf ]]; then
+				source /hive/custom/$CUSTOM_MINER/manifest.conf
 			fi
 			if [[ ! -z $CUSTOM_CONFIG_FILENAME ]]; then
 				echo_config_file $CUSTOM_CONFIG_FILENAME
 			else
-				echo "CUSTOM_CONFIG_FILENAME is not defined";
+				echo -e "${RED}\$CUSTOM_CONFIG_FILENAME is not defined${NOCOLOR}";
 			fi
 			;;
 		*)

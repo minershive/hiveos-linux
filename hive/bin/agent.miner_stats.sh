@@ -388,11 +388,16 @@ function miner_stats {
 					--argjson temp "`echo ${temps[@]} | tr " " "\n" | jq -cs '.'`" \
 					'{$vers, $algo, $hs, $acc, $rej, $temp, $uptime}')
 			fi
+		;;
 		custom)
-			if [[ ! -e /hive/custom/stats.sh ]]; then
-				echo -e "${YELLOW}/hive/custom/stats.sh is not implemented${NOCOLOR}"
+			if [[ -z $CUSTOM_MINER ]]; then
+				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
 			else
-				. /hive/custom/stats.sh
+				if [[ ! -e /hive/custom/$CUSTOM_MINER/stats.sh ]]; then
+					echo -e "${RED}/hive/custom/$CUSTOM_MINER/stats.sh is not implemented${NOCOLOR}"
+				else
+					source /hive/custom/$CUSTOM_MINER/stats.sh
+				fi
 			fi
 		;;
 		*)
