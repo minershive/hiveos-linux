@@ -29,7 +29,7 @@ fi
 [ -z $MINER ] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
 
 #sgminer-gm is deprecated...
-miners_avail=("claymore" "claymore-z" "claymore-x" "ewbf" "ccminer" "ethminer" "sgminer" "sgminer-gm" "dstm" "bminer" "lolminer" "optiminer" "xmr-stak" "xmrig" "cpuminer-opt")
+miners_avail=("claymore" "claymore-z" "claymore-x" "ewbf" "ccminer" "ethminer" "sgminer" "sgminer-gm" "dstm" "bminer" "lolminer" "optiminer" "xmr-stak" "xmrig" "cpuminer-opt" "custom")
 if ! printf '%s\n' "${miners_avail[@]}" | grep -xq $MINER ; then
 	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
 	message error "Unknown miner $MINER"
@@ -153,6 +153,16 @@ function miner_log_basename {
 #		"xmrig")
 #			log_basename="/hive/xmrig/xmrig"
 #			;;
+		"custom")
+			if [[ -e /hive/custom/custom.conf ]]; then
+				source /hive/custom/custom.conf
+			fi
+			if [[ ! -z $CUSTOM_LOG_BASENAME ]]; then
+				log_basename=$CUSTOM_LOG_BASENAME
+			else
+				log_basename="$MINER_LOGS_BASE_DIR/$miner/$miner"
+			fi
+			;;
 		*)
 			log_basename="$MINER_LOGS_BASE_DIR/$miner/$miner"
 			#echo "Unknown miner $miner to miner_log_basename"
@@ -262,6 +272,16 @@ function config() {
 			;;
 		"cpuminer-opt")
 			echo_config_file "/hive/cpuminer-opt/cpuminer.conf"
+			;;
+		"custom")
+			if [[ -e /hive/custom/custom.conf ]]; then
+				source /hive/custom/custom.conf
+			fi
+			if [[ ! -z $CUSTOM_CONFIG_FILENAME ]]; then
+				echo_config_file $CUSTOM_CONFIG_FILENAME
+			else
+				echo "CUSTOM_CONFIG_FILENAME is not defined";
+			fi
 			;;
 		*)
 			echo "Unknown miner $MINER"
