@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+THIS_MINER_NAME="custom"
+[ -t 1 ] && . colors
+
+
+[[ `ps aux | grep "/hive/$THIS_MINER_NAME/$CUSTOM_MINER/run.sh" | grep -v grep | wc -l` != 0 ]] &&
+	echo -e "${RED}$THIS_MINER_NAME $CUSTOM_MINER miner is already running${NOCOLOR}" &&
+	exit 1
+
+
+
+function config_gen() {
+	RIG_CONF="/hive-config/rig.conf"
+	WALLET_CONF="/hive-config/wallet.conf"
+
+	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
+	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+
+	. $RIG_CONF
+	. $WALLET_CONF
+
+	[[ -z $CUSTOM_MINER ]] && echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}" && exit 1
+
+	# Call custom config
+	[ ! -e /hive/custom/$CUSTOM_MINER/config_gen.sh ] && echo -e "${RED}No custom config generator${NOCOLOR}" && return 1
+	. /hive/custom/$CUSTOM_MINER/config_gen.sh
+}
+
+
+config_gen
+
+
+cd /hive/$THIS_MINER_NAME
+while true; do
+	[[ ! -e /hive/$THIS_MINER_NAME/$CUSTOM_MINER/run.sh ]] &&
+		echo -e "${RED}/hive/$THIS_MINER_NAME/$CUSTOM_MINER/run.sh is not implemented${NOCOLOR}" &&
+		sleep 3 &&
+		continue
+
+	miner logrotate $THIS_MINER_NAME
+	/hive/$THIS_MINER_NAME/$CUSTOM_MINER/run.sh
+	echo ""
+	echo -e "${YELLOW}$THIS_MINER_NAME $CUSTOM_MINER exited, waiting to cooldown a bit${NOCOLOR}"
+	echo ""
+	sleep 3
+done

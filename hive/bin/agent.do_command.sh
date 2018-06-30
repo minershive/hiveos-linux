@@ -74,6 +74,11 @@ function do_command () {
 				[[ ! -z $wallet && $wallet != "null" ]] &&
 					echo "$wallet" > $WALLET_CONF
 
+				# Save autofan config if given -----------------------------------------------
+				autofan=$(echo $response | jq '.result.autofan' --raw-output)
+				[[ ! -z $autofan && $autofan != "null" ]] &&
+					echo "$autofan" > $AUTOFAN_CONF
+
 
 				# Overclocking if given in config --------------------------------------
 				oc_if_changed
@@ -146,6 +151,15 @@ function do_command () {
 				' > /tmp/nohup.log 2>&1 &
 			else
 				message error "No \"amd_oc\" config given"
+			fi
+		;;
+		autofan)
+			autofan=$(echo $body | jq '.autofan' --raw-output)
+			if [[ ! -z $autofan && $autofan != "null" ]]; then
+				echo "$autofan" > $AUTOFAN_CONF
+				message ok "Autofan config applied"
+			else
+				message error "No \"autofan\" config given"
 			fi
 		;;
 		amd_download)

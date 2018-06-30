@@ -354,20 +354,16 @@ function miner_stats {
 				for (( i=0; i < ${#hashes_val[@]}; i++ )); do
 					smb=${hashes_pre[$i]}
 					case "$smb" in
-						k)
-						# kH/s - quark
+						k) # kH/s - quark
 						koef=$kilo
 						;;
-						M)
-						# MH/s - blake2s
+						M) # MH/s - blake2s
 						koef=$((kilo*kilo))
 						;;
-						G)
-						# GH/s - not found but who's know
+						G) # GH/s - not found but who's know
 						koef=$((kilo*kilo*kilo))
 						;;
-						*)
-						#  H/s - yescrypt
+						*) #  H/s - yescrypt
 						koef=1
 						;;
 					esac
@@ -391,6 +387,17 @@ function miner_stats {
 					--argjson hs "`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`" \
 					--argjson temp "`echo ${temps[@]} | tr " " "\n" | jq -cs '.'`" \
 					'{$vers, $algo, $hs, $acc, $rej, $temp, $uptime}')
+			fi
+		;;
+		custom)
+			if [[ -z $CUSTOM_MINER ]]; then
+				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
+			else
+				if [[ ! -e /hive/custom/$CUSTOM_MINER/stats.sh ]]; then
+					echo -e "${RED}/hive/custom/$CUSTOM_MINER/stats.sh is not implemented${NOCOLOR}"
+				else
+					source /hive/custom/$CUSTOM_MINER/stats.sh
+				fi
 			fi
 		;;
 		*)
