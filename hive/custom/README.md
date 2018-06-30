@@ -47,13 +47,13 @@ The script MUST define 2 variables.
 Example of `$stats` var:
 ```json
 { 
-	hs: [123, 223.3], //array of hashes
-	hs_units: "khs", //Optional: units that are uses for hashes array, "hs", "khs", "mhs", ... Default "khs".   
-	temp: [60, 63], //array of miner temps
-	fan: [80, 100], //array of miner fans
-	uptime: 12313232, //seconds elapsed from miner stats
-	ar: [123, 3], //Optional: [acceped, rejected] shares 
-	algo: "customalgo" //Optional: algo used by miner, should one of the exiting in Hive  
+	"hs": [123, 223.3], //array of hashes
+	"hs_units": "khs", //Optional: units that are uses for hashes array, "hs", "khs", "mhs", ... Default "khs".   
+	"temp": [60, 63], //array of miner temps
+	"fan": [80, 100], //array of miner fans
+	"uptime": 12313232, //seconds elapsed from miner stats
+	"ar": [123, 3], //Optional: acceped, rejected shares 
+	"algo": "customalgo" //Optional: algo used by miner, should one of the exiting in Hive  
 }
 ```
 
