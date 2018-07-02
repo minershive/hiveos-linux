@@ -31,7 +31,7 @@ function config_gen() {
 config_gen
 
 
-cd /hive/$THIS_MINER_NAME
+cd /hive/$THIS_MINER_NAME/$CUSTOM_MINER
 while true; do
 	[[ ! -e /hive/$THIS_MINER_NAME/$CUSTOM_MINER/run.sh ]] &&
 		echo -e "${RED}/hive/$THIS_MINER_NAME/$CUSTOM_MINER/run.sh is not implemented${NOCOLOR}" &&
