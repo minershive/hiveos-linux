@@ -115,10 +115,11 @@ function do_command () {
 		;;
 		nvidia_oc)
 			nvidia_oc=$(echo $body | jq '.nvidia_oc' --raw-output)
-			#nvidia_oc_old=`[[ -e $NVIDIA_OC_CONF ]] && cat $NVIDIA_OC_CONF`
-			#if [[ $nvidia_oc == $nvidia_oc_old ]]; then
-			#	echo -e "${YELLOW}Nvidia OC config did not change, skipping${NOCOLOR}";
-			if [[ ! -z $nvidia_oc && $nvidia_oc != "null" ]]; then
+			nvidia_oc_old=`[[ -e $NVIDIA_OC_CONF ]] && cat $NVIDIA_OC_CONF`
+			[[ ! -z $nvidia_oc && $nvidia_oc != "null" && $nvidia_oc != $nvidia_oc_old ]] &&
+				nvidia_oc_changed=1 || nvidia_oc_changed=
+
+			if [[ ! -z $nvidia_oc_changed ]]; then
 				echo "$nvidia_oc" > $NVIDIA_OC_CONF && sync
 				nohup bash -c '
 					nvidia-oc-log
@@ -130,15 +131,16 @@ function do_command () {
 						echo "$payload" | message warn "Nvidia settings applied with errors, check X server running" payload
 				' > /tmp/nohup.log 2>&1 &
 			else
-				message error "No \"nvidia_oc\" config given"
+				echo -e "${YELLOW}Nvidia OC unchanged${NOCOLOR}"
 			fi
 		;;
 		amd_oc)
 			amd_oc=$(echo $body | jq '.amd_oc' --raw-output)
-			#amd_oc_old=`[[ -e $AMD_OC_CONF ]] && cat $AMD_OC_CONF`
-			#if [[ $amd_oc == $amd_oc_old ]]; then
-			#	echo -e "${YELLOW}AMD OC config did not change, skipping${NOCOLOR}";
-			if [[ ! -z $amd_oc && $amd_oc != "null" ]]; then
+			amd_oc_old=`[[ -e $AMD_OC_CONF ]] && cat $AMD_OC_CONF`
+			[[ ! -z $amd_oc && $amd_oc != "null" && $amd_oc != $amd_oc_old ]] &&
+				amd_oc_changed=1 || amd_oc_changed=
+
+			if [[ ! -z $amd_oc_changed ]]; then
 				echo "$amd_oc" > $AMD_OC_CONF && sync
 				nohup bash -c '
 					amd-oc-safe
@@ -150,7 +152,7 @@ function do_command () {
 						echo "$payload" | message warn "AMD settings applied with errors" payload
 				' > /tmp/nohup.log 2>&1 &
 			else
-				message error "No \"amd_oc\" config given"
+				echo -e "${YELLOW}AMD OC unchanged${NOCOLOR}"
 			fi
 		;;
 		autofan)
