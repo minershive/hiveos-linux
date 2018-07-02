@@ -156,8 +156,8 @@ function miner_log_basename {
 		"custom")
 			if [[ -z $CUSTOM_MINER ]]; then
 				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
-			elif [[ -e /hive/custom/$CUSTOM_MINER/manifest.conf ]]; then
-				source /hive/custom/$CUSTOM_MINER/manifest.conf
+			elif [[ -e /hive/custom/$CUSTOM_MINER/h-manifest.conf ]]; then
+				source /hive/custom/$CUSTOM_MINER/h-manifest.conf
 			fi
 			if [[ -z $CUSTOM_LOG_BASENAME ]]; then
 				echo -e "${RED}\$CUSTOM_LOG_BASENAME is not defined${NOCOLOR}"
@@ -278,8 +278,8 @@ function config() {
 		"custom")
 			if [[ -z $CUSTOM_MINER ]]; then
 				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
-			elif [[ -e /hive/custom/$CUSTOM_MINER/manifest.conf ]]; then
-				source /hive/custom/$CUSTOM_MINER/manifest.conf
+			elif [[ -e /hive/custom/$CUSTOM_MINER/h-manifest.conf ]]; then
+				source /hive/custom/$CUSTOM_MINER/h-manifest.conf
 			fi
 			if [[ ! -z $CUSTOM_CONFIG_FILENAME ]]; then
 				echo_config_file $CUSTOM_CONFIG_FILENAME

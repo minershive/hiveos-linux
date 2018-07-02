@@ -8,7 +8,7 @@ All files should be stored in `/hive/custom/mysuperminer` folder.
 
 `CUSTOM_MINER` - this variable in wallet.conf will hold currently selected miner, like `mysuperminer`. 
 
-##### manifest.conf
+##### h-manifest.conf
 This is a general config for Hive, not for the miner.
 ```bash
 # The name of the miner like "mysuperminer" 
@@ -23,19 +23,19 @@ CUSTOM_CONFIG_FILENAME=
 CUSTOM_LOG_BASENAME=
 ```  
 
-##### config_gen.sh
+##### h-config.sh
 Called every time the miner is started. Should generate miner config file.
 Wallet and rig config variables are already in the scope, the script is included in `/hive/bin/custom`.
 So you can use `$CUSTOM_URL`, `$CUSTOM_USER_CONFIG`, etc. in this script.
 
 
-##### run.sh
+##### h-run.sh
 Runs the miner. 
 You can set LD_LIBRARY_PATH here, redirect output to file, etc. 
 Working dir is `/hive/custom/mysuperminer` directory.
 
 
-##### stats.sh
+##### h-stats.sh
 Provides miner stats as JSON. Used by `agent`.
 
 While implementing this script please look at other miners implements in `agent.miner_stats.sh`.
