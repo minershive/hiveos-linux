@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+. colors
+
+if [[ $# -le 0 ]]; then
+	echo "Downloads and installs custom miner from a given URL"
+	echo -e "Usage:  ${YELLOW}custom-get URL [-f]${NOCOLOR}"
+	echo -e "URL http or https URL of tar.gz archive with custom miner"
+	echo -e "-f  optional argument to force reinstall"
+	exit 1
+fi
+
+
+url=$1
+force=
+[[ $2 == "-f" ]] && force=1
+
+
+basename=`basename -s .tar.gz "$url"`
+archname=`basename "$url"`
+
+miner=`echo "$basename" | awk -F '-' '{ print $1 }'`
+
+[[ -z $miner ]] &&
+	echo -e "${RED}Unable to detect miner name from given URL${NOCOLOR}" &&
+	exit 1
+
+
+echo -e "${GREEN}$miner${NOCOLOR}"
+echo -e "$url"
+
+if [[ -d /hive/custom/$miner ]]; then
+	[[ -z $force ]] &&
+		echo -e "${YELLOW}Already installed${NOCOLOR}" &&
+		exit 0
+
+	echo -e "${YELLOW}> Removing previous installation${NOCOLOR}" &&
+	rm -rf /hive/custom/$miner
+fi
+
+
+tmpdir="/hive/custom"
+archpath="$tmpdir/$archname"
+cd $tmpdir
+## Pre-cleaning
+[[ $force == 1 && -e $archpath ]] &&
+	rm $archpath
+
+## Downloading
+echo "> Downloading $url"
+[[ -f $archpath ]] && echo "> $archpath found locally, maybe incomplete, trying to recover"
+wget -c "$url"
+[ $? -ne 0 ] && echo "Error downloading $url" && exit 1
+
+echo "> Unpacking $archpath"
+tar -xzv -f $archpath
+[ $? -ne 0 ] && echo "Error extracting $archpath" && exit 1
+
+chown -R user /hive/custom/$miner
+
+
+echo "> Removing downloaded $archpath"
+rm -f $archpath

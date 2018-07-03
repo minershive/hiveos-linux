@@ -61,3 +61,24 @@ Example of `$stats` var:
 ```
 
 
+
+## Packaging 
+After you've implemented all the scripts `tar.gz` archive should be created so the users will be able to install it.
+Archive filename MUST be in the following format `mysuperminer-version.tar.gz`, version is optional and should not contain "-".
+Archive MUST contain a directory with the name of miner.
+
+Example directory structure
+```
+drwxr-xr-x root/root    mysuperminer/
+-rwxr-xr-x root/root    mysuperminer/h-run.sh
+-rwxr-xr-x root/root    mysuperminer/mysuperminer-binary
+-rwxr-xr-x root/root    mysuperminer/h-stats.sh
+-rw-r--r-- root/root    mysuperminer/h-manifest.conf
+-rwxr-xr-x root/root    mysuperminer/h-config.sh
+-rw-r--r-- root/root    mysuperminer/mysuperminer.conf
+``` 
+
+Command to create archive
+```bash
+tar -zcvf mysuperminer-0.13_beta.tar.gz mysuperminer
+```
