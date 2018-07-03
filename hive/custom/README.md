@@ -4,7 +4,7 @@ You can integrate any miner to Hive.
 For this need to implement several scripts which will be callbacks for Hive scripts. 
 Other miners implementations are good points to start your own.
 
-All files should be stored in `/hive/custom/mysuperminer` folder.
+All files should be stored in `/hive/custom/mysuperminer` folder. Don't forget about execute permission for `.sh` files.
 
 `CUSTOM_MINER` - this variable in wallet.conf will hold currently selected miner, like `mysuperminer`. 
 
@@ -19,7 +19,7 @@ CUSTOM_VERSION=
 CUSTOM_CONFIG_FILENAME=
 # Full path to log file basename. WITHOUT EXTENSION (don't include .log at the end)
 # Used to truncate logs and rotate,
-# E.g. /var/log/miner/mysuperminer
+# E.g. /var/log/miner/mysuperminer/somelogname (filename without .log at the end)
 CUSTOM_LOG_BASENAME=
 ```  
 
