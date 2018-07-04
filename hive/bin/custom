@@ -13,6 +13,15 @@ WALLET_CONF="/hive-config/wallet.conf"
 . $RIG_CONF
 . $WALLET_CONF
 
+
+if [[ ! -z $CUSTOM_INSTALL_URL ]]; then
+	custom-get "$CUSTOM_INSTALL_URL"
+	[[ $? -ne 0 ]] &&
+		message error "Unable to install miner from $CUSTOM_INSTALL_URL" &&
+		exit 1
+fi
+
+
 [[ -z $CUSTOM_MINER ]] && echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}" && exit 1
 
 [[ ! -e /hive/custom/$CUSTOM_MINER/h-manifest.conf ]] && echo -e "${RED}No $CUSTOM_MINER/h-manifest.conf${NOCOLOR}" && exit 1
