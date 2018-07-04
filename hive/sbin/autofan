@@ -243,7 +243,15 @@ check_overheat() {
 				echo -en "${RED}"
 				message warning "$msg"
 				echo -en "${NOCOLOR}"
-				#echo2 "${RED}$msg${NOCOLOR}"
+
+				#rebooting if 511
+				if [[ $t -gt 100 ]]; then
+					local msg="GPU temperature unreal, `uname -n` will be rebooted"
+					echo -en "${RED}"
+					message warning "$msg"
+					echo -en "${NOCOLOR}"
+					nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+				fi
 				break
 			fi
 		done
