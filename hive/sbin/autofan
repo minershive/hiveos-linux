@@ -307,7 +307,18 @@ nvidia_auto_fan_control () {
 			args+=" -a [gpu:$i]/GPUFanControlState=1 -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
 		i=$(( $i+1 ))
 	done
-	[[ -n $args ]] && $NS $args > /dev/null 2>&1
+	#[[ -n $args ]] && $NS $args > /dev/null 2>&1
+	if [[ -n $args ]]; then
+		$NS $args #> /dev/null 2>&1
+		EXITCODE=$?
+		if [[ $EXITCODE -ne 0 ]]; then
+			local msg="Autofan: unable to set fan speed, rebooting"
+			echo -en "${RED}"
+			message warning "$msg"
+			echo -en "${NOCOLOR}"
+			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+		fi
+	fi
 }
 
 
