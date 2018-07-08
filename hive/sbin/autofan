@@ -7,7 +7,6 @@ gpu_stats_json="/run/hive/gpu-stats.json"
 
 export DISPLAY=":0"
 
-NS='/usr/bin/nvidia-settings'
 #AUTOFAN_LOG="/var/log/hive-autofan.log"
 
 RIG_CONF="/hive-config/rig.conf"
@@ -102,7 +101,7 @@ check_gpu () {
 
 	[[ $nvidia_cards_number > 0 ]] &&
 		echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number" && 
-			nvidia-smi -pm 1 > /dev/null 2>&1 && $NS -a GPUPowerMizerMode=1 > /dev/null 2>&1
+			nvidia-smi -pm 1 > /dev/null 2>&1 && nvidia-settings -a GPUPowerMizerMode=1 > /dev/null 2>&1
 
 	[[ $amd_cards_number > 0 ]] &&
 		echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number"
@@ -307,9 +306,9 @@ nvidia_auto_fan_control () {
 			args+=" -a [gpu:$i]/GPUFanControlState=1 -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
 		i=$(( $i+1 ))
 	done
-	#[[ -n $args ]] && $NS $args > /dev/null 2>&1
+	#[[ -n $args ]] && nvidia-settings $args > /dev/null 2>&1
 	if [[ -n $args ]]; then
-		$NS $args > /dev/null 2>&1
+		timeout 30 nvidia-settings $args > /dev/null 2>&1
 		if [[ $? -ne 0 ]]; then
 			local msg="Autofan: unable to set fan speed, rebooting"
 			echo -en "${RED}"
