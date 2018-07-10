@@ -30,6 +30,8 @@ DEF_MAX_FAN=100
 DEF_CRITICAL_TEMP=85
 #AMD fan control (AMD control enable-0/AMD control disable-1)
 DEF_NO_AMD=0
+#Reboot rig if GPU error (enable-0/disable-1)
+DEF_REBOOT_ON_ERROR=0
 #######################################################################
 
 
@@ -120,6 +122,19 @@ get_fan_speed () {
 	local cur_fan_speed=$3
 	local gpu_bus_id=$4
 	local i=$5
+	
+	#checking var is natural number
+	if [[ -z "${cur_temp##*[!0-9]*}" || -z "${cur_fan_speed##*[!0-9]*}" ]]; then
+		if [[ $REBOOT_ON_ERROR == 0 ]]; then
+			local msg="Autofan: GPU error, rebooting"
+			echo -en "${RED}"
+			message warning "$msg"
+			echo -en "${NOCOLOR}"
+			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 & 
+		else break
+		fi
+	fi
+	#
 
 	target_fan_speed=
 	#check current temp and set fan speed
@@ -347,6 +362,7 @@ auto_fan_control() {
 		MIN_FAN=
 		MAX_FAN=
 		NO_AMD=
+		REBOOT_ON_ERROR=
 		
 		[[ -f $CONF_FILE ]] && . $CONF_FILE
 
@@ -356,6 +372,7 @@ auto_fan_control() {
 		[[ -z $MIN_FAN ]] && MIN_FAN=$DEF_MIN_FAN
 		[[ -z $MAX_FAN ]] && MAX_FAN=$DEF_MAX_FAN
 		[[ -z $NO_AMD ]] && NO_AMD=$DEF_NO_AMD
+		[[ -z $REBOOT_ON_ERROR ]] && REBOOT_ON_ERROR=$DEF_REBOOT_ON_ERROR
 		SLEEP_TIME=$DEF_SLEEP_TIME
 
 
@@ -364,6 +381,16 @@ auto_fan_control() {
 		#check if exist .conf
 
 		declare -a temperatures_array=(`cat $gpu_stats_json | tail -1 | jq -r ".temp | .[]"`)
+		
+		#reboot if temperatures_array is empty
+		if [[ -z $temperatures_array || $temperatures_array == 'null' ]]; then
+			local msg="Autofan: GPU driver error, rebooting"
+			echo -en "${RED}"
+			message err "$msg"
+			echo -en "${NOCOLOR}"
+			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+		fi
+		#
 
 		if [[ -n $TARGET_TEMP && -f $CONF_FILE && -f $gpu_stats_json ]]; then
 			#MIN_TEMP=$(( TARGET_TEMP-5 ))
