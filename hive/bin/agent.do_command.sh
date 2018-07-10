@@ -2,14 +2,18 @@
 
 function do_command () {
 	#body=$1
-	[[ -z $command ]] && command=`echo $body | jq -r '.command'` #get command for batch
+	[[ -z $command ]] && command=`echo "$body" | jq -r '.command'` #get command for batch
+
+	#Optional command identifier
+	cmd_id=$(echo "$body" | jq -r '.id')
+	[[ $cmd_id == "null" ]] && cmd_id=
 
 	case $command in
 		OK)
 			echo -e "${BGREEN}$command${NOCOLOR}"
 		;;
 		reboot)
-			message ok "Rebooting" 120
+			message ok "Rebooting" --id=$cmd_id
 			echo -e "${BRED}Rebooting${NOCOLOR}"
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 			#superreboot
@@ -20,18 +24,18 @@ function do_command () {
 				upgrade_exitcode=$?
 				echo "$payload"
 				[[ $upgrade_exitcode -eq 0 ]] &&
-					echo "$payload" | message ok "Selfupgrade successful" payload ||
-					echo "$payload" | message error "Selfupgrade failed" payload
+					echo "$payload" | message ok "Selfupgrade successful" payload --id='$cmd_id' ||
+					echo "$payload" | message error "Selfupgrade failed" payload --id='$cmd_id'
 			' > /tmp/nohup.log 2>&1 &
 		;;
 		exec)
-			exec=$(echo $body | jq '.exec' --raw-output)
+			local exec=$(echo "$body" | jq '.exec' --raw-output)
 			payload=`timeout 360 bash -c "$exec" 2>&1`
 			exitcode=$?
 			echo "$payload"
 			[[ $exitcode -eq 0 ]] &&
-				echo "$payload" | message info "$exec" payload ||
-				echo "$payload" | message error "Exec failed, exitcode=$exitcode" payload
+				echo "$payload" | message info "$exec" payload --id=$cmd_id ||
+				echo "$payload" | message error "$exec (failed, exitcode=$exitcode)" payload --id=$cmd_id
 		;;
 		config)
 			config=$(echo $body | jq '.config' --raw-output)
@@ -48,14 +52,14 @@ function do_command () {
 				if [[ $RIG_PASSWD != $NEW_PASSWD ]]; then
 					echo -e "${RED}New password:${NOCOLOR} $NEW_PASSWD";
 
-					message warning "Password change received, wait for next message..." 120
+					message warning "Password change received, wait for next message..." --id=$cmd_id
 					request=$(jq -n --arg rig_id "$RIG_ID" --arg passwd "$RIG_PASSWD" \
 					'{ "method": "password_change_received", "params": {$rig_id, $passwd}, "jsonrpc": "2.0", "id": 0}')
 					response=$(echo $request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=password_change_received" -H "Content-Type: application/json")
 
 					exitcode=$?
 					[ $exitcode -ne 0 ] &&
-						message error "Error notifying hive about \"password_change_received\"" &&
+						message error "Error notifying hive about \"password_change_received\"" --id=$cmd_id &&
 						return $exitcode #better exit because password will not be changed
 
 					error=$(echo $response | jq '.error' --raw-output)
@@ -93,10 +97,10 @@ function do_command () {
 				# Start Watchdog. It will exit if WD_ENABLED=0 ---------------------------
 				[[ $WD_ENABLED=1 ]] && wd restart
 
-				message ok "Rig config changed" 120
-				#[[ $? == 0 ]] && message ok "Wallet changed, miner restarted" 120 || message warn "Error restarting miner"
+				message ok "Rig config changed" --id=$cmd_id
+				#[[ $? == 0 ]] && message ok "Wallet changed, miner restarted" || message warn "Error restarting miner"
 			else
-				message error "No rig \"config\" given"
+				message error "No rig \"config\" given" --id=$cmd_id
 			fi
 		;;
 		wallet)
@@ -108,9 +112,9 @@ function do_command () {
 				oc_if_changed
 
 				miner restart
-				[[ $? == 0 ]] && message ok "Wallet changed, miner restarted" 120 || message warn "Error restarting miner"
+				[[ $? == 0 ]] && message ok "Wallet changed, miner restarted" --id=$cmd_id || message warn "Error restarting miner" --id=$cmd_id
 			else
-				message error "No \"wallet\" config given"
+				message error "No \"wallet\" config given" --id=$cmd_id
 			fi
 		;;
 		nvidia_oc)
@@ -127,8 +131,8 @@ function do_command () {
 					payload=`cat /var/log/nvidia-oc.log`
 					echo "$payload"
 					[[ $exitcode == 0 ]] &&
-						echo "$payload" | message ok "Nvidia settings applied" payload ||
-						echo "$payload" | message warn "Nvidia settings applied with errors, check X server running" payload
+						echo "$payload" | message ok "Nvidia settings applied" payload  --id='$cmd_id' ||
+						echo "$payload" | message warn "Nvidia settings applied with errors, check X server running" payload --id='$cmd_id'
 				' > /tmp/nohup.log 2>&1 &
 			else
 				echo -e "${YELLOW}Nvidia OC unchanged${NOCOLOR}"
@@ -148,8 +152,8 @@ function do_command () {
 					payload=`cat /var/log/amd-oc.log`
 					echo "$payload"
 					[[ $exitcode == 0 ]] &&
-						echo "$payload" | message ok "AMD settings applied" payload ||
-						echo "$payload" | message warn "AMD settings applied with errors" payload
+						echo "$payload" | message ok "AMD settings applied" payload --id='$cmd_id' ||
+						echo "$payload" | message warn "AMD settings applied with errors" payload --id='$cmd_id'
 				' > /tmp/nohup.log 2>&1 &
 			else
 				echo -e "${YELLOW}AMD OC unchanged${NOCOLOR}"
@@ -159,9 +163,9 @@ function do_command () {
 			autofan=$(echo $body | jq '.autofan' --raw-output)
 			if [[ ! -z $autofan && $autofan != "null" ]]; then
 				echo "$autofan" > $AUTOFAN_CONF
-				message ok "Autofan config applied"
+				message ok "Autofan config applied" --id=$cmd_id
 			else
-				message error "No \"autofan\" config given"
+				message error "No \"autofan\" config given" --id=$cmd_id
 			fi
 		;;
 		amd_download)
@@ -178,28 +182,28 @@ function do_command () {
 				if [[ $exitcode == 0 ]]; then
 					#payload=`cat /tmp/amd.saved.rom | base64`
 					#echo "$payload" | message file "VBIOS $gpu_index" payload
-					cat /tmp/amd.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "${WORKER_NAME}-$gpu_index-$gpu_type-$gpu_memsize-$gpu_memtype-$gpu_biosid.rom" payload
+					cat /tmp/amd.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "${WORKER_NAME}-$gpu_index-$gpu_type-$gpu_memsize-$gpu_memtype-$gpu_biosid.rom" payload --id=$cmd_id
 				else
-					echo "$payload" | message warn "AMD VBIOS saving failed" payload
+					echo "$payload" | message warn "AMD VBIOS saving failed" payload --id=$cmd_id
 				fi
 			else
-				message error "No \"gpu_index\" given"
+				message error "No \"gpu_index\" given" --id=$cmd_id
 			fi
 		;;
 		amd_upload)
 			gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
 			rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
 			if [[ -z $gpu_index || $gpu_index == "null" ]]; then
-				message error "No \"gpu_index\" given"
+				message error "No \"gpu_index\" given" --id=$cmd_id
 			elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
-				message error "No \"rom_base64\" given"
+				message error "No \"rom_base64\" given" --id=$cmd_id
 			else
 				force=$(echo $body | jq '.force' --raw-output)
 				[[ ! -z $force && $force == "1" ]] && extra_args="-f" || extra_args=""
 				echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded.rom
 				fsize=`cat /tmp/amd.uploaded.rom | wc -c`
 				if [[ -z $fsize || $fsize < 250000 ]]; then #too short file
-					message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping"
+					message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping" --id=$cmd_id
 				else
 					if [[ $gpu_index == -1 ]]; then # -1 = all
 				    	payload=`atiflashall $extra_args /tmp/amd.uploaded.rom`
@@ -209,9 +213,9 @@ function do_command () {
 				    exitcode=$?
 				    echo "$payload"
 					if [[ $exitcode == 0 ]]; then
-						echo "$payload" | message ok "ROM flashing OK, now reboot" payload
+						echo "$payload" | message ok "ROM flashing OK, now reboot" payload --id=$cmd_id
 					else
-						echo "$payload" | message warn "ROM flashing failed" payload
+						echo "$payload" | message warn "ROM flashing failed" payload --id=$cmd_id
 					fi
 				fi
 			fi
@@ -245,10 +249,10 @@ function do_command () {
 			[[ $exitcode == 0 ]] && payload+=$'\n'"`hostname -I`"
 			echo "$payload"
 			if [[ $exitcode == 0 ]]; then
-				echo "$payload" | message ok "OpenVPN configured" payload
+				echo "$payload" | message ok "OpenVPN configured" payload --id=$cmd_id
 				hello #to give new ips and openvpn flag
 			else
-				echo "$payload" | message warn "OpenVPN setup failed" payload
+				echo "$payload" | message warn "OpenVPN setup failed" payload --id=$cmd_id
 			fi
 		;;
 		openvpn_remove)
@@ -256,13 +260,13 @@ function do_command () {
 			(rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf; rm /hive-config/openvpn/auth.txt) > /dev/null 2>&1
 			openvpn-install #will remove /tmp/.openvpn-installed file
 			hello
-			message ok "OpenVPN service stopped, certificates removed"
+			message ok "OpenVPN service stopped, certificates removed" --id=$cmd_id
 		;;
 		"")
 			echo -e "${YELLOW}Got empty command, might be temporary network issue${NOCOLOR}"
 		;;
 		*)
-			message warning "Got unknown command \"$command\""
+			message warning "Got unknown command \"$command\"" --id=$cmd_id
 			echo -e "${YELLOW}Got unknown command ${CYAN}$command${NOCOLOR}"
 		;;
 	esac
@@ -301,8 +305,8 @@ function oc_if_changed () {
 			payload=`cat /var/log/nvidia-oc.log`
 			echo "$payload"
 			[[ $exitcode == 0 ]] &&
-				echo "$payload" | message ok "Nvidia settings applied" payload ||
-				echo "$payload" | message warn "Nvidia settings applied with errors, check X server running" payload
+				echo "$payload" | message ok "Nvidia settings applied" payload || --id=$cmd_id
+				echo "$payload" | message warn "Nvidia settings applied with errors, check X server running" payload --id=$cmd_id
 		fi
 	fi
 
@@ -315,8 +319,8 @@ function oc_if_changed () {
 			payload=`cat /var/log/amd-oc.log`
 			echo "$payload"
 			[[ $exitcode == 0 ]] &&
-				echo "$payload" | message ok "AMD settings applied" payload ||
-				echo "$payload" | message warn "AMD settings applied with errors" payload
+				echo "$payload" | message ok "AMD settings applied" payload || --id=$cmd_id
+				echo "$payload" | message warn "AMD settings applied with errors" payload --id=$cmd_id
 		fi
 	fi
 }
