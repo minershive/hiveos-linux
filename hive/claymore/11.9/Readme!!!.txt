@@ -169,11 +169,11 @@ COMMAND LINE OPTIONS:
 -logsmaxsize	maximal size of debug log files, in MB. At every start the miner checks all files in its folder, selects all files that contain "_log.txt" string and removes oldest files if summary files size is larger than specified value. 
 	Specify "-logsmaxsize 0" to cancel old logs removal. Default value is 1000 (i.e. about 1GB of log files are allowed).
 
--nofee	set "1" to cancel my developer fee at all. In this mode some optimizations are disabled so mining speed will be slower by about 4%. 
-	By enabling this mode, I will lose 100% of my earnings, you will lose only 2-3% of your earnings.
+-nofee	set "1" to cancel my developer fee at all. In this mode some optimizations are disabled so mining speed will be slower by about 3%. 
+	By enabling this mode, I will lose 100% of my earnings, you will lose only about 2% of your earnings.
 	So you have a choice: "fastest miner" or "completely free miner but a bit slower".
 	If you want both "fastest" and "completely free" you should find some other miner that meets your requirements, just don't use this miner instead of claiming that I need 
-	to cancel/reduce developer fee, saying that 1-2% developer fee is too much for this miner and so on.
+	to cancel/reduce developer fee, saying that 1% developer fee is too much for this miner and so on.
 
 -benchmark	benchmark mode, specify "-benchmark 1" to see hashrate for your hardware. You can also specify epoch number for benchmark, for example, "-benchmark 110".
 
@@ -191,7 +191,7 @@ COMMAND LINE OPTIONS:
 -tt	set target GPU temperature. For example, "-tt 80" means 80C temperature. You can also specify values for every card, for example "-tt 70,80,75".
 	You can also set static fan speed if you specify negative values, for example "-tt -50" sets 50% fan speed. Specify zero to disable control and hide GPU statistics.
 	"-tt 1" (default) does not manage fans but shows GPU temperature and fan status every 30 seconds. Specify values 2..5 if it is too often.
-	Note: for NVIDIA cards only temperature monitoring is supported, temperature management is not supported.
+	Note: for NVIDIA cards in Linux OS temperature management is not supported, only temperature monitoring is supported.
 	Note: for Linux gpu-pro drivers, miner must have root access to manage fans, otherwise only monitoring will be available.
 
 -ttdcr	reduce Decred/Siacoin/Lbry/Pascal intensity automatically if GPU temperature is above specified value. For example, "-ttdcr 80" reduces Decred intensity if GPU temperature is above 80C. 
@@ -215,24 +215,26 @@ COMMAND LINE OPTIONS:
 
 -fanmax	set maximal fan speed, in percents, for example, "-fanmax 80" will set maximal fans speed to 80%. You can also specify values for every card, for example "-fanmax 50,60,70".
 	This option works only if miner manages cooling, i.e. when "-tt" option is used to specify target temperature. Default value is "100".
-	Note: for NVIDIA cards this option is not supported.
+	Note: for NVIDIA cards this option is supported in Windows only.
 
 -fanmin	set minimal fan speed, in percents, for example, "-fanmin 50" will set minimal fans speed to 50%. You can also specify values for every card, for example "-fanmin 50,60,70".
 	This option works only if miner manages cooling, i.e. when "-tt" option is used to specify target temperature. Default value is "0".
-	Note: for NVIDIA cards this option is not supported.
+	Note: for NVIDIA cards this option is supported in Windows only.
 
 -cclock	set target GPU core clock speed, in MHz. If not specified or zero, miner will not change current clock speed. You can also specify values for every card, for example "-cclock 1000,1050,1100,0".
+	For NVIDIA you can also specify delta clock by using "+" and "-" prefix, for example, "-cclock +300,-400,+0".
 	Note: for some drivers versions AMD blocked underclocking for some reason, you can overclock only.
 	Note: this option changes clocks for all power states, so check voltage for all power states in WattMan or use -cvddc option.  
 	By default, low power states have low voltage, setting high GPU clock for low power states without increasing voltage can cause driver crash.
-	Note: for NVIDIA cards this option is not supported.
+	Note: for NVIDIA cards this option is supported in Windows only. 
 
 -mclock	set target GPU memory clock speed, in MHz. If not specified or zero, miner will not change current clock speed. You can also specify values for every card, for example "-mclock 1200,1250,1200,0".
+	For NVIDIA you can also specify delta clock by using "+" and "-" prefix, for example, "-cclock +300,-400,+0".
 	Note: for some drivers versions AMD blocked underclocking for some reason, you can overclock only.
-	Note: for NVIDIA cards this option is not supported.
+	Note: for NVIDIA cards this option is supported in Windows only.
 
--powlim set power limit, from -50 to 50. If not specified, miner will not change power limit. You can also specify values for every card, for example "-powlim 20,-20,0,10".
-	Note: for NVIDIA cards this option is not supported.
+-powlim set power limit, usually from -50 to 50. For example, "-powlim -20" means 80% power limit. If not specified, miner will not change power limit. You can also specify values for every card, for example "-powlim 20,-20,0,10".
+	Note: for NVIDIA cards this option is supported in Windows only.
 
 -cvddc	set target GPU core voltage, multiplied by 1000. For example, "-cvddc 1050" means 1.05V. You can also specify values for every card, for example "-cvddc 900,950,1000,970". Supports latest AMD 4xx cards only in Windows.
 	Note: for NVIDIA cards this option is not supported.
@@ -266,6 +268,10 @@ COMMAND LINE OPTIONS:
 -epoolsfile	failover filename for ETH, default value is "epools.txt".
 
 -dpoolsfile	failover filename for seconds coin, default value is "dpools.txt".
+
+-y	enables Compute Mode and disables CrossFire for AMD cards. "-y 1" works as pressing "y" key when miner starts. This option works in Windows only.
+
+-showdiff	shows difficulty for every ETH share and also displays maximal found share difficulty when you press "s" key.
 
 
 
@@ -435,6 +441,11 @@ FAQ
 - I cannot mine ETH/ETC with Nvidia 3GB card in Windows 10.
   Windows 10 internally allocates about 20% of GPU memory so applications can use only 80% of GPU memory. Use Windows 7 or Linux. 
 
+- I see 0% devfee for all 2GB and 3GB cards in Windows 10, my rig has some 3GB cards and some 6GB cards, how is the fee calculated in this case?
+  During devfee mining 3GB cards still mine for you. How does it work? Miner creates second connection for devfee mining, main connection still works and 3GB cards still find shares for it. 
+  You can see these shares in the log file, all devfee shares contain "Devfee:" string, normal shares don't contain this string and 3GB cards can find them during devfee mining as well.
+  Note that devfee mining takes only 36 or 54 seconds per hour so it can take many hours to find normal shares during devfee mining.
+
 - What is dwarfpool proxy (eth-proxy)?
 Official Ethereum miner does not support Stratum protocol, it supports HTTP protocol only. It causes less profit because of delays.
 A proxy was created to fix it, so official Ethereum miner is locally connected to the proxy by HTTP protocol, for local network delays due to HTTP protocol are small. Proxy is connected to the pool via Stratum protocol so it has small delays too. Currently most pools support Stratum and you have to use HTTP-to-Stratum proxy to make official miner work with pools properly. Of course you can try to connect official miner to a pool directly via HTTP but you will lose 10-20% shares because of a short block time in Ethereum.
@@ -492,10 +503,10 @@ This miner does not use HTTP protocol, it uses Stratum directly. So you should c
   Usually I use "ethpool" pool for tests.
 
 - I see only one card via Remote Desktop Connection.
-  It's a problem of RDC, use TeamViewer or some other remote access software.
+  It's a problem of RDC, use TeamViewer or some other remote access software. Or try to use latest version of the miner.
 
 - I see only one card instead of two in temperature management info.
-  Disable CrossFire, don't use Remote Desktop Connection.
+  Disable CrossFire, don't use Remote Desktop Connection. Or try to use latest version of the miner.
 
 - Miner works in ETH-only mode but crashes in dual mode.
   Dual mode requires more power, so make sure PSU power is enough and check GPU clocks if you OC'ed them.
