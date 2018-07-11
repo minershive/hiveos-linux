@@ -30,7 +30,7 @@ DEF_MAX_FAN=100
 DEF_CRITICAL_TEMP=85
 #AMD fan control (AMD control enable-0/AMD control disable-1)
 DEF_NO_AMD=0
-#Reboot rig if GPU error (enable-0/disable-1)
+#Reboot rig if GPU error (enable-1/disable-0)
 DEF_REBOOT_ON_ERROR=0
 #######################################################################
 
@@ -125,12 +125,10 @@ get_fan_speed () {
 	
 	#checking var is natural number
 	if [[ -z "${cur_temp##*[!0-9]*}" || -z "${cur_fan_speed##*[!0-9]*}" ]]; then
-		if [[ $REBOOT_ON_ERROR == 0 ]]; then
+		if [[ $REBOOT_ON_ERROR == 1 ]]; then
 			local msg="Autofan: GPU error, rebooting"
-			echo -en "${RED}"
-			message warning "$msg"
-			echo -en "${NOCOLOR}"
-			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 & 
+			echo -n "Bus id: $gpu_bus_id\nTemp: $cur_temp\nFan: $cur_fan_speed" | message warning "$msg" payload
+			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 		else break
 		fi
 	fi
@@ -242,9 +240,7 @@ check_overheat() {
 			miner_stopped_by_overheat=0 #let's forget about this
 			do_miner_action "miner-start"
 			local msg="GPU cooled down, mining resumed"
-			echo -en "${GREEN}"
 			message ok "$msg"
-			echo -en "${NOCOLOR}"
 			#echo2 "${GREEN}$msg${NOCOLOR}"
 		fi
 	elif [[ $miner_stopped_by_overheat == 0 ]]; then
@@ -254,16 +250,12 @@ check_overheat() {
 				miner_stopped_by_overheat=1
 				do_miner_action "miner-stop"
 				local msg="GPU reached ${CRITICAL_TEMP}°C, mining stopped"
-				echo -en "${RED}"
 				message warning "$msg"
-				echo -en "${NOCOLOR}"
 
 				#rebooting if 511
 				if [[ $t -gt 100 ]]; then
 					local msg="GPU temperature unreal, `uname -n` will be rebooted"
-					echo -en "${RED}"
 					message warning "$msg"
-					echo -en "${NOCOLOR}"
 					nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 				fi
 				break
@@ -326,9 +318,7 @@ nvidia_auto_fan_control () {
 		timeout 30 nvidia-settings $args > /dev/null 2>&1
 		if [[ $? -ne 0 ]]; then
 			local msg="Autofan: unable to set fan speed, rebooting"
-			echo -en "${RED}"
 			message warning "$msg"
-			echo -en "${NOCOLOR}"
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 		fi
 	fi
@@ -385,9 +375,7 @@ auto_fan_control() {
 		#reboot if temperatures_array is empty
 		if [[ -z $temperatures_array || $temperatures_array == 'null' ]]; then
 			local msg="Autofan: GPU driver error, rebooting"
-			echo -en "${RED}"
 			message err "$msg"
-			echo -en "${NOCOLOR}"
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 		fi
 		#
