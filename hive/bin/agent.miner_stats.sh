@@ -342,14 +342,16 @@ function miner_stats {
 #				echo $summary
 				re=';UPTIME=([0-9]+);' && [[ $summary =~ $re ]] && local uptime=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
 				#khs will calculate from cards; re=';KHS=([0-9\.]+);' && [[ $summary =~ $re ]] && khs=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
-				vers=`echo "$summary" | tr ';' '\n' | grep -m1 'VER=' | sed -e 's/.*=//'`
-				algo=`echo "$summary" | tr ';' '\n' | grep -m1 'ALGO=' | sed -e 's/.*=//'`
-				acc=`echo "$summary" | tr ';' '\n' | grep -m1 'ACC=' | sed -e 's/.*=//'`
-				rej=`echo "$summary" | tr ';' '\n' | grep -m1 'REJ=' | sed -e 's/.*=//'`
-				striplines=`echo "$threads" | tr "|" "\n" | tr ";" "\n" | tr -cd '\11\12\15\40-\176'`
-				hashes_val=(`echo "$striplines" | grep -E "H/s=" | sed -e 's/.*=//'`)
-				hashes_pre=(`echo "$striplines" | grep -E "H/s=" | sed -e 's/H.*//'`)
-				total_hs=0
+				local vers=`echo "$summary" | tr ';' '\n' | grep -m1 'VER=' | sed -e 's/.*=//'`
+				local algo=`echo "$summary" | tr ';' '\n' | grep -m1 'ALGO=' | sed -e 's/.*=//'`
+				local acc=`echo "$summary" | tr ';' '\n' | grep -m1 'ACC=' | sed -e 's/.*=//'`
+				local rej=`echo "$summary" | tr ';' '\n' | grep -m1 'REJ=' | sed -e 's/.*=//'`
+				local striplines=`echo "$threads" | tr "|" "\n" | tr ";" "\n" | tr -cd '\11\12\15\40-\176'`
+				local hashes_val=(`echo "$striplines" | grep -E "H/s=" | sed -e 's/.*=//'`)
+				local hashes_pre=(`echo "$striplines" | grep -E "H/s=" | sed -e 's/H.*//'`)
+				local total_hs=0
+				local hs=0
+				local temp=0
 				kilo=1000
 				for (( i=0; i < ${#hashes_val[@]}; i++ )); do
 					smb=${hashes_pre[$i]}
@@ -371,7 +373,7 @@ function miner_stats {
 					hs[$i]=`echo ${hashes_val[$i]} | awk -v koef=$koef '{print $1*koef}' | awk '{ printf("%.f",$1) }'`
 					total_hs=$(($total_hs+${hs[$i]}))
 					# Get CPU temp from stats and if we get 0 then get it from sysfs
-					local tcore=`echo "$summary" | tr ';' '\n' | grep -m1 'TEMP=' | sed -e 's/.*=//'`
+					local tcore=`echo "$summary" | tr ';' '\n' | grep -m1 'TEMP=' | sed -e 's/.*=//' | awk 'printf("%.0f",$1)'`
 					if [[ -z $tcore ]] || [[ $tcore -eq 0 ]]; then
 					   tcore=$((`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input | head -n 1`/1000))
 					fi
@@ -386,7 +388,7 @@ function miner_stats {
 					--arg uptime "$uptime" --arg algo "$algo" \
 					--argjson hs "`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`" \
 					--argjson temp "`echo ${temps[@]} | tr " " "\n" | jq -cs '.'`" \
-					'{$vers, $algo, $hs, $acc, $rej, $temp, $uptime}')
+					'{$vers, $algo, $hs, ar: [$acc, $rej], $temp, $uptime}')
 			fi
 		;;
 		custom)
