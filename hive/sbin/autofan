@@ -127,13 +127,8 @@ get_fan_speed () {
 	if [[ -z "${cur_temp##*[!0-9]*}" || -z "${cur_fan_speed##*[!0-9]*}" ]]; then
 		if [[ $REBOOT_ON_ERROR == 1 ]]; then
 			local msg="Autofan: GPU error, rebooting"
-			#echo -n "GPU bus id: $gpu_bus_id\nTemp: $cur_temp°C\nFan: $cur_fan_speed%" | message warning "$msg" payload
-			local payload_busids=`cat $gpu_stats_json | tail -1 | jq -c ".busids"`
-			local payload_temp=`cat $gpu_stats_json | tail -1 | jq -c ".temp"`
-			local payload_fan=`cat $gpu_stats_json | tail -1 | jq -c ".fan"`
-			local payload_power=`cat $gpu_stats_json | tail -1 | jq -c ".power"`
-			echo -en "GPU: $payload_busids\nTemp: $payload_temp\nFan: $payload_fan\n
-				Power: $payload_power" | message warning "$msg" payload
+			local payload=`cat $gpu_stats_json | jq -r -C .`
+			echo "$payload" | message warning "$msg" payload
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 		else break
 		fi
@@ -381,13 +376,8 @@ auto_fan_control() {
 		#reboot if temperatures_array is empty
 		if [[ -z $temperatures_array || $temperatures_array == 'null' ]]; then
 			local msg="Autofan: GPU driver error, rebooting"
-			#local payload=`cat $gpu_stats_json`
-			local payload_busids=`cat $gpu_stats_json | tail -1 | jq -c ".busids"`
-			local payload_temp=`cat $gpu_stats_json | tail -1 | jq -c ".temp"`
-			local payload_fan=`cat $gpu_stats_json | tail -1 | jq -c ".fan"`
-			local payload_power=`cat $gpu_stats_json | tail -1 | jq -c ".power"`
-			echo -en "GPU: $payload_busids\nTemp: $payload_temp\nFan: $payload_fan\n
-				Power: $payload_power" | message err "$msg" payload
+			local payload=`cat $gpu_stats_json | jq -r -C .`
+			echo "$payload" | message err "$msg" payload
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 		fi
 		#
