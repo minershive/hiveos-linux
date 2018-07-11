@@ -127,7 +127,8 @@ get_fan_speed () {
 	if [[ -z "${cur_temp##*[!0-9]*}" || -z "${cur_fan_speed##*[!0-9]*}" ]]; then
 		if [[ $REBOOT_ON_ERROR == 1 ]]; then
 			local msg="Autofan: GPU error, rebooting"
-			echo -n "Bus id: $gpu_bus_id\nTemp: $cur_temp\nFan: $cur_fan_speed" | message warning "$msg" payload
+			local payload=`cat $gpu_stats_json | jq -r -C .`
+			echo "$payload" | message warning "$msg" payload
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 		else break
 		fi
@@ -375,7 +376,8 @@ auto_fan_control() {
 		#reboot if temperatures_array is empty
 		if [[ -z $temperatures_array || $temperatures_array == 'null' ]]; then
 			local msg="Autofan: GPU driver error, rebooting"
-			message err "$msg"
+			local payload=`cat $gpu_stats_json | jq -r -C .`
+			echo "$payload" | message err "$msg" payload
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 		fi
 		#
