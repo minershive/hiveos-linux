@@ -1,6 +1,38 @@
 VERSION HISTORY
 
 
+
+v11.9
+---------------------------------------------------------------------
+
+- fixed issue with incorrect shares for Keccak.
+
+
+
+v11.8
+---------------------------------------------------------------------
+
+- fixed issue with missed GPU temperatures when miner is started via Remote Desktop Connection (RDC).
+- Linux version: removed libcurl library dependency.
+- added "-showdiff" option.
+- a few minor bug fixes and improvements.
+
+
+
+v11.7
+---------------------------------------------------------------------
+
+- added temperature management and overclock support for recent Nvidia cards in Windows: "-tt", "-powlim", "-cclock", "-mclock", "-tt", "-fanmax", "-fanmin" options are supported for Nvidia too.
+- now "y" key also disables CrossFire.
+- added "-y" option.
+- fixed issue with miner restart that was required sometimes to apply overclock settings for AMD cards.
+- fixed issue with rejected shares when "-esm 3" option is used.
+- Linux version: fixed issue with remote management.
+- some changes in watchdog routines to improve ability to restart miner after various OpenCL fails.
+- a few minor bug fixes and improvements.
+
+
+
 v11.6
 ---------------------------------------------------------------------
 

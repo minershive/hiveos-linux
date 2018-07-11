@@ -19,7 +19,8 @@ force=
 basename=`basename -s .tar.gz "$url"`
 archname=`basename "$url"`
 
-miner=`echo "$basename" | awk -F '-' '{ print $1 }'`
+version=`echo "$basename" | awk -F '-' '{ print $NF }'`
+miner=`echo "$basename" | sed 's/'-$version'$//'`
 
 [[ -z $miner ]] &&
 	echo -e "${RED}Unable to detect miner name from given URL${NOCOLOR}" &&

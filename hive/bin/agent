@@ -47,8 +47,11 @@ cpu_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(
 
 function reset_miner_vars() {
 	#reset all miner vars
+	MINER=
+	COIN=
 	for i in {1..32}; do
 		eval unset MINER$i
+		eval unset COIN$i
 	done
 }
 
@@ -65,7 +68,7 @@ function loop {
 	. $WALLET_CONF
 
 
-	[ -z $MINER ] && MINER="claymore"
+	[[ -z $MINER ]] && MINER="claymore"
 	HIVE_URL="$HIVE_HOST_URL/worker/api"
 
 	gpu_stats=`gpu-stats`
@@ -86,11 +89,16 @@ function loop {
 	local mindex
 	for mindex in {32..2}; do
 		eval minerval=\$MINER$mindex
+		eval coinval=\$COIN$mindex
 		if [[ ! -z $minerval ]]; then
 			miner_stats $minerval $mindex
 			eval khs$mindex=\$khs
-			miner_json=$(jq -n -c --arg miner$mindex "$minerval" --arg total_khs$mindex "$khs" --argjson miner_stats$mindex "$stats" \
-				'{"params": {$miner'$mindex', $total_khs'$mindex', $miner_stats'$mindex'}}')
+			miner_json=$(jq -n -c \
+				--arg miner$mindex "$minerval" \
+				--arg coin$mindex "$coinval" \
+				--arg total_khs$mindex "$khs" \
+				--argjson miner_stats$mindex "$stats" \
+				'{"params": {$miner'$mindex', $coin'$mindex', $total_khs'$mindex', $miner_stats'$mindex'}}')
 			eval miner${mindex}_json="\$miner_json"
 		fi
 	done
@@ -122,6 +130,7 @@ function loop {
 	--arg rig_id "$RIG_ID" \
 	--arg passwd "$RIG_PASSWD" \
 	--arg miner "$MINER" \
+	--arg coin "$COIN" \
 	--argjson miner_stats "$stats" \
 	--arg total_khs "$khs" \
 	--argjson temp "$temp" \
@@ -132,7 +141,7 @@ function loop {
 	'{
 		"method": "stats", "jsonrpc": "2.0", "id": 0,
 		"params": {
-			$rig_id, $passwd, $miner, $miner_stats, $total_khs,
+			$rig_id, $passwd, $miner, $coin, $miner_stats, $total_khs,
 			$temp, $fan, $power, $df, $cpuavg
 		}
 	}'
