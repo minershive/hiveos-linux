@@ -321,11 +321,12 @@ nvidia_auto_fan_control () {
 	#[[ -n $args ]] && nvidia-settings $args > /dev/null 2>&1
 	if [[ -n $args ]]; then
 		timeout 30 nvidia-settings $args > /dev/null 2>&1
-		if [[ $? -ne 0 && $REBOOT_ON_ERROR == 1]]; then
+		if [[ $? -ne 0 && $REBOOT_ON_ERROR == 1 ]]; then
 			local msg="Autofan: unable to set fan speed, rebooting"
 			message warning "$msg"
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
-		else
+		fi
+		if [[ $? -ne 0 && $REBOOT_ON_ERROR == 0 ]]; then
 			local msg="Autofan: unable to set fan speed"
 			message warning "$msg"
 		fi
