@@ -247,18 +247,22 @@ check_overheat() {
 	elif [[ $miner_stopped_by_overheat == 0 ]]; then
 		local t
 		for t in ${temperatures_array[@]}; do
-			if [[ $t -ge $CRITICAL_TEMP ]]; then
+			#reboot on driver error
+			if [[ $REBOOT_ON_ERROR == 1 && $t -gt 120 ]]; then
+				local msg="GPU temperature $t is unreal, driver error"
+				local payload=`cat $gpu_stats_json | jq -r -C .`
+				echo "$payload" | message warning "$msg"
+				nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+				break
+			fi
+
+			#stop on CRITICAL_TEMP
+			if [[ $t -ge $CRITICAL_TEMP && $t -ne 511 ]]; then
 				miner_stopped_by_overheat=1
 				do_miner_action "miner-stop"
 				local msg="GPU reached ${CRITICAL_TEMP}°C, mining stopped"
-				message warning "$msg"
-
-				#rebooting if 511
-				if [[ $t -gt 100 ]]; then
-					local msg="GPU temperature unreal, `uname -n` will be rebooted"
-					message warning "$msg"
-					nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
-				fi
+				local payload=`cat $gpu_stats_json | jq -r -C .`
+				echo "$payload" | message warning "$msg"
 				break
 			fi
 		done
@@ -374,7 +378,7 @@ auto_fan_control() {
 		declare -a temperatures_array=(`cat $gpu_stats_json | tail -1 | jq -r ".temp | .[]"`)
 		
 		#reboot if temperatures_array is empty
-		if [[ -z $temperatures_array || $temperatures_array == 'null' ]]; then
+		if [[ $REBOOT_ON_ERROR == 1 && -z $temperatures_array || $temperatures_array == 'null' ]]; then
 			local msg="Autofan: GPU driver error, rebooting"
 			local payload=`cat $gpu_stats_json | jq -r -C .`
 			echo "$payload" | message err "$msg" payload
