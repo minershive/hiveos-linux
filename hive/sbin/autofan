@@ -325,7 +325,8 @@ nvidia_auto_fan_control () {
 			local msg="Autofan: unable to set fan speed, rebooting"
 			message warning "$msg"
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
-		elif [[ $? -ne 0 && $REBOOT_ON_ERROR == 0 ]]; then
+		fi
+		if [[ $? -ne 0 && $REBOOT_ON_ERROR == 0 ]]; then
 			local msg="Autofan: unable to set fan speed"
 			message warning "$msg"
 		fi
