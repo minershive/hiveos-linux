@@ -193,12 +193,13 @@ function miner_stats {
 				khs=`echo $stats_raw | jq '.result[].sol_ps' | awk '{s+=$1} END {print s/1000}'`
 				local uptime=$(( `date +%s` - $(stat -c%X /proc/`pidof zm`) )) #dont think zm will die so soon after getting stats
 #				local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
-				local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
+#				local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
+				local temp=$(jq -c '[.result[].temperature]' <<< "$stats_raw")
 				local ac=`echo $stats_raw | jq '[.result[].accepted_shares] | add'`
 				local rj=`echo $stats_raw | jq '[.result[].rejected_shares] | add'`
 
 				#All fans speed array
-				local fan=$(jq -r ".fan | .[]" <<< $gpu_stats)
+				local fan=$(jq -r ".fan | .[]" <<< "$gpu_stats")
 				#DSTM's busid array
 				local bus_id_array=$(jq -r '.result[].gpu_pci_bus_id' <<< "$stats_raw")
 				#All busid array
@@ -219,7 +220,8 @@ function miner_stats {
 					done
 				done
 
-				stats=$(jq --argjson temp "$temp" --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" --arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" \
+				stats=$(jq --argjson temp "$temp" --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
+					--arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" \
 					'{ hs: [.result[].sol_ps], $temp, $fan, $uptime, ar: [$ac, $rj] }' <<< "$stats_raw")
 			fi
 		;;

@@ -32,6 +32,9 @@ gpu_stats=
 #nvidia_indexes=echo "$gpu_stats" | jq '.brand | to_entries[] | select(.value == "nvidia") | .key' | jq -sc '.'
 #nvidia_indexes=`gpu-detect listjson | jq '. | to_entries[] | select(.value.brand == "nvidia") | .key' | jq -sc '.'`
 #gpu_detect_json=`gpu-detect listjson`
+if [[ ! -e /run/hive/gpu-detect.json ]]; then #this is needed only when upgrading version. later we can remove this
+	gpu-detect listjson > /run/hive/gpu-detect.json
+fi
 gpu_detect_json=`cat /run/hive/gpu-detect.json`
 amd_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]'`
 nvidia_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'`
@@ -48,10 +51,8 @@ cpu_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(
 function reset_miner_vars() {
 	#reset all miner vars
 	MINER=
-	COIN=
 	for i in {1..32}; do
 		eval unset MINER$i
-		eval unset COIN$i
 	done
 }
 
@@ -89,16 +90,14 @@ function loop {
 	local mindex
 	for mindex in {32..2}; do
 		eval minerval=\$MINER$mindex
-		eval coinval=\$COIN$mindex
 		if [[ ! -z $minerval ]]; then
 			miner_stats $minerval $mindex
 			eval khs$mindex=\$khs
 			miner_json=$(jq -n -c \
 				--arg miner$mindex "$minerval" \
-				--arg coin$mindex "$coinval" \
 				--arg total_khs$mindex "$khs" \
 				--argjson miner_stats$mindex "$stats" \
-				'{"params": {$miner'$mindex', $coin'$mindex', $total_khs'$mindex', $miner_stats'$mindex'}}')
+				'{"params": {$miner'$mindex', $total_khs'$mindex', $miner_stats'$mindex'}}')
 			eval miner${mindex}_json="\$miner_json"
 		fi
 	done
@@ -125,24 +124,26 @@ function loop {
 	#echo $stats
 	#uptime: load averages for the past 1, 5, and 15 minutes
 
+	[[ ! -z $META ]] && meta="$META" || meta='null'
 	request=$(
 	jq -n \
 	--arg rig_id "$RIG_ID" \
 	--arg passwd "$RIG_PASSWD" \
 	--arg miner "$MINER" \
-	--arg coin "$COIN" \
+	--argjson meta "$meta" \
 	--argjson miner_stats "$stats" \
 	--arg total_khs "$khs" \
 	--argjson temp "$temp" \
 	--argjson fan "$fan" \
 	--argjson power "$power" \
 	--arg df "`df -h / | awk '{ print $4 }' | tail -n 1 | sed 's/%//'`" \
+	--argjson mem "`free -m | grep 'Mem' | awk '{print "["$2","$4"]"}'`" \
 	--argjson cpuavg "[`uptime | awk -F': ' '{print $2}'`]" \
 	'{
 		"method": "stats", "jsonrpc": "2.0", "id": 0,
 		"params": {
-			$rig_id, $passwd, $miner, $coin, $miner_stats, $total_khs,
-			$temp, $fan, $power, $df, $cpuavg
+			$rig_id, $passwd, $miner, $meta, $miner_stats, $total_khs,
+			$temp, $fan, $power, $df, $mem, $cpuavg
 		}
 	}'
 	)
