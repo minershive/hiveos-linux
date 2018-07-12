@@ -373,7 +373,7 @@ function miner_stats {
 					hs[$i]=`echo ${hashes_val[$i]} | awk -v koef=$koef '{print $1*koef}' | awk '{ printf("%.f",$1) }'`
 					total_hs=$(($total_hs+${hs[$i]}))
 					# Get CPU temp from stats and if we get 0 then get it from sysfs
-					local tcore=`echo "$summary" | tr ';' '\n' | grep -m1 'TEMP=' | sed -e 's/.*=//' | awk 'printf("%.0f",$1)'`
+					local tcore=`echo "$summary" | tr ';' '\n' | grep -m1 'TEMP=' | sed -e 's/.*=//' | awk '{printf("%.0f",$1)}'`
 					if [[ -z $tcore ]] || [[ $tcore -eq 0 ]]; then
 					   tcore=$((`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input | head -n 1`/1000))
 					fi
