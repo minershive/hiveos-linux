@@ -44,6 +44,8 @@ unable_to_set_fan_speed=0
 temperature_is_unreal=0
 #unparsable data
 error_in_temp_readings=0
+#unparsable data
+error_in_temp_readings=0
 
 ###
 # Log write
@@ -403,17 +405,27 @@ auto_fan_control() {
 		echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
 		#echo2 "${GREEN}¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯${NOCOLOR}"
 		#check if exist .conf
-
 		declare -a temperatures_array=(`cat $gpu_stats_json | tail -1 | jq -r ".temp | .[]"`)
-		
+
 		#reboot if temperatures_array is empty
-		if [[ $REBOOT_ON_ERROR == 1 && -z $temperatures_array || $temperatures_array == 'null' ]]; then
-			local msg="Autofan: GPU driver error, rebooting"
-			local payload=`cat $gpu_stats_json | jq -r -C .`
-			echo "$payload" | message err "$msg" payload
-			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+		if [[ -z $temperatures_array || $temperatures_array == 'null' ]]; then
+			if [[ $REBOOT_ON_ERROR == 1 ]]; then
+				local msg="Autofan: GPU driver error, no temps, rebooting"
+				local payload=`cat $gpu_stats_json | jq -r -C .`
+				echo "$payload" | message err "$msg" payload
+				nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+			else
+				if [[ $error_in_temp_readings == 0 ]]; then
+					local msg="Autofan: GPU driver error, no temps"
+					local payload=`cat $gpu_stats_json | jq -r -C .`
+					echo "$payload" | message warning "$msg" payload
+				fi
+			fi
+			error_in_temp_readings=1
+			read -t $SLEEP_TIME
+			continue
 		fi
-		#
+
 
 		if [[ -n $TARGET_TEMP && -f $CONF_FILE && -f $gpu_stats_json ]]; then
 			#MIN_TEMP=$(( TARGET_TEMP-5 ))
@@ -441,10 +453,9 @@ auto_fan_control() {
 			echo2 "$gpu_info"
 
 			declare -a temperatures_array_previous=(${temperatures_array[@]})
-
 		fi
 
-		#miner_stop will be work 
+		#miner_stop will be work
 		check_overheat
 
 		#sleep $SLEEP_TIME
