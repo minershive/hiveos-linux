@@ -83,10 +83,11 @@ jq -n \
 --arg manufacturer "$mb_manufacturer" --arg product "$mb_product" \
 --arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" \
 --arg kernel "$kernel" \
+--arg server_url "$HIVE_HOST_URL" \
 '{
 	"method": "hello", "jsonrpc": "2.0", "id": 0,
 	"params": {
-		$rig_id, $passwd, $farm_hash,
+		$rig_id, $passwd, $farm_hash, $server_url,
 		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
 		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes},
