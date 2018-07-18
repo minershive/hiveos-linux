@@ -5,7 +5,7 @@
     "colors": true,
     "cpu-affinity": null,
     "cpu-priority": null,
-    "donate-level": 1,
+    "donate-level": 0,
     "log-file": null,
     "max-cpu-usage": 75,
     "print-time": 60,
@@ -16,7 +16,7 @@
     "threads": null,
     "pools": [
         {
-            "url": "cryptonight.eu.nicehash.com:3355",
+            "url": "cryptonightv7.eu.nicehash.com:3363",
             "user": "33v4eKxAeJxgBEURuvjiYDhBPfRap4K8Lf.worker",
             "pass": "x",
             "keepalive": true,
