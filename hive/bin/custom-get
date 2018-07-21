@@ -30,13 +30,13 @@ miner=`echo "$basename" | sed 's/'-$version'$//'`
 echo -e "${GREEN}$miner${NOCOLOR}"
 echo -e "$url"
 
-if [[ -d /hive/custom/$miner ]]; then
+if [[ -d /hive/custom/$basename ]]; then
 	[[ -z $force ]] &&
 		echo -e "${YELLOW}Already installed${NOCOLOR}" &&
 		exit 0
 
 	echo -e "${YELLOW}> Removing previous installation${NOCOLOR}" &&
-	rm -rf /hive/custom/$miner
+	rm -rf /hive/custom/$basename
 fi
 
 
@@ -57,7 +57,7 @@ echo "> Unpacking $archpath"
 tar -xzv -f $archpath
 [ $? -ne 0 ] && echo "Error extracting $archpath" && exit 1
 
-chown -R user /hive/custom/$miner
+chown -R user /hive/custom/$basename
 
 
 echo "> Removing downloaded $archpath"
