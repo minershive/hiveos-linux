@@ -44,8 +44,7 @@ unable_to_set_fan_speed=0
 temperature_is_unreal=0
 #unparsable data
 error_in_temp_readings=0
-#unparsable data
-error_in_temp_readings=0
+
 
 ###
 # Log write
@@ -54,6 +53,7 @@ function echo2 {
 	#echo -e "$1" >> $AUTOFAN_LOG
 	echo -e "$1"
 }
+
 
 #check $gpu_detect_json and do nothing while not exist
 while true; do 
