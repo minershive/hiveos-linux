@@ -343,7 +343,7 @@ nvidia_auto_fan_control () {
 	done
 	#[[ -n $args ]] && nvidia-settings $args > /dev/null 2>&1
 	if [[ -n $args ]]; then
-		timeout 30 nvidia-settings $args > /dev/null 2>&1
+		timeout 60 nvidia-settings $args > /dev/null 2>&1
 		if [[ $? -ne 0 ]]; then
 			if [[ $REBOOT_ON_ERROR == 1 ]]; then
 				local msg="Autofan: unable to set fan speed, rebooting"
