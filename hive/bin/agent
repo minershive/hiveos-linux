@@ -51,7 +51,7 @@ cpu_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(
 function reset_miner_vars() {
 	#reset all miner vars
 	MINER=
-	for i in {1..32}; do
+	for i in {2..32}; do
 		eval unset MINER$i
 	done
 }
@@ -99,6 +99,8 @@ function loop {
 				--argjson miner_stats$mindex "$stats" \
 				'{"params": {$miner'$mindex', $total_khs'$mindex', $miner_stats'$mindex'}}')
 			eval miner${mindex}_json="\$miner_json"
+		else
+			eval miner${mindex}_json=
 		fi
 	done
 
