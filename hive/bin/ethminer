@@ -24,11 +24,17 @@ function config_gen() {
 
 	#put default config settings
 	#\n--farm-recheck 2000
-	echo -e "--report-hashrate --api-port 3334 -HWMON" > $MINER_CONFIG
+	echo -e "--report-hashrate --api-port 3334" > $MINER_CONFIG
+	if [[ $ETHMINER_VER == "0.14.0" ]]; then
+		echo -e "-HWMON" >> $MINER_CONFIG
+	else #0.15.0 and later
+		echo -e "--HWMON 1" >> $MINER_CONFIG
+	fi
 
 	[[ $ETHMINER_OPENCL == 1 && -z $ETHMINER_CUDA ]] && echo "--opencl" >> $MINER_CONFIG
 	[[ -z $ETHMINER_OPENCL && $ETHMINER_CUDA == 1 ]] && echo "--cuda" >> $MINER_CONFIG
 	[[ $ETHMINER_OPENCL == 1 && $ETHMINER_CUDA == 1 ]] && echo "--cuda-opencl" >> $MINER_CONFIG
+	[[ -z $ETHMINER_OPENCL && -z $ETHMINER_CUDA ]] && echo "--cuda-opencl --opencl-platform 1" >> $MINER_CONFIG
 
 
 #pre 0.14.0rc0
