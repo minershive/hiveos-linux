@@ -31,6 +31,11 @@ function config_gen() {
 		echo -e "\nalgo\t" $EWBF_ALGO >> $EWBF_CONFIG
 	fi
 
+	if [[ $EWBF_FORK == "zhash_0.4" ]]; then
+		[[ $EWBF_ALGO == "210_9" ]] && EWBF_ALGO="aion"
+		echo -e "\nalgo\t" $EWBF_ALGO >> $EWBF_CONFIG
+	fi
+
 	[[ ! -z $EWBF_USER_CONFIG ]] && echo -e "#USER CONFIG\n$EWBF_USER_CONFIG" >> $EWBF_CONFIG
 
 	echo -e "\n[server]"  >> $EWBF_CONFIG
