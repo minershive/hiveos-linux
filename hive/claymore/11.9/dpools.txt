@@ -1,4 +1,1 @@
-POOL: decred.eu.nicehash.com:3354, WALLET: 33v4eKxAeJxgBEURuvjiYDhBPfRap4K8Lf.worker, PSW: x
-POOL: decred.us.nicehash.com:3354, WALLET: 33v4eKxAeJxgBEURuvjiYDhBPfRap4K8Lf.worker, PSW: x
-POOL: decred.in.nicehash.com:3354, WALLET: 33v4eKxAeJxgBEURuvjiYDhBPfRap4K8Lf.worker, PSW: x
-POOL: decred.br.nicehash.com:3354, WALLET: 33v4eKxAeJxgBEURuvjiYDhBPfRap4K8Lf.worker, PSW: x
+

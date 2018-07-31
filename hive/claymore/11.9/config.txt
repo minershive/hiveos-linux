@@ -18,9 +18,6 @@
 
 -allpools 1
 
-#Dual coin name
--dcoin dcr
-
-#Dual coin intensity
--dcri 20
+#Only Ethereum
+-mode 1
 
