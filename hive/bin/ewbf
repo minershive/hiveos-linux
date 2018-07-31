@@ -44,9 +44,9 @@ function config_gen() {
 #	[[ ! -z $ZPORT ]] && sed -i "s/^port .*/port $ZPORT/g" $EWBF_CONFIG || echo "${RED}ZPORT not set${NOCOLOR}"
 #	[[ ! -z $ZPASS ]] && sed -i "s/^pass .*/pass $ZPASS/g" $EWBF_CONFIG || echo "${RED}ZPASS not set${NOCOLOR}"
 
-	[[ ! -z $ZSERVER ]] && echo "server $ZSERVER" >>  $EWBF_CONFIG || echo "${RED}ZSERVER not set${NOCOLOR}"
-	[[ ! -z $ZPORT ]] && echo "port $ZPORT" >> $EWBF_CONFIG || echo "${RED}ZPORT not set${NOCOLOR}"
-	[[ ! -z $ZPASS ]] && echo "pass $ZPASS" >> $EWBF_CONFIG || echo "${RED}ZPASS not set${NOCOLOR}"
+	[[ ! -z $ZSERVER ]] && echo "server $ZSERVER" >>  $EWBF_CONFIG || echo -e "${RED}ZSERVER not set${NOCOLOR}"
+	[[ ! -z $ZPORT ]] && echo "port $ZPORT" >> $EWBF_CONFIG || echo -e "${RED}ZPORT not set${NOCOLOR}"
+	[[ ! -z $ZPASS ]] && echo "pass $ZPASS" >> $EWBF_CONFIG || echo -e "${RED}ZPASS not set${NOCOLOR}"
 
 
 	#[[ -z $ZWAL ]] && echo -e "${RED}ZWAL not set{NOCOLOR}"
