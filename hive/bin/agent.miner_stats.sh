@@ -154,7 +154,7 @@ function miner_stats {
 				local fan=()
 				local tfcounter=0
 				for tf in $tempfans; do
-					(( $tf % 2 == 0 )) &&
+					(( $tfcounter % 2 == 0 )) &&
 						temp+=($tf) ||
 						fan+=($tf)
 					((tfcounter++))
