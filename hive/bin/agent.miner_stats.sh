@@ -149,12 +149,15 @@ function miner_stats {
 			else
 				khs=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $1}'`
 				#`echo $stats_raw | jq -r '.[3]' | awk 'gsub(";", "\n")' | jq -cs .` #send only hashes
-				local tempfans=`echo $stats_raw | jq -r '.[6]'` #"56;26; 48;42"
+				local tempfans=`echo $stats_raw | jq -r '.[6]' | tr ';' ' '` #"56 26  48 42"
 				local temp=()
 				local fan=()
+				local tfcounter=0
 				for tf in $tempfans; do
-					temp+=(`echo $tf | awk -F';' '{print $1}'`)
-					fan+=(`echo $tf | awk -F';' '{print $2}'`)
+					(( $tf % 2 == 0 )) &&
+						temp+=($tf) ||
+						fan+=($tf)
+					((tfcounter++))
 				done
 				temp=`printf '%s\n' "${temp[@]}" | jq --raw-input . | jq --slurp -c .`
 				fan=`printf '%s\n' "${fan[@]}" | jq --raw-input . | jq --slurp -c .`
