@@ -26,15 +26,16 @@ function config_gen() {
 
 	cat $EWBF_GLOBAL_CONFIG > $EWBF_CONFIG
 
-	if [[ $EWBF_FORK == "zhash" ]]; then
-		[[ -z $EWBF_ALGO ]] && EWBF_ALGO="192_7"
-		echo -e "\nalgo\t" $EWBF_ALGO >> $EWBF_CONFIG
+	if [[ $EWBF_FORK == "zhash_0.4" ]]; then
+		EWBF_FORK="zhash"
 	fi
 
-	if [[ $EWBF_FORK == "zhash_0.4" ]]; then
+	if [[ $EWBF_FORK == "zhash" ]]; then
+		[[ -z $EWBF_ALGO ]] && EWBF_ALGO="192_7"
 		[[ $EWBF_ALGO == "210_9" ]] && EWBF_ALGO="aion"
 		echo -e "\nalgo\t" $EWBF_ALGO >> $EWBF_CONFIG
 	fi
+	
 
 	[[ ! -z $EWBF_USER_CONFIG ]] && echo -e "#USER CONFIG\n$EWBF_USER_CONFIG" >> $EWBF_CONFIG
 
