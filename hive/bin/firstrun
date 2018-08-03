@@ -31,6 +31,10 @@ mkdir -p "/hive-config"
 function psw_change {
 if [[ -f $RIG_CONF ]]; then
 	source $RIG_CONF
+	if [[ -z $RIG_PASSWD ]]; then
+		[[ -f $PSW_CHANGE_OK ]] && rm $PSW_CHANGE_OK
+		return 1
+	fi
 else
 	[[ -f $PSW_CHANGE_OK ]] && rm $PSW_CHANGE_OK
 	return 1
