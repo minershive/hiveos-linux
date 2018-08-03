@@ -25,8 +25,23 @@ HELLO_OK="/tmp/.hive-hello-ok"
 RIG_CONF="/hive-config/rig.conf"
 NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
 AMD_OC_CONF="/hive-config/amd-oc.conf"
+PSW_CHANGE_OK="/hive-config/.psw-change-ok"
 mkdir -p "/hive-config"
 
+function psw_change {
+if [[ -f $RIG_CONF ]]; then
+	source $RIG_CONF
+else
+	[[ -f $PSW_CHANGE_OK ]] && rm $PSW_CHANGE_OK
+	return 1
+fi
+echo -e "$RIG_PASSWD\n$RIG_PASSWD\n" | passwd user > /dev/null 2>&1
+sed -i "1s/.*/${RIG_PASSWD}/" /hive-config/vnc-password.txt
+[[ -f $PSW_CHANGE_OK ]] && rm $PSW_CHANGE_OK
+touch $PSW_CHANGE_OK
+echo -e "\n${CYAN}Passwords for SSH and VNC logins are set same as password of RIG in WEB${NOCOLOR}" 
+return 0
+}
 
 
 [[ $1 == "-f" ]] && echo "Forcing reconfig"
@@ -68,10 +83,11 @@ EOF
 
 	echo "Trying to say hello again...";
 	hello
-
+	[[ ! -f $PSW_CHANGE_OK ]] && psw_change
 	exit 0
 
 else
+	[[ ! -f $PSW_CHANGE_OK ]] && psw_change
 	exit 0
 fi
 
@@ -147,7 +163,7 @@ FILEEOF
 		#Apply OC if configs are available
 		[[ -f $AMD_OC_CONF ]] && amd-oc-safe
 		[[ -f $NVIDIA_OC_CONF ]] && nvidia-oc-log
-
+		psw_change
 	 	echo -e "\n${BGREEN}Login OK. Happy mining!${NOCOLOR}\n"
 	 	exit 0
 	fi
