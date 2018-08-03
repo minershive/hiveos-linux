@@ -176,12 +176,6 @@ get_fan_speed () {
 	[[ $cur_temp -eq $(( $TARGET_TEMP+1 )) || 
 		$cur_temp -eq $(( $TARGET_TEMP-1 )) ]] && target_fan_speed=$cur_fan_speed
 
-	
-	#set MIN_FAN & MAX_FAN speed if need
-	[[ $target_fan_speed -lt $MIN_FAN ]] && target_fan_speed=$MIN_FAN
-	[[ $target_fan_speed -gt $MAX_FAN ]] && target_fan_speed=$MAX_FAN
-
-
 	#coloring and set sleep time
 	echo_temp="$cur_temp°C"
 	
@@ -236,6 +230,11 @@ get_fan_speed () {
 	[[ -z $cur_temp ]] && 
 		target_fan_speed=$MAX_FAN
 #
+
+	#set MIN_FAN & MAX_FAN speed if need, check fan speed more then 100
+	[[ $target_fan_speed -lt $MIN_FAN ]] && target_fan_speed=$MIN_FAN
+	[[ $target_fan_speed -gt $MAX_FAN ]] && target_fan_speed=$MAX_FAN
+	[[ $target_fan_speed -gt 100 ]] && target_fan_speed=100
 }
 
 
