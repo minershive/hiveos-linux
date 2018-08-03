@@ -26,10 +26,16 @@ function config_gen() {
 
 	cat $EWBF_GLOBAL_CONFIG > $EWBF_CONFIG
 
+	if [[ $EWBF_FORK == "zhash_0.4" ]]; then
+		EWBF_FORK="zhash"
+	fi
+
 	if [[ $EWBF_FORK == "zhash" ]]; then
 		[[ -z $EWBF_ALGO ]] && EWBF_ALGO="192_7"
+		[[ $EWBF_ALGO == "210_9" ]] && EWBF_ALGO="aion"
 		echo -e "\nalgo\t" $EWBF_ALGO >> $EWBF_CONFIG
 	fi
+	
 
 	[[ ! -z $EWBF_USER_CONFIG ]] && echo -e "#USER CONFIG\n$EWBF_USER_CONFIG" >> $EWBF_CONFIG
 
@@ -39,9 +45,9 @@ function config_gen() {
 #	[[ ! -z $ZPORT ]] && sed -i "s/^port .*/port $ZPORT/g" $EWBF_CONFIG || echo "${RED}ZPORT not set${NOCOLOR}"
 #	[[ ! -z $ZPASS ]] && sed -i "s/^pass .*/pass $ZPASS/g" $EWBF_CONFIG || echo "${RED}ZPASS not set${NOCOLOR}"
 
-	[[ ! -z $ZSERVER ]] && echo "server $ZSERVER" >>  $EWBF_CONFIG || echo "${RED}ZSERVER not set${NOCOLOR}"
-	[[ ! -z $ZPORT ]] && echo "port $ZPORT" >> $EWBF_CONFIG || echo "${RED}ZPORT not set${NOCOLOR}"
-	[[ ! -z $ZPASS ]] && echo "pass $ZPASS" >> $EWBF_CONFIG || echo "${RED}ZPASS not set${NOCOLOR}"
+	[[ ! -z $ZSERVER ]] && echo "server $ZSERVER" >>  $EWBF_CONFIG || echo -e "${RED}ZSERVER not set${NOCOLOR}"
+	[[ ! -z $ZPORT ]] && echo "port $ZPORT" >> $EWBF_CONFIG || echo -e "${RED}ZPORT not set${NOCOLOR}"
+	[[ ! -z $ZPASS ]] && echo "pass $ZPASS" >> $EWBF_CONFIG || echo -e "${RED}ZPASS not set${NOCOLOR}"
 
 
 	#[[ -z $ZWAL ]] && echo -e "${RED}ZWAL not set{NOCOLOR}"

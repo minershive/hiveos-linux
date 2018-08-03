@@ -26,7 +26,7 @@ CUSTOM_LOG_BASENAME=
 ##### h-config.sh
 Called every time the miner is started. Should generate miner config file.
 Wallet and rig config variables are already in the scope, the script is included in `/hive/bin/custom`.
-So you can use `$CUSTOM_URL`, `$CUSTOM_USER_CONFIG`, etc. in this script.
+So you can use `$CUSTOM_URL`, `$CUSTOM_USER_CONFIG`, `$CUSTOM_ALGO` etc. in this script.
 
 
 ##### h-run.sh
