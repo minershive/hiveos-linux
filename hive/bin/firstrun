@@ -68,10 +68,12 @@ EOF
 
 	echo "Trying to say hello again...";
 	hello
-
+	
+	hive-passwd -conf
 	exit 0
 
 else
+	hive-passwd -conf
 	exit 0
 fi
 
@@ -137,7 +139,22 @@ FILEEOF
 
 	echo ""
 	echo "Config written to \"$RIG_CONF\"."
+	
+	#We ask if the user wants to change the password. By default - change
+	echo -e "\n${CYAN}Default password for \"user\" is \"1\".${NOCOLOR}"
+	echo -e "${CYAN}We strongly recommend changing your default password.${NOCOLOR}"
+	echo -en "${CYAN}Do you want to change the password? (Y/n)${NOCOLOR}"
+	read chpsw
+	if [[ -z $chpsw ]]; then
+		chpsw="y"
+	else
+		#Unify the answer
+		chpsw=${chpsw,}
+		chpsw=${chpsw:0:1}
+	fi
 
+	[[ $chpsw == "y" ]] && hive-passwd $passwd #Change password
+	
 	#try to connect
 	hello restartminer
 
