@@ -31,6 +31,9 @@ function config_gen() {
 		echo -e "--HWMON 1" >> $MINER_CONFIG
 	fi
 
+	[[ $ETHMINER_OPENCL == 0 ]] && ETHMINER_OPENCL=
+	[[ $ETHMINER_CUDA == 0 ]] && ETHMINER_CUDA=
+
 	[[ $ETHMINER_OPENCL == 1 && -z $ETHMINER_CUDA ]] && echo "--opencl" >> $MINER_CONFIG
 	[[ -z $ETHMINER_OPENCL && $ETHMINER_CUDA == 1 ]] && echo "--cuda" >> $MINER_CONFIG
 	[[ $ETHMINER_OPENCL == 1 && $ETHMINER_CUDA == 1 ]] && echo "--cuda-opencl" >> $MINER_CONFIG

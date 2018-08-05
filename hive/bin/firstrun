@@ -40,7 +40,7 @@ mkdir -p "/hive-config"
 
 
 
-if [[ ! -f $RIG_CONF ]] || [[ $1 == "-f" ]]; then
+if [[ ! -e $RIG_CONF || $1 == "-f" ]]; then
 	selfupgrade
 	msg=$(cat <<EOF
 ${BRANDING_LOGO}
@@ -52,7 +52,7 @@ ${NOCOLOR}
 EOF
 )
 	echo -e "$msg"
-elif [[ ! -f $HELLO_OK ]]; then
+elif [[ ! -e $HELLO_OK ]]; then
 	msg=$(cat <<EOF
 ${BRANDING_LOGO}
 ${YELLOW}Config "$RIG_CONF" exists but during boot the connection to hive server failed.
