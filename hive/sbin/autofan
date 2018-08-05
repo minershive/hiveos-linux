@@ -220,17 +220,23 @@ get_fan_speed () {
 
 #if AMD GPU
 	if [[ $6 != "Nvidia" ]]; then
-		if [[ $target_fan_speed -gt $cur_fan_speed ]]; then
+		if [[ $target_fan_speed -gt $cur_fan_speed ]]; then # need to increase fans
 			[[ $(( $target_fan_speed % 2 )) -eq 1 ]] &&
-				target_fan_speed=$(( $target_fan_speed+3 )) || 
+				target_fan_speed=$(( $target_fan_speed+3 )) ||
 					target_fan_speed=$(( $target_fan_speed+2 ))
-		elif [[ $target_fan_speed -lt $cur_fan_speed ]]; then
+		elif [[ $target_fan_speed -lt $cur_fan_speed ]]; then  # need to decrease fans
 			[[ $(( $target_fan_speed % 2 )) -eq 1 ]] &&
 				target_fan_speed=$(( $target_fan_speed+1 )) || 
 					target_fan_speed=$(( $target_fan_speed+2 ))
 		fi
+		#we can get values like 102, simply cut off this
+		[[ $target_fan_speed -gt $MAX_FAN ]] && target_fan_speed=$MAX_FAN
 	fi
 #end_if_AMD
+
+
+	#Just to make sure
+	[[ $target_fan_speed -gt 100 ]] && target_fan_speed=100
 
 #if GPU disable
 	[[ -z $cur_temp ]] && 
@@ -343,6 +349,7 @@ nvidia_auto_fan_control () {
 	done
 	#[[ -n $args ]] && nvidia-settings $args > /dev/null 2>&1
 	if [[ -n $args ]]; then
+		#echo "nvidia-settings $args"
 		timeout 60 nvidia-settings $args > /dev/null 2>&1
 		if [[ $? -ne 0 ]]; then
 			if [[ $REBOOT_ON_ERROR == 1 ]]; then
@@ -375,7 +382,8 @@ amd_auto_fan_control () {
 		#event_by_temperature $gpu_temperature
 		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $index $brand
 		#not set fan_speed if not changed
-		[[ $target_fan_speed -ne $gpu_fan_speed ]] && 
+		[[ $target_fan_speed -ne $gpu_fan_speed ]] &&
+			#echo "wolfamdctrl -i ${cardnum[index]} --set-fanspeed $target_fan_speed" &&
 			wolfamdctrl -i ${cardnum[index]} --set-fanspeed $target_fan_speed 1>/dev/null
 	done
 }
