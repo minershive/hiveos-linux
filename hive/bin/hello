@@ -120,6 +120,9 @@ config=$(echo $response | jq '.result.config' --raw-output)
 	echo -e "${RED}ERROR:${NOCOLOR} no config field in response" &&
 	exit 1
 echo "$config" > $RIG_CONF
+
+#If SET_RIG_PASS=1 in current rig.conf, add this to new rig.conf. To change password for first fresh start
+[[ $SET_RIG_PASS -eq 1 ]] && echo -e "\nSET_RIG_PASS=1" >> $RIG_CONF
 . $RIG_CONF
 hostname-check
 
