@@ -10,37 +10,39 @@ VNC_PASSWD="/hive-config/vnc-password.txt"
 
 ## Check parameter
 if [[ -z $1 ]]; then
-	echo -e "${RED}Error. As a parameter, you need a new password${NOCOLOR}"
-	echo -e "${RED}or a -conf to get a new password from rig.conf${NOCOLOR}"
+	echo -e "${CYAN}Changes system password for \"user\" (SSH and VNC also)${NOCOLOR}"
+	echo -e "Specify password as an argument"
+	echo -e "Run with \"-conf\" to get a password from rig.conf"
 	exit 1
+fi
 
-elif [[ $1 == "-conf" ]]; then
-	
+
+if [[ $1 == "-conf" ]]; then
 	if [[ ! -f $RIG_CONF ]]; then
-		echo -e "${RED}Error. File $RIG_CONF not found${NOCOLOR}"
+		echo -e "${RED}File $RIG_CONF not found${NOCOLOR}"
 		exit 1
 	fi
 	
-	source $RIG_CONF #Get variables from config and check them
-	if [[ -z $SET_RIG_PASS ]] || [[ $SET_RIG_PASS -eq 0 ]];then
-		exit 0 #Password do not need to be changed
-	fi
-	
+	. $RIG_CONF
+
 	if [[ -z $RIG_PASSWD ]]; then
-		echo -e "${RED}Error. Variable RIG_PASSWD is empty${NOCOLOR}"
+		echo -e "${RED}Variable RIG_PASSWD is empty${NOCOLOR}"
 		exit 1
 	fi
 	
 	new_psw=$RIG_PASSWD
+	echo -e "Got password from $RIG_CONF"
 else
 	new_psw=$1
 fi
 
 #Change passwords and set SET_RIG_PASS to 0
 echo -e "$new_psw\n$new_psw\n" | passwd user > /dev/null 2>&1
-sed -i "1s/.*/$new_psw/" $VNC_PASSWD
-sed -i "/SET_RIG_PASS/c SET_RIG_PASS=0" $RIG_CONF
+sed -i "1s/.*/$new_psw/" "$VNC_PASSWD" #only 1 line
 
-echo -e "\n${CYAN}Password changed successfully${NOCOLOR}"
+#no need
+#sed -i "s/^SET_RIG_PASS=.*/SET_RIG_PASS=/" $RIG_CONF
+
+echo -e "${GREEN}Password changed successfully${NOCOLOR}"
 
 exit 0

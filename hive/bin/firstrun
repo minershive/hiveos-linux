@@ -31,12 +31,14 @@ mkdir -p "/hive-config"
 
 [[ $1 == "-f" ]] && echo "Forcing reconfig"
 
+HIVE_HOST_URL=$2
 
-
-#Get preconfigured api host
-[[ -e /hive-config/rig-config-example.txt ]] &&
-	eval `cat /hive-config/rig-config-example.txt | dos2unix | grep '^HIVE_HOST_URL='`
-[[ -z $HIVE_HOST_URL ]] && HIVE_HOST_URL='https://api.hiveos.farm'
+if [[ -z $HIVE_HOST_URL ]]; then
+	#Get preconfigured api host
+	[[ -e /hive-config/rig-config-example.txt ]] &&
+		eval `cat /hive-config/rig-config-example.txt | dos2unix | grep '^HIVE_HOST_URL='`
+	[[ -z $HIVE_HOST_URL ]] && HIVE_HOST_URL='https://api.hiveos.farm'
+fi
 
 
 
@@ -69,11 +71,9 @@ EOF
 	echo "Trying to say hello again...";
 	hello
 	
-	hive-passwd -conf
 	exit 0
 
 else
-	hive-passwd -conf
 	exit 0
 fi
 
@@ -142,8 +142,8 @@ FILEEOF
 	
 	#We ask if the user wants to change the password. By default - change
 	echo -e "\n${CYAN}Default password for \"user\" is \"1\".${NOCOLOR}"
-	echo -e "${CYAN}We strongly recommend changing your default password.${NOCOLOR}"
-	echo -en "${CYAN}Do you want to change the password? (Y/n)${NOCOLOR}"
+	echo -e "We recommend to change default password on rigs exposed to Internet."
+	echo -en "Set rig password as system? ${YELLOW}(Y/n)${NOCOLOR} "
 	read chpsw
 	if [[ -z $chpsw ]]; then
 		chpsw="y"
