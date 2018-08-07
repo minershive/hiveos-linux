@@ -7,7 +7,7 @@ NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
 . $NVIDIA_OC_CONF
 
 while true; do
-	#Sleep before runing
+	#Sleep before running
 	[[ ! -z $OHGODAPILL_START_TIMEOUT ]] &&
 		sleep $OHGODAPILL_START_TIMEOUT
 
