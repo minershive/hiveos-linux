@@ -120,8 +120,15 @@ config=$(echo $response | jq '.result.config' --raw-output)
 	echo -e "${RED}ERROR:${NOCOLOR} no config field in response" &&
 	exit 1
 echo "$config" > $RIG_CONF
+
 . $RIG_CONF
 hostname-check
+
+
+# Password ================================================================
+# SET_RIG_PASS var is from previous rig.conf
+[[ $SET_RIG_PASS -eq 1 ]] &&
+	(hive-passwd -conf; echo "")
 
 
 # Timezone ================================================================

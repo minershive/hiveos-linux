@@ -31,16 +31,18 @@ mkdir -p "/hive-config"
 
 [[ $1 == "-f" ]] && echo "Forcing reconfig"
 
+HIVE_HOST_URL=$2
+
+if [[ -z $HIVE_HOST_URL ]]; then
+	#Get preconfigured api host
+	[[ -e /hive-config/rig-config-example.txt ]] &&
+		eval `cat /hive-config/rig-config-example.txt | dos2unix | grep '^HIVE_HOST_URL='`
+	[[ -z $HIVE_HOST_URL ]] && HIVE_HOST_URL='https://api.hiveos.farm'
+fi
 
 
-#Get preconfigured api host
-[[ -e /hive-config/rig-config-example.txt ]] &&
-	eval `cat /hive-config/rig-config-example.txt | dos2unix | grep '^HIVE_HOST_URL='`
-[[ -z $HIVE_HOST_URL ]] && HIVE_HOST_URL='https://api.hiveos.farm'
 
-
-
-if [[ ! -f $RIG_CONF ]] || [[ $1 == "-f" ]]; then
+if [[ ! -e $RIG_CONF || $1 == "-f" ]]; then
 	selfupgrade
 	msg=$(cat <<EOF
 ${BRANDING_LOGO}
@@ -52,7 +54,7 @@ ${NOCOLOR}
 EOF
 )
 	echo -e "$msg"
-elif [[ ! -f $HELLO_OK ]]; then
+elif [[ ! -e $HELLO_OK ]]; then
 	msg=$(cat <<EOF
 ${BRANDING_LOGO}
 ${YELLOW}Config "$RIG_CONF" exists but during boot the connection to hive server failed.
@@ -68,7 +70,7 @@ EOF
 
 	echo "Trying to say hello again...";
 	hello
-
+	
 	exit 0
 
 else
@@ -137,7 +139,22 @@ FILEEOF
 
 	echo ""
 	echo "Config written to \"$RIG_CONF\"."
+	
+	#We ask if the user wants to change the password. By default - change
+	echo -e "\n${CYAN}Default password for \"user\" is \"1\".${NOCOLOR}"
+	echo -e "We recommend to change default password on rigs exposed to Internet."
+	echo -en "Set rig password as system? ${YELLOW}(Y/n)${NOCOLOR} "
+	read chpsw
+	if [[ -z $chpsw ]]; then
+		chpsw="y"
+	else
+		#Unify the answer
+		chpsw=${chpsw,}
+		chpsw=${chpsw:0:1}
+	fi
 
+	[[ $chpsw == "y" ]] && hive-passwd $passwd #Change password
+	
 	#try to connect
 	hello restartminer
 
