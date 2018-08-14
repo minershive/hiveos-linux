@@ -37,7 +37,7 @@ if [[ -z $HIVE_HOST_URL ]]; then
 	#Get preconfigured api host
 	[[ -e /hive-config/rig-config-example.txt ]] &&
 		eval `cat /hive-config/rig-config-example.txt | dos2unix | grep '^HIVE_HOST_URL='`
-	[[ -z $HIVE_HOST_URL ]] && HIVE_HOST_URL='https://api.hiveos.farm'
+	[[ -z $HIVE_HOST_URL ]] && HIVE_HOST_URL='http://api.hiveos.farm'
 fi
 
 

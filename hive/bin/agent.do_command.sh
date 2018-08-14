@@ -129,9 +129,9 @@ function do_command () {
 					nvidia-oc-log
 					exitcode=$?
 					payload=`cat /var/log/nvidia-oc.log`
-					echo "$payload"
+					#echo "$payload"
 					[[ $exitcode == 0 ]] &&
-						echo "$payload" | message ok "Nvidia settings applied" payload  --id='$cmd_id' ||
+						echo "$payload" | message ok "Nvidia settings applied" payload --id='$cmd_id' ||
 						echo "$payload" | message warn "Nvidia settings applied with errors, check X server running" payload --id='$cmd_id'
 				' > /tmp/nohup.log 2>&1 &
 			else
@@ -150,7 +150,7 @@ function do_command () {
 					amd-oc-safe
 					exitcode=$?
 					payload=`cat /var/log/amd-oc.log`
-					echo "$payload"
+					#echo "$payload"
 					[[ $exitcode == 0 ]] &&
 						echo "$payload" | message ok "AMD settings applied" payload --id='$cmd_id' ||
 						echo "$payload" | message warn "AMD settings applied with errors" payload --id='$cmd_id'
@@ -303,9 +303,9 @@ function oc_if_changed () {
 			nvidia-oc-log
 			exitcode=$?
 			payload=`cat /var/log/nvidia-oc.log`
-			echo "$payload"
+			#echo "$payload"
 			[[ $exitcode == 0 ]] &&
-				echo "$payload" | message ok "Nvidia settings applied" payload || --id=$cmd_id
+				echo "$payload" | message ok "Nvidia settings applied" payload --id=$cmd_id ||
 				echo "$payload" | message warn "Nvidia settings applied with errors, check X server running" payload --id=$cmd_id
 		fi
 	fi
@@ -317,9 +317,9 @@ function oc_if_changed () {
 			amd-oc-safe
 			exitcode=$?
 			payload=`cat /var/log/amd-oc.log`
-			echo "$payload"
+			#echo "$payload"
 			[[ $exitcode == 0 ]] &&
-				echo "$payload" | message ok "AMD settings applied" payload || --id=$cmd_id
+				echo "$payload" | message ok "AMD settings applied" payload --id=$cmd_id ||
 				echo "$payload" | message warn "AMD settings applied with errors" payload --id=$cmd_id
 		fi
 	fi
