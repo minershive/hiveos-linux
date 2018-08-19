@@ -2,7 +2,7 @@
 ### Update Nvidia driver from URL
 ###
 ### Example usage from shell:
-### cd /tmp && curl -sLO http://download.hiveos.farm/drivers/nvidia-driver-update && bash /tmp/nvidia-driver-update http://download.hiveos.farm/drivers/NVIDIA-Linux-x86_64-390.59.run
+### cd /tmp && curl -sLkO https://raw.githubusercontent.com/minershive/hiveos-linux/master/hive/sbin/nvidia-driver-update && bash /tmp/nvidia-driver-update http://download.hiveos.farm/drivers/NVIDIA-Linux-x86_64-390.59.run
 ###
 . colors
 
