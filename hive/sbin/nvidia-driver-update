@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+### Update Nvidia driver from URL
+###
+### Example usage from shell:
+### cd /tmp && curl -sLO http://download.hiveos.farm/drivers/nvidia-driver-update && bash /tmp/nvidia-driver-update http://download.hiveos.farm/drivers/NVIDIA-Linux-x86_64-390.59.run
+###
+. colors
+
+url=$1
+
+[[ -z $url ]] && echo -e "${YELLOW}Please give URL where to download driver${NOCOLOR}" && exit 1
+
+cd /hive-drivers-pack
+export TMPDIR=/hive-drivers-pack
+
+basename=`basename $url`
+
+if [[ -e ./$basename ]]; then
+	echo -e "${CYAN}> Driver $basename is already downloaded${NOCOLOR}"
+else
+	echo -e "${CYAN}> Downloading $basename${NOCOLOR}"
+	wget -c $url #`[ -t 0 ] && echo '--no-verbose'`
+	[[ $? -ne 0 ]] && echo -e "Error downloading driver" && exit 1
+fi
+chmod +x ./$basename
+
+echo -e ""
+echo -e "${CYAN}> Stoping services${NOCOLOR}"
+miner stop
+systemctl stop hivex
+[[ ! -z `pidof xinit` ]] && kill -9 `pidof xinit` #just double check
+
+echo -e ""
+echo -e "${CYAN}> Installing${NOCOLOR}"
+
+./$basename --accept-license --no-questions --ui=none --dkms #--tmpdir=/hive-drivers-pack
+
+[[ $? -ne 0 ]] && echo -e "${RED}Error installing driver${NOCOLOR}" && exit 1
+
+echo -e "${GREEN}Driver installation successful. Reboot now.${NOCOLOR}"
+exit 0
