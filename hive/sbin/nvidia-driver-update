@@ -20,7 +20,7 @@ if [[ -e ./$basename ]]; then
 else
 	echo -e "${CYAN}> Downloading $basename${NOCOLOR}"
 	wget -c $url #`[ -t 0 ] && echo '--no-verbose'`
-	[[ $? -ne 0 ]] && echo -e "Error downloading driver" && exit 1
+	[[ $? -ne 0 ]] && echo -e "${RED}Error downloading driver${NOCOLOR}" && exit 1
 fi
 chmod +x ./$basename
 
