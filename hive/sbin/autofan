@@ -420,7 +420,7 @@ auto_fan_control() {
 
 		#reboot if temperatures_array is empty
 		if [[ -z $temperatures_array || $temperatures_array == 'null' ]]; then
-			local msg="Autofan: GPU driver error, no temps, rebooting"
+			local msg="Autofan: GPU driver error, no temps"
 			local payload=`cat $gpu_stats_json | jq -r -C .`
 			echo "$payload" | message err "$msg" payload
 			if [[ $REBOOT_ON_ERROR == 1 ]]; then
