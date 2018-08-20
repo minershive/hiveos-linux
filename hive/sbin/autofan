@@ -2,12 +2,9 @@
 #source /etc/environment
 . colors
 
-
 gpu_detect_json="/run/hive/gpu-detect.json"
 gpu_stats_json="/run/hive/gpu-stats.json"
 HASHRATE="/run/hive/khs"
-hash_log="/home/user/hash.log"
-
 
 export DISPLAY=":0"
 
