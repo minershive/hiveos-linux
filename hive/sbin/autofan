@@ -4,7 +4,6 @@
 
 gpu_detect_json="/run/hive/gpu-detect.json"
 gpu_stats_json="/run/hive/gpu-stats.json"
-HASHRATE="/run/hive/khs"
 
 export DISPLAY=":0"
 
@@ -12,6 +11,7 @@ export DISPLAY=":0"
 
 RIG_CONF="/hive-config/rig.conf"
 CONF_FILE="/hive-config/autofan.conf"
+HASHRATE="/run/hive/khs"
 
 #MIN_COEF=80
 #MAX_COEF=100
@@ -40,11 +40,11 @@ DEF_REBOOT_ON_ERROR=0
 #we will restart miner only it was stopped by this script
 miner_stopped_by_overheat=0
 #flag that the message was sent
-# unable_to_set_fan_speed=0 #I do not understand the purpose of this variable
+unable_to_set_fan_speed=0
 #flag if we met 511, 460, etc
 temperature_is_unreal=0
 #unparsable data
-# error_in_temp_readings=0 #I do not understand the purpose of this variable
+error_in_temp_readings=0
 
 
 ###
@@ -112,7 +112,7 @@ check_gpu () {
 
 	[[ $nvidia_cards_number > 0 ]] &&
 		echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number" && 
-		#	nvidia-smi -pm 1 > /dev/null 2>&1 && nvidia-settings -a GPUPowerMizerMode=1 > /dev/null 2>&1 #Useless and unnecessary command
+#	nvidia-smi -pm 1 > /dev/null 2>&1 && nvidia-settings -a GPUPowerMizerMode=1 > /dev/null 2>&1 #Useless and unnecessary command
 
 	[[ $amd_cards_number > 0 ]] &&
 		echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number"
@@ -134,13 +134,18 @@ get_fan_speed () {
 	
 	#checking var is natural number
 	if [[ -z "${cur_temp##*[!0-9]*}" || -z "${cur_fan_speed##*[!0-9]*}" ]]; then
-		local msg="Autofan: error in temp readings"
-		local payload=`cat $gpu_stats_json | jq -r -C .`
-		echo "$payload" | message warning "$msg" payload
 		if [[ $REBOOT_ON_ERROR == 1 ]]; then
-			local msg="Rebooting"
-			message warning "$msg"
+			local msg="Autofan: error in temp readings, rebooting"
+			local payload=`cat $gpu_stats_json | jq -r -C .`
+			echo "$payload" | message warning "$msg" payload
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+		else
+			if [[ $error_in_temp_readings == 0 ]]; then
+				local msg="Autofan: error in temp readings"
+				local payload=`cat $gpu_stats_json | jq -r -C .`
+				echo "$payload" | message warning "$msg" payload
+				error_in_temp_readings=1
+			fi
 		fi
 		break
 	fi
@@ -346,17 +351,19 @@ nvidia_auto_fan_control () {
 	#[[ -n $args ]] && nvidia-settings $args > /dev/null 2>&1
 	if [[ -n $args ]]; then
 		#echo "nvidia-settings $args"
-		timeout -s 9 30 nvidia-settings $args > /dev/null 2>&1 #SIGKILL instead SIGTERM
+		timeout -s 9 60 nvidia-settings $args > /dev/null 2>&1 #SIGKILL instead SIGTERM
 		if [[ $? -ne 0 ]]; then
-			local msg="Autofan: unable to set fan speed"
-			message warning "$msg"
-			killall -s 9 nvidia-settings 2>&1 #Force terminate nvidia-settings if an error occurs.
 			if [[ $REBOOT_ON_ERROR == 1 ]]; then
-				local msg="Rebooting"
+				local msg="Autofan: unable to set fan speed, rebooting"
 				message warning "$msg"
 				nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+			else
+				if [[ $unable_to_set_fan_speed == 0 ]]; then
+					local msg="Autofan: unable to set fan speed"
+					message warning "$msg"
+				fi
 			fi
-#			unable_to_set_fan_speed=1 #I do not understand the purpose of this variable.
+			unable_to_set_fan_speed=1
 		fi
 	fi
 }
@@ -420,14 +427,19 @@ auto_fan_control() {
 
 		#reboot if temperatures_array is empty
 		if [[ -z $temperatures_array || $temperatures_array == 'null' ]]; then
-			local msg="Autofan: GPU driver error, no temps"
-			local payload=`cat $gpu_stats_json | jq -r -C .`
-			echo "$payload" | message err "$msg" payload
 			if [[ $REBOOT_ON_ERROR == 1 ]]; then
-				local msg="Rebooting"
-				message warning "$msg"
+				local msg="Autofan: GPU driver error, no temps, rebooting"
+				local payload=`cat $gpu_stats_json | jq -r -C .`
+				echo "$payload" | message err "$msg" payload
 				nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+			else
+				if [[ $error_in_temp_readings == 0 ]]; then
+					local msg="Autofan: GPU driver error, no temps"
+					local payload=`cat $gpu_stats_json | jq -r -C .`
+					echo "$payload" | message warning "$msg" payload
+				fi
 			fi
+			error_in_temp_readings=1
 			read -t $SLEEP_TIME
 			continue
 		fi
