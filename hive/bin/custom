@@ -22,8 +22,13 @@ if [[ ! -z $CUSTOM_INSTALL_URL ]]; then
 fi
 
 
-[[ -z $CUSTOM_MINER ]] && echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}" && exit 1
+#[[ -z $CUSTOM_MINER ]] && echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}" && exit 1 #Not necessary
 
+#Get the name of the directory of the miner. Same as with the installation. To prevent errors similar to "file not found"
+basename=`basename -s .tar.gz "$CUSTOM_INSTALL_URL"`
+version=`echo "$basename" | awk -F '-' '{ print $NF }'`
+CUSTOM_MINER=`echo "$basename" | sed 's/'-$version'$//'`
+###########
 [[ ! -e /hive/custom/$CUSTOM_MINER/h-manifest.conf ]] && echo -e "${RED}No $CUSTOM_MINER/h-manifest.conf${NOCOLOR}" && exit 1
 . /hive/custom/$CUSTOM_MINER/h-manifest.conf
 
