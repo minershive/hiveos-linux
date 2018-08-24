@@ -379,8 +379,11 @@ function miner_stats {
 					total_hs=$(($total_hs+${hs[$i]}))
 					# Get CPU temp from stats and if we get 0 then get it from sysfs
 					local tcore=`echo "$summary" | tr ';' '\n' | grep -m1 'TEMP=' | sed -e 's/.*=//' | awk '{printf("%.0f",$1)}'`
-					if [[ -z $tcore ]] || [[ $tcore -eq 0 ]]; then
-					   tcore=$((`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input | head -n 1`/1000))
+					if [[ -z $tcore || $tcore -eq 0 ]]; then
+						local coretemp0=`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input 2>/dev/null`
+						[[ ! -z $coretemp0 ]] && #may not work with AMD cpous
+							tcore=$((`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input | head -n 1`/1000)) ||
+							tcore=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n 1 | awk '{print $1/1000}'` #maybe we will need to detect AMD cores
 					fi
 					temps[$i]=$tcore
 				done
