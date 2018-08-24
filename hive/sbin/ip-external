@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #Just a helper to parse external IP
 
-ip=`curl -s icanhazip.com`
+ip=`curl -Lks https://hiveos.farm/myip/`
 [[ $? -ne 0 ]] &&
 	echo "Error detecting IP" &&
 	exit 1
