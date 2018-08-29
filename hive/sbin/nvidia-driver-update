@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+### Update Nvidia driver from URL
+### It will try to get the latest stable version from Hive server
+###
+### Example usage from shell:
+### cd /tmp && curl -sLkO https://raw.githubusercontent.com/minershive/hiveos-linux/master/hive/sbin/nvidia-driver-update && bash /tmp/nvidia-driver-update http://download.hiveos.farm/drivers/NVIDIA-Linux-x86_64-390.59.run
+###
+. colors
+
+url=$1
+
+echo -e "${CYAN}> Getting the latest version${NOCOLOR}"
+if [[ -z $url ]]; then
+	versions_url=http://download.hiveos.farm/drivers/VERSIONS.txt
+	versions=`curl -sLk $versions_url`
+	[[ -z $versions ]] && echo -e "${RED}Error downloading versions from $versions_url${NOCOLOR}" && exit 1
+	eval "$versions"
+	echo -e "The latest stable Nvidia driver version: ${GREEN}${NVIDIA_FILE_VER}${NOCOLOR}"
+	url=http://download.hiveos.farm/drivers/$NVIDIA_FILE_VER
+fi
+
+[[ -z $url ]] && echo -e "${YELLOW}Please give URL where to download driver${NOCOLOR}" && exit 1
+
+cd /hive-drivers-pack
+export TMPDIR=/hive-drivers-pack
+basename=`basename $url`
+
+if [[ -e ./$basename ]]; then
+	echo -e "${CYAN}> Driver $basename is already downloaded${NOCOLOR}"
+else
+	echo -e "${CYAN}> Downloading $url${NOCOLOR}"
+	wget -c $url #`[ -t 0 ] && echo '--no-verbose'`
+	[[ $? -ne 0 ]] && echo -e "${RED}Error downloading driver${NOCOLOR}" && exit 1
+fi
+chmod +x ./$basename
+
+echo -e ""
+echo -e "${CYAN}> Stoping services${NOCOLOR}"
+miner stop
+systemctl stop hivex
+[[ ! -z `pidof xinit` ]] && kill -9 `pidof xinit` #just double check
+
+echo -e ""
+echo -e "${CYAN}> Installing${NOCOLOR}"
+
+./$basename --accept-license --no-questions --ui=none --dkms #--tmpdir=/hive-drivers-pack
+
+[[ $? -ne 0 ]] && echo -e "${RED}Error installing driver${NOCOLOR}" && exit 1
+
+echo -e "${GREEN}Driver installation successful. Reboot now.${NOCOLOR}"
+exit 0

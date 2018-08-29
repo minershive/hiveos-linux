@@ -56,18 +56,25 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 		busid=${BASH_REMATCH[1]}
 		name=${BASH_REMATCH[3]}
 		additional=""
-
+		
+		subvendor=$(lspci -vmms $busid | grep SVendor | sed  's/SVendor:\t//') #Get vendor info
+		
 		#echo $s
 		#echo $busid
 
+		amdmeminfo=
 		if [[ $gputype == "AMD" ]]; then
-			[[ ! -f $AMDMEMINFO_FILE ]] && amdmeminfo -q -s > $AMDMEMINFO_FILE
+			if [[ -z $amdmeminfo ]]; then
+				[[ ! -f $AMDMEMINFO_FILE ]] && amdmeminfo -q -s > $AMDMEMINFO_FILE 2>&1
+				[[ -f $AMDMEMINFO_FILE ]] && amdmeminfo=`cat $AMDMEMINFO_FILE`
+			fi
+
 			#GPU1:09.00.0:Radeon RX 470:113-1E3471U.O69:0x506066f2:SK Hynix H5GC4H24AJR
 			#GPU0:07.00.0:Radeon RX 470:113-1E3471U.O69:0x506066f2:SK Hynix H5GC4H24AJR
 			meminfopci=${BASH_REMATCH[1]}
 			meminfopci=${meminfopci%$":00.0"} #cut out suffix
 			meminfopci=:${meminfopci}.00.0:
-			meminfo=`cat $AMDMEMINFO_FILE | grep "$meminfopci"`
+			meminfo=$(grep "$meminfopci" <<< "$amdmeminfo")
 			if [[ ! -z $meminfo ]]; then
 				#meminfo=(${meminfo//:/ }) #split by :
 				_IFS=$IFS && IFS=":"
@@ -80,7 +87,9 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 
 				additional=" ($mem, ${meminfo[3]}, ${meminfo[4]})"
 				if [[ $1 == "listjson" ]]; then
-					gpujson=`jq -n -c --arg busid "$busid" --arg name "$name" --arg brand "amd" --arg vbios "${meminfo[3]}" --arg mem_type "${meminfo[4]}" '{$busid, $name, $brand, $vbios, $mem_type}'`
+					gpujson=`jq -n -c --arg busid "$busid" --arg name "$name" --arg brand "amd" --arg subvendor "$subvendor" \
+						--arg vbios "${meminfo[3]}" --arg mem_type "${meminfo[4]}" \
+						'{$busid, $name, $brand, $subvendor, $vbios, $mem_type}'`
 					[[ ! -z $mem ]] && gpujson=`echo $gpujson | jq -c --arg mem "$mem" '. + {$mem}'`
 					gpus+=("$gpujson")
 					continue
@@ -113,10 +122,10 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 
 				additional=" ($mem, $plim_def)"
 				if [[ $1 == "listjson" ]]; then
-					gpus+=(`jq -n -c --arg busid "$busid" --arg name "$name" --arg brand "nvidia" \
+					gpus+=(`jq -n -c --arg busid "$busid" --arg name "$name" --arg brand "nvidia" --arg subvendor "$subvendor" \
 						--arg mem "$mem" --arg vbios "$vbios" \
 						--arg plim_min "$plim_min" --arg plim_def "$plim_def" --arg plim_max "$plim_max" \
-						'{$busid, $name, $brand, $mem, $vbios, $plim_min, $plim_def, $plim_max}'`)
+						'{$busid, $name, $brand, $subvendor, $mem, $vbios, $plim_min, $plim_def, $plim_max}'`)
 					continue
 				fi
 			fi

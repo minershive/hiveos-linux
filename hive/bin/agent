@@ -24,21 +24,30 @@ screen_count=`screen -ls | grep "\.agent" | grep -v $PPID | wc -l`
 
 
 
-#{"temp":["61","42","41"],"fan":["92","0","0"],"load":["92","0","0"],"busids":["01:00.0","03:00.0","05:00.0"]}
+function process_gpu_detect_json() {
+	#{"temp":["61","42","41"],"fan":["92","0","0"],"load":["92","0","0"],"busids":["01:00.0","03:00.0","05:00.0"]}
+	#Nvidia indexes in aa [1,2,3] to use in jsons
+	#nvidia_indexes=echo "$gpu_stats" | jq '.brand | to_entries[] | select(.value == "nvidia") | .key' | jq -sc '.'
+	#nvidia_indexes=`gpu-detect listjson | jq '. | to_entries[] | select(.value.brand == "nvidia") | .key' | jq -sc '.'`
+	#gpu_detect_json=`gpu-detect listjson`
+
+
+	if [[ $1 == "redetect" || ! -e /run/hive/gpu-detect.json ]]; then #this is needed only when upgrading version. later we can remove this
+		gpu-detect listjson > /run/hive/gpu-detect.json
+	fi
+	gpu_detect_json=`cat /run/hive/gpu-detect.json`
+	[[ -z $gpu_detect_json ]] &&
+		echo "gpu_detect_json was empty after reading" > /run/hive/agent-no-gpu-detect
+	amd_indexes_array=$(jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]' <<< "$gpu_detect_json")
+	nvidia_indexes_array=$(jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]' <<< "$gpu_detect_json")
+	cpu_indexes_array=$(jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]' <<< "$gpu_detect_json")
+}
+
+
 gpu_stats=
+gpu_detect_json=
 
-
-#Nvidia indexes in aa [1,2,3] to use in jsons
-#nvidia_indexes=echo "$gpu_stats" | jq '.brand | to_entries[] | select(.value == "nvidia") | .key' | jq -sc '.'
-#nvidia_indexes=`gpu-detect listjson | jq '. | to_entries[] | select(.value.brand == "nvidia") | .key' | jq -sc '.'`
-#gpu_detect_json=`gpu-detect listjson`
-if [[ ! -e /run/hive/gpu-detect.json ]]; then #this is needed only when upgrading version. later we can remove this
-	gpu-detect listjson > /run/hive/gpu-detect.json
-fi
-gpu_detect_json=`cat /run/hive/gpu-detect.json`
-amd_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]'`
-nvidia_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'`
-cpu_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'`
+process_gpu_detect_json
 
 ########################################################################################################################
 
@@ -58,6 +67,9 @@ function reset_miner_vars() {
 
 
 function loop {
+	#In some rare cases he have empty stats array
+	[[ -z $gpu_detect_json ]] && process_gpu_detect_json redetect
+
 	date
 
 	[ ! -f $RIG_CONF ] && echo -e "No config $RIG_CONF" && return

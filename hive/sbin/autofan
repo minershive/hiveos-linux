@@ -453,7 +453,7 @@ auto_fan_control() {
 				nvidia_auto_fan_control
 			fi
 
-			if [[ $amd_cards_number > 0 && $NO_AMD == 0 ]]; then #enabled AMD
+			if [[ $amd_cards_number > 0 && $NO_AMD != 1 ]]; then #AMD control is not disabled
 				amd_auto_fan_control
 			fi
 

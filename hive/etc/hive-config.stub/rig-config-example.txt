@@ -2,7 +2,7 @@
 # Normally the rig will ask for password at first run.
 # Optionally you can put rig ID and password and Save As to "rig.conf" for a fresh start
 
-HIVE_HOST_URL="https://api.hiveos.farm"
+HIVE_HOST_URL="http://api.hiveos.farm"
 
 # Find out your hash in farm's settings on the web
 # The rig will autoregister itself in your account after the first run
@@ -20,5 +20,5 @@ RIG_ID=
 # Linux system language, like zh_CN.UTF-8, pt_PT.UTF-8, de_DE.UTF-8
 #SYSTEM_LANG=en_US.UTF-8
 
-# Set system user password as rig's. Default is "1"
+# Set system user password as rig's. Default user pass is "1". Set this variable to 1 to change default pass.
 #SET_RIG_PASS=1

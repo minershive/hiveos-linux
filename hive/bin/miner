@@ -179,8 +179,8 @@ function log_tail {
 	local TAIL_LINE=80
 
 	local suffix=1
-	[[ $1 == 2 ]] && #second miner
-		suffix=2
+	[[ ! -z $1 ]] && #second miner
+		suffix=$1
 
 	tail -n $TAIL_LINE /run/hive/miner.$suffix
 	return
@@ -347,11 +347,11 @@ function log_truncate {
 # Sets MINER to MINER2 if requested
 function check_second_miner {
 	local mindex=$1 #empty or 2, 3, 4, ...
-	[[ -z $1 ]] && return #not a second miner request
+	[[ -z $1 || $1 -eq 1 ]] && return #not a second miner request
 
 	eval minerval=\$MINER$mindex
 	[[ -z $minerval ]] &&
-		echo "No $mindex miner configured" &&
+		echo "Miner #$mindex is not configured" &&
 		exit 1
 
 	MINER=$minerval #substitute MINER var with second miner

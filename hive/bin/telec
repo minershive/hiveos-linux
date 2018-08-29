@@ -54,6 +54,22 @@ start () {
 
 	cat $logfile
 	echo -e "${YELLOW}Unable to start Teleconsole session${NOCOLOR}"
+
+	cat $logfile | grep -q 'Please upgrade to the latest version'
+	if [[ $? -eq 0 ]]; then
+		echo "";
+		echo -e "${GREEN}> Trying to upgrade Teleconsole client${NOCOLOR}";
+		curl https://www.teleconsole.com/get.sh | sh
+		if [[ $? -ne 0 ]]; then
+			echo "${YELLOW}Failed to upgrade${NOCOLOR}"
+			exit 1
+		fi
+
+		telec start
+		return $?
+	fi
+
+	return 1
 }
 
 stop () {
