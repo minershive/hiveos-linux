@@ -21,17 +21,20 @@ done
 
 
 if [[ $1 == "list" || $1 == "listjson" ]]; then
-	#gpu_count_amd=`gpu-detect AMD`
-	#if [[ $gpu_count_amd > 0 ]]; then
-	#	[[ ! -f $AMDMEMINFO_FILE ]] && amdmeminfo -q -s > $AMDMEMINFO_FILE
-	#fi
+	amdmeminfo=
+	[[ -z $GPU_COUNT_AMD ]] && GPU_COUNT_AMD=`gpu-detect AMD`
+	if [[ $GPU_COUNT_AMD > 0 ]]; then
+		[[ ! -f $AMDMEMINFO_FILE ]] && amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
+		[[ -f $AMDMEMINFO_FILE ]] && amdmeminfo=`cat $AMDMEMINFO_FILE`
+		#amdmeminfo can fail from the first time and skip some cards, let's rerun it
+		if [[ `echo "$amdmeminfo" | wc -l` != $GPU_COUNT_AMD ]]; then
+			sleep 0.1
+			amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
+			[[ -f $AMDMEMINFO_FILE ]] && amdmeminfo=`cat $AMDMEMINFO_FILE`
+		fi
+	fi
 
-	#| sed "s/VGA compatible controller: //" \
-	#| sed "s/Advanced Micro Devices, Inc. //" \
-	#| sed "s/NVIDIA Corporation //"
-	#| grep --color -P "\[(GeForce|Radeon).*?\]"
 
-	filterGrep=""
 	if [[ ! -z $2 && $2 == "AMD" ]]; then
 		list=`lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices" | grep -v "RS880"`
 	elif [[ ! -z $2 && $2 == "NVIDIA" ]]; then
@@ -62,13 +65,7 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 		#echo $s
 		#echo $busid
 
-		amdmeminfo=
 		if [[ $gputype == "AMD" ]]; then
-			if [[ -z $amdmeminfo ]]; then
-				[[ ! -f $AMDMEMINFO_FILE ]] && amdmeminfo -q -s > $AMDMEMINFO_FILE 2>&1
-				[[ -f $AMDMEMINFO_FILE ]] && amdmeminfo=`cat $AMDMEMINFO_FILE`
-			fi
-
 			#GPU1:09.00.0:Radeon RX 470:113-1E3471U.O69:0x506066f2:SK Hynix H5GC4H24AJR
 			#GPU0:07.00.0:Radeon RX 470:113-1E3471U.O69:0x506066f2:SK Hynix H5GC4H24AJR
 			meminfopci=${BASH_REMATCH[1]}
