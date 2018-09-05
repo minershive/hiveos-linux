@@ -117,8 +117,8 @@ done
 wpa_passphrase "$WIFI_SSID" "$WIFI_PASSWORD" | tee /etc/wpa_supplicant/wpa_supplicant.conf
 echo -e "${YELLOW}Saved to /etc/wpa_supplicant/wpa_supplicant.conf${NOCOLOR}"
 
-
-systemctl enable wpa_supplicant@$wlandev
+systemctl is-enabled wpa_supplicant@$wlandev > /dev/null
+[[ $? == 1 ]] && systemctl enable wpa_supplicant@$wlandev #if the service exists and is enabled, do nothing
 #we need to start it or network-online.target will wait for it, enable is not enough
 systemctl restart wpa_supplicant@$wlandev
 

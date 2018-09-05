@@ -11,6 +11,7 @@ export DISPLAY=":0"
 
 RIG_CONF="/hive-config/rig.conf"
 CONF_FILE="/hive-config/autofan.conf"
+HASHRATE="/run/hive/khs"
 
 #MIN_COEF=80
 #MAX_COEF=100
@@ -113,7 +114,7 @@ check_gpu () {
 
 	[[ $nvidia_cards_number > 0 ]] &&
 		echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number" && 
-			nvidia-smi -pm 1 > /dev/null 2>&1 && nvidia-settings -a GPUPowerMizerMode=1 > /dev/null 2>&1
+#	nvidia-smi -pm 1 > /dev/null 2>&1 && nvidia-settings -a GPUPowerMizerMode=1 > /dev/null 2>&1 #Useless and unnecessary command
 
 	[[ $amd_cards_number > 0 ]] &&
 		echo2 "You have ${RED}AMD${NOCOLOR} GPU's: $amd_cards_number"
@@ -363,7 +364,7 @@ nvidia_auto_fan_control () {
 	#[[ -n $args ]] && nvidia-settings $args > /dev/null 2>&1
 	if [[ -n $args ]]; then
 		#echo "nvidia-settings $args"
-		timeout 60 nvidia-settings $args > /dev/null 2>&1
+		timeout -s 9 60 nvidia-settings $args > /dev/null 2>&1 #SIGKILL instead SIGTERM
 		if [[ $? -ne 0 ]]; then
 			if [[ $REBOOT_ON_ERROR == 1 ]]; then
 				local msg="Autofan: unable to set fan speed, rebooting"
@@ -429,6 +430,15 @@ auto_fan_control() {
 
 
 		echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
+		### waiting for the miner to work and if the miner does not work, do nothing.
+		hash=0
+		while [[ $hash == 0 ]]; do
+			[[ -f $HASHRATE ]] && hash=$(cat $HASHRATE)
+			[[ -z $hash ]] && hash=0
+			[[ $hash == 0 ]] && echo2 "${YELLOW}Waiting for the miner to work${NOCOLOR}"
+			sleep 5
+		done
+		###############
 		#echo2 "${GREEN}¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯${NOCOLOR}"
 		
 
