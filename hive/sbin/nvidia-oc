@@ -25,6 +25,14 @@ fi
 
 source $NVIDIA_OC_CONF
 
+
+if [[ ! -z $RUNNING_DELAY ]]; then
+	echo -e "${CYAN}Sleeping $RUNNING_DELAY seconds...${NOCOLOR}"
+	sleep $RUNNING_DELAY
+fi
+
+
+
 if [[ -z $MEM ]]; then
 	:
 	#MEM=0
