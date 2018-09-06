@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+
+FREE_SPACE_LIMIT=100
+
+#[ -t 1 ] &&
+. colors
+
+part_expand(){
+	[[ -z $1 ]] && echo -e "${YELLOW}No drive name given${NOCOLOR}" && return 1
+	local dev_name="/dev/$1"
+	local part_name=$2
+
+	[[ -z $part_name ]] && echo -e "${YELLOW}No partition name given${NOCOLOR}" && return 1
+	local part_num=`echo $2 | sed 's/\([[:alpha:]]*\)//'`
+	local dev_part="/dev/$2"
+	#  echo dev=$dev_name
+	#  echo part=$part_name
+	#  echo num=$part_num
+	#  exit 1
+
+	echo "> Starting to repartition"
+	sudo growpart $dev_name $part_num
+	if [ $? = 0 ]; then
+		echo -e "${GREEN}Repartition complete${NOCOLOR}"
+	else
+		echo -e "${RED}Repartition was not completed${NOCOLOR}"
+		exit 1
+	fi
+
+	echo "> Resizing filesystem"
+	sudo resize2fs $dev_part
+	if [ $? = 0 ]; then
+		echo -e "${GREEN}Resizing complete${NOCOLOR}"
+	else
+		echo -e "${RED}Resizing was not completed${NOCOLOR}"
+		exit 1
+	fi
+
+	return 0
+}
+
+
+
+PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
+#echo $PART_UUID
+DISK_PART=`blkid | grep $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
+
+#echo "/dev/sda2:" | sed 's/\([[:digit:]]\)://'
+DISK_NAME=`echo ${DISK_PART} | sed 's/\([[:digit:]]\)//'`
+#echo $DISK_NAME $DISK_PART
+#exit 1
+#parted -lm $DISK_NAME | head -n 2 | tail -n 1 #| tr ":" "\n"
+#DISK_SIZE=`fdisk -l "/dev/${DISK_NAME}" | head -n 1 | awk '{print $5}' | awk '{printf("%.f\n",$1/(1024*1024))}'`
+DISK_SIZE=`cat /proc/partitions | grep -w "${DISK_NAME}" | awk '{ printf("%.f",$3/1024)}'`
+PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
+
+echo -e "HIVE booted from ${GREEN}$DISK_NAME${NOCOLOR} and drive has ${WHITE}$DISK_SIZE${NOCOLOR} MB capacity"
+echo -e "HIVE partition is ${YELLOW}$DISK_PART${NOCOLOR} and has ${WHITE}$PART_SIZE${NOCOLOR} MB capacity"
+
+
+EXPAND_SIZE=$((DISK_SIZE-PART_SIZE-28)) # minus Hive configuration partition and reserved
+if [ $EXPAND_SIZE -le ${FREE_SPACE_LIMIT} ]; then
+	echo -e "${RED}Free disk space less then ${FREE_SPACE_LIMIT} MB. Stopped${NOCOLOR}"
+	exit 1
+else
+	echo -e "Try to auto-expand Hive partition by ${WHITE}${EXPAND_SIZE}${NOCOLOR} MB up to ${WHITE}$((PART_SIZE+EXPAND_SIZE))${NOCOLOR} MB in total"
+
+	echo -e "Press Ctrl+C to stop or wait 5 seconds to continue";
+	# Give user time for break process
+	read -t 5
+
+	part_expand "$DISK_NAME" "$DISK_PART"
+
+	if [ $? = 0 ]; then
+		NEW_PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
+		echo -e "New HIVE partition is ${GREEN}$NEW_PART_SIZE${NOCOLOR} MB capacity"
+	fi
+fi
+
