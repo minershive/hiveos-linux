@@ -403,7 +403,7 @@ amd_auto_fan_control () {
 		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $index $brand
 		#not set fan_speed if not changed
 		[[ $target_fan_speed -ne $gpu_fan_speed ]] &&
-			[[ $DEBUG_COMMANDS == 1 ]] && echo "wolfamdctrl -i ${cardnum[index]} --set-fanspeed $target_fan_speed" &&
+			[[ $DEBUG_COMMANDS == 1 ]] && echo "wolfamdctrl -i ${cardnum[index]} --set-fanspeed $target_fan_speed"
 			wolfamdctrl -i ${cardnum[index]} --set-fanspeed $target_fan_speed 1>/dev/null
 	done
 }
