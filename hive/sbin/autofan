@@ -9,6 +9,9 @@ export DISPLAY=":0"
 
 #AUTOFAN_LOG="/var/log/hive-autofan.log"
 
+#Must be empty in release
+DEBUG_COMMANDS=
+
 RIG_CONF="/hive-config/rig.conf"
 CONF_FILE="/hive-config/autofan.conf"
 HASHRATE="/run/hive/khs"
@@ -113,7 +116,7 @@ check_gpu () {
 	fi
 
 	[[ $nvidia_cards_number > 0 ]] &&
-		echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number" && 
+		echo2 "You have ${GREEN}NVIDIA${NOCOLOR} GPU's: $nvidia_cards_number" #&&
 #	nvidia-smi -pm 1 > /dev/null 2>&1 && nvidia-settings -a GPUPowerMizerMode=1 > /dev/null 2>&1 #Useless and unnecessary command
 
 	[[ $amd_cards_number > 0 ]] &&
@@ -176,8 +179,11 @@ get_fan_speed () {
 	[[ $cur_temp -eq $TARGET_TEMP || $prev_temp -eq 0 ]] && 
 		target_fan_speed=$cur_fan_speed
 	#+/-1 degree do nothing
-	[[ $cur_temp -eq $(( $TARGET_TEMP+1 )) || 
-		$cur_temp -eq $(( $TARGET_TEMP-1 )) ]] && target_fan_speed=$cur_fan_speed
+	[[ $cur_temp -eq $(( $TARGET_TEMP+1 )) || $cur_temp -eq $(( $TARGET_TEMP-1 )) ]] && target_fan_speed=$cur_fan_speed
+
+	#set MIN_FAN & MAX_FAN speed if needed
+	[[ $target_fan_speed -lt $MIN_FAN ]] && target_fan_speed=$MIN_FAN
+	[[ $target_fan_speed -gt $MAX_FAN ]] && target_fan_speed=$MAX_FAN
 
 	#coloring and set sleep time
 	echo_temp="$cur_temp°C"
@@ -200,20 +206,7 @@ get_fan_speed () {
 	[[ -n $NEW_SLEEP_TIME && $NEW_SLEEP_TIME -lt $SLEEP_TIME ]] && 
 		SLEEP_TIME=$NEW_SLEEP_TIME && NEW_SLEEP_TIME=
 	
-	
-	echo_fan="$target_fan_speed%"
-	[[ $target_fan_speed -gt $cur_fan_speed ]] && 
-		echo_fan="${YELLOW}$target_fan_speed% ↑${NOCOLOR}"
-	[[ $target_fan_speed -lt $cur_fan_speed ]] && 
-		echo_fan="${GREEN}$target_fan_speed% ↓${NOCOLOR}"
-	[[ $target_fan_speed -eq $MAX_FAN ]] && 
-		echo_fan="${RED}$target_fan_speed%${NOCOLOR}"
 
-	[[ $6 == "Nvidia" ]] &&
-		gpu_info+="GPU $i ${GREEN}$6${NOCOLOR} [${gpu_bus_id}]: $echo_temp $echo_fan" ||
-		gpu_info+="GPU $i ${RED}$6   ${NOCOLOR} [${gpu_bus_id}]: $echo_temp $echo_fan"
-
-	gpu_info+="\n"
 
 #if AMD GPU
 	if [[ $6 != "Nvidia" ]]; then
@@ -232,15 +225,29 @@ get_fan_speed () {
 #end_if_AMD
 
 
-#if GPU disable
-	[[ -z $cur_temp ]] && 
-		target_fan_speed=$MAX_FAN
-#
-
-	#set MIN_FAN & MAX_FAN speed if need, check fan speed more then 100
-	[[ $target_fan_speed -lt $MIN_FAN ]] && target_fan_speed=$MIN_FAN
-	[[ $target_fan_speed -gt $MAX_FAN ]] && target_fan_speed=$MAX_FAN
+	#Just to make sure
 	[[ $target_fan_speed -gt 100 ]] && target_fan_speed=100
+
+	#if GPU disabled
+	[[ -z $cur_temp ]] && target_fan_speed=$MAX_FAN
+
+
+	### Output after all modifications of target_fan_speed
+
+	echo_fan="$target_fan_speed%"
+	[[ $target_fan_speed -gt $cur_fan_speed ]] &&
+		echo_fan="${YELLOW}$target_fan_speed% ↑${NOCOLOR}"
+	[[ $target_fan_speed -lt $cur_fan_speed ]] &&
+		echo_fan="${GREEN}$target_fan_speed% ↓${NOCOLOR}"
+	[[ $target_fan_speed -eq $MAX_FAN ]] &&
+		echo_fan="${RED}$target_fan_speed%${NOCOLOR}"
+
+	[[ $6 == "Nvidia" ]] &&
+		gpu_info+="GPU $i ${GREEN}$6${NOCOLOR} [${gpu_bus_id}]: $echo_temp $echo_fan" ||
+		gpu_info+="GPU $i ${RED}$6   ${NOCOLOR} [${gpu_bus_id}]: $echo_temp $echo_fan"
+
+	gpu_info+="\n"
+
 }
 
 
@@ -363,8 +370,8 @@ nvidia_auto_fan_control () {
 	done
 	#[[ -n $args ]] && nvidia-settings $args > /dev/null 2>&1
 	if [[ -n $args ]]; then
-		#echo "nvidia-settings $args"
-		timeout -s 9 60 nvidia-settings $args > /dev/null 2>&1 #SIGKILL instead SIGTERM
+		[[ $DEBUG_COMMANDS == 1 ]] && echo "nvidia-settings $args"
+		timeout -s9 60 nvidia-settings $args > /dev/null 2>&1
 		if [[ $? -ne 0 ]]; then
 			if [[ $REBOOT_ON_ERROR == 1 ]]; then
 				local msg="Autofan: unable to set fan speed, rebooting"
@@ -384,12 +391,11 @@ nvidia_auto_fan_control () {
 
 
 amd_auto_fan_control () {
-	for index in ${amd_indexes_array[@]}
-	do
+	for index in ${amd_indexes_array[@]}; do
 		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on amd_indexes_array[@] as argument
 		local gpu_temperature=${temperatures_array[index]}
 		local gpu_temperature_previous=${temperatures_array_previous[index]}
-		if [[ -z $gpu_temperature_previous ]]; then gpu_temperature_previous=0; fi
+		[[ -z $gpu_temperature_previous ]] && gpu_temperature_previous=0
 		local gpu_fan_speed=${fans_array[index]}
 		local card_bus_id=${card_bus_ids_array[index]}
 		local brand="AMD   "
@@ -397,7 +403,7 @@ amd_auto_fan_control () {
 		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $index $brand
 		#not set fan_speed if not changed
 		[[ $target_fan_speed -ne $gpu_fan_speed ]] &&
-			#echo "wolfamdctrl -i ${cardnum[index]} --set-fanspeed $target_fan_speed" &&
+			[[ $DEBUG_COMMANDS == 1 ]] && echo "wolfamdctrl -i ${cardnum[index]} --set-fanspeed $target_fan_speed" &&
 			wolfamdctrl -i ${cardnum[index]} --set-fanspeed $target_fan_speed 1>/dev/null
 	done
 }
@@ -430,21 +436,12 @@ auto_fan_control() {
 
 
 		echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
-		### waiting for the miner to work and if the miner does not work, do nothing.
-		hash=0
-		while [[ $hash == 0 ]]; do
-			[[ -f $HASHRATE ]] && hash=$(cat $HASHRATE)
-			[[ -z $hash ]] && hash=0
-			[[ $hash == 0 ]] && echo2 "${YELLOW}Waiting for the miner to work${NOCOLOR}"
-			sleep 5
-		done
-		###############
-		#echo2 "${GREEN}¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯${NOCOLOR}"
-		
+
 
 		#trying to read data 3 times
 		for read_count in {1..3}; do
 			declare -a temperatures_array=(`cat $gpu_stats_json | tail -1 | jq -r ".temp | .[]"`)
+			#echo ${temperatures_array[@]}
 			[[ -n $temperatures_array ]] && break
 			echo2 "${RED}Can't get temperature data from gpu-stats ($read_count){NOCOLOR}"
 			if [[ $read_count -ne 3 ]]; then
@@ -473,6 +470,20 @@ auto_fan_control() {
 		fi
 
 
+		#miner_stop will work
+		check_overheat
+
+
+		### waiting for the miner to work and if the miner does not work, wait for it a bit
+		khs=
+		for i in {1..12}; do #wait 60 seconds for miner then continue and wait again on next loop
+			[[ -f $HASHRATE ]] && khs=$(cat $HASHRATE)
+			[[ ! -z $khs && $khs != 0 ]] && break
+			echo2 "${YELLOW}Waiting for the miner to start hashing${NOCOLOR}"
+			read -t 5
+		done
+
+
 		#check if the .conf file exists
 		if [[ -n $TARGET_TEMP && -f $CONF_FILE && -f $gpu_stats_json ]]; then
 			#MIN_TEMP=$(( TARGET_TEMP-5 ))
@@ -490,6 +501,7 @@ auto_fan_control() {
 			fi
 
 			declare -a fans_array=(`cat $gpu_stats_json | tail -1 | jq -r ".fan | .[]"`)
+			[[ $DEBUG_COMMANDS == 1 ]] && echo "Fans: ${fans_array[@]}"
 			gpu_info=
 
 			if (( $nvidia_cards_number > 0 )); then
@@ -505,8 +517,6 @@ auto_fan_control() {
 			declare -a temperatures_array_previous=(${temperatures_array[@]})
 		fi
 
-		#miner_stop will be work
-		check_overheat
 
 		#sleep $SLEEP_TIME
 		#echo "SLEEP_TIME=$SLEEP_TIME"
