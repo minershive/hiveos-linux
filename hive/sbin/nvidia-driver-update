@@ -9,8 +9,8 @@
 
 url=$1
 
-echo -e "${CYAN}> Getting the latest version${NOCOLOR}"
 if [[ -z $url ]]; then
+	echo -e "${CYAN}> Getting the latest version${NOCOLOR}"
 	versions_url=http://download.hiveos.farm/drivers/VERSIONS.txt
 	versions=`curl -sLk $versions_url`
 	[[ -z $versions ]] && echo -e "${RED}Error downloading versions from $versions_url${NOCOLOR}" && exit 1
@@ -34,11 +34,29 @@ else
 fi
 chmod +x ./$basename
 
+
+
 echo -e ""
 echo -e "${CYAN}> Stoping services${NOCOLOR}"
 miner stop
+wd stop
+screen -S autofan -X quit
 systemctl stop hivex
 [[ ! -z `pidof xinit` ]] && kill -9 `pidof xinit` #just double check
+
+
+
+
+
+#if (echo $basename | grep -q '\-396\.'); then
+#	echo -e ""
+#	echo -e "${CYAN}> Upgrading Ubuntu${NOCOLOR}"
+#	apt update
+#	apt upgrade -y
+#	apt autoremove -y
+#fi
+
+
 
 echo -e ""
 echo -e "${CYAN}> Installing${NOCOLOR}"
@@ -46,6 +64,20 @@ echo -e "${CYAN}> Installing${NOCOLOR}"
 ./$basename --accept-license --no-questions --ui=none --dkms #--tmpdir=/hive-drivers-pack
 
 [[ $? -ne 0 ]] && echo -e "${RED}Error installing driver${NOCOLOR}" && exit 1
+
+
+
+
+if (echo $basename | grep -q '\-396\.'); then
+	echo -e ""
+	echo -e "${CYAN}> Updating nvidia-settings${NOCOLOR}"
+	apt update
+	apt-get install --reinstall -y nvidia-settings
+fi
+
+
+
+
 
 echo -e "${GREEN}Driver installation successful. Reboot now.${NOCOLOR}"
 exit 0

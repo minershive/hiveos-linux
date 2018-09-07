@@ -15,5 +15,6 @@ ${PURPLE}net-test${NOCOLOR} - check your network connection
 ${PURPLE}gpu-fans-find${NOCOLOR} - find GPU by spinning fans
 ${PURPLE}hive-passwd${NOCOLOR} - change system password
 ${PURPLE}logs-off${NOCOLOR} - for USB Flash Drives move logs to RAM
+${PURPLE}disk-expand${NOCOLOR} - enlarge disk to use all space
 EOF
 )"

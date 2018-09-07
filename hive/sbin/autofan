@@ -443,9 +443,9 @@ auto_fan_control() {
 			declare -a temperatures_array=(`cat $gpu_stats_json | tail -1 | jq -r ".temp | .[]"`)
 			#echo ${temperatures_array[@]}
 			[[ -n $temperatures_array ]] && break
-			echo2 "${RED}Can't get temperature data from gpu-stats ($read_count){NOCOLOR}"
+			echo2 "${RED}Can't get temperature data from gpu-stats ($read_count)${NOCOLOR}"
 			if [[ $read_count -ne 3 ]]; then
-				echo2 "${YELLOW}Waiting 5 seconds and will try one more time...{NOCOLOR}"
+				echo2 "${YELLOW}Waiting 5 seconds and will try one more time...${NOCOLOR}"
 				read -t 5
 			fi
 		done

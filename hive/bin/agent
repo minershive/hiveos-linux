@@ -241,7 +241,8 @@ do
 	echo ""
 
 	if [[ $tosleep > 0 ]]; then
-		sleep $INTERVAL
+		#sleep $INTERVAL
+		read -t $INTERVAL
 	else
 		echo -e "${YELLOW}WARNING: Stats sending interval > $INTERVAL seconds, hanging driver?${NOCOLOR}"
 	fi

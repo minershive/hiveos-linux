@@ -238,7 +238,9 @@ if [[ $X_DISABLED != 1 ]]; then
 	sleep 7
 
 	#Apply Nvidia OC before miner or it can hang on 13+ GPUs
-	if [[ $GPU_COUNT_NVIDIA > 0 && -e $NVIDIA_OC_CONF ]]; then
+	eval `cat $NVIDIA_OC_CONF | grep '^RUNNING_DELAY'` #import only 1 variable
+	if [[ $GPU_COUNT_NVIDIA > 0 && -e $NVIDIA_OC_CONF && -z $RUNNING_DELAY ]]; then
+		#wait for oc only if RUNNING_DELAY is empty, otherwise we count on manual waiting delay
 		if [[ -z `pidof xinit` ]]; then
 			echo2 "xinit process not found, will not wait for Nvidia OC"
 			break

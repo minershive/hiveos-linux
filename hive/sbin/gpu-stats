@@ -62,9 +62,9 @@ function amd_stats {
 		busid=${busid#0000:} #trim prefix
 
 		speed="0"
-		[[ -e ${hwmondir}pwm1_max ]] && fanmax=`head -1 ${hwmondir}pwm1_max` || fanmax=0
+		[[ -e ${hwmondir}pwm1_max ]] && fanmax=`timeout -s9 2 head -1 ${hwmondir}pwm1_max` || fanmax=0
 		if [ $fanmax -gt 0 ]; then
-			[[ -e ${hwmondir}pwm1 ]] && fan=`head -1 ${hwmondir}pwm1` || fan=0
+			[[ -e ${hwmondir}pwm1 ]] && fan=`timeout -s9 2 head -1 ${hwmondir}pwm1` || fan=0
 			speed=$(( fan * 100 / fanmax ))
 			#echo "GPU $cardno $busid ${temp}C $speed%"
 			#echo "${temp}, $speed"
@@ -74,7 +74,7 @@ function amd_stats {
 
 		temp="0"
 		if [[ -e ${hwmondir}temp1_input ]]; then
-			temp=`head -1 ${hwmondir}temp1_input`
+			temp=`timeout -s9 2 head -1 ${hwmondir}temp1_input`
 			temp=$(( temp / 1000 ))
 		else
 			echo "Error: temp unknown for card $cardno" >&2
@@ -83,7 +83,7 @@ function amd_stats {
 
 		local power='0'
 		[[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]] &&
-			power=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(average GPU)' | awk '{printf("%d", $1)}'`
+			power=`timeout -s9 2 cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(average GPU)' | awk '{printf("%d", $1)}'`
 		[[ -z power ]] && power='0'
 
 

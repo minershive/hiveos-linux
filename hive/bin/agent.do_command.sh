@@ -30,7 +30,7 @@ function do_command () {
 		;;
 		exec)
 			local exec=$(echo "$body" | jq '.exec' --raw-output)
-			payload=`timeout 360 bash -c "$exec" 2>&1`
+			payload=`timeout 600 bash -c "$exec" 2>&1`
 			exitcode=$?
 			echo "$payload"
 			[[ $exitcode -eq 0 ]] &&

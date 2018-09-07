@@ -18,7 +18,7 @@ fi
 if [[ -e /hive-config/vnc-password.txt ]]; then
 	cp /hive-config/vnc-password.txt /tmp/vnc-password.txt
 	dos2unix-safe /tmp/vnc-password.txt
-	x11vnc -display :0 -forever -shared -passwdfile /tmp/vnc-password.txt &
+	x11vnc -display :0 -rfbport 5900 -no6 -forever -shared -passwdfile /tmp/vnc-password.txt &
 else
 	echo "No /hive-config/vnc-password.txt then no VNC"
 fi
