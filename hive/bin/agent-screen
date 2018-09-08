@@ -15,11 +15,25 @@ screen -ls agent | grep -q agent && running=1 || running=0
 [[ $1 != "dontattach" ]] &&
 	screen -x -S agent #attach to screen
 
-[[ $running -ne 1 ]] &&
-    echo "Starting new agent screen session" &&
-    screen -dm -S agent "agent" &&
-    exit 1 #was not running, starting
+if [[ $running -ne 1 ]]; then
+	echo "Starting new agent screen session"
 
-#    screen -dm -S agent bash -c "agent; bash"
+
+	#screen -dm -S agent "agent"
+
+	screen -dm -S agent
+	for i in {1..25}; do
+		sleep 0.2 #it needs some time? it happens that you'll have "No screen session found" without sleep
+		session_count=`screen -ls agent | grep agent | wc -l`
+		[[ $session_count > 0 ]] && break
+		[[ $session_count == 25 ]] && echo -e "${RED}screen agent not found in 25 iterations, check logs and maybe flash drive speed${NOCOLOR}"
+	done
+
+	screen -S agent -X screen 2 agent.gpu-stats
+	screen -S agent -X screen 1 agent
+
+	exit 1 #was not running, starting
+fi
+
 
 exit 0 #all was running

@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Executes gpu-stats and stores it to file
+# Runs inside screen with agent
+
+INTERVAL=10
+
+
+while true; do
+	date
+
+	time_start=`date +%s`
+	gpu_stats=`timeout -s9 60 gpu-stats`
+	if [[ ! -z $gpu_stats ]]; then
+		echo "$gpu_stats" #| jq -c
+		echo "$gpu_stats" > /run/hive/gpu-stats.json
+	else
+		echo -e "${YELLOW}gpu-stats is empty${NOCOLOR}"
+		echo "{}" > /run/hive/gpu-stats.json
+	fi
+
+
+	time_finish=`date +%s`
+	wasted=$(( $time_finish - $time_start ))
+
+	echo "$wasted seconds stats reading"
+	echo ""
+
+
+
+	tosleep=$(( $INTERVAL - $wasted ))
+
+	#echo "Sleeping $tosleep"
+	if [[ $tosleep -ge 0 ]]; then
+		#sleep $INTERVAL
+		read -t $tosleep
+	else
+		echo -e "${YELLOW}WARNING: Stats sending interval > $INTERVAL seconds, hanging driver?${NOCOLOR}"
+	fi
+done
