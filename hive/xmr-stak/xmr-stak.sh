@@ -9,7 +9,7 @@ fork=$1
 [[ -z $fork ]] && fork="fireice-uk"
 
 #-c config.txt --cpu cpu.txt --amd amd.txt --nvidia nvidia.txt $@
-export LD_LIBRARY_PATH=./$fork/
+export LD_LIBRARY_PATH=./$fork:/hive/lib
 ./$fork/xmr-stak
 
 

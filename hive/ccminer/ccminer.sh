@@ -2,7 +2,7 @@
 cd `dirname $0`
 [ -t 1 ] && . colors
 
-export LD_LIBRARY_PATH=./cuda
+export LD_LIBRARY_PATH=/hive/lib
 
 
 fork=$1

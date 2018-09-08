@@ -44,10 +44,13 @@ echo "" > /root/.bash_history
 echo "" > /home/user/.bash_history
 rm -rf /var/tmp/*
 echo "" > /home/user/.ssh/authorized_keys
-rm /home/user/.local/share/mc/history
+echo "" > /home/user/.local/share/mc/history
 rm /home/user/.local/share/mc/mcedit/mcedit.clip
 rm -rf /home/user/.local/share/xorg
 rm -rf /home/user/.openclcache
+rm -rf /home/user/.nv
+rm -rf /home/root/.openclcache
+rm -rf /home/root/.nv
 
 systemctl stop wpa_supplicant@wlan0
 systemctl disable wpa_supplicant@wlan0
