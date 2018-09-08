@@ -25,7 +25,7 @@ function config_gen() {
 	#put default config settings
 	#\n--farm-recheck 2000
 	echo -e "--report-hashrate --api-port 3334" > $MINER_CONFIG
-	if [[ $ETHMINER_VER == "0.14.0" ]]; then
+	if [[ $ETHMINER_VER == "0.14.0" || $ETHMINER_VER == "progpow" ]]; then
 		echo -e "-HWMON" >> $MINER_CONFIG
 	else #0.15.0 and later
 		echo -e "--HWMON 1" >> $MINER_CONFIG
@@ -80,17 +80,18 @@ function config_gen() {
 			protocol="stratum+tcp://"
 			server=$ETHMINER_SERVER
 		fi
-	url+=$protocol
 
-	ETHMINER_TEMPLATE=$(sed 's/\//%2F/g' <<< $ETHMINER_TEMPLATE) #HTML special chars
-	EMAIL=$(sed 's/@/%40/g' <<< $EMAIL) #HTML special chars
+		url+=$protocol
 
-	url+=$ETHMINER_TEMPLATE
-	[[ ! -z $ETHMINER_PASS ]] && url+=":$ETHMINER_PASS"
+		ETHMINER_TEMPLATE=$(sed 's/\//%2F/g' <<< $ETHMINER_TEMPLATE) #HTML special chars
+		EMAIL=$(sed 's/@/%40/g' <<< $EMAIL) #HTML special chars
 
-	url+="@$server:$ETHMINER_PORT"
+		url+=$ETHMINER_TEMPLATE
+		[[ ! -z $ETHMINER_PASS ]] && url+=":$ETHMINER_PASS"
 
-	echo "-P $url" >> $MINER_CONFIG
+		url+="@$server:$ETHMINER_PORT"
+
+		echo "-P $url" >> $MINER_CONFIG
 	fi
 
 
@@ -100,12 +101,12 @@ function config_gen() {
 	sed -i '/--stratum-protocol/d' $MINER_CONFIG
 
 	#replace tpl values in whole file
-	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
-	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $MINER_CONFIG #|| echo -e "${RED}EWAL not set${NOCOLOR}"
-	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $MINER_CONFIG #|| echo -e "${RED}DWAL not set${NOCOLOR}"
-	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG #|| echo -e "${RED}ZWAL not set${NOCOLOR}"
-	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG || echo "${RED}WORKER_NAME not set${NOCOLOR}"
-	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $MINER_CONFIG
+#	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
+#	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $MINER_CONFIG #|| echo -e "${RED}EWAL not set${NOCOLOR}"
+#	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $MINER_CONFIG #|| echo -e "${RED}DWAL not set${NOCOLOR}"
+#	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG #|| echo -e "${RED}ZWAL not set${NOCOLOR}"
+#	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG || echo "${RED}WORKER_NAME not set${NOCOLOR}"
+#	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $MINER_CONFIG
 }
 
 
@@ -115,8 +116,7 @@ config_gen
 
 cd /hive/$THIS_MINER_NAME
 cd $ETHMINER_VER
-while true
-do
+while true; do
 	miner logrotate $THIS_MINER_NAME
 	/hive/$THIS_MINER_NAME/$ETHMINER_VER/ethminer.sh
 	echo ""
