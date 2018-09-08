@@ -67,7 +67,9 @@ NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
     termcmd+="nvidia-oc-log;"
 
 
-roxterm --replace --maximise --disable-sm -e bash -c "$termcmd motd; firstrun; ([ -e /home/user/xinit.user.sh ] && bash /home/user/xinit.user.sh); bash" &
+roxargs="--replace --maximise"
+(lsb_release -a 2>&1 | grep -q '16\.04') && roxargs+=' --disable-sm'
+roxterm $roxargs -e bash -c "$termcmd motd; firstrun; ([ -e /home/user/xinit.user.sh ] && bash /home/user/xinit.user.sh); bash" &
 
 
 

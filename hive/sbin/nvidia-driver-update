@@ -67,7 +67,8 @@ echo -e "${CYAN}> Installing${NOCOLOR}"
 
 
 
-
+#it's a 396 driver and old 16.04 ubuntu
+#if (echo $basename | grep -q '\-396\.') && (lsb_release -a 2>&1 | grep '16\.04'); then
 if (echo $basename | grep -q '\-396\.'); then
 	echo -e ""
 	echo -e "${CYAN}> Updating nvidia-settings${NOCOLOR}"
