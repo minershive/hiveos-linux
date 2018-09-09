@@ -19,7 +19,7 @@ part_expand(){
 	#  exit 1
 
 	echo "> Starting to repartition"
-	sudo growpart $dev_name $part_num
+	growpart $dev_name $part_num
 	if [ $? = 0 ]; then
 		echo -e "${GREEN}Repartition complete${NOCOLOR}"
 	else
@@ -28,7 +28,7 @@ part_expand(){
 	fi
 
 	echo "> Resizing filesystem"
-	sudo resize2fs $dev_part
+	resize2fs $dev_part
 	if [ $? = 0 ]; then
 		echo -e "${GREEN}Resizing complete${NOCOLOR}"
 	else
@@ -40,10 +40,30 @@ part_expand(){
 }
 
 
+#growpart is required for this to work
+function install-deps() {
+	dpkg -s cloud-guest-utils > /dev/null 2>&1
+	[[ $? -ne 0 ]] &&
+		apt install -y cloud-guest-utils &&
+		echo ""
+
+	which growpart > /dev/null 2>&1
+	[[ $? -ne 0 ]] &&
+		echo "growpart not found, try to reinstall cloud-guest-utils package" &&
+		exit 1
+}
+
+
+install-deps
+
+#Just a copy-paste
+#bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
+#bootdisk=${bootpart::-1} #cutoff partnumber
+
 
 PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
 #echo $PART_UUID
-DISK_PART=`blkid | grep $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
+DISK_PART=`blkid | grep -m1 $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
 
 #echo "/dev/sda2:" | sed 's/\([[:digit:]]\)://'
 DISK_NAME=`echo ${DISK_PART} | sed 's/\([[:digit:]]\)//'`
@@ -54,8 +74,8 @@ DISK_NAME=`echo ${DISK_PART} | sed 's/\([[:digit:]]\)//'`
 DISK_SIZE=`cat /proc/partitions | grep -w "${DISK_NAME}" | awk '{ printf("%.f",$3/1024)}'`
 PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
 
-echo -e "HIVE booted from ${GREEN}$DISK_NAME${NOCOLOR} and drive has ${WHITE}$DISK_SIZE${NOCOLOR} MB capacity"
-echo -e "HIVE partition is ${YELLOW}$DISK_PART${NOCOLOR} and has ${WHITE}$PART_SIZE${NOCOLOR} MB capacity"
+echo -e "HIVE booted from ${GREEN}$DISK_NAME${NOCOLOR} and whole drive size is ${WHITE}$DISK_SIZE${NOCOLOR} MB"
+echo -e "HIVE partition is ${YELLOW}$DISK_PART${NOCOLOR} and it's size is ${WHITE}$PART_SIZE${NOCOLOR} MB"
 
 
 EXPAND_SIZE=$((DISK_SIZE-PART_SIZE-28)) # minus Hive configuration partition and reserved
@@ -73,7 +93,7 @@ else
 
 	if [ $? = 0 ]; then
 		NEW_PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
-		echo -e "New HIVE partition is ${GREEN}$NEW_PART_SIZE${NOCOLOR} MB capacity"
+		echo -e "New HIVE partition size is ${GREEN}$NEW_PART_SIZE${NOCOLOR} MB"
 	fi
 fi
 

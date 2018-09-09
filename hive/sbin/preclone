@@ -17,6 +17,8 @@ hostnamectl set-hostname "$hostname"
 
 
 miner stop
+wd stop
+screen -S autofan -X quit
 screen -S agent -X quit
 systemctl stop hivex
 
@@ -25,7 +27,8 @@ find /hive -type f -name "*.log" -exec rm -f {} \;
 find /hive -type f -name "*.~" -exec rm -f {} \;
 
 find /hive/ccminer -type f -name "ccminer_*" -exec rm -f {} \;
-
+find /hive/custom/ -maxdepth 1 -mindepth 1 -type d -exec rm -rf {} \;
+rm /hive/ethminer/progpow/kernel*
 
 rm -r /var/log/*
 #rm /var/log/*.1; rm /var/log/*.2; rm /var/log/*.gz; echo "" > /var/log/kern.log; echo "" > /var/log/syslog
@@ -61,6 +64,8 @@ chown -R root:root /hive/etc/logrotate.d/*
 
 
 #no AMD in updates
+apt clean
+apt purge
 rm /etc/apt/sources.list.d/amdgpu-pro.list
 rm /etc/apt/sources.list.d/amdgpu-pro-local.list
 #old DKMS images, they are big!

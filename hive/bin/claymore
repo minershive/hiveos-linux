@@ -18,10 +18,10 @@ function epools() {
 	echo "Creating epools.txt"
 	echo "$EPOOLS_TPL" > $EPOOLS_TXT
 
-	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
-	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $EPOOLS_TXT #|| echo -e "${RED}EWAL not set${NOCOLOR}"
-	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $EPOOLS_TXT #|| echo -e "${RED}DWAL not set${NOCOLOR}"
-	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $EPOOLS_TXT #|| echo -e "${RED}ZWAL not set${NOCOLOR}"
+#	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
+#	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $EPOOLS_TXT #|| echo -e "${RED}EWAL not set${NOCOLOR}"
+#	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $EPOOLS_TXT #|| echo -e "${RED}DWAL not set${NOCOLOR}"
+#	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $EPOOLS_TXT #|| echo -e "${RED}ZWAL not set${NOCOLOR}"
 	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $EPOOLS_TXT
 	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $EPOOLS_TXT || echo -e "${RED}WORKER_NAME not set${NOCOLOR}"
 
@@ -48,9 +48,9 @@ function dpools() {
 	echo "Creating dpools.txt"
 	echo "$DPOOLS_TPL" > $DPOOLS_TXT
 
-	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $DPOOLS_TXT || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}"
-	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $DPOOLS_TXT || echo -e "${YELLOW}DWAL not set${NOCOLOR}"
+#	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $DPOOLS_TXT || echo -e "${YELLOW}DWAL not set${NOCOLOR}"
 	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $DPOOLS_TXT #|| echo -e "${YELLOW}EMAIL not set${NOCOLOR}"
+	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $DPOOLS_TXT || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}"
 
 
 	#Claymore is degrading if no dcoin, but he still uses dcri and eth performance is lower

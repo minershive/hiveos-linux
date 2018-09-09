@@ -4,6 +4,8 @@ cd `dirname $0`
 
 export LD_LIBRARY_PATH=/hive/lib
 
+#Ubuntu 18.04 compat
+[[ -e /usr/lib/x86_64-linux-gnu/libcurl3.so ]] && export LD_PRELOAD=libcurl3.so
 
 fork=$1
 

@@ -62,6 +62,11 @@ cpu_model=`lscpu | grep "Model name:" | sed 's/Model name:[ \t]*//g'`
 cpu_cores=`lscpu | grep "^CPU(s):" | sed 's/CPU(s):[ \t]*//g'`
 aes=`lscpu | grep "^Flags:.*aes" | wc -l`
 
+
+bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
+bootdisk=${bootpart::-1} #cutoff partnumber
+disk_model=`parted -ml | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
+
 kernel=`uname --kernel-release`
 
 request=$(
@@ -82,6 +87,7 @@ jq -n \
 --arg amd_version "`dpkg -l amdgpu-pro | tail -n 1 | awk '{print $3}'`" \
 --arg manufacturer "$mb_manufacturer" --arg product "$mb_product" \
 --arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" \
+--arg disk_model "$disk_model" \
 --arg kernel "$kernel" \
 --arg server_url "$HIVE_HOST_URL" \
 '{
@@ -90,7 +96,7 @@ jq -n \
 		$rig_id, $passwd, $farm_hash, $server_url,
 		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
-		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes},
+		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes}, $disk_model,
 		$kernel, $version, $amd_version, $nvidia_version
 	}
 }'
