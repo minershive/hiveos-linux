@@ -4,6 +4,9 @@
 timedatectl set-timezone UTC
 
 
+#to replace configs and etc...
+apt install --reinstall hive
+
 
 hostname=worker
 if ! grep -q "127.0.0.1 $hostname" "/etc/hosts"; then
@@ -12,7 +15,7 @@ fi
 hostnamectl set-hostname "$hostname"
 
 
-/hive/bin/cache-hive-ip
+/hive/bin/cache-hive-ip resetonly
 
 
 

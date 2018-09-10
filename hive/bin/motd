@@ -6,7 +6,8 @@ uname -a
 echo -e ${CYAN}`hostname`${NOCOLOR}
 
 echo -ne ${PURPLE}
-ifconfig | grep -v "127.0.0.1" | grep "inet addr" | sed -E 's/^[[:space:]]+//'
+#ifconfig | grep -v "127.0.0.1" | grep "inet addr" | sed -E 's/^[[:space:]]+//'
+ip addr show | grep -v "127.0.0.1" | grep "inet .*/" | sed -E 's/^[[:space:]]+//'
 echo -e "${NOCOLOR}"
 
 df -h /

@@ -132,7 +132,8 @@ if [[ $interactive == 1 ]]; then
 
 
 	sleep 4 #to wait for dhcp
-		ifconfig | grep -m1 -A1 $wlandev
+	#ifconfig | grep -m1 -A1 $wlandev
+	ip addr show $wlandev
 
 	echo ""
 	echo -e "${GREEN}WiFi setup done${NOCOLOR}"

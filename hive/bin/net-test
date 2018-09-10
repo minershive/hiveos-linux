@@ -18,7 +18,7 @@ LAST_RESULT=0
 unset GREP_OPTIONS
 
 
-LOCAL_IP=`ifconfig | grep -m1 'inet ' | grep -v 127.0.0.1 | cut -d ' ' -f 12 | cut -d ':' -f 2`
+LOCAL_IP=`hostname -I | awk '{print $1}'`
 LOCAL_GW=`ip route | awk '/default/ { print $3 }'`
 LOCAL_DNS=`nslookup server | grep Server | cut -d ":" -f 2 | sed -e 's/^[ \t]*//'`
 

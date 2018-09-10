@@ -11,6 +11,9 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 " > /etc/hosts
 
+[[ $1 == "resetonly" ]] && exit 0
+
+
 #adds host ip
 /hive/bin/hostname-check
 

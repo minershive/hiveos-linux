@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Sends hello to Hive, receives config files, restarts miner
 
 HELLO_OK="/tmp/.hive-hello-ok"
@@ -41,6 +41,10 @@ done
 
 # Make hello request ================================================================
 
+#System pseudo unique number
+uid=$(echo $(sudo dmidecode -t 4 | grep ID | sed 's/.*ID://;s/ //g')-$(cat /sys/class/net/eth0/address | sed 's/://g') | tr '[:upper:]' '[:lower:]') #| sha1sum | awk '{print $1}'
+
+
 #boot_time=`TZ='UTC' uptime -s`
 boot_time=$(( `date +%s` - `cat /proc/uptime | awk '{printf "%d", $1}'` ))
 
@@ -71,9 +75,9 @@ kernel=`uname --kernel-release`
 
 request=$(
 jq -n \
+--arg uid "$uid" \
 --arg rig_id "$RIG_ID" \
 --arg passwd "$RIG_PASSWD" \
---arg farm_hash "$FARM_HASH" \
 --arg boot_time "$boot_time" \
 --arg boot_event "$arg_boot" \
 --argjson ip "$ips_json" \
@@ -93,7 +97,7 @@ jq -n \
 '{
 	"method": "hello", "jsonrpc": "2.0", "id": 0,
 	"params": {
-		$rig_id, $passwd, $farm_hash, $server_url,
+		$rig_id, $passwd, $server_url, $uid,
 		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
 		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes}, $disk_model,
@@ -101,6 +105,14 @@ jq -n \
 	}
 }'
 )
+
+[[ ! -z $FARM_HASH ]] &&
+	request=`echo "$request" | jq --arg farm_hash "$FARM_HASH" '. * {"params": {$farm_hash}}'`
+
+[[ ! -z $FARM_HASH && ! -z $WORKER_NAME ]] &&
+	request=`echo "$request" | jq --arg worker_name "$WORKER_NAME" '. * {"params": {$worker_name}}'`
+
+
 echo "$request" | jq -c '.'
 
 response=$(echo $request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=hello" -H "Content-Type: application/json")
