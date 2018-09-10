@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 #Cleans system before cloning
 
+function stop-everything() {
+	miner stop
+	wd stop
+	screen -S autofan -X quit
+	screen -S agent -X quit
+	systemctl stop hivex
+}
+
+stop-everything
+
+
 timedatectl set-timezone UTC
-
-
-#to replace configs and etc...
-apt install --reinstall hive
 
 
 hostname=worker
@@ -17,13 +24,6 @@ hostnamectl set-hostname "$hostname"
 
 /hive/bin/cache-hive-ip resetonly
 
-
-
-miner stop
-wd stop
-screen -S autofan -X quit
-screen -S agent -X quit
-systemctl stop hivex
 
 
 find /hive -type f -name "*.log" -exec rm -f {} \;
@@ -67,14 +67,20 @@ chown -R root:root /hive/etc/logrotate.d/*
 
 
 #no AMD in updates
-apt clean
-apt purge
 rm /etc/apt/sources.list.d/amdgpu-pro.list
 rm /etc/apt/sources.list.d/amdgpu-pro-local.list
 #old DKMS images, they are big!
 rm /boot/*.old-dkms
 #we don't need i386
 rm -rf /opt/amdgpu-pro/lib/i386-linux-gnu
+
+#to replace configs and etc...
+selfupgrade
+apt install --reinstall hive
+stop-everything
+apt clean
+apt purge
+
 
 echo "> Filling /hive-config"
 zerofill /hive-config
