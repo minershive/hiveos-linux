@@ -4,6 +4,14 @@ THIS_MINER_NAME="claymore"
 [ -t 1 ] && . colors
 
 
+#Try to wait for ending process of ethdcrminer64 maybe too fast after restart
+for i in {1..5}; do
+	ps aux | grep -v grep | grep ethdcrminer64 | grep "<defunct>" &&
+		(echo "Waiting for previous process to end..."; sleep 1) ||
+		break
+done
+
+
 [[ `ps aux | grep ethdcrminer64 | grep -v grep | wc -l` != 0 ]] &&
 	echo -e "${RED}$THIS_MINER_NAME miner is already running${NOCOLOR}" &&
 	exit 1
