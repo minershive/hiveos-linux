@@ -171,11 +171,14 @@ function miner_stats {
 				local ac=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $2}'`
 				local rj=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $3}'`
 
+				local algo="ethash"
+				[[ $ETHMINER_VER == "progpow" ]] && algo="progpow"
 				stats=$(jq -n \
 					--arg uptime "`echo \"$stats_raw\" | jq -r '.[1]' | awk '{print $1*60}'`" \
 					--argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" \
+					--arg algo "$algo" \
 					--arg ac "$ac" --arg rj "$rj" \
-					'{$hs, $temp, $fan, $uptime, ar: [$ac, $rj]}')
+					'{$hs, $temp, $fan, $uptime, $algo, ar: [$ac, $rj]}')
 			fi
 		;;
 		sgminer-gm)
