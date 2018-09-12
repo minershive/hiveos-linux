@@ -4,6 +4,14 @@ THIS_MINER_NAME="claymore-z"
 [ -t 1 ] && . colors
 
 
+#Try to wait for ending process, maybe too fast after restart
+for i in {1..5}; do
+	ps aux | grep -v grep | grep zecminer64 | grep "<defunct>" &&
+		(echo "Waiting for previous process to end..."; sleep 1) ||
+		break
+done
+
+
 [[ `ps aux | grep zecminer64 | grep -v grep | wc -l` != 0 ]] &&
 	echo "zecminer64 is already running" &&
 	exit 1
@@ -18,10 +26,11 @@ function zpools() {
 	echo "Creating epools.txt"
 	echo "$ZPOOLS_TPL" > $ZPOOLS_TXT
 
+	#Don't remove until Hive 1 is gone
 #	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
-#	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $ZPOOLS_TXT
-#	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $ZPOOLS_TXT
-#	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $ZPOOLS_TXT
+	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $ZPOOLS_TXT
+	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $ZPOOLS_TXT
+	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $ZPOOLS_TXT
 	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $ZPOOLS_TXT #|| echo "EMAIL not set"
 	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $ZPOOLS_TXT ||  echo "${YELLOW}WARNING: WORKER_NAME not set${NOCOLOR}"
 

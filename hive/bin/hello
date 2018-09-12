@@ -41,10 +41,6 @@ done
 
 # Make hello request ================================================================
 
-#System pseudo unique number
-uid=$(echo $(sudo dmidecode -t 4 | grep ID | sed 's/.*ID://;s/ //g')-$(cat /sys/class/net/eth0/address | sed 's/://g') | tr '[:upper:]' '[:lower:]') #| sha1sum | awk '{print $1}'
-
-
 #boot_time=`TZ='UTC' uptime -s`
 boot_time=$(( `date +%s` - `cat /proc/uptime | awk '{printf "%d", $1}'` ))
 
@@ -65,6 +61,7 @@ mb_product=`dmidecode | grep -A4 '^Base Board Information' | grep "Product Name:
 cpu_model=`lscpu | grep "Model name:" | sed 's/Model name:[ \t]*//g'`
 cpu_cores=`lscpu | grep "^CPU(s):" | sed 's/CPU(s):[ \t]*//g'`
 aes=`lscpu | grep "^Flags:.*aes" | wc -l`
+cpu_id=$(sudo dmidecode -t 4 | grep ID | sed 's/.*ID://;s/ //g')
 
 
 bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
@@ -72,6 +69,10 @@ bootdisk=${bootpart::-1} #cutoff partnumber
 disk_model=`parted -ml | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
 
 kernel=`uname --kernel-release`
+
+#System pseudo unique number
+uid=$(echo ${cpu_id}-$(cat /sys/class/net/eth0/address | sed 's/://g') | tr '[:upper:]' '[:lower:]' | sha1sum | awk '{print $1}')
+
 
 request=$(
 jq -n \
@@ -90,7 +91,7 @@ jq -n \
 --arg nvidia_version "`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//'`" \
 --arg amd_version "`dpkg -l amdgpu-pro | tail -n 1 | awk '{print $3}'`" \
 --arg manufacturer "$mb_manufacturer" --arg product "$mb_product" \
---arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" \
+--arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" --arg cpu_id "$cpu_id" \
 --arg disk_model "$disk_model" \
 --arg kernel "$kernel" \
 --arg server_url "$HIVE_HOST_URL" \
@@ -100,7 +101,7 @@ jq -n \
 		$rig_id, $passwd, $server_url, $uid,
 		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
-		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes}, $disk_model,
+		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes, $cpu_id}, $disk_model,
 		$kernel, $version, $amd_version, $nvidia_version
 	}
 }'

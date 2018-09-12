@@ -29,10 +29,11 @@ function config_gen() {
 
 	echo "Generating $CCMINER_CONFIG_FILE"
 
+	#Don't remove until Hive 1 is gone
 #	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
-#	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $CCMINER_CONFIG_FILE #|| echo "EWAL not set"
-#	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $CCMINER_CONFIG_FILE #|| echo "ZWAL not set"
-#	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $CCMINER_CONFIG_FILE #|| echo "DWAL not set"
+	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $CCMINER_CONFIG_FILE #|| echo "EWAL not set"
+	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $CCMINER_CONFIG_FILE #|| echo "ZWAL not set"
+	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $CCMINER_CONFIG_FILE #|| echo "DWAL not set"
 	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $CCMINER_CONFIG_FILE #|| echo "EMAIL not set"
 	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $CCMINER_CONFIG_FILE #||  "WORKER_NAME not set"
 }

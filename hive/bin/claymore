@@ -26,10 +26,11 @@ function epools() {
 	echo "Creating epools.txt"
 	echo "$EPOOLS_TPL" > $EPOOLS_TXT
 
+	#Don't remove until Hive 1 is gone
 #	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
-#	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $EPOOLS_TXT #|| echo -e "${RED}EWAL not set${NOCOLOR}"
-#	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $EPOOLS_TXT #|| echo -e "${RED}DWAL not set${NOCOLOR}"
-#	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $EPOOLS_TXT #|| echo -e "${RED}ZWAL not set${NOCOLOR}"
+	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $EPOOLS_TXT #|| echo -e "${RED}EWAL not set${NOCOLOR}"
+	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $EPOOLS_TXT #|| echo -e "${RED}DWAL not set${NOCOLOR}"
+	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $EPOOLS_TXT #|| echo -e "${RED}ZWAL not set${NOCOLOR}"
 	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $EPOOLS_TXT
 	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $EPOOLS_TXT || echo -e "${RED}WORKER_NAME not set${NOCOLOR}"
 

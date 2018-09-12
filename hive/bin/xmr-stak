@@ -53,7 +53,8 @@ EOF
 		echo -e "${RED}No pools configured, using default${NOCOLOR}"
 	else
 		#pass can also contain %var%
-		[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
+		#Don't remove until Hive 1 is gone
+#		[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
 		[[ ! -z $EWAL ]] && pools=$(sed "s/%EWAL%/$EWAL/g" <<< $pools) #|| echo -e "${RED}EWAL not set${NOCOLOR}"
 		[[ ! -z $ZWAL ]] && pools=$(sed "s/%ZWAL%/$ZWAL/g" <<< $pools) #|| echo -e "${RED}ZWAL not set${NOCOLOR}"
 		[[ ! -z $DWAL ]] && pools=$(sed "s/%DWAL%/$DWAL/g" <<< $pools) #|| echo -e "${RED}DWAL not set${NOCOLOR}"

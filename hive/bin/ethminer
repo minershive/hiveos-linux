@@ -74,8 +74,8 @@ function config_gen() {
 		local server=
 		grep -q "^stratum.*://" <<< $ETHMINER_SERVER
 		if [[ $? == 0 ]]; then
-			protocol=`awk -F '://' '{print $1"://"}' <<< $ETHMINER_SERVER`
-			server=`awk -F '://' '{print $2}' <<< $ETHMINER_SERVER`
+			protocol=$(awk -F '://' '{print $1"://"}' <<< $ETHMINER_SERVER)
+			server=$(awk -F '://' '{print $2}' <<< $ETHMINER_SERVER)
 		else #no protocol in server
 			protocol="stratum+tcp://"
 			server=$ETHMINER_SERVER
@@ -101,10 +101,11 @@ function config_gen() {
 	sed -i '/--stratum-protocol/d' $MINER_CONFIG
 
 	#replace tpl values in whole file
+	#Don't remove until Hive 1 is gone
 #	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
-#	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $MINER_CONFIG #|| echo -e "${RED}EWAL not set${NOCOLOR}"
-#	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $MINER_CONFIG #|| echo -e "${RED}DWAL not set${NOCOLOR}"
-#	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG #|| echo -e "${RED}ZWAL not set${NOCOLOR}"
+	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $MINER_CONFIG #|| echo -e "${RED}EWAL not set${NOCOLOR}"
+	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $MINER_CONFIG #|| echo -e "${RED}DWAL not set${NOCOLOR}"
+	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG #|| echo -e "${RED}ZWAL not set${NOCOLOR}"
 	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG || echo "${RED}WORKER_NAME not set${NOCOLOR}"
 	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $MINER_CONFIG
 }

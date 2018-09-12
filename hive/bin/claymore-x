@@ -4,6 +4,14 @@ THIS_MINER_NAME="claymore-x"
 [ -t 1 ] && . colors
 
 
+#Try to wait for ending process, maybe too fast after restart
+for i in {1..5}; do
+	ps aux | grep -v grep | grep nsgpucnminer | grep "<defunct>" &&
+		(echo "Waiting for previous process to end..."; sleep 1) ||
+		break
+done
+
+
 [[ `ps aux | grep nsgpucnminer | grep -v grep | wc -l` != 0 ]] &&
 	echo "nsgpucnminer is already running" &&
 	exit 1

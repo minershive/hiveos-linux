@@ -28,7 +28,8 @@ function config_gen() {
 	conf="-api 127.0.0.1:1880 -max-temperature 82"
 
 	tpl=$BMINER_TEMPLATE
-	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
+	#Don't remove until Hive 1 is gone
+#	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
 	[[ ! -z $EWAL ]] && tpl=$(sed "s/%EWAL%/$EWAL/g" <<< $tpl) #|| echo "${RED}EWAL not set${NOCOLOR}"
 	[[ ! -z $ZWAL ]] && tpl=$(sed "s/%ZWAL%/$ZWAL/g" <<< $tpl) #|| echo "${RED}ZWAL not set${NOCOLOR}"
 	[[ ! -z $DWAL ]] && tpl=$(sed "s/%DWAL%/$DWAL/g" <<< $tpl) #|| echo "${RED}DWAL not set${NOCOLOR}"

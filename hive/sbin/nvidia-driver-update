@@ -73,7 +73,7 @@ if (echo $basename | grep -q '\-396\.'); then
 	echo -e ""
 	echo -e "${CYAN}> Updating nvidia-settings${NOCOLOR}"
 	apt update
-	apt-get install --reinstall -y nvidia-settings
+	apt-get install --only-upgrade --reinstall -y nvidia-settings
 fi
 
 

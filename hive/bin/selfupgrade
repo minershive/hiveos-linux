@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+#This will prevent asking interactive questions
+export DEBIAN_FRONTEND=noninteractive
+#If needed maybe there is even stronger option @see https://askubuntu.com/questions/146921/how-do-i-apt-get-y-dist-upgrade-without-a-grub-config-prompt
+#sudo DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
+
 . colors
 
 VERSION=$1
@@ -38,9 +43,10 @@ fi
 echo ------------------------------------------------------
 
 if [[ -z $VERSION ]]; then #normal upgrade to the latest available
-	apt-get upgrade -y hive
+	#apt-get upgrade -y hive
+	apt-get install --only-upgrade -y hive
 else
-	apt-get install -y --allow-downgrades --reinstall hive=$VERSION
+	apt-get install -y --only-upgrade --allow-downgrades --reinstall hive=$VERSION
 fi
 
 exitcode=$?
