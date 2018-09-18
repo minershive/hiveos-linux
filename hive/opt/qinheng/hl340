@@ -18,10 +18,19 @@ echo "Using $PORT"
         echo "$PORT is not a character device" &&
         exit 1
 
+ping="echo -ne "r90p90""
+reset="echo -ne "r2p90""
+
+if [[ ! -f /hive-config/WD-NANO ]]; then
+
+ping="echo -ne "\x1E\x00"" 
+reset="echo -ne "\xFF\x55""
+fi
+
 
 if [[ $1 == "reset" ]]; then
         echo "Pushing Reset"
-        echo -ne "\xFF\x55" > $PORT
+        $reset > $PORT
         exit 0
 fi
 
@@ -39,6 +48,6 @@ fi
 while true
 do
         echo "Pinging watchdog"
-        echo -ne "\x1E\x00" > $PORT
+	$ping > $PORT
         sleep 5
 done
