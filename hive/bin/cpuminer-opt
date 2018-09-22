@@ -18,8 +18,6 @@ THIS_MINER_NAME="cpuminer-opt"
 
 function config_gen() {
 	MINER_GLOBAL_CONF=`cat /hive/cpuminer-opt/config_global.json`
-	RIG_CONF="/hive-config/rig.conf"
-	WALLET_CONF="/hive-config/wallet.conf"
 	MINER_CONFIG_FILE="/hive/cpuminer-opt/cpuminer.conf"
 
 	[ ! -f $RIG_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1

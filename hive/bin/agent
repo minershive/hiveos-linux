@@ -2,11 +2,6 @@
 #Send stats, receives commands
 
 INTERVAL=10
-RIG_CONF="/hive-config/rig.conf"
-NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
-AMD_OC_CONF="/hive-config/amd-oc.conf"
-WALLET_CONF="/hive-config/wallet.conf"
-AUTOFAN_CONF="/hive-config/autofan.conf"
 LOG="/var/log/hive-agent.log"
 
 API_TIMEOUT=15 #timeout to wait for miner API response, can take very long time on 13+ gpus
@@ -32,10 +27,10 @@ function process_gpu_detect_json() {
 	#gpu_detect_json=`gpu-detect listjson`
 
 
-	if [[ $1 == "redetect" || ! -e /run/hive/gpu-detect.json ]]; then #this is needed only when upgrading version. later we can remove this
-		gpu-detect listjson > /run/hive/gpu-detect.json
+	if [[ $1 == "redetect" || ! -e $GPU_DETECT_JSON ]]; then #this is needed only when upgrading version. later we can remove this
+		gpu-detect listjson > $GPU_DETECT_JSON
 	fi
-	gpu_detect_json=`cat /run/hive/gpu-detect.json`
+	gpu_detect_json=`cat $GPU_DETECT_JSON`
 	[[ -z $gpu_detect_json ]] &&
 		echo "gpu_detect_json was empty after reading" > /run/hive/agent-no-gpu-detect
 	amd_indexes_array=$(jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]' <<< "$gpu_detect_json")
@@ -168,7 +163,7 @@ function loop {
 	done
 
 	echo -en "\n"
-	echo $khs > /run/hive/khs
+	echo $khs > $HASHRATE_KHS
 
 
 

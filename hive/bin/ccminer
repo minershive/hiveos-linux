@@ -11,8 +11,6 @@ THIS_MINER_NAME="ccminer"
 
 
 function config_gen() {
-	RIG_CONF="/hive-config/rig.conf"
-	WALLET_CONF="/hive-config/wallet.conf"
 	CCMINER_CONFIG_FILE="/hive/ccminer/pools.conf"
 
 	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1

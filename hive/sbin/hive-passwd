@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
-
 #Change password for SSH and VNC
 #Parameter: new_password or -conf to get password from rig.conf
 
 [ -t 1 ] && . colors
 
-RIG_CONF="/hive-config/rig.conf"
-VNC_PASSWD="/hive-config/vnc-password.txt"
-
-## Check parameter
+# Check parameter
 if [[ -z $1 ]]; then
 	echo -e "${CYAN}Changes system password for \"user\" (SSH and VNC also)${NOCOLOR}"
 	echo -e "Specify password as an argument"

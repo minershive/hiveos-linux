@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 #checks if there is a hostname in /etc/hosts for WORKER_NAME
 
-RIG_CONF="/hive-config/rig.conf"
-
 [[ -e $RIG_CONF ]] && . $RIG_CONF
 
 if [[ ! -z $WORKER_NAME ]]; then

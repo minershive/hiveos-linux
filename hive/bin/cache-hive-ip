@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-#export PATH="./:/hive/bin:/hive/sbin:$PATH"
-
 
 #Recreate. Because of shitty picky bugs
 echo "127.0.0.1	localhost
@@ -18,7 +16,6 @@ ff02::2 ip6-allrouters
 /hive/bin/hostname-check
 
 
-RIG_CONF="/hive-config/rig.conf"
 [ ! -e $RIG_CONF ] && echo "No $RIG_CONF" && exit 1
 . $RIG_CONF
 [[ -z $HIVE_HOST_URL ]] && echo "HIVE_HOST_URL is empty" && exit 1

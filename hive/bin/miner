@@ -9,9 +9,6 @@ function usage() {
 }
 
 
-RIG_CONF="/hive-config/rig.conf"
-WALLET_CONF="/hive-config/wallet.conf"
-
 #[ -t 1 ] &&
 . colors
 

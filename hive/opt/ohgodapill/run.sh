@@ -3,7 +3,6 @@
 #
 #
 
-NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
 . $NVIDIA_OC_CONF
 
 while true; do

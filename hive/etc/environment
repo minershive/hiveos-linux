@@ -1,4 +1,24 @@
-#ln -sf /hive/etc/environment /etc/environment
+# ln -sf /hive/etc/environment /etc/environment
 # Please do not use the char "$" here or variable size will grow toward infinity
 PATH="./:/hive/bin:/hive/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
 CUDA_DEVICE_ORDER=PCI_BUS_ID
+
+
+# Hive vars
+RIG_CONF=/hive-config/rig.conf
+WALLET_CONF=/hive-config/wallet.conf
+
+AMD_OC_CONF=/hive-config/amd-oc.conf
+NVIDIA_OC_CONF=/hive-config/nvidia-oc.conf
+
+AMDMEMINFO_FILE=/run/hive/amdmeminfo
+NVIDIASMI_FILE=/run/hive/nvidia_smi_info
+
+AUTOFAN_CONF=/hive-config/autofan.conf
+
+GPU_DETECT_JSON=/run/hive/gpu-detect.json
+GPU_STATS_JSON=/run/hive/gpu-stats.json
+
+HASHRATE_KHS=/run/hive/khs
+
+VNC_PASSWD=/hive-config/vnc-password.txt

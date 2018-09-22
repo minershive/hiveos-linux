@@ -22,9 +22,6 @@ BRANDING_LOGO="${BYELLOW}${BRANDING_LOGO}${NOCOLOR}"
 
 
 HELLO_OK="/tmp/.hive-hello-ok"
-RIG_CONF="/hive-config/rig.conf"
-NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
-AMD_OC_CONF="/hive-config/amd-oc.conf"
 mkdir -p "/hive-config"
 
 

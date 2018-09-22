@@ -12,8 +12,6 @@ THIS_MINER_NAME="xmrig"
 
 
 function config_gen() {
-	RIG_CONF="/hive-config/rig.conf"
-	WALLET_CONF="/hive-config/wallet.conf"
 	MINER_CONFIG="/hive/$THIS_MINER_NAME/config.json"
 
 	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1

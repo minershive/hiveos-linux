@@ -11,8 +11,6 @@ THIS_MINER_NAME="ewbf"
 
 
 function config_gen() {
-	RIG_CONF="/hive-config/rig.conf"
-	WALLET_CONF="/hive-config/wallet.conf"
 	EWBF_GLOBAL_CONFIG="/hive/ewbf/miner.global.cfg"
 	EWBF_CONFIG="/hive/ewbf/miner.cfg"
 

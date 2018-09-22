@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-. colors
 #ln -s /hive/bin/motd /etc/update-motd.d/00-my-motd
+. colors
 
-uname -a
+echo -en `uname -sr`
+echo -e "   ${YELLOW}H `dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`${NOCOLOR}"
+
 echo -e ${CYAN}`hostname`${NOCOLOR}
 
 echo -ne ${PURPLE}

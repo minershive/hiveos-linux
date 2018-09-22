@@ -11,8 +11,6 @@ THIS_MINER_NAME="optiminer"
 
 
 function config_gen() {
-	RIG_CONF="/hive-config/rig.conf"
-	WALLET_CONF="/hive-config/wallet.conf"
 	MINER_CONFIG="/hive/$THIS_MINER_NAME/$THIS_MINER_NAME.sh"
 	[[ -z $OPTIMINER_ALGORITHM ]] && OPTIMINER_ALGORITHM="equihash96_5"
 

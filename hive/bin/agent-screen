@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 # !!! also can be started from cron and on startup !!!
-source /etc/environment
-export PATH
-export CUDA_DEVICE_ORDER
 
 #Check for proxy var. Or agent and others started from here will not see it
 . http_proxy.sh

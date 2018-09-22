@@ -1,9 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 . /hive/bin/colors
 
-RIG_CONF="/hive-config/rig.conf"
 [ ! -f $RIG_CONF ] && echo -e "No config $RIG_CONF" && exit 1
-
 . $RIG_CONF
 
 HIVE_URL="$HIVE_HOST_URL/worker/api"

@@ -6,11 +6,8 @@ THIS_MINER_NAME="custom"
 export LD_LIBRARY_PATH=/hive/lib
 
 #Ubuntu 18.04 compat
-[[ -e /usr/lib/x86_64-linux-gnu/libcurl3.so ]] && export LD_PRELOAD=libcurl3.so
+[[ -e /usr/lib/x86_64-linux-gnu/libcurl.so.3 ]] && export LD_PRELOAD=libcurl.so.3
 
-
-RIG_CONF="/hive-config/rig.conf"
-WALLET_CONF="/hive-config/wallet.conf"
 
 [[ ! -e $RIG_CONF ]] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && exit 1
 [[ ! -e $WALLET_CONF ]] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && exit 1

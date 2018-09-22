@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Part of agent
+
 function do_command () {
 	#body=$1
 	[[ -z $command ]] && command=`echo "$body" | jq -r '.command'` #get command for batch

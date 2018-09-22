@@ -93,9 +93,6 @@ function user_config() {
 
 
 function config_gen() {
-	RIG_CONF="/hive-config/rig.conf"
-	WALLET_CONF="/hive-config/wallet.conf"
-
 	. $RIG_CONF
 	. $WALLET_CONF
 	[[ -z $CLAYMORE_VER ]] && CLAYMORE_VER="latest"

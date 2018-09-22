@@ -48,8 +48,6 @@ function user_config() {
 
 
 function config_gen() {
-	RIG_CONF="/hive-config/rig.conf"
-	WALLET_CONF="/hive-config/wallet.conf"
 	CLAYMORE_CONFIG="/hive/claymorez/config.txt"
 	ZPOOLS_TXT="/hive/claymorez/epools.txt"
 	USER_CONFIG_SEPARATOR="### USER CONFIG ###"

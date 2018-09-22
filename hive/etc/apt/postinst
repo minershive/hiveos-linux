@@ -137,12 +137,14 @@ cp -r --no-clobber /hive/etc/hive-config.stub/* /hive-config/
 
 
 # Teleconsole env check ------------------------------------------------------------------------
-cat /root/.bashrc | grep -qE '^# Teleconsole required start' ||
-(echo "Adding environment to /root/.bashrc for Teleconsole";
-echo -e "\n\n# Teleconsole required start
-source /etc/environment
-export PATH
-export CUDA_DEVICE_ORDER
+cat /root/.bashrc | grep -qE '^# Teleconsole required start v2$' ||
+(echo "Updating environment in /root/.bashrc for Teleconsole";
+sed -i '/^# Teleconsole required start/,/^# Teleconsole required end/d' /root/.bashrc #removing old version
+echo -e "# Teleconsole required start v2
+if [[ ! -z \$TELEPORT_SESSION ]]; then
+	source /etc/environment
+	export \$(cat /etc/environment | grep -vE \"^$|^#\" | cut -d= -f1)
+fi
 # Teleconsole required end" >> /root/.bashrc)
 
 

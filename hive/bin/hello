@@ -4,11 +4,6 @@
 HELLO_OK="/tmp/.hive-hello-ok"
 [ -f $HELLO_OK ] && rm $HELLO_OK
 
-RIG_CONF="/hive-config/rig.conf"
-NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
-AMD_OC_CONF="/hive-config/amd-oc.conf"
-WALLET_CONF="/hive-config/wallet.conf"
-AUTOFAN_CONF="/hive-config/autofan.conf"
 VPN_INSTALLED="/tmp/.openvpn-installed"
 mkdir -p "/hive-config"
 mkdir -p "/hive-config/openvpn"
@@ -44,10 +39,10 @@ done
 #boot_time=`TZ='UTC' uptime -s`
 boot_time=$(( `date +%s` - `cat /proc/uptime | awk '{printf "%d", $1}'` ))
 
-if [[ ! -e /run/hive/gpu-detect.json ]]; then #this is needed only when upgrading version. later we can remove this
-	gpu-detect listjson > /run/hive/gpu-detect.json
+if [[ ! -e $GPU_DETECT_JSON ]]; then #this is needed only when upgrading version. later we can remove this
+	gpu-detect listjson > $GPU_DETECT_JSON
 fi
-gpus_json=`cat /run/hive/gpu-detect.json`
+gpus_json=`cat $GPU_DETECT_JSON`
 #gpus_json=`echo "${gpus[@]}" | jq -R . | jq -s -c .`
 gpu_count_amd=`gpu-detect AMD`
 gpu_count_nvidia=`gpu-detect NVIDIA`

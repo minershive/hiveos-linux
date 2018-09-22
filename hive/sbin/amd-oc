@@ -6,7 +6,6 @@
 date
 echo ""
 
-AMD_OC_CONF="/hive-config/amd-oc.conf"
 DEFAULT_CORE_STATE=5
 
 n=`gpu-detect AMD`
