@@ -153,6 +153,14 @@ export CUDA_DEVICE_ORDER
 
 
 
+# Ubuntu 18 fixes --------------------------------------------------------------------------------
+# fixing incorrect libcurl3 naming in 18.04.
+# can be removed after few updated after 0.5-74
+[[ -e /usr/lib/x86_64-linux-gnu/libcurl3.so.4.5.0 ]] && mv /usr/lib/x86_64-linux-gnu/libcurl3.so.4.5.0 /usr/lib/x86_64-linux-gnu/libcurl.so.3.0.0
+[[ -L /usr/lib/x86_64-linux-gnu/libcurl3.so ]] && rm /usr/lib/x86_64-linux-gnu/libcurl3.so && ln -s /usr/lib/x86_64-linux-gnu/libcurl.so.3.0.0 /usr/lib/x86_64-linux-gnu/libcurl.so.3
+
+
+
 #will be created from stub
 #[[ ! -e /hive-config/vnc-password.txt ]] &&
 #	cp hive/etc/hive-config.stub/vnc-password.txt /hive-config/vnc-password.txt
