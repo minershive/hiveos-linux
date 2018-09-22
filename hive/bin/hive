@@ -172,6 +172,15 @@ if [ $GPU_COUNT_AMD -gt 0 ]; then
     fi
 
     echo2 "`amd-save-pp_tables`"
+
+	#Moved here from gpu-detect
+	amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
+	[[ -f $AMDMEMINFO_FILE ]] && amdmeminfo=`cat $AMDMEMINFO_FILE`
+	#amdmeminfo can fail from the first time and skip some cards, let's rerun it
+	if [[ `echo "$amdmeminfo" | wc -l` != $GPU_COUNT_AMD ]]; then
+		sleep 0.1
+		amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
+	fi
 fi
 #sleep 1
 

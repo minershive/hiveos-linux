@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [[ $# < 1 ]]; then
 	echo "Usage: $0 NVIDIA|AMD|list|listjson|listnvidia"
@@ -9,30 +9,35 @@ fi
 #[[ -t 1 || $2 == "--colors" ]] && . colors
 
 
-AMDMEMINFO_FILE=/run/hive/amdmeminfo
-NVIDIASMI_FILE=/run/hive/nvidia_smi_info
-
-
 # Wait 4 sec for another amdmeminfo process to finish
-for value in {1..40}; do
-	[[ -z `pidof amdmeminfo` ]] && break
-	sleep 0.1
-done
+#for value in {1..40}; do
+#	[[ -z `pidof amdmeminfo` ]] && break
+#	sleep 0.1
+#done
 
 
 if [[ $1 == "list" || $1 == "listjson" ]]; then
-	amdmeminfo=
-	[[ -z $GPU_COUNT_AMD ]] && GPU_COUNT_AMD=`gpu-detect AMD`
-	if [[ $GPU_COUNT_AMD > 0 ]]; then
-		[[ ! -f $AMDMEMINFO_FILE ]] && amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
-		[[ -f $AMDMEMINFO_FILE ]] && amdmeminfo=`cat $AMDMEMINFO_FILE`
-		#amdmeminfo can fail from the first time and skip some cards, let's rerun it
-		if [[ `echo "$amdmeminfo" | wc -l` != $GPU_COUNT_AMD ]]; then
-			sleep 0.1
-			amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
+	#Moved to /hive/bin/hive
+#	amdmeminfo -q -s -n > /run/hive/amdmeminfo-$$ 2>&1 #just run it to warmup or it will not detect memory type
+#	amdmeminfo=
+#	[[ -z $GPU_COUNT_AMD ]] && GPU_COUNT_AMD=`gpu-detect AMD`
+#	if [[ $GPU_COUNT_AMD -gt 0 ]]; then
+#		if [[ ! -f $AMDMEMINFO_FILE ]]; then
+#			amdmeminfo -q -s -n > /run/hive/amdmeminfo1-$$ 2>&1 #just run it to warmup or it will not detect memory type
+#			amdmeminfo -q -s -n > /run/hive/amdmeminfo2-$$ 2>&1 #just run it to warmup or it will not detect memory type
+#			amdmeminfo -q -s -n > /run/hive/amdmeminfo3-$$ 2>&1 #just run it to warmup or it will not detect memory type
+#			amdmeminfo -q -s -n > /run/hive/amdmeminfo4-$$ 2>&1 #just run it to warmup or it will not detect memory type
+#			amdmeminfo -q -s -n > /run/hive/amdmeminfo5-$$ 2>&1 #just run it to warmup or it will not detect memory type
+#			amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
+#		fi
+#		[[ -f $AMDMEMINFO_FILE ]] && amdmeminfo=`cat $AMDMEMINFO_FILE`
+#		#amdmeminfo can fail from the first time and skip some cards, let's rerun it
+#		if [[ `echo "$amdmeminfo" | wc -l` != $GPU_COUNT_AMD ]]; then
+#			sleep 0.1
+#			amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
 			[[ -f $AMDMEMINFO_FILE ]] && amdmeminfo=`cat $AMDMEMINFO_FILE`
-		fi
-	fi
+#		fi
+#	fi
 
 
 	if [[ ! -z $2 && $2 == "AMD" ]]; then
