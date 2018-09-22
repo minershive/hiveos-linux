@@ -3,7 +3,7 @@
 [ -t 1 ] && . colors
 
 #Ubuntu 18.04 compat
-[[ -e /usr/lib/x86_64-linux-gnu/libcurl.so.3 ]] && export LD_PRELOAD=libcurl.so.3
+[[ -e /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3.0.0 ]] && export LD_PRELOAD=libcurl-compat.so.3.0.0
 
 #CPU_INFO=`lscpu`
 CPU_INFO=`cat /proc/cpuinfo | grep flags`
