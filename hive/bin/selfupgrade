@@ -61,6 +61,11 @@ apt-get -y autoremove
 apt-get clean
 
 
+#Reread env variables
+source /etc/environment
+export $(cat /etc/environment | grep -vE "^$|^#" | cut -d= -f1) #export all variables from file
+
+
 #echo ------------------------------------------------------
 #Moved from postinst again as hello need to see new version
 echo -e "${YELLOW}> Saying hello to server again${NOCOLOR}"
