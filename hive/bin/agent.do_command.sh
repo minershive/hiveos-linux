@@ -21,8 +21,10 @@ function do_command () {
 			#superreboot
 		;;
 		upgrade)
+			local version=$(echo "$body" | jq -r '.version')
+			[[ $version == "null" ]] && version=
 			nohup bash -c '
-				payload=`selfupgrade 2>&1`
+				payload=`selfupgrade '$version' 2>&1`
 				upgrade_exitcode=$?
 				echo "$payload"
 				[[ $upgrade_exitcode -eq 0 ]] &&

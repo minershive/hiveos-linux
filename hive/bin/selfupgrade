@@ -7,6 +7,10 @@ export DEBIAN_FRONTEND=noninteractive
 
 . colors
 
+current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
+echo -e "Current version: ${YELLOW}$current_version${NOCOLOR}"
+
+
 VERSION=$1
 
 if [[ ! -z $VERSION ]]; then
@@ -85,7 +89,8 @@ screen -S autofan -X quit
 autofan
 
 
-echo -e "${GREEN}Upgrade complete. Have a happy mining.${NOCOLOR}"
+current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
+echo -e "${GREEN}Upgrade to $current_version complete. Have a happy mining.${NOCOLOR}"
 
 
 #Flush buffers if any files changed

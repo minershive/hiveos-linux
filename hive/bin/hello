@@ -69,6 +69,10 @@ bootdisk=${bootpart::-1} #cutoff partnumber
 disk_model=`parted -ml | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
 
 kernel=`uname --kernel-release`
+version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
+amd_version=`dpkg -s amdgpu-pro 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`
+#if there is no driver but only OpenCL
+[[ -z $amd_version ]] && amd_version="OpenCL `dpkg -s opencl-amdgpu-pro-icd 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`"
 
 #System pseudo unique number
 uid=$(echo ${cpu_id}-$(cat /sys/class/net/eth0/address | sed 's/://g') | tr '[:upper:]' '[:lower:]' | sha1sum | awk '{print $1}')
@@ -87,9 +91,9 @@ jq -n \
 --argjson gpu "$gpus_json" \
 --arg gpu_count_amd "$gpu_count_amd" \
 --arg gpu_count_nvidia "$gpu_count_nvidia" \
---arg version "`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`" \
+--arg version "$version" \
 --arg nvidia_version "`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//'`" \
---arg amd_version "`dpkg -l amdgpu-pro | tail -n 1 | awk '{print $3}'`" \
+--arg amd_version "$amd_version" \
 --arg manufacturer "$mb_manufacturer" --arg product "$mb_product" \
 --arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" --arg cpu_id "$cpu_id" \
 --arg disk_model "$disk_model" \
