@@ -90,7 +90,7 @@ autofan
 
 
 current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
-echo -e "${GREEN}Upgrade to $current_version complete. Have a happy mining.${NOCOLOR}"
+echo -e "${GREEN}Upgrade to ${YELLOW}$current_version${GREEN} complete. Have a happy mining.${NOCOLOR}"
 
 
 #Flush buffers if any files changed
