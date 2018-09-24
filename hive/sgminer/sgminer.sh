@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+#Ubuntu 18.04 compat
+[[ -e /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3.0.0 ]] && export LD_PRELOAD=libcurl-compat.so.3.0.0
+
 export GPU_MAX_HEAP_SIZE=100
 export GPU_USE_SYNC_OBJECTS=1
 export GPU_SINGLE_ALLOC_PERCENT=100

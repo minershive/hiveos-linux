@@ -25,6 +25,8 @@ function miner_stats {
 				echo -e "${YELLOW}Failed to read $miner stats from localhost:3337${NOCOLOR}"
 			else
 				khs=`echo $stats | jq -r '.[2]' | awk -F';' '{print $1/1000}'` #sols to khs
+				cat /hive/claymorex/config.txt | grep -q '^\-pow7 1$' && algo=cryptonight-v7 || algo=cryptonight
+				stats=`echo "$stats" "[\"$algo\"]" | jq -s '.[0] + .[1]'` # push algo to end of array
 			fi
 		;;
 		claymore-z)
@@ -340,7 +342,7 @@ function miner_stats {
 			else
 				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 				local cpu_temp=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
-				stats=`echo $stats_raw | jq '{hs: [.hashrate.threads[][0]], temp: '$cpu_temp', uptime: .connection.uptime}'`
+				stats=`echo $stats_raw | jq '{hs: [.hashrate.threads[][0]], temp: '$cpu_temp', uptime: .connection.uptime, algo: .algo}'`
 			fi
 		;;
 		cpuminer-opt)

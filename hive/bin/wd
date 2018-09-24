@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
+	source /etc/environment
+	export $(cat /etc/environment | grep -vE "^$|^#" | cut -d= -f1) #export all variables from file
+fi
+
 SLEEP=10 #seconds to sleep over iteration
 OK_MESSAGE_REDUCE=$(( 1 * 60 / $SLEEP )) #e.g. only every 12th message will be displayed to reduce log
 

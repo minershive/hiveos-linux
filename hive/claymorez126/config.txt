@@ -16,6 +16,6 @@
 -tstop 82
 
 
--allpools 1
+#-allpools 1
 
 ### USER CONFIG ###

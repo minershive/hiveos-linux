@@ -22,7 +22,7 @@ function config_gen() {
 	#put default config settings
 	#\n--farm-recheck 2000
 	echo -e "--report-hashrate --api-port 3334" > $MINER_CONFIG
-	if [[ $ETHMINER_VER == "0.14.0" || $ETHMINER_VER == "progpow" ]]; then
+	if [[ $ETHMINER_VER == "0.14.0" ]]; then
 		echo -e "-HWMON" >> $MINER_CONFIG
 	else #0.15.0 and later
 		echo -e "--HWMON 1" >> $MINER_CONFIG

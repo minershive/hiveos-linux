@@ -16,7 +16,7 @@
 #stop GPU temperature
 -tstop 82
 
--allpools 1
+#-allpools 1
 
 -pow7 1
 
