@@ -53,6 +53,7 @@ function miner_stats {
 				local fan=$(jq -r ".fan | .[]" <<< $gpu_stats)
 				#EWBF's busid array
 				local bus_id_array=$(jq -r '[.result[].busid[5:7]] | .[]' <<< "$stats_raw")
+				local bus_numbers=$(echo "$bus_id_array" | awk '{printf("%d\n", "0x"$1)}' | jq -sc .)
 				#All busid array
 				local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
 				#Formating arrays
@@ -83,17 +84,17 @@ function miner_stats {
 				local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
 
 				stats=$(jq -c --argjson temp "$temp" --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
-						--arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" --arg algo "$EWBF_ALGO"  \
+						--arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" --argjson bus_numbers "$bus_numbers" --arg algo "$EWBF_ALGO"  \
 					'{hs: [.result[].speed_sps], $temp, $fan,
-						$uptime, ar: [$ac, $rj]}' <<< "$stats_raw")
+						$uptime, ar: [$ac, $rj], $bus_numbers, $algo}' <<< "$stats_raw")
 			fi
 		;;
 		ccminer)
-			threads=`echo "threads" | nc -w $API_TIMEOUT localhost 4068` #&& echo $threads
+			threads=`echo "threads" | nc -w $API_TIMEOUT localhost 4068 | tr -d '\0'` #&& echo $threads
 			if [[ $? -ne 0  || -z $threads ]]; then
 				echo -e "${YELLOW}Failed to read $miner stats from localhost:4068${NOCOLOR}"
 			else
-				summary=`echo "summary" | nc -w 2 localhost 4068`
+				summary=`echo "summary" | nc -w 2 localhost 4068 | tr -d '\0'`
 				re=';UPTIME=([0-9]+);' && [[ $summary =~ $re ]] && local uptime=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
 				#khs will calculate from cards; re=';KHS=([0-9\.]+);' && [[ $summary =~ $re ]] && khs=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
 				algo=`echo "$summary" | tr ';' '\n' | grep -m1 'ALGO=' | sed -e 's/.*=//'`
@@ -106,6 +107,7 @@ function miner_stats {
 				cctemps=(`echo "$striplines" | grep 'TEMP=' | sed -e 's/.*=//'`) #echo ${cctemps[@]} | tr " " "\n" #print it in lines
 				cckhs=(`echo "$striplines" | grep 'KHS=' | sed -e 's/.*=//'`)
 				ccbusids=(`echo "$striplines" | grep 'BUS=' | sed -e 's/.*=//'`)
+				local bus_numbers=$(jq -sc . <<< "$ccbusids")
 
 
 				#local nvidiastats
@@ -140,8 +142,8 @@ function miner_stats {
 					--argjson khs "`echo ${cckhs[@]} | tr " " "\n" | jq -cs '.'`" \
 					--argjson temp "`echo ${cctemps[@]} | tr " " "\n" | jq -cs '.'`" \
 					--argjson fan "`echo \"$striplines\" | grep 'FAN=' | sed -e 's/.*=//' | jq -cs '.'`" \
-					--arg ac "$ac" --arg rj "$rj" \
-					'{$khs, $temp, $fan, $uptime, $algo, ar: [$ac, $rj]}')
+					--arg ac "$ac" --arg rj "$rj" --argjson bus_numbers "$bus_numbers" \
+					'{$khs, $temp, $fan, $uptime, ar: [$ac, $rj], $bus_numbers, $algo}')
 			fi
 		;;
 		ethminer)
@@ -210,6 +212,7 @@ function miner_stats {
 				local fan=$(jq -r ".fan | .[]" <<< "$gpu_stats")
 				#DSTM's busid array
 				local bus_id_array=$(jq -r '.result[].gpu_pci_bus_id' <<< "$stats_raw")
+				local bus_numbers=$(echo "$bus_id_array" | awk '{printf("%d\n", "0x"$1)}' | jq -sc .)
 				#All busid array
 				local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2]] | .[]'`)
 				#Formating arrays
@@ -229,8 +232,8 @@ function miner_stats {
 				done
 
 				stats=$(jq --argjson temp "$temp" --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
-					--arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" \
-					'{ hs: [.result[].sol_ps], $temp, $fan, $uptime, ar: [$ac, $rj] }' <<< "$stats_raw")
+					--arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" --argjson bus_numbers "$bus_numbers" \
+					'{ hs: [.result[].sol_ps], $temp, $fan, $uptime, ar: [$ac, $rj], $bus_ids }' <<< "$stats_raw")
 			fi
 		;;
 		bminer) #@see https://www.bminer.me/references/
