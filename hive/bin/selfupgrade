@@ -67,7 +67,7 @@ apt-get clean
 
 #Reread env variables
 source /etc/environment
-export $(cat /etc/environment | grep -vE "^$|^#" | cut -d= -f1) #export all variables from file
+export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
 
 
 #echo ------------------------------------------------------

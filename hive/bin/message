@@ -3,7 +3,7 @@
 
 if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
 	source /etc/environment
-	export $(cat /etc/environment | grep -vE "^$|^#" | cut -d= -f1) #export all variables from file
+	export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
 fi
 
 

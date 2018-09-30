@@ -6,7 +6,7 @@
 #  \/  \/ \___| \/ \_/\___|\__, |\__,_|_|_|  \___|  \/    \/\___/|_|  \___| \/    \/_|_| |_|\___|_|  \__,_|_|___/
 #                             |_|
 source /etc/environment
-export $(cat /etc/environment | grep -vE "^$|^#" | cut -d= -f1) #export all variables from file
+export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
 #export PATH
 #export CUDA_DEVICE_ORDER
 export HOME=/home/user #required by ccminer

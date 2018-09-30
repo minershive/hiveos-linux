@@ -1,5 +1,6 @@
 # ln -sf /hive/etc/environment /etc/environment
 # Please do not use the char "$" here or variable size will grow toward infinity
+# Don't forget to set this in crontab if you change path
 PATH="./:/hive/bin:/hive/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
 CUDA_DEVICE_ORDER=PCI_BUS_ID
 
