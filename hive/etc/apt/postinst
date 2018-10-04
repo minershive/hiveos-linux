@@ -11,7 +11,7 @@ chown -R root:root /hive/etc/logrotate.d/* #or the rules will not work
 mkdir -p /var/log/journal
 
 
-miner logdirscreate
+#miner logdirscreate
 
 #can be fat partition, no more messages
 #chown -R user:user /hive-config > /dev/null

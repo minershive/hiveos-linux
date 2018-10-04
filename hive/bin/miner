@@ -23,11 +23,17 @@ fi
 
 [[ -e $WALLET_CONF ]] && . $WALLET_CONF
 
-[ -z $MINER ] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
+[[ -z $MINER ]] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
 
 #sgminer-gm is deprecated...
-miners_avail=("claymore" "claymore-z" "claymore-x" "ewbf" "ccminer" "ethminer" "sgminer" "sgminer-gm" "dstm" "bminer" "lolminer" "optiminer" "xmr-stak" "xmrig" "cpuminer-opt" "custom")
-if ! printf '%s\n' "${miners_avail[@]}" | grep -xq $MINER ; then
+#miners_avail=("claymore" "claymore-z" "claymore-x" "ewbf" "ccminer" "ethminer" "sgminer" "sgminer-gm" "dstm" "bminer" "lolminer" "optiminer" "xmr-stak" "xmrig" "cpuminer-opt" "custom")
+#if ! printf '%s\n' "${miners_avail[@]}" | grep -xq $MINER ; then
+#	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
+#	message error "Unknown miner $MINER"
+#	exit 1
+#fi
+
+if [[ ! -d /hive/miners/$MINER ]]; then
 	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
 	message error "Unknown miner $MINER"
 	exit 1
@@ -66,7 +72,7 @@ function start() {
 		sleep 0.2 #it needs some time? it happens that you'll have "No screen session found" without sleep
 		session_count=`screen -ls miner | grep miner | wc -l`
 		[[ $session_count > 0 ]] && break #echo -e "Found screen miner in $i iterations" &&
-		[[ $session_count == 25 ]] && echo -e "${RED}screen miner not found in 25 iterations, check logs and maybe flash drive speed${NOCOLOR}"
+		[[ $i == 25 ]] && echo -e "${RED}screen miner not found in 25 iterations, check logs and maybe flash drive speed${NOCOLOR}"
 	done
 
 	#[[ ! -z $MINER2 ]] &&
@@ -74,10 +80,12 @@ function start() {
 	for mindex in {32..2}; do
 		eval minerval=\$MINER$mindex
 		[[ ! -z $minerval ]] &&
-			screen -S miner -X screen $mindex $minerval
+			screen -S miner -X screen $mindex miner-run $minerval &&
+			screen -S miner -X title $minerval #set nice title
 	done
 
-	screen -S miner -X screen 1 $MINER
+	screen -S miner -X screen 1 miner-run $MINER &&
+	screen -S miner -X title $MINER #set nice title
 }
 
 
@@ -115,59 +123,39 @@ function miner_log_basename {
 	[[ -z $miner ]] && echo "No miner given to miner_log_basename" && return 1
 
 	log_basename=""
-	case $miner in
-		"claymore")
-			log_basename="$MINER_LOGS_BASE_DIR/$miner/lastrun_noappend"
-			;;
-		"claymore-x")
-			log_basename="$MINER_LOGS_BASE_DIR/$miner/lastrun_noappend"
-			;;
-		"claymore-z")
-			log_basename="$MINER_LOGS_BASE_DIR/$miner/lastrun_noappend"
-			;;
-#		"ewbf")
-#			log_basename="/hive/ewbf/miner"
+
+#	case $miner in
+#		"custom")
+#			if [[ -z $CUSTOM_MINER ]]; then
+#				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
+#			elif [[ -e /hive/custom/$CUSTOM_MINER/h-manifest.conf ]]; then
+#				source /hive/custom/$CUSTOM_MINER/h-manifest.conf
+#			fi
+#			if [[ -z $CUSTOM_LOG_BASENAME ]]; then
+#				echo -e "${RED}\$CUSTOM_LOG_BASENAME is not defined${NOCOLOR}"
+#				return 1
+#			else
+#				log_basename=$CUSTOM_LOG_BASENAME
+#			fi
 #			;;
-#		"ccminer")
-#			log_basename="/hive/ccminer/ccminer"
+#		*)
+#			log_basename="$MINER_LOGS_BASE_DIR/$miner/$miner"
+#			#echo "Unknown miner $miner to miner_log_basename"
+#			#return 1
 #			;;
-#		"ethminer")
-#			log_basename="/hive/ethminer/ethminer"
-#			;;
-		"sgminer-gm")
-			#log_basename="/hive/sgminer/sgminer"
-			log_basename="$MINER_LOGS_BASE_DIR/sgminer-gm/sgminer"
-			;;
-#		"dstm")
-#			log_basename="/hive/dstm/zm"
-#			;;
-#		"bminer")
-#			log_basename="/hive/bminer/bminer"
-#			;;
-#		"xmr-stak")
-#			log_basename="/hive/xmr-stak/xmr-stak"
-#			;;
-#		"xmrig")
-#			log_basename="/hive/xmrig/xmrig"
-#			;;
-		"custom")
-			if [[ -z $CUSTOM_MINER ]]; then
-				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
-			elif [[ -e /hive/custom/$CUSTOM_MINER/h-manifest.conf ]]; then
-				source /hive/custom/$CUSTOM_MINER/h-manifest.conf
-			fi
-			if [[ -z $CUSTOM_LOG_BASENAME ]]; then
-				echo -e "${RED}\$CUSTOM_LOG_BASENAME is not defined${NOCOLOR}"
-			else
-				log_basename=$CUSTOM_LOG_BASENAME
-			fi
-			;;
-		*)
-			log_basename="$MINER_LOGS_BASE_DIR/$miner/$miner"
-			#echo "Unknown miner $miner to miner_log_basename"
-			#return 1
-			;;
-	esac
+#	esac
+
+	if [[ -e /hive/miners/$miner/h-manifest.conf ]]; then
+		source /hive/miners/$miner/h-manifest.conf
+	fi
+	if [[ -z $MINER_LOG_BASENAME ]]; then
+		echo -e "${RED}\$MINER_LOG_BASENAME is not defined${NOCOLOR}"
+		return 1
+	else
+		log_basename=$MINER_LOG_BASENAME
+	fi
+
+
 	echo $log_basename
 	return 0
 }
@@ -208,7 +196,7 @@ function log_tail {
 }
 
 
-function echo_config_file() {
+function miner_echo_config_file() {
 	echo -e "${YELLOW}=== $1 =================================================${NOCOLOR}"
 	cat $1
 	echo ""
@@ -216,79 +204,77 @@ function echo_config_file() {
 
 #Shows miner config
 function config() {
-	logname=""
-	case $MINER in
-		"claymore")
-			[[ -z $CLAYMORE_VER ]] && CLAYMORE_VER="latest"
-			echo_config_file "/hive/claymore/$CLAYMORE_VER/config.txt"
-			echo_config_file "/hive/claymore/$CLAYMORE_VER/epools.txt"
-			echo_config_file "/hive/claymore/$CLAYMORE_VER/dpools.txt"
-			;;
-		"claymore-x")
-			echo_config_file "/hive/claymorex/config.txt"
-			echo_config_file "/hive/claymorex/epools.txt"
-			;;
-		"claymore-z")
-			echo_config_file "/hive/claymorez/config.txt"
-			echo_config_file "/hive/claymorez/epools.txt"
-			;;
-		"ewbf")
-			echo_config_file "/hive/ewbf/miner.cfg"
-			;;
-		"ccminer")
-			echo_config_file "/hive/ccminer/pools.conf"
-			;;
-		"ethminer")
-			[[ -z $ETHMINER_VER ]] && ETHMINER_VER="latest"
-			echo_config_file "/hive/ethminer/$ETHMINER_VER/ethminer.conf"
-			;;
-		"sgminer")
-			echo_config_file "/hive/sgminer/sgminer.conf"
-			;;
-		"sgminer-gm")
-			echo_config_file "/hive/sgminer/sgminer.conf"
-			;;
-		"dstm")
-			echo_config_file "/hive/dstm/zm.conf"
-			;;
-		"bminer")
-			echo_config_file "/hive/bminer/bminer.conf"
-			;;
-		"lolminer")
-			echo_config_file "/hive/lolminer/pool.cfg"
-			;;
-		"optiminer")
-			echo_config_file "/hive/optiminer/optiminer.sh"
-			;;
-		"xmr-stak")
-			echo_config_file "/hive/xmr-stak/config.txt"
-			echo_config_file "/hive/xmr-stak/amd.txt"
-			echo_config_file "/hive/xmr-stak/nvidia.txt"
-			echo_config_file "/hive/xmr-stak/cpu.txt"
-			;;
-		"xmrig")
-			echo_config_file "/hive/xmrig/config.json"
-			;;
-		"cpuminer-opt")
-			echo_config_file "/hive/cpuminer-opt/cpuminer.conf"
-			;;
-		"custom")
-			if [[ -z $CUSTOM_MINER ]]; then
-				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
-			elif [[ -e /hive/custom/$CUSTOM_MINER/h-manifest.conf ]]; then
-				source /hive/custom/$CUSTOM_MINER/h-manifest.conf
-			fi
-			if [[ ! -z $CUSTOM_CONFIG_FILENAME ]]; then
-				echo_config_file $CUSTOM_CONFIG_FILENAME
-			else
-				echo -e "${RED}\$CUSTOM_CONFIG_FILENAME is not defined${NOCOLOR}";
-			fi
-			;;
-		*)
-			echo "Unknown miner $MINER"
-			return
-			;;
-	esac
+
+	if [[ ! -e /hive/miners/$MINER/h-manifest.conf ]]; then
+		echo -e "${RED}/hive/miners/$MINER/h-manifest.conf does not exist${NOCOLOR}";
+		return 1
+	fi
+	if [[ ! -e /hive/miners/$MINER/h-config.sh ]]; then
+		echo -e "${RED}/hive/miners/$MINER/h-config.sh does not exist${NOCOLOR}";
+		return 1
+	fi
+
+	source /hive/miners/$MINER/h-config.sh
+	source /hive/miners/$MINER/h-manifest.conf
+
+	miner_config_echo
+
+
+#	case $MINER in
+#		"ewbf")
+#			miner_echo_config_file "/hive/ewbf/miner.cfg"
+#			;;
+#		"ccminer")
+#			miner_echo_config_file "/hive/ccminer/pools.conf"
+#			;;
+#		"ethminer")
+#			[[ -z $ETHMINER_VER ]] && ETHMINER_VER="latest"
+#			miner_echo_config_file "/hive/ethminer/$ETHMINER_VER/ethminer.conf"
+#			;;
+#		"sgminer")
+#			miner_echo_config_file "/hive/sgminer/sgminer.conf"
+#			;;
+#		"sgminer-gm")
+#			miner_echo_config_file "/hive/sgminer/sgminer.conf"
+#			;;
+#		"dstm")
+#			miner_echo_config_file "/hive/dstm/zm.conf"
+#			;;
+#		"bminer")
+#			miner_echo_config_file "/hive/bminer/bminer.conf"
+#			;;
+#		"lolminer")
+#			miner_echo_config_file "/hive/lolminer/pool.cfg"
+#			;;
+#		"optiminer")
+#			miner_echo_config_file "/hive/optiminer/optiminer.sh"
+#			;;
+#		"xmr-stak")
+#			miner_echo_config_file "/hive/xmr-stak/config.txt"
+#			miner_echo_config_file "/hive/xmr-stak/amd.txt"
+#			miner_echo_config_file "/hive/xmr-stak/nvidia.txt"
+#			miner_echo_config_file "/hive/xmr-stak/cpu.txt"
+#			;;
+#		"cpuminer-opt")
+#			miner_echo_config_file "/hive/cpuminer-opt/cpuminer.conf"
+#			;;
+#		"custom")
+#			if [[ -z $CUSTOM_MINER ]]; then
+#				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
+#			elif [[ -e /hive/custom/$CUSTOM_MINER/h-manifest.conf ]]; then
+#				source /hive/custom/$CUSTOM_MINER/h-manifest.conf
+#			fi
+#			if [[ ! -z $CUSTOM_CONFIG_FILENAME ]]; then
+#				miner_echo_config_file $CUSTOM_CONFIG_FILENAME
+#			else
+#				echo -e "${RED}\$CUSTOM_CONFIG_FILENAME is not defined${NOCOLOR}";
+#			fi
+#			;;
+#		*)
+#			echo "Unknown miner $MINER"
+#			return
+#			;;
+#	esac
 }
 
 
@@ -301,17 +287,14 @@ function logs_rotate {
 		return 1
 	fi
 
+	# Make sure logs dir exists
+	mkdir -p $MINER_LOGS_BASE_DIR/$1
+
 	[[ -e $log_basename.5.log ]] && rm $log_basename.5.log
 	[[ -e $log_basename.4.log ]] && mv -f $log_basename.4.log $log_basename.5.log
 	[[ -e $log_basename.3.log ]] && mv -f $log_basename.3.log $log_basename.4.log
 	[[ -e $log_basename.2.log ]] && mv -f $log_basename.2.log $log_basename.3.log
 	[[ -e $log_basename.1.log ]] && mv -f $log_basename.1.log $log_basename.2.log
-
-#	if [ "$MINER" == "lolminer" ]; then #we need a file
-#		[[ -e $log_basename.log ]] && cp $log_basename.log $log_basename.1.log && echo "" > $log_basename.log
-#	else
-#	fi
-
 	[[ -e $log_basename.log ]] && mv -f $log_basename.log $log_basename.1.log
 
 	return 0
@@ -396,11 +379,11 @@ case $1 in
 			fi
 		done
 	;;
-	logdirscreate)
-		for minername in ${miners_avail[@]}; do
-			mkdir -p $MINER_LOGS_BASE_DIR/$minername
-		done
-	;;
+#	logdirscreate)
+#		for minername in ${miners_avail[@]}; do
+#			mkdir -p $MINER_LOGS_BASE_DIR/$minername
+#		done
+#	;;
 	*)
 		screen -x -S miner
 		[[ $? != 0 ]] && usage

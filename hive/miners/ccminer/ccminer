@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+MINER_NAME="ccminer"
+[ -t 1 ] && . colors
+
+[[ `ps aux | grep -E "\./ccminer-.* -c pools.conf" | grep -v grep | wc -l` != 0 ]] &&
+	echo "$MINER_NAME is already running" &&
+	exit 1
+
+
+
+
+function config_gen() {
+	CCMINER_CONFIG_FILE="/hive/ccminer/pools.conf"
+
+	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+
+	. $RIG_CONF
+	. $WALLET_CONF
+
+	[[ -z $CCMINERCONF || $CCMINERCONF = "{}" ]] &&
+		echo -e "${YELLOW}WARNING: No CCMINERCONF set, skipping $CCMINER_CONFIG_FILE generation${NOCOLOR}" &&
+		return 1
+
+	echo $CCMINERCONF | jq . > $CCMINER_CONFIG_FILE
+
+
+	echo "Generating $CCMINER_CONFIG_FILE"
+
+	#Don't remove until Hive 1 is gone
+#	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
+	[[ ! -z $EWAL ]] && sed -i --follow-symlinks "s/%EWAL%/$EWAL/g" $CCMINER_CONFIG_FILE #|| echo "EWAL not set"
+	[[ ! -z $ZWAL ]] && sed -i --follow-symlinks "s/%ZWAL%/$ZWAL/g" $CCMINER_CONFIG_FILE #|| echo "ZWAL not set"
+	[[ ! -z $DWAL ]] && sed -i --follow-symlinks "s/%DWAL%/$DWAL/g" $CCMINER_CONFIG_FILE #|| echo "DWAL not set"
+	[[ ! -z $EMAIL ]] && sed -i --follow-symlinks "s/%EMAIL%/$EMAIL/g" $CCMINER_CONFIG_FILE #|| echo "EMAIL not set"
+	[[ ! -z $WORKER_NAME ]] && sed -i --follow-symlinks "s/%WORKER_NAME%/$WORKER_NAME/g" $CCMINER_CONFIG_FILE #||  "WORKER_NAME not set"
+}
+
+
+config_gen
+
+scratch_path="$HOME/.cache/boolberry"
+algo=`cat $CCMINER_CONFIG_FILE | jq ".algo" --raw-output`
+pool_url=`cat $CCMINER_CONFIG_FILE | jq ".pools[].url" --raw-output`
+
+if [[ ${algo} == "wildkeccak" ]]; then
+  if [[ -f ${scratch_path}/scratchpad.bin ]]; then
+	 # check if url changed then remove old scratchpad.bin
+	 if [[ -f $scratch_path/pool_url.txt ]]; then
+	   # scratchpad file and active pool found
+	   url=`cat $scratch_path/pool_url.txt`
+	   if [[ $pool_url != $url ]]; then
+		 # previous pool and new one are not the same - delete old scratchpad file
+		 rm ~/.cache/boolberry/scratchpad.bin
+	   fi
+	 fi
+  fi
+  if [[ ! -d ${scratch_path} ]]; then
+	 mkdir ${scratch_path}
+  fi
+  # update active pool
+  echo $pool_url > $scratch_path/pool_url.txt
+fi
+
+cd /hive/$MINER_NAME
+while true
+do
+	miner logrotate $MINER_NAME
+	/hive/$MINER_NAME/ccminer.sh $CCMINER_FORK
+	echo ""
+	echo -e "${YELLOW}$MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
+	echo ""
+	sleep 3
+done

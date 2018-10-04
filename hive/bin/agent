@@ -47,7 +47,33 @@ process_gpu_detect_json
 
 ########################################################################################################################
 
-. agent.miner_stats.sh
+function miner_stats {
+	local miner=$1
+	local mindex=$2 #empty or 2, 3, 4, ...
+
+	khs=0
+	stats=
+
+
+	if [[ -e /hive/miners/$miner/h-stats.sh ]]; then
+		source /hive/miners/$miner/h-manifest.conf
+		source /hive/miners/$miner/h-config.sh
+		source /hive/miners/$miner/h-stats.sh
+	else
+		echo -e "${YELLOW}/hive/miners/$miner/h-stats.sh does not exist${NOCOLOR}"
+		miner="unknown"
+		eval "MINER${mindex}=unknown"
+	fi
+
+
+	[[ -z $khs ]] && khs=0
+	[[ -z $stats ]] && stats="null"
+
+#	[[ ! -z $mindex ]] &&
+#		eval "khs${mindex}"
+}
+
+########################################################################################################################
 
 . agent.do_command.sh
 

@@ -1,0 +1,19 @@
+#Management port, readonly
+-mport -$MINER_API_PORT
+
+#run reboot.sh on GPU hangs
+-r 1
+
+#Log to the same file
+-logfile ${MINER_LOG_BASENAME}.log
+
+#Target temp
+-tt 68
+#reduce entire mining intensity (for all coins)
+-ttli 76
+#stop GPU temperature
+-tstop 82
+
+#Enabling this will mine DevFee on default pools (dwarf, nano), not on the current pool
+#-allpools 1
+

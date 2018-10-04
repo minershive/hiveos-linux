@@ -34,7 +34,7 @@ mkdir -p /var/log/journal
 
 
 mount -t tmpfs -o defaults,noatime,mode=0755 tmpfs /var/log
-miner logdirscreate
+#miner logdirscreate
 
 echo -e "Disk logs are ${RED}disabled${NOCOLOR} now. You will have logs only from the last boot.
 To turn them back on run \"logs-on\".

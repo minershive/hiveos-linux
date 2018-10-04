@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+
+MINER_NAME="xmr-stak"
+API_SOCKET=60045
+
+[ -t 1 ] && . colors
+
+
+[[ `ps aux | grep "./xmr-stak " | grep -v grep | wc -l` != 0 ]] &&
+	echo -e "${RED}$MINER_NAME miner is already running${NOCOLOR}" &&
+	exit 1
+
+
+
+
+function config_gen() {
+	MINER_CONFIG="/hive/$MINER_NAME/config.txt"
+	POOL_CONFIG="/hive/$MINER_NAME/pools.txt"
+
+	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
+	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+
+	. $RIG_CONF
+	. $WALLET_CONF
+
+	conf=`cat /hive/$MINER_NAME/config_global.json`
+	#merge user config options into main config
+	if [[ ! -z $XMR_STAK_USER_CONFIG ]]; then
+		while read -r line; do
+			[[ -z $line ]] && continue
+			conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
+		done <<< "$XMR_STAK_USER_CONFIG"
+	fi
+
+
+	pools='[]'
+	#this is undocumented, but we will use this own feature
+	use_tls=$(jq -r .use_tls <<< "$conf")
+	[[ -z $use_tls || $use_tls == "null" ]] && use_tls="false"
+	for url in $XMR_STAK_URL; do
+		grep -q "nicehash.com" <<< $XMR_STAK_URL
+		[[ $? -eq 0 ]] && nicehash="true" || nicehash="false"
+		pool=$(cat <<EOF
+			{"pool_address": "$url", "wallet_address": "$XMR_STAK_TEMPLATE", "pool_password": "$XMR_STAK_PASS", "use_nicehash": $nicehash, "use_tls": $use_tls, "tls_fingerprint": "", "pool_weight": 1, "rig_id": "$WORKER_NAME" }
+EOF
+)
+		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
+	done
+
+	if [[ -z $pools || $pools == '[]' || $pools == 'null' ]]; then
+		echo -e "${RED}No pools configured, using default${NOCOLOR}"
+	else
+		#pass can also contain %var%
+		#Don't remove until Hive 1 is gone
+#		[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
+		[[ ! -z $EWAL ]] && pools=$(sed "s/%EWAL%/$EWAL/g" <<< $pools) #|| echo -e "${RED}EWAL not set${NOCOLOR}"
+		[[ ! -z $ZWAL ]] && pools=$(sed "s/%ZWAL%/$ZWAL/g" <<< $pools) #|| echo -e "${RED}ZWAL not set${NOCOLOR}"
+		[[ ! -z $DWAL ]] && pools=$(sed "s/%DWAL%/$DWAL/g" <<< $pools) #|| echo -e "${RED}DWAL not set${NOCOLOR}"
+		[[ ! -z $WORKER_NAME ]] && pools=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $pools) #|| echo -e "${RED}WORKER_NAME not set${NOCOLOR}"
+		[[ ! -z $EMAIL ]] && pools=$(sed "s/%EMAIL%/$EMAIL/g" <<< $pools)
+
+		pools=`jq --null-input --argjson pool_list "$pools" '{$pool_list}'`
+		conf=$(jq -s '.[0] * .[1]' <<< "$conf $pools")
+	fi
+
+
+	#amd nvidia cpu overrides or default
+
+	[[ -e /hive/$MINER_NAME/amd.txt ]] && rm /hive/$MINER_NAME/amd.txt
+	[[ -e /hive/$MINER_NAME/nvidia.txt ]] && rm /hive/$MINER_NAME/nvidia.txt
+	[[ -e /hive/$MINER_NAME/cpu.txt ]] && rm /hive/$MINER_NAME/cpu.txt
+
+	[[ ! -z $XMR_STAK_AMD ]] && echo "$XMR_STAK_AMD" > /hive/$MINER_NAME/amd.txt
+	[[ ! -z $XMR_STAK_NVIDIA ]] && echo "$XMR_STAK_NVIDIA" > /hive/$MINER_NAME/nvidia.txt
+	[[ ! -z $XMR_STAK_CPU ]] && echo "$XMR_STAK_CPU" > /hive/$MINER_NAME/cpu.txt
+
+
+	#delete { and } lines
+	echo $conf | jq . | sed 1d | sed '$d' > $MINER_CONFIG
+	echo $conf | jq . | sed 1d | sed '$d' > $POOL_CONFIG
+}
+
+
+config_gen
+
+
+cd /hive/$MINER_NAME
+while true
+do
+	#try to release TIME_WAIT sockets
+	for con in `netstat -anp | grep TIME_WAIT | grep ${API_SOCKET} | awk '{print $5}' `; do
+	    killcx $con lo
+	done
+	
+	miner logrotate $MINER_NAME
+	/hive/$MINER_NAME/xmr-stak.sh $XMR_STAK_FORK
+	echo ""
+	echo -e "${YELLOW}$MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
+	echo ""
+	sleep 3
+done

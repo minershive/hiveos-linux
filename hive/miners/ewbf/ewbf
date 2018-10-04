@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+
+MINER_NAME="ewbf"
+[ -t 1 ] && . colors
+
+[[ `ps aux | grep "/hive/ewbf/miner" | grep -v grep | wc -l` != 0 ]] &&
+	echo -e "${RED}$MINER_NAME miner is already running${NOCOLOR}" &&
+	exit 1
+
+
+
+
+function config_gen() {
+	EWBF_GLOBAL_CONFIG="/hive/ewbf/miner.global.cfg"
+	EWBF_CONFIG="/hive/ewbf/miner.cfg"
+
+	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
+	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
+
+	. $RIG_CONF
+	. $WALLET_CONF
+
+	#[[ -z $WORKER_NAME ]] && echo "${RED}ERROR: No WORKER_NAME set${NOCOLOR}" && return 1
+
+	cat $EWBF_GLOBAL_CONFIG > $EWBF_CONFIG
+
+	if [[ $EWBF_FORK == "zhash_0.4" ]]; then
+		EWBF_FORK="zhash"
+	fi
+
+	if [[ $EWBF_FORK == "zhash" ]]; then
+		[[ -z $EWBF_ALGO ]] && EWBF_ALGO="192_7"
+		[[ $EWBF_ALGO == "210_9" ]] && EWBF_ALGO="aion"
+		echo -e "\nalgo\t" $EWBF_ALGO >> $EWBF_CONFIG
+	fi
+	
+
+	[[ ! -z $EWBF_USER_CONFIG ]] && echo -e "#USER CONFIG\n$EWBF_USER_CONFIG" >> $EWBF_CONFIG
+
+	echo -e "\n[server]"  >> $EWBF_CONFIG
+
+#	[[ ! -z $ZSERVER ]] && sed -i --follow-symlinks "s/^server .*/server $ZSERVER/g" $EWBF_CONFIG || echo "${RED}ZSERVER not set${NOCOLOR}"
+#	[[ ! -z $ZPORT ]] && sed -i --follow-symlinks "s/^port .*/port $ZPORT/g" $EWBF_CONFIG || echo "${RED}ZPORT not set${NOCOLOR}"
+#	[[ ! -z $ZPASS ]] && sed -i --follow-symlinks "s/^pass .*/pass $ZPASS/g" $EWBF_CONFIG || echo "${RED}ZPASS not set${NOCOLOR}"
+
+	[[ ! -z $ZSERVER ]] && echo "server $ZSERVER" >>  $EWBF_CONFIG || echo -e "${RED}ZSERVER not set${NOCOLOR}"
+	[[ ! -z $ZPORT ]] && echo "port $ZPORT" >> $EWBF_CONFIG || echo -e "${RED}ZPORT not set${NOCOLOR}"
+	[[ ! -z $ZPASS ]] && echo "pass $ZPASS" >> $EWBF_CONFIG || echo -e "${RED}ZPASS not set${NOCOLOR}"
+
+
+	#[[ -z $ZWAL ]] && echo -e "${RED}ZWAL not set{NOCOLOR}"
+
+	if [[ -z $ZTEMPLATE ]]; then
+		echo -e "${RED}ZTEMPLATE not set{NOCOLOR}"
+	else
+		#Don't remove until Hive 1 is gone
+#		[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
+		[[ ! -z $EWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%EWAL\%/$EWAL}
+		[[ ! -z $ZWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%ZWAL\%/$ZWAL}
+		[[ ! -z $DWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%DWAL\%/$DWAL}
+		[[ ! -z $EMAIL ]] && ZTEMPLATE=${ZTEMPLATE/\%EMAIL\%/$EMAIL}
+		[[ ! -z $WORKER_NAME ]] && ZTEMPLATE=${ZTEMPLATE/\%WORKER_NAME\%/$WORKER_NAME} || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}";
+
+		#escape variable
+		#ZTEMPLATE=$(sed 's/[]\/$*.^|[]/\\&/g' <<<"$ZTEMPLATE")
+		#sed -i --follow-symlinks "s/^user .*/user $ZTEMPLATE/g" $EWBF_CONFIG
+		echo "user $ZTEMPLATE" >> $EWBF_CONFIG
+	fi
+
+	#[server]
+	#server zec-eu1.nanopool.org
+	#port   6666
+	#user   t1VS4MURTc5HxV3Hm85HsCXRHHN5Etss9vH/worker/fern@kgroup.biz
+	#pass   z
+}
+
+
+config_gen
+
+[[ -z $EWBF_FORK ]] && EWBF_FORK="legacy"
+
+cd /hive/$MINER_NAME
+while true
+do
+	#try to release TIME_WAIT sockets
+	for con in `netstat -anp | grep TIME_WAIT | grep 42000 | awk '{print $5}'`; do
+		killcx $con lo
+	done
+
+	/hive/bin/miner logrotate $MINER_NAME
+	/hive/$MINER_NAME/miner.sh $EWBF_FORK
+	echo ""
+	echo -e "${YELLOW}$MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
+	echo ""
+	sleep 3
+done
