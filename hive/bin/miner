@@ -147,6 +147,7 @@ function miner_log_basename {
 
 	if [[ -e /hive/miners/$miner/h-manifest.conf ]]; then
 		source /hive/miners/$miner/h-manifest.conf
+		[[ -z $MINER_LOG_BASENAME ]] && MINER_LOG_BASENAME=/var/log/miner/$MINER_NAME/$MINER_NAME
 	fi
 	if [[ -z $MINER_LOG_BASENAME ]]; then
 		echo -e "${RED}\$MINER_LOG_BASENAME is not defined${NOCOLOR}"
@@ -221,9 +222,6 @@ function config() {
 
 
 #	case $MINER in
-#		"ewbf")
-#			miner_echo_config_file "/hive/ewbf/miner.cfg"
-#			;;
 #		"ccminer")
 #			miner_echo_config_file "/hive/ccminer/pools.conf"
 #			;;

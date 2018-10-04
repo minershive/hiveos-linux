@@ -56,7 +56,8 @@ Example of `$stats` var:
 	"fan": [80, 100], //array of miner fans
 	"uptime": 12313232, //seconds elapsed from miner stats
 	"ar": [123, 3], //Optional: acceped, rejected shares 
-	"algo": "customalgo" //Optional: algo used by miner, should one of the exiting in Hive  
+	"algo": "customalgo", //Optional: algo used by miner, should one of the exiting in Hive
+	"bus_numbers": [0, 1, 12, 13] //Pci buses array in decimal format. E.g. 0a:00.0 is 10
 }
 ```
 

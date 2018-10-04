@@ -4,9 +4,9 @@
 #0000:03:00.0, .result[].busid[5:] trims first 5 chars
 #stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://localhost:42000/getstat`
 #curl uses http_proxy env var, we don't need it. --noproxy does not work
-stats_raw=`echo "GET /getstat" | nc -w $API_TIMEOUT localhost 42000 | tail -n 1`
+stats_raw=`echo "GET /getstat" | nc -w $API_TIMEOUT localhost $MINER_API_PORT | tail -n 1`
 if [[ $? -ne 0  || -z $stats_raw ]]; then
-	echo -e "${YELLOW}Failed to read $miner stats from localhost:42000${NOCOLOR}"
+	echo -e "${YELLOW}Failed to read $miner stats from localhost:$MINER_API_PORT${NOCOLOR}"
 else
 	khs=`echo $stats_raw | jq -r '.result[].speed_sps' | awk '{s+=$1} END {print s/1000}'` #sum up and convert to khs
 	local ac=$(jq '[.result[].accepted_shares] | add' <<< "$stats_raw")

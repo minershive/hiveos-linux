@@ -64,12 +64,18 @@ function mkfile_from_symlink() {
 if [[ ! -e $MINER_DIR/h-config.sh ]]; then
 	echo -e "${RED}No custom config generator${NOCOLOR}" && return 1
 else
-	unset -f miner_config_gen
-	unset -f miner_ver
-	unset -f miner_config_echo
+	[[ -z $MINER_LOG_BASENAME ]] && MINER_LOG_BASENAME=/var/log/miner/$MINER_NAME/$MINER_NAME
+
+#	unset -f miner_config_gen
+#	unset -f miner_fork
+#	unset -f miner_ver
+#	unset -f miner_config_echo
 	source $MINER_DIR/h-config.sh
 
 	# exports needed by envsubst
+	declare -fF miner_fork > /dev/null && #if function exists
+		export MINER_FORK=`miner_fork` ||
+		export MINER_FORK=
 	export MINER_VER=`miner_ver`
 	export MINER_API_PORT
 	export MINER_LOG_BASENAME

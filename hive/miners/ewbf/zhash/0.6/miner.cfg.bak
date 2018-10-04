@@ -1,0 +1,35 @@
+# Common parameters
+# All the parameters here are similar to the command line arguments
+
+[common]
+cuda_devices 0 1 2 3 4 5
+templimit    80
+pec          0
+boff         0
+eexit        0
+tempunits    C
+log          3
+logfile      log_name.log
+algo         192_7
+pers         ZERO_PoW
+
+
+
+# The miner start work from this server
+# When the server is fail, the miner will try to reconnect 3 times
+# After three unsuccessful attempts, the miner will switch to the next server
+# You can add up to 8 servers
+
+# main server
+[server]
+server zer-eu.forgetop.com
+port   2052
+user   t1SgCLpJVGvVg5C8K7pfExw15MYE4RSRj5t.test
+pass   x
+
+# failover
+[server]
+server zer-eu.forgetop.com
+port   2052
+user   t1SgCLpJVGvVg5C8K7pfExw15MYE4RSRj5t.test
+pass   x
