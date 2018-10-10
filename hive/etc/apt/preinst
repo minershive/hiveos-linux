@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+#Stop miner in case of upgrade
+echo "> Stopping miner"
+/hive/bin/miner stop
+
+
+exit 0
