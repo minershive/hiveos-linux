@@ -14,6 +14,7 @@ Real file is created with `mkfile_from_symlink` command in h-config.sh
 
 
 The following files are not run as scripts, they are included as `source` from running script, `miner`, `miner-run`.
+These scripts should not have execute permission to stop attempts to run them separately.
 
 ##### h-manifest.conf
 This is a general config for Hive integration, not for the miner itself.

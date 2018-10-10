@@ -1,0 +1,8 @@
+Package: hive-miners-xmrig
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-xmrig-2.6.4
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner
