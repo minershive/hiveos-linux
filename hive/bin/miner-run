@@ -2,8 +2,8 @@
 
 . colors
 
+export DEBIAN_FRONTEND=noninteractive
 export LD_LIBRARY_PATH=/hive/lib
-
 
 [[ ! -e $RIG_CONF ]] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && exit 1
 [[ ! -e $WALLET_CONF ]] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && exit 1
@@ -22,12 +22,32 @@ MINER_DIR=/hive/miners/$MINER_NAME
 [[ ! -e $MINER_DIR ]] && "${RED}$MINER_DIR does not exist, check miner installation${NOCOLOR}" && exit 1
 
 
-#TODO:
-#TODO:
-#TODO: check package installation
-#TODO:
-#TODO:
 
+# Check base miner package ==========================================================================
+
+
+function hive-package-install () {
+	local package_name=$1
+	dpkg -s $package_name > /dev/null 2>&1
+	if [[ $? -ne 0 ]]; then
+		echo -e "${YELLOW}Installing $package_name${NOCOLOR}"
+		apt-get install -y $package_name 2>&1 | tee /tmp/package-install.log
+
+		[[ ${PIPESTATUS[0]} -ne 0 ]] &&
+			cat /tmp/package-install.log | message error "Error installing $package_name" payload &&
+			return 1
+
+		apt-get clean
+	fi
+	return 0
+}
+
+
+package_name="hive-miners-$MINER_NAME"
+hive-package-install $package_name || exit $?
+
+
+# Further actions ==========================================================================
 
 
 LIBCURL3_COMPAT=
@@ -60,10 +80,12 @@ function mkfile_from_symlink() {
 }
 
 
+# Generate config ==========================================================================
 
 if [[ ! -e $MINER_DIR/h-config.sh ]]; then
-	echo -e "${RED}No custom config generator${NOCOLOR}" && return 1
+	echo -e "${RED}No h-config.sh found for $MINER_NAME${NOCOLOR}" && return 1
 else
+	# Define default fallback value
 	[[ -z $MINER_LOG_BASENAME ]] && MINER_LOG_BASENAME=/var/log/miner/$MINER_NAME/$MINER_NAME
 
 #	unset -f miner_config_gen
@@ -80,9 +102,25 @@ else
 	export MINER_API_PORT
 	export MINER_LOG_BASENAME
 
+
+	echo -e "Miner:   ${CYAN}$MINER_NAME${NOCOLOR}"
+	[[ ! -z $MINER_FORK ]] && echo -e "Fork:    ${YELLOW}$MINER_FORK${NOCOLOR}"
+	[[ ! -z $MINER_VER ]] && echo -e "Version: ${YELLOW}$MINER_VER${NOCOLOR}"
+	echo
+
+
+	# Check actual miner's package
+	[[ ! -z $MINER_FORK ]] && package_name+="-"${MINER_FORK//_/-}
+	[[ ! -z $MINER_VER ]] && package_name+="-"${MINER_VER//_/-}
+	hive-package-install $package_name || exit $?
+
+
+	# Generate config files after package is installed
 	miner_config_gen
 fi
 
+
+# Run miner ==========================================================================
 
 cd $MINER_DIR
 while true; do
