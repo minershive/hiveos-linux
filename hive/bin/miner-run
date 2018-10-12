@@ -18,11 +18,6 @@ MINER_NAME=$1
 [[ -z $MINER_NAME ]] && "${RED}Give some miner name${NOCOLOR}" && exit 1
 
 
-MINER_DIR=/hive/miners/$MINER_NAME
-[[ ! -e $MINER_DIR ]] && "${RED}$MINER_DIR does not exist, check miner installation${NOCOLOR}" && exit 1
-
-
-
 # Check base miner package ==========================================================================
 
 
@@ -47,7 +42,11 @@ package_name="hive-miners-$MINER_NAME"
 hive-package-install $package_name || exit $?
 
 
+
 # Further actions ==========================================================================
+
+MINER_DIR=/hive/miners/$MINER_NAME
+[[ ! -e $MINER_DIR ]] && "${RED}$MINER_DIR does not exist, check miner installation${NOCOLOR}" && exit 1
 
 
 LIBCURL3_COMPAT=

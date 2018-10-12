@@ -33,11 +33,11 @@ fi
 #	exit 1
 #fi
 
-if [[ ! -d /hive/miners/$MINER ]]; then
-	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
-	message error "Unknown miner $MINER"
-	exit 1
-fi
+#if [[ ! -d /hive/miners/$MINER ]]; then
+#	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
+#	message error "Unknown miner $MINER"
+#	exit 1
+#fi
 
 
 
