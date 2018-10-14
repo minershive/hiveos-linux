@@ -53,6 +53,8 @@ function miner_config_gen() {
 
 	#merge pools into main config
 	pools='[]'
+	use_tls=$(jq -r .tls <<< "$conf")
+	[[ -z $use_tls || $use_tls == "null" ]] && use_tls="false"
 
 	for url in ${XMRIG_URL}; do
 
@@ -76,7 +78,7 @@ function miner_config_gen() {
 		fi
 
 		pool=$(cat <<EOF
-				{"user": "$XMRIG_TEMPLATE", "url": "$t_pool", "pass": "$XMRIG_PASS", "nicehash": $nicehash, "keepalive": true${variant}${rig_id}}
+				{"user": "$XMRIG_TEMPLATE", "url": "$t_pool", "pass": "$XMRIG_PASS", "nicehash": $nicehash, "keepalive": true, "tls": $use_tls, "tls-fingerprint": ""${variant}${rig_id}}
 EOF
 )
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`

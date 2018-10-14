@@ -1,0 +1,7 @@
+Package: hive-miners-xmr-stak-indeedminers-2.5.0_beta
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner
