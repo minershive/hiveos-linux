@@ -1,17 +1,9 @@
 #!/usr/bin/env bash
 
-XMR_STAK_FORK="fireice-uk"
-XMR_STAK_TEMPLATE="TRTLuzmVzrpPBfvk3q8ZaSjbd9FQiP1nVBVuv23GphTGSSci9c5ZU6xBTqsjzN4WmXEB9Xg8G9hFYFb4y8ro6AYCJeYYmoxu5Gw"
-XMR_STAK_URL="eu.turtlepool.space:3333"
-XMR_STAK_PASS="%WORKER_NAME%"
-XMR_STAK_USER_CONFIG='"currency": "cryptonight_lite_v7"'
-XMR_STAK_AMD=''
-XMR_STAK_NVIDIA='"gpu_threads_conf" : [], "platform_index" : 1,'
-XMR_STAK_CPU='"cpu_threads_conf" : [],'
 
 # Not required
 function miner_fork() {
-	local MINER_FORK=$EWBF_FORK
+	local MINER_FORK=$XMR_STAK_FORK
 	[[ -z $MINER_FORK ]] && MINER_FORK=$MINER_DEFAULT_FORK
 
 	echo $MINER_FORK
@@ -51,48 +43,8 @@ function miner_config_gen() {
 
 conf=`cat $MINER_DIR/$MINER_FORK/$MINER_VER/config_global.json`
 
-#merge user config options into main config
-if [[ ! -z $XMR_STAK_USER_CONFIG ]]; then
-	while read -r line; do
-		[[ -z $line ]] && continue
-		conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
-	done <<< "$XMR_STAK_USER_CONFIG"
-fi
-
-pools='[]'
-#this is undocumented, but we will use this own feature
-use_tls=$(jq -r .use_tls <<< "$conf")
-[[ -z $use_tls || $use_tls == "null" ]] && use_tls="false"
-
-for url in $XMR_STAK_URL
-do
-	grep -q "nicehash.com" <<< $XMR_STAK_URL
-	[[ $? -eq 0 ]] && nicehash="true" || nicehash="false"
-	pool=$(cat <<EOF
-			{"pool_address": "$url", "wallet_address": "$XMR_STAK_TEMPLATE", "pool_password": "$XMR_STAK_PASS", "use_nicehash": $nicehash, "use_tls": $use_tls, "tls_fingerprint": "", "pool_weight": 1, "rig_id": "$WORKER_NAME" }
-EOF
-)
-	pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
-done
-
-if [[ -z $pools || $pools == '[]' || $pools == 'null' ]]; then
-	echo -e "${RED}No pools configured, using default${NOCOLOR}"
-else
-	#Don't remove until Hive 1 is gone
-	#pass can also contain %var%
-	[[ ! -z $EWAL ]] && pools=${pools/\%EWAL\%/$EWAL}
-	[[ ! -z $ZWAL ]] && pools=${pools/\%ZWAL\%/$ZWAL}
-	[[ ! -z $DWAL ]] && pools=${pools/\%DWAL\%/$DWAL}
-	[[ ! -z $EMAIL ]] && pools=${pools/\%EMAIL\%/$EMAIL}
-	[[ ! -z $WORKER_NAME ]] && pools=${pools/\%WORKER_NAME\%/$WORKER_NAME} || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}";
-	[[ ! -z $XMR_STAK_ALGO ]] && pools=${pools/\%XMR_STAK_ALGO\%/$XMR_STAK_ALGO}
-	[[ ! -z $MINER_API_PORT ]] && pools=${pools /\%MINER_API_PORT\%/$MINER_API_PORT}
-
-	pools=`jq --null-input --argjson pool_list "$pools" '{$pool_list}'`
-	conf=$(jq -s '.[0] * .[1]' <<< "$conf $pools")
-fi
-
-case `jq -r '.xmr-stak.coin' <<< $META` in
+currency=""
+case `jq -r '."xmr-stak".coin' <<< $META` in
 	AEON )
 		currency='"currency" : "aeon7"'
 	;;
@@ -132,11 +84,53 @@ case `jq -r '.xmr-stak.coin' <<< $META` in
 	TRTL )
 		currency='"currency" : "turtlecoin"'
 	;;
-	* )
-		currency='"currency" : "'$XMR_STAK_ALGO'"'
-	;;
+	# * )
+	# 	currency='"currency" : "'$XMR_STAK_ALGO'"'
+	# ;;
 esac
-conf=$(jq -s '.[0] * .[1]' <<< "$conf {$currency}")
+[[ ! -z $currency ]] && conf=$(jq -s '.[0] * .[1]' <<< "$conf {$currency}")
+
+#merge user config options into main config
+if [[ ! -z $XMR_STAK_USER_CONFIG ]]; then
+	while read -r line; do
+		[[ -z $line ]] && continue
+		conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
+	done <<< "$XMR_STAK_USER_CONFIG"
+fi
+
+pools='[]'
+#this is undocumented, but we will use this own feature
+use_tls=$(jq -r .use_tls <<< "$conf")
+[[ -z $use_tls || $use_tls == "null" ]] && use_tls="false"
+
+for url in $XMR_STAK_URL
+do
+	grep -q "nicehash.com" <<< $XMR_STAK_URL
+	[[ $? -eq 0 ]] && nicehash="true" || nicehash="false"
+	pool=$(cat <<EOF
+			{"pool_address": "$url", "wallet_address": "$XMR_STAK_TEMPLATE", "pool_password": "$XMR_STAK_PASS", "use_nicehash": $nicehash, "use_tls": $use_tls, "tls_fingerprint": "", "pool_weight": 1, "rig_id": "$WORKER_NAME" }
+EOF
+)
+	pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
+done
+
+if [[ -z $pools || $pools == '[]' || $pools == 'null' ]]; then
+	echo -e "${RED}No pools configured, using default${NOCOLOR}"
+else
+	#Don't remove until Hive 1 is gone
+	#pass can also contain %var%
+	[[ ! -z $EWAL ]] && pools=${pools/\%EWAL\%/$EWAL}
+	[[ ! -z $ZWAL ]] && pools=${pools/\%ZWAL\%/$ZWAL}
+	[[ ! -z $DWAL ]] && pools=${pools/\%DWAL\%/$DWAL}
+	[[ ! -z $EMAIL ]] && pools=${pools/\%EMAIL\%/$EMAIL}
+	[[ ! -z $WORKER_NAME ]] && pools=${pools/\%WORKER_NAME\%/$WORKER_NAME} || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}";
+	[[ ! -z $XMR_STAK_ALGO ]] && pools=${pools/\%XMR_STAK_ALGO\%/$XMR_STAK_ALGO}
+	[[ ! -z $MINER_API_PORT ]] && pools=${pools/\%MINER_API_PORT\%/$MINER_API_PORT}
+
+	pools=`jq --null-input --argjson pool_list "$pools" '{$pool_list}'`
+	conf=$(jq -s '.[0] * .[1]' <<< "$conf $pools")
+fi
+
 
 #amd nvidia cpu overrides or default
 #[[ ! -z $XMR_STAK__AMD ]] &&
@@ -149,3 +143,4 @@ echo "$XMR_STAK_CPU" > $CPU_CONFIG
 #delete { and } lines
 echo $conf | jq . | sed 1d | sed '$d' > $MINER_CONFIG
 echo $conf | jq . | sed 1d | sed '$d' > $POOLS_CONFIG
+}

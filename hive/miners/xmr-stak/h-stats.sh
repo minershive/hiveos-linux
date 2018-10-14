@@ -4,7 +4,7 @@
 	if [[ $? -ne 0 || -z $stats_raw ]]; then
 		echo -e "${YELLOW}Failed to read $miner from localhost:${MINER_API_PORT}${NOCOLOR}"
 	else
-		[[ -z $XMR_STAK_ALGO ]] && XMR_STAK_ALGO="cryptonight"
+		# [[ -z $XMR_STAK_ALGO ]] && XMR_STAK_ALGO="cryptonight"
 
 		khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 
@@ -28,9 +28,11 @@
 		local ac=$(jq '.results.shares_good' <<< "$stats_raw")
 		local rj=$(( $(jq '.results.shares_total' <<< "$stats_raw") - $ac ))
 
+		local algo=`cat $MINER_DIR/$MINER_FORK/$MINER_VER/config.txt | grep -m1 '"currency"' | sed -E 's/\s*".*":\s*"(.*)",/\1/g'`
+
 		stats=$(jq --argjson temp "$temp" --argjson fan "$fan" \
 					--argjson cpu_temp "$cpu_temp" --arg ac "$ac" --arg rj "$rj" \
-					--arg algo "$XMR_STAK_ALGO" \
+					--arg algo "$algo" \
 			'{hs: [.hashrate.threads[][0]], $algo, $temp, $fan, $cpu_temp, uptime: .connection.uptime, ar: [$ac, $rj]}' <<< "$stats_raw")
 		# TODO: bus_numbers
 	fi

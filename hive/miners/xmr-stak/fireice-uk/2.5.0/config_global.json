@@ -24,7 +24,7 @@
 	"tls_secure_algo" : true,
 	"daemon_mode" : false,
 	"flush_stdout" : false,
-	"output_file" : null,
+	"output_file" : "/var/log/miner/xmr-stak/xmr-stak.log",
 	"httpd_port" : 60045,
 	"http_login" : "",
 	"http_pass" : "",

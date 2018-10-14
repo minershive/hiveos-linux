@@ -12,4 +12,4 @@ done
 
 cd $MINER_DIR/$MINER_FORK/$MINER_VER
 
-./xmr-stak | tee $MINER_LOG_BASENAME.log
+./xmr-stak
