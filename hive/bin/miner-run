@@ -109,9 +109,14 @@ else
 
 
 	# Check actual miner's package
-	[[ ! -z $MINER_FORK ]] && package_name+="-"${MINER_FORK//_/-}
-	[[ ! -z $MINER_VER ]] && package_name+="-"${MINER_VER//_/-}
-	hive-package-install $package_name || exit $?
+	if [[ ! -z $MINER_FORK ]]; then #install package of fork
+		package_name+="-"${MINER_FORK//_/-}
+		hive-package-install $package_name || exit $?
+	fi
+	if [[ ! -z $MINER_VER ]]; then #check version package
+		package_name+="-"${MINER_VER//_/-}
+		hive-package-install $package_name || exit $?
+	fi
 
 
 	# Generate config files after package is installed
