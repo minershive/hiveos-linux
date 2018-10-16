@@ -73,7 +73,7 @@ function miner_config_gen() {
 		local url=
 		local protocol=
 		local server=
-		grep -q "^stratum.*://" <<< $ETHMINER_SERVER
+		grep -q -E '^(stratum|http).*://' <<< $ETHMINER_SERVER
 		if [[ $? == 0 ]]; then
 			protocol=$(awk -F '://' '{print $1"://"}' <<< $ETHMINER_SERVER)
 			server=$(awk -F '://' '{print $2}' <<< $ETHMINER_SERVER)
