@@ -36,7 +36,6 @@
 					--argjson cpu_temp "$cpu_temp" --arg ac "$ac" --arg rj "$rj" \
 					--arg algo "$algo" \
 			'{hs: [.hashrate.threads[][0]], $algo, $temp, $fan, $cpu_temp, uptime: .connection.uptime, ar: [$ac, $rj]}' <<< "$stats_raw")
-		# TODO: bus_numbers
 	fi
 
 	[[ -z $khs ]] && khs=0

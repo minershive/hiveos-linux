@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-stats_raw=`echo '{"id":1, "method":"getstat"}' | nc -w $API_TIMEOUT localhost 43000`
+stats_raw=`echo '{"id":1, "method":"getstat"}' | nc -w $API_TIMEOUT localhost ${MINER_API_PORT}`
 if [[ $? -ne 0 || -z $stats_raw ]]; then
-	echo -e "${YELLOW}Failed to read $miner from localhost:43000${NOCOLOR}"
+	echo -e "${YELLOW}Failed to read $miner from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
 	khs=`echo $stats_raw | jq '.result[].sol_ps' | awk '{s+=$1} END {print s/1000}'`
 	local uptime=$(( `date +%s` - $(stat -c%X /proc/`pidof zm`) )) #dont think zm will die so soon after getting stats
