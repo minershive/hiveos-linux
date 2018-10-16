@@ -1,4 +1,5 @@
 [Match]
+#Match eth0, eth1, ... interfaces. Don't change it to other names
 Name=e*
 
 [Network]
@@ -13,6 +14,7 @@ DHCP=yes
 #to disable IPV6 if it's not disabled in grub
 #LinkLocalAddressing=no
 #IPv6AcceptRA=no
+
 
 
 [DHCP]
