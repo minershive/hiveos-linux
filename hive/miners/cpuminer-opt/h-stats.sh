@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-threads=`echo "threads" | nc -w $API_TIMEOUT localhost 4048` #&& echo $threads
+threads=`echo "threads" | nc -w $API_TIMEOUT localhost ${MINER_API_PORT}` #&& echo $threads
 if [[ $? -ne 0  || -z $threads ]]; then
-	echo -e "${YELLOW}Failed to read $miner stats from localhost:4048${NOCOLOR}"
+	echo -e "${YELLOW}Failed to read $miner stats from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
-	summary=`echo "summary" | nc -w $API_TIMEOUT localhost 4048`
+	summary=`echo "summary" | nc -w $API_TIMEOUT localhost ${MINER_API_PORT}`
 #				echo $summary
 	re=';UPTIME=([0-9]+);' && [[ $summary =~ $re ]] && local uptime=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"
 	#khs will calculate from cards; re=';KHS=([0-9\.]+);' && [[ $summary =~ $re ]] && khs=${BASH_REMATCH[1]} #&& echo "Matched" || echo "No match"

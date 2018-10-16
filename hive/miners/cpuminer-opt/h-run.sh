@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-[ -t 1 ] && . colors
-
-#Ubuntu 18.04 compat
-[[ -e /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3.0.0 ]] && export LD_PRELOAD=libcurl-compat.so.3.0.0
-
 #CPU_INFO=`lscpu`
 CPU_INFO=`cat /proc/cpuinfo | grep flags`
 #echo $CPU_INFO
@@ -17,6 +12,15 @@ FLAG_SHA=`echo ${CPU_INFO} | grep -c " sha_ni "`
 
 #echo SSE2:$FLAG_SSE2 SSE42:$FLAG_SSE42 AVX:$FLAG_AVX AES:$FLAG_AES AVX2:$FLAG_AVX2 SHA:$FLAG_SHA
 
+#try to release TIME_WAIT sockets
+while true; do
+	for con in `netstat -anp | grep TIME_WAIT | grep $MINER_API_PORT | awk '{print $5}'`; do
+		killcx $con lo
+	done
+	netstat -anp | grep TIME_WAIT | grep $MINER_API_PORT &&
+		continue ||
+		break
+done
 
 if [[ $FLAG_SSE2 == 1 && $FLAG_SSE42 == 1 && $FLAG_AVX == 0 && $FLAG_AES == 0 && $FLAG_AVX2 == 0 ]]; then
     CPU_FLAG="sse42"
@@ -34,7 +38,8 @@ else
 	CPU_FLAG="sse2"
 fi
 
+echo -e "Running ${CYAN}cpuminer-opt${NOCOLOR} optimized for ${GREEN}$CPU_FLAG${NOCOLOR}" | tee ${MINER_LOG_BASENAME}.log
 
-echo -e "Running ${CYAN}cpuminer-opt${NOCOLOR} optimized for ${GREEN}$CPU_FLAG${NOCOLOR}" | tee /var/log/miner/cpuminer-opt/cpuminer-opt.log
+cd ${MINER_DIR}/${MINER_VER}
 
-./cpuminer-$CPU_FLAG -c cpuminer.conf $@ 2>&1 | tee /var/log/miner/cpuminer-opt/cpuminer-opt.log
+./cpuminer-$CPU_FLAG -c cpuminer.conf 2>&1 | tee ${MINER_LOG_BASENAME}.log
