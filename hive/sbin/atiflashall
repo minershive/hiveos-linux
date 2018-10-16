@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+#[ -t 1 ] &&
+. colors
 
 n=`gpu-detect AMD`
 
@@ -21,8 +24,12 @@ for ((i=1; i<=(($#-1)); i++)); do
 done
 
 
-for (( i=0; i < $n; i++ )); do
-	echo "=== Flashing card $i ==="
+for (( gpu_index=0; gpu_index < $n; gpu_index++ )); do
+	echo -e "${PURPLE}=== Flashing card $gpu_index ===${NOCOLOR}"
 	#echo "atiflash -p $i $extra_args $filename"
-	atiflash -p $i $extra_args $filename
+
+	gpu_index_hex=$gpu_index
+	[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
+
+	atiflash -p $gpu_index_hex $extra_args $filename
 done
