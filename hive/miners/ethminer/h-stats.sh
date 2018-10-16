@@ -37,4 +37,5 @@ else
 		--arg algo "$algo" \
 		--arg ac "$ac" --arg rj "$rj" \
 		'{$hs, $temp, $fan, $uptime, $algo, ar: [$ac, $rj]}')
+		#TODO: bus_numbers
 fi

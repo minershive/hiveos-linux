@@ -33,8 +33,6 @@ function translate_algo() {
 }
 
 function miner_config_gen() {
-	log=/hive/miners/bminer/test.log
-
 	local MINER_CONFIG="$MINER_DIR/$MINER_VER/bminer.conf"
 	mkfile_from_symlink $MINER_CONFIG
 
@@ -48,13 +46,13 @@ function miner_config_gen() {
 	[[ $? -ne 0 ]] && uri=`translate_algo $BMINER_ALGO`${pool}
 	conf+=" -uri $uri"
 
-	if [[ ! -z $BMINER_SECOND_URL ]]; then
-		local pool=`head -n 1 <<< "$BMINER_SECOND_URL"`
+	if [[ ! -z $BMINER_URL2 ]]; then
+		local pool=`head -n 1 <<< "$BMINER_URL2"`
 		pool=$(sed 's/\//%2F/g; s/ /%20/g' <<< $pool)
 		[[ `echo $pool | sed 's/@/@\n/g'|grep -c @` -gt 1 ]] && pool=$(sed 's/@/%40/1' <<< $pool)
 		grep -q "://" <<< $pool
 		if [[ $? -ne 0 ]]; then #protocol not found
-			uri=`translate_algo $BMINER_SECOND_ALGO`${pool}
+			uri=`translate_algo $BMINER_ALGO2`${pool}
 		else
 			uri=$(sed "s/:\/\//:\/\/$tpl@/g; s/@/%40/1" <<< $pool) #replace :// with username
 		fi

@@ -20,7 +20,11 @@ function miner_ver() {
 function miner_config_echo() {
 	export MINER_FORK=`miner_fork`
 	local MINER_VER=`miner_ver`
-	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/config.json"
+	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/config.txt"
+	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/pools.txt"
+	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/amd.txt"
+	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/nvidia.txt"
+	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/cpu.txt"
 }
 
 function miner_config_gen() {

@@ -13,9 +13,9 @@
 	local uptime=$(( `date +%s` - $(jq '.start_time' <<< "$stats_raw") ))
 	local hs_units="hs"
 	[[ -z $BMINER_ALGO ]] && BMINER_ALGO="ethash"
-	
+
 	local bus_numbers=$(echo $stats_raw | jq -r '[ .miners | to_entries[] | select(.value) | .key|tonumber ]')
-	
+
 	stats=$(jq -c --arg uptime "$uptime" \
 				--arg algo "$BMINER_ALGO" \
 				--arg hs_units "$hs_units" \
