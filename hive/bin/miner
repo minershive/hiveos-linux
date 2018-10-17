@@ -124,31 +124,27 @@ function miner_log_basename {
 
 	log_basename=""
 
-#	case $miner in
-#		"custom")
-#			if [[ -z $CUSTOM_MINER ]]; then
-#				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
-#			elif [[ -e /hive/custom/$CUSTOM_MINER/h-manifest.conf ]]; then
-#				source /hive/custom/$CUSTOM_MINER/h-manifest.conf
-#			fi
-#			if [[ -z $CUSTOM_LOG_BASENAME ]]; then
-#				echo -e "${RED}\$CUSTOM_LOG_BASENAME is not defined${NOCOLOR}"
-#				return 1
-#			else
-#				log_basename=$CUSTOM_LOG_BASENAME
-#			fi
-#			;;
-#		*)
-#			log_basename="$MINER_LOGS_BASE_DIR/$miner/$miner"
-#			#echo "Unknown miner $miner to miner_log_basename"
-#			#return 1
-#			;;
-#	esac
-
 	if [[ -e /hive/miners/$miner/h-manifest.conf ]]; then
 		source /hive/miners/$miner/h-manifest.conf
 		[[ -z $MINER_LOG_BASENAME ]] && MINER_LOG_BASENAME=/var/log/miner/$MINER_NAME/$MINER_NAME
 	fi
+
+	# Special miner
+	if [[ $miner == "custom" ]]; then
+		if [[ -z $CUSTOM_MINER ]]; then
+			echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
+			return 1
+		elif [[ -e /hive/miners/custom/$CUSTOM_MINER/h-manifest.conf ]]; then
+			source /hive/miners/custom/$CUSTOM_MINER/h-manifest.conf
+		fi
+		if [[ -z $CUSTOM_LOG_BASENAME ]]; then
+			echo -e "${RED}\$CUSTOM_LOG_BASENAME is not defined${NOCOLOR}"
+			return 1
+		else
+			MINER_LOG_BASENAME=$CUSTOM_LOG_BASENAME
+		fi
+	fi
+
 	if [[ -z $MINER_LOG_BASENAME ]]; then
 		echo -e "${RED}\$MINER_LOG_BASENAME is not defined${NOCOLOR}"
 		return 1
@@ -205,74 +201,21 @@ function miner_echo_config_file() {
 
 #Shows miner config
 function config() {
+	MINER_DIR=/hive/miners/$MINER
 
-	if [[ ! -e /hive/miners/$MINER/h-manifest.conf ]]; then
-		echo -e "${RED}/hive/miners/$MINER/h-manifest.conf does not exist${NOCOLOR}";
+	if [[ ! -e $MINER_DIR/h-manifest.conf ]]; then
+		echo -e "${RED}$MINER_DIR/h-manifest.conf does not exist${NOCOLOR}";
 		return 1
 	fi
-	if [[ ! -e /hive/miners/$MINER/h-config.sh ]]; then
-		echo -e "${RED}/hive/miners/$MINER/h-config.sh does not exist${NOCOLOR}";
+	if [[ ! -e $MINER_DIR/h-config.sh ]]; then
+		echo -e "${RED}$MINER_DIR/h-config.sh does not exist${NOCOLOR}";
 		return 1
 	fi
 
-	source /hive/miners/$MINER/h-config.sh
-	source /hive/miners/$MINER/h-manifest.conf
+	source $MINER_DIR/h-config.sh
+	source $MINER_DIR/h-manifest.conf
 
 	miner_config_echo
-
-
-#	case $MINER in
-#		"ccminer")
-#			miner_echo_config_file "/hive/ccminer/pools.conf"
-#			;;
-#		"ethminer")
-#			[[ -z $ETHMINER_VER ]] && ETHMINER_VER="latest"
-#			miner_echo_config_file "/hive/ethminer/$ETHMINER_VER/ethminer.conf"
-#			;;
-#		"sgminer")
-#			miner_echo_config_file "/hive/sgminer/sgminer.conf"
-#			;;
-#		"sgminer-gm")
-#			miner_echo_config_file "/hive/sgminer/sgminer.conf"
-#			;;
-#		"dstm")
-#			miner_echo_config_file "/hive/dstm/zm.conf"
-#			;;
-#		"bminer")
-#			miner_echo_config_file "/hive/bminer/bminer.conf"
-#			;;
-#		"lolminer")
-#			miner_echo_config_file "/hive/lolminer/pool.cfg"
-#			;;
-#		"optiminer")
-#			miner_echo_config_file "/hive/optiminer/optiminer.sh"
-#			;;
-#		"xmr-stak")
-#			miner_echo_config_file "/hive/xmr-stak/config.txt"
-#			miner_echo_config_file "/hive/xmr-stak/amd.txt"
-#			miner_echo_config_file "/hive/xmr-stak/nvidia.txt"
-#			miner_echo_config_file "/hive/xmr-stak/cpu.txt"
-#			;;
-#		"cpuminer-opt")
-#			miner_echo_config_file "/hive/cpuminer-opt/cpuminer.conf"
-#			;;
-#		"custom")
-#			if [[ -z $CUSTOM_MINER ]]; then
-#				echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}"
-#			elif [[ -e /hive/custom/$CUSTOM_MINER/h-manifest.conf ]]; then
-#				source /hive/custom/$CUSTOM_MINER/h-manifest.conf
-#			fi
-#			if [[ ! -z $CUSTOM_CONFIG_FILENAME ]]; then
-#				miner_echo_config_file $CUSTOM_CONFIG_FILENAME
-#			else
-#				echo -e "${RED}\$CUSTOM_CONFIG_FILENAME is not defined${NOCOLOR}";
-#			fi
-#			;;
-#		*)
-#			echo "Unknown miner $MINER"
-#			return
-#			;;
-#	esac
 }
 
 

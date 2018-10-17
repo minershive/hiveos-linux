@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+MINER_DIR="/hive/miners/custom"
+cd $MINER_DIR
 
 . colors
 
@@ -18,6 +20,7 @@ force=
 
 basename=`basename -s .tar.gz "$url"`
 archname=`basename "$url"`
+archive="$MINER_DIR/downloads/$archname"
 
 version=`echo "$basename" | awk -F '-' '{ print $NF }'`
 miner=`echo "$basename" | sed 's/'-$version'$//'`
@@ -30,35 +33,58 @@ miner=`echo "$basename" | sed 's/'-$version'$//'`
 echo -e "${GREEN}$miner${NOCOLOR}"
 echo -e "$url"
 
-if [[ -d /hive/custom/$miner ]]; then
-	[[ -z $force ]] &&
-		echo -e "${YELLOW}Already installed${NOCOLOR}" &&
-		exit 0
 
-	echo -e "${YELLOW}> Removing previous installation${NOCOLOR}" &&
-	rm -rf /hive/custom/$miner
+if [[ -e $archive ]]; then
+	if [[ $force == 1 ]]; then
+		rm $archive
+		rm -rf $MINER_DIR/$miner
+	else
+		[[ -d $MINER_DIR/$miner ]] &&
+			echo -e "${YELLOW}Already installed${NOCOLOR}" &&
+			exit 0
+	fi
+else #no archive but directory exists
+	[[ -d $MINER_DIR/$miner ]] &&
+		echo -e "${YELLOW}> Removing previous installation${NOCOLOR}" &&
+		rm -rf $MINER_DIR/$miner
 fi
 
 
-tmpdir="/hive/custom"
-archpath="$tmpdir/$archname"
-cd $tmpdir
-## Pre-cleaning
-[[ $force == 1 && -e $archpath ]] &&
-	rm $archpath
+#if [[ -d /hive/custom/$miner ]]; then
+#	[[ -z $force ]] &&
+#		echo -e "${YELLOW}Already installed${NOCOLOR}" &&
+#		exit 0
+#
+#	echo -e "${YELLOW}> Removing previous installation${NOCOLOR}" &&
+#	rm -rf /hive/custom/$miner
+#fi
+
 
 ## Downloading
-echo "> Downloading $url"
-[[ -f $archpath ]] && echo "> $archpath found locally, maybe incomplete, trying to recover"
+cd $MINER_DIR/downloads
+echo -e "${YELLOW}> Downloading $url${NOCOLOR}"
+[[ -f $archive ]] && echo "> $archive found locally, maybe incomplete, trying to recover"
 wget -c "$url"
-[ $? -ne 0 ] && echo "Error downloading $url" && exit 1
-
-echo "> Unpacking $archpath"
-tar -xzv -f $archpath
-[ $? -ne 0 ] && echo "Error extracting $archpath" && exit 1
-
-chown -R user /hive/custom/$miner
+[[ $? -ne 0 ]] && echo -e "${RED}Error downloading $url${NOCOLOR}" && exit 1
 
 
-echo "> Removing downloaded $archpath"
-rm -f $archpath
+cd $MINER_DIR
+echo -e "${YELLOW}> Unpacking $archive${NOCOLOR}"
+tar -xzv -f $archive
+[ $? -ne 0 ] && echo -e "${RED}Error extracting $archive${NOCOLOR}" && exit 1
+
+chown -R user $MINER_DIR/$miner
+
+
+
+# Fix old paths. Try to do this automatically
+#CUSTOM_CONFIG_FILENAME=${CUSTOM_CONFIG_FILENAME/\/hive\/custom/\/hive\/miners\/custom}
+#CUSTOM_LOG_BASENAME=${CUSTOM_LOG_BASENAME/\/hive\/custom/\/hive\/miners\/custom}
+sed -i 's/\/hive\/custom/\/hive\/miners\/custom/g' $MINER_DIR/$miner/h-manifest.conf
+sed -i 's/\/hive\/custom/\/hive\/miners\/custom/g' $MINER_DIR/$miner/h-config.sh
+sed -i 's/\/hive\/custom/\/hive\/miners\/custom/g' $MINER_DIR/$miner/h-run.sh
+sed -i 's/\/hive\/custom/\/hive\/miners\/custom/g' $MINER_DIR/$miner/h-stats.sh
+
+
+#echo "> Removing downloaded $archive"
+#rm -f $archive

@@ -54,13 +54,13 @@ function miner_stats {
 	khs=0
 	stats=
 
-
-	if [[ -e /hive/miners/$miner/h-stats.sh ]]; then
-		source /hive/miners/$miner/h-manifest.conf
-		source /hive/miners/$miner/h-config.sh
-		source /hive/miners/$miner/h-stats.sh
+	local MINER_DIR=/hive/miners/$miner
+	if [[ -e $MINER_DIR/h-stats.sh ]]; then
+		source $MINER_DIR/h-manifest.conf
+		source $MINER_DIR/h-config.sh
+		source $MINER_DIR/h-stats.sh
 	else
-		echo -e "${YELLOW}/hive/miners/$miner/h-stats.sh does not exist${NOCOLOR}"
+		echo -e "${YELLOW}$MINER_DIR/h-stats.sh does not exist${NOCOLOR}"
 		miner="unknown"
 		eval "MINER${mindex}=unknown"
 	fi
