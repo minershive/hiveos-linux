@@ -3,6 +3,5 @@ Version: 0.6-01
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-optiminer-xxx
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner

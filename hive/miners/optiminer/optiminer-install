@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+echo "Deprecated"
+exit 0
+
+
 version=2.1.2
 archname="optiminer-equihash-$version.tar.gz"
 url=http://download.optiminer.pl/$archname

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+echo "Deprecated"
+exit 0
+
 MINER_NAME="optiminer"
 [ -t 1 ] && . colors
 
