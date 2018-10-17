@@ -15,6 +15,10 @@ function config_gen() {
 	. $RIG_CONF
 	. $WALLET_CONF
 	[[ -z $ETHMINER_VER ]] && ETHMINER_VER="latest"
+
+	# Compatibility for new GUI form
+	[[ $ETHMINER_FORK == "progpow" ]] && ETHMINER_VER="progpow"
+
 	[[ ! -e "/hive/ethminer/$ETHMINER_VER" ]] && ETHMINER_VER="latest"
 
 	MINER_CONFIG="/hive/ethminer/$ETHMINER_VER/ethminer.conf"
@@ -69,7 +73,7 @@ function config_gen() {
 		local url=
 		local protocol=
 		local server=
-		grep -q "^stratum.*://" <<< $ETHMINER_SERVER
+		grep -q -E '^(stratum|http).*://' <<< $ETHMINER_SERVER
 		if [[ $? == 0 ]]; then
 			protocol=$(awk -F '://' '{print $1"://"}' <<< $ETHMINER_SERVER)
 			server=$(awk -F '://' '{print $2}' <<< $ETHMINER_SERVER)

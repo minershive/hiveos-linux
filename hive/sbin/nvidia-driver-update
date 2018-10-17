@@ -61,7 +61,7 @@ systemctl stop hivex
 echo -e ""
 echo -e "${CYAN}> Installing${NOCOLOR}"
 
-./$basename --accept-license --no-questions --ui=none --dkms #--tmpdir=/hive-drivers-pack
+./$basename --accept-license --no-questions --ui=none --dkms --install-libglvnd #--tmpdir=/hive-drivers-pack
 
 [[ $? -ne 0 ]] && echo -e "${RED}Error installing driver${NOCOLOR}" && exit 1
 
@@ -69,12 +69,13 @@ echo -e "${CYAN}> Installing${NOCOLOR}"
 
 #it's a 396 driver and old 16.04 ubuntu
 #if (echo $basename | grep -q '\-396\.') && (lsb_release -a 2>&1 | grep '16\.04'); then
-if (echo $basename | grep -q '\-396\.'); then
+#if (echo $basename | grep -q '\-396\.'); then
+if true; then
 	echo -e ""
 	echo -e "${CYAN}> Updating nvidia-settings${NOCOLOR}"
 	apt update
 	nvidia_settings_version=`dpkg -s nvidia-settings 2>&1 | grep '^Version: ' | sed 's/Version: //'`
-	[[ -z nvidia_settings_version ]] &&
+	[[ -z $nvidia_settings_version ]] &&
 		apt-get install --reinstall -y nvidia-settings ||
 		apt-get install --only-upgrade --reinstall -y nvidia-settings
 fi
