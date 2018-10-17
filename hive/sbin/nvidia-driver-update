@@ -61,7 +61,7 @@ systemctl stop hivex
 echo -e ""
 echo -e "${CYAN}> Installing${NOCOLOR}"
 
-./$basename --accept-license --no-questions --ui=none --dkms #--tmpdir=/hive-drivers-pack
+./$basename --accept-license --no-questions --ui=none --dkms --install-libglvnd #--tmpdir=/hive-drivers-pack
 
 [[ $? -ne 0 ]] && echo -e "${RED}Error installing driver${NOCOLOR}" && exit 1
 
