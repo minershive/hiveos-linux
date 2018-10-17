@@ -17,7 +17,7 @@ else
 	cctemps=(`echo "$striplines" | grep 'TEMP=' | sed -e 's/.*=//'`) #echo ${cctemps[@]} | tr " " "\n" #print it in lines
 	cckhs=(`echo "$striplines" | grep 'KHS=' | sed -e 's/.*=//'`)
 	ccbusids=(`echo "$striplines" | grep 'BUS=' | sed -e 's/.*=//'`)
-	local bus_numbers=$(jq -sc . <<< "$ccbusids")
+	local bus_numbers=$(jq -sc . <<< "${ccbusids[*]}")
 
 
 	#local nvidiastats

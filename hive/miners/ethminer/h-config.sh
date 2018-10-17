@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
 
-# Not required
 function miner_fork() {
-	local MINER_FORK=$ETHMINER_VER
+	local MINER_FORK=$ETHMINER_FORK
 	[[ -z $MINER_FORK ]] && MINER_FORK=$MINER_DEFAULT_FORK
 	echo $MINER_FORK
 }
 
 
 function miner_ver() {
-	if [[ $MINER_FORK == "ethash" ]]; then
-		echo $MINER_LATEST_VER_ETHASH
-	elif [[ $MINER_FORK == "progpow" ]]; then
-		echo $MINER_LATEST_VER_PROGPOW
-	fi
+	local MINER_VER=$ETHMINER_VER
+	[[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${MINER_FORK^^}" #uppercase MINER_FORK
+	echo $MINER_VER
 }
 
 
