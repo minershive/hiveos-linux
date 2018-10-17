@@ -2,3 +2,5 @@
 #ln -s /hive/etc/hiverepo.list /etc/apt/sources.list.d/hiverepo.list
 
 deb http://download.hiveos.farm/repo/binary/ /
+deb http://download2.hiveos.farm/repo/binary/ /
+deb http://download-cn.hiveos.farm/repo/binary/ /

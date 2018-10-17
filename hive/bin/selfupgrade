@@ -33,7 +33,7 @@ dpkg --configure -a
 #apt-get update
 apt-get update -o Dir::Etc::sourcelist="sources.list.d/hiverepo.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
 exitcode=$?
-[[ $exitcode -ne 0 ]] && echo -e "${RED}Repository update failed${NOCOLOR}" && exit $exitcode
+[[ $exitcode -ne 0 ]] && echo -e "${RED}Repository update failed${NOCOLOR}" #&& exit $exitcode
 
 
 if [[ -z $VERSION ]]; then #no target version

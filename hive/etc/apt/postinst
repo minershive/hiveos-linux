@@ -163,6 +163,12 @@ fi
 
 
 
+# Remove old 0.5 files to same space ---------------------------------------------------------------------------
+rm -rf /hive/bminer* /hive/claymore* /hive/ccminer* /hive/cpuminer* /hive/custom* /hive/dstm* \
+/hive/ethminer* /hive/ewbf* /hive/lolminer* /hive/sgminer* /hive/xmr*
+
+
+
 #will be created from stub
 #[[ ! -e /hive-config/vnc-password.txt ]] &&
 #	cp hive/etc/hive-config.stub/vnc-password.txt /hive-config/vnc-password.txt
