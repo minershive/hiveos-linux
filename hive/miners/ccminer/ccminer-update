@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 #Checks ccminer for newer versions
 
+echo "Depreacted"
+exit 0
+
 cd /hive/ccminer
 [ -t 1 ] && . colors
 

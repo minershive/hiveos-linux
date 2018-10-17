@@ -1,0 +1,8 @@
+Package: hive-miners-ccminer-allium
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-ccminer-allium-2.3.0
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner

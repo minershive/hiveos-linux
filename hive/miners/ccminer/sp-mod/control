@@ -1,0 +1,8 @@
+Package: hive-miners-ccminer-sp-mod
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-ccminer-sp-mod-1.5.81
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner

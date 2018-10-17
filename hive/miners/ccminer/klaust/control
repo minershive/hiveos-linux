@@ -1,0 +1,8 @@
+Package: hive-miners-ccminer-klaust
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-ccminer-klaust-8.21
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner
