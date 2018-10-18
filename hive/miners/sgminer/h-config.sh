@@ -1,43 +1,48 @@
 #!/usr/bin/env bash
 
-MINER_NAME="sgminer"
-[ -t 1 ] && . colors
+# Not required
+function miner_fork() {
+	local MINER_FORK=$CCMINER_FORK
+	[[ -z $MINER_FORK ]] && MINER_FORK=$MINER_DEFAULT_FORK
 
-[[ `ps aux | grep "\./sgminer" | grep -v bash | grep -v grep | wc -l` != 0 ]] &&
-	echo -e "${RED}$MINER_NAME miner is already running${NOCOLOR}" &&
-	exit 1
-
-
-function config_gen() {
-	MINER_CONFIG="/hive/sgminer/sgminer.conf"
-
-	[ ! -f $RIG_CONF ] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && return 1
-	[ ! -f $WALLET_CONF ] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && return 1
-
-	. $RIG_CONF
-	. $WALLET_CONF
-
-	[[ -z $SGMINER_GM_TEMPLATE ]] && echo -e "${YELLOW}SGMINER_GM_TEMPLATE is empty${NOCOLOR}" && return 1
-	[[ -z $SGMINER_GM_URL ]] && echo -e "${YELLOW}SGMINER_GM_URL is empty${NOCOLOR}" && return 1
+	echo $MINER_FORK
+}
 
 
-#	userconf=/hive/sgminer/config_wallet.json
+function miner_ver() {
+  case $MINER_FORK in
+		avermore )
+			echo $MINER_LATEST_VER_AVERMORE
+		;;
+		djm34 )
+			echo $MINER_LATEST_VER_DJM34
+		;;
+		gatelessgate )
+			echo $MINER_LATEST_VER_GATELESSGATE
+		;;
+		gm )
+			echo $MINER_LATEST_VER_GM
+		;;
+		"gm-nicehash" )
+			echo $MINER_LATEST_VER_GM_NICEHASH
+		;;
+		phi )
+			echo $MINER_LATEST_VER_PHI
+		;;
+  esac
+}
 
-#	echo '{' > $userconf
-#	echo '"user":"'$SGMINER_GM_TEMPLATE'",' >> $userconf
-#	echo '"url":"'$SGMINER_GM_URL'",' >> $userconf
-#	[[ ! -z $SGMINER_GM_PASS ]] && 	echo '"pass":"'$SGMINER_GM_PASS'",' >> $userconf
-#	[[ ! -z $SGMINER_GM_ALGO ]] && 	echo '"algorithm":"'$SGMINER_GM_ALGO'",' >> $userconf
-#
-#	if [[ ! -z $SGMINER_GM_USER_CONFIG ]]; then
-#		while read -r line; do
-#			[[ -z $line ]] && continue
-#			echo "$line," >> $userconf
-#		done <<< "$SGMINER_GM_USER_CONFIG"
-#	fi
-#
-#	echo '"_lazyend": "" }' >> $userconf #to fix last coma
-#	jq -s '.[0] * .[1]' /hive/sgminer/config_global.json $userconf > $MINER_CONFIG
+
+function miner_config_echo() {
+	export MINER_FORK=`miner_fork`
+	local MINER_VER=`miner_ver`
+	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_FORK/$MINER_VER/sgminer.conf"
+}
+
+
+function miner_config_gen() {
+	local MINER_CONFIG="$MINER_DIR/$MINER_FORK/$MINER_VER/sgminer.conf"
+	mkfile_from_symlink $MINER_CONFIG
 
 	pools='[]'
 	for url in $SGMINER_GM_URL; do
@@ -62,37 +67,17 @@ function config_gen() {
 	[[ ! -z $SGMINER_GM_ALGO ]] &&
 		pools=`jq --null-input --argjson pools "$pools" --arg algorithm "$SGMINER_GM_ALGO" '$pools + {$algorithm}'`
 
-#	echo $pools | jq .
-
 	config_global=`cat /hive/sgminer/config_global.json`
 
 	conf=`jq -n --argjson g "$config_global" --argjson p "$pools" '$g * $p'`
 
 	#replace tpl values in whole file
 	#Don't remove until Hive 1 is gone
-#	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
 	[[ ! -z $EWAL ]] && conf=$(sed "s/%EWAL%/$EWAL/g" <<< "$conf") #|| echo "${RED}EWAL not set${NOCOLOR}"
 	[[ ! -z $DWAL ]] && conf=$(sed "s/%DWAL%/$DWAL/g" <<< "$conf") #|| echo "${RED}DWAL not set${NOCOLOR}"
 	[[ ! -z $ZWAL ]] && conf=$(sed "s/%ZWAL%/$ZWAL/g" <<< "$conf") #|| echo "${RED}ZWAL not set${NOCOLOR}"
 	[[ ! -z $EMAIL ]] && conf=$(sed "s/%EMAIL%/$EMAIL/g" <<< "$conf")
 	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
 
-#	echo "$conf" | jq .
 	echo "$conf" | jq . > $MINER_CONFIG
 }
-
-
-config_gen
-
-
-
-cd /hive/$MINER_NAME
-while true
-do
-	miner logrotate $MINER_NAME
-	/hive/$MINER_NAME/sgminer.sh $SGMINER_GM_FORK
-	echo ""
-	echo -e "${YELLOW}$MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
-	echo ""
-	sleep 3
-done
