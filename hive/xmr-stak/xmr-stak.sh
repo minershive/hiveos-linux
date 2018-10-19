@@ -9,7 +9,16 @@ fork=$1
 [[ -z $fork ]] && fork="fireice-uk"
 
 #-c config.txt --cpu cpu.txt --amd amd.txt --nvidia nvidia.txt $@
+# Path to libs
 export LD_LIBRARY_PATH=./$fork:/hive/lib
+
+# Memory pool tuning
+export GPU_FORCE_64BIT_PTR=1
+export GPU_MAX_HEAP_SIZE=100.
+export GPU_MAX_ALLOC_PERCENT=100.
+export GPU_SINGLE_ALLOC_PERCENT=100
+
+# Miner run here
 ./$fork/xmr-stak
 
 
