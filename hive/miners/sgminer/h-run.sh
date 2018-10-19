@@ -25,9 +25,9 @@ cd $MINER_DIR/$MINER_FORK/$MINER_VER
 rm ./*.bin > /dev/null 2>&1
 
 MINER_GM_CLI_ARGS=""
-SGMINER_GM_ARGS_MONERO=$(cat sgminer.conf | grep -Pow '\"monero\"\s*:.*true' | wc -l)
-if [ $SGMINER_GM_ARGS_MONERO -ne 0 ]; then
-  SGMINER_GM_CLI_ARGS=" --monero"
+SGMINER_ARGS_MONERO=$(cat sgminer.conf | grep -Pow '\"monero\"\s*:.*true' | wc -l)
+if [ $SGMINER_ARGS_MONERO -ne 0 ]; then
+  SGMINER_CLI_ARGS=" --monero"
 fi
 
-sgminer -c sgminer.conf $SGMINER_GM_CLI_ARGS
+sgminer -c sgminer.conf $SGMINER_CLI_ARGS

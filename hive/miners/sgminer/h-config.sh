@@ -45,29 +45,29 @@ function miner_config_gen() {
 	mkfile_from_symlink $MINER_CONFIG
 
 	pools='[]'
-	for url in $SGMINER_GM_URL; do
+	for url in $SGMINER_URL; do
 		pool='{}'
-		pool=`jq --null-input --argjson pool "$pool" --arg user "$SGMINER_GM_TEMPLATE" '$pool + {$user}'`
+		pool=`jq --null-input --argjson pool "$pool" --arg user "$SGMINER_TEMPLATE" '$pool + {$user}'`
 		pool=`jq --null-input --argjson pool "$pool" --arg url "$url" '$pool + {$url}'`
-		[[ ! -z $SGMINER_GM_PASS ]] &&
-			pool=`jq --null-input --argjson pool "$pool" --arg pass "$SGMINER_GM_PASS" '$pool + {$pass}'`
+		[[ ! -z $SGMINER_PASS ]] &&
+			pool=`jq --null-input --argjson pool "$pool" --arg pass "$SGMINER_PASS" '$pool + {$pass}'`
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
 	done
 
 	pools=`jq --null-input --argjson pools "$pools" '{$pools}'`
 
-	if [[ ! -z $SGMINER_GM_USER_CONFIG ]]; then
+	if [[ ! -z $SGMINER_USER_CONFIG ]]; then
 		while read -r line; do
 			[[ -z $line ]] && continue
 			#echo "$line," >> $userconf
 			pools=`jq --null-input --argjson pools "$pools" --argjson line "{$line}" '$pools + $line'`
-		done <<< "$SGMINER_GM_USER_CONFIG"
+		done <<< "$SGMINER_USER_CONFIG"
 	fi
 
-	[[ ! -z $SGMINER_GM_ALGO ]] &&
-		pools=`jq --null-input --argjson pools "$pools" --arg algorithm "$SGMINER_GM_ALGO" '$pools + {$algorithm}'`
+	[[ ! -z $SGMINER_ALGO ]] &&
+		pools=`jq --null-input --argjson pools "$pools" --arg algorithm "$SGMINER_ALGO" '$pools + {$algorithm}'`
 
-	config_global=`cat /hive/sgminer/config_global.json`
+	config_global=`cat $MINER_DIR/$MINER_FORK/$MINER_VER/config_global.json`
 
 	conf=`jq -n --argjson g "$config_global" --argjson p "$pools" '$g * $p'`
 
