@@ -123,9 +123,14 @@ if [[ $test == "1" ]]; then
 		exit 1
 	fi
 
+	echo -e "${YELLOW}> Saying hello to server${NOCOLOR}"
+	hello
+	echo
+
 fi
 
 # Just to show config
+echo -e "${YELLOW}> eth0 interface${NOCOLOR}"
 ifconfig eth0
 
 echo -e "${GREEN}> Saving persistent config${NOCOLOR}"
