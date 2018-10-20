@@ -2,6 +2,15 @@
 # Network config setup
 
 . colors
+
+[[ $# == 0 ]] &&
+	echo -e "${CYAN}Sets network configuration for eth0 interface${NOCOLOR}
+Example: ${YELLOW}`basename $0` --dhcp=no --address=192.168.0.100/24 --gateway=192.168.0.1 --dns=192.168.0.1${NOCOLOR}
+  --dhcp=yes|no - configre DHCP or static
+  --test=0|1 - test new connect, if not online revert previous config
+  --address=ip/net - IP address with network /24, /16, etc" &&
+exit 1
+
 . $RIG_CONF
 
 
