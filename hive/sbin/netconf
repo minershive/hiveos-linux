@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+# Network config wizard
+
+export DIALOGRC=/hive/etc/dialogrc
+. colors
+. $RIG_CONF
+DIALOG_BACKTITLE="Network Configuration"
+
+
+
+worker_name=$WORKER_NAME
+address=`ip -o -f inet addr show | grep eth0 | awk '/scope global/ {print $4}'`
+gateway=`ip route | awk '/default/ { print $3 }'`
+dns=`cat /run/systemd/resolve/resolv.conf | grep -m1 ^nameserver | awk '{print $2}'`
+test=0
+
+
+function confirm_testing() {
+	dialog --backtitle "$DIALOG_BACKTITLE" \
+	--title "Test connection?" \
+	--yesno "Configuration will be saved only if successful" 8 50
+
+	exitcode=$?
+	[[ $exitcode -eq 0 ]] && test=1
+	[[ $exitcode -eq 1 ]] && exit
+	[[ $exitcode -eq 255 ]] && exit
+}
+
+
+function set_worker_name() {
+	[[ -z $worker_name ]] && return 0
+	[[ $worker_name == $WORKER_NAME ]] && return 0
+
+	echo -e "${YELLOW}> Changing rig name${NOCOLOR}"
+	SET_WORKER_NAME="$worker_name" hello
+
+	echo
+}
+
+
+function static_ip() {
+	# open fd
+	exec 3>&1
+
+	VALUES=$(dialog --ok-label "OK" \
+		  --backtitle "$DIALOG_BACKTITLE" \
+		  --title "Ethernet" \
+		  --form "Network masks hint:\n/24 255.255.255.0\n/16 255.255.0.0" 0 0 0 \
+			"Rig name:" 	1 0	"$worker_name" 	1 14 30 0 \
+			"IP/Network:"   2 0	"$address"  	2 14 30 0 \
+			"Gateway:"  	3 0	"$gateway" 		3 14 30 0 \
+			"DNS:"    		4 0	"$dns"  		4 14 30 0 \
+		2>&1 1>&3)
+
+	exitcode=$?
+
+	# close fd
+	exec 3>&-
+
+	[[ $exitcode -ne 0 ]] && exit
+
+	worker_name=$(awk 'NR==1' <<< "$VALUES")
+	address=$(awk 'NR==2' <<< "$VALUES")
+	gateway=$(awk 'NR==3' <<< "$VALUES")
+	dns=$(awk 'NR==4' <<< "$VALUES")
+
+	[[ -z $worker_name || -z $address || -z $gateway || -z $dns ]] &&
+		dialog --backtitle "$DIALOG_BACKTITLE" \
+		--title "Error" --msgbox "Incomplete data" 6 40 &&
+		return 1
+
+
+	set_worker_name
+
+	confirm_testing
+	netconf-set --dhcp=no --test=$test --address=$address --gateway=$gateway --dns=$dns
+
+	exit $?
+#	return 0
+}
+
+
+
+
+function dhcp() {
+	# open fd
+	exec 3>&1
+
+	VALUES=$(dialog --ok-label "OK" \
+		  --backtitle "$DIALOG_BACKTITLE" \
+		  --title "Ethernet" \
+		  --form "" 0 0 0 \
+			"Rig name:" 	1 0	"$worker_name" 	1 14 30 0 \
+		2>&1 1>&3)
+
+	exitcode=$?
+
+	# close fd
+	exec 3>&-
+
+	[[ $exitcode -ne 0 ]] && exit
+
+	worker_name=$(awk 'NR==1' <<< "$VALUES")
+
+	[[ -z $worker_name ]] &&
+		dialog --backtitle "$DIALOG_BACKTITLE" \
+		--title "Error" --msgbox "Incomplete data" 6 40 &&
+		return 1
+
+
+	set_worker_name
+
+	confirm_testing
+	netconf-set --dhcp=yes --test=$test
+
+	exit $?
+#	return 0
+}
+
+
+
+
+dialog --backtitle "$DIALOG_BACKTITLE" \
+--yes-label "Static IP" \
+--no-label "DHCP" \
+--title "Network connection" \
+--yesno "\nChoose your network configuration type" 6 50
+ret=$?
+
+case $ret in
+	0)
+		while true; do
+			static_ip
+			[[ $? -eq 0 ]] && break
+		done
+	;;
+	1)
+		while true; do
+			dhcp
+			[[ $? -eq 0 ]] && break
+		done
+	;;
+	255) echo "Cancelled"; exit;;
+esac
+
+
+
+
+exit 0

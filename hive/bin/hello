@@ -114,8 +114,11 @@ jq -n \
 [[ ! -z $FARM_HASH ]] &&
 	request=`echo "$request" | jq --arg farm_hash "$FARM_HASH" '. * {"params": {$farm_hash}}'`
 
-[[ ! -z $FARM_HASH && ! -z $WORKER_NAME ]] &&
+if [[ ! -z $FARM_HASH && ! -z $WORKER_NAME ]]; then
 	request=`echo "$request" | jq --arg worker_name "$WORKER_NAME" '. * {"params": {$worker_name}}'`
+elif [[ ! -z $SET_WORKER_NAME ]]; then
+	request=`echo "$request" | jq --arg worker_name "$SET_WORKER_NAME" '. * {"params": {$worker_name}}'`
+fi
 
 
 echo "$request" | jq -c '.'
