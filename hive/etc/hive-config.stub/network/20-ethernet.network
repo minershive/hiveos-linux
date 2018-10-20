@@ -16,7 +16,6 @@ DHCP=yes
 #IPv6AcceptRA=no
 
 
-
 [DHCP]
 ClientIdentifier=mac
 RouteMetric=10

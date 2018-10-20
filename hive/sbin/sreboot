@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 
-WAKEALARM_TIMEOUT=10 #default value
+WAKEALARM_TIMEOUT=30 #default value
 
 if [[ $1 == "-h" || $1 == "--help" ]]; then
 	. colors
