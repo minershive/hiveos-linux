@@ -35,11 +35,13 @@ function config_gen() {
 	[[ -z $tls || $tls == "null" ]] && tls="false"
 	tls_fp=$(jq -r '."tls-fingerprint"' <<< "$conf")
 	[[ -z $tls_fp || $tls_fp == "null" ]] && tls_fp="null"
+	variant=$(jq -r '."variant"' <<< "$conf")
+	[[ -z $variant= || $variant= == "null" ]] && variant=-1
 	for url in $XMRIG_URL; do
 		grep -q "nicehash.com" <<< $XMRIG_URL
 		[[ $? -eq 0 ]] && nicehash="true" || nicehash="false"
 		pool=$(cat <<EOF
-			{"url": "$url", "user": "$XMRIG_TEMPLATE", "pass": "$XMRIG_PASS", "use_nicehash": $nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "keepalive": true }
+			{"url": "$url", "user": "$XMRIG_TEMPLATE", "pass": "$XMRIG_PASS", "use_nicehash": $nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "variant": $variant, "keepalive": true }
 EOF
 )
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
