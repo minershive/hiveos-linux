@@ -51,31 +51,19 @@ function miner_config_gen() {
 
 	#merge pools into main config
 	pools='[]'
-	use_tls=$(jq -r .tls <<< "$conf")
-	[[ -z $use_tls || $use_tls == "null" ]] && use_tls="false"
-
-	for url in ${XMRIG_URL}; do
-
-		[[ $url = *"//"* ]] && t_pool=$url || t_pool="stratum+tcp://"$url
-		[[ ${url,,} = *"nicehash"* ]] && nicehash='true' || nicehash='false'
-		variant=$(jq '.variant' <<< "$conf")
-		if [[ ! ( -z $variant || $variant == '[]' || $variant == 'null' ) ]]; then
-			variant=", \"variant\": $variant"
-			conf=$(jq 'del(.variant)' <<< "$conf") #'
-		else
-			variant=""
-		fi
-
-		rig_id=$(jq '.rig_id' <<< "$conf")
-		if [[ ! ( -z $rig_id || $rig_id == '[]' || $rig_id == 'null' ) ]]; then
-			rig_id=", \"rig_id\": $rig_id"
-			conf=$(jq 'del(.rig_id)' <<< "$conf") #'
-		else
-			rig_id=""
-		fi
-
+	tls=$(jq -r .tls <<< "$conf")
+	[[ -z $tls || $tls == "null" ]] && tls="false"
+	tls_fp=$(jq -r '."tls-fingerprint"' <<< "$conf")
+	[[ -z $tls_fp || $tls_fp == "null" ]] && tls_fp="null"
+	variant=$(jq -r '."variant"' <<< "$conf")
+	[[ -z $variant= || $variant= == "null" ]] && variant=-1
+	rig_id=$(jq -r '."rig_id"' <<< "$conf")
+	[[ -z $rig_id= || $rig_id= == "null" ]] && rig_id=""
+	for url in $XMRIG_URL; do
+		grep -q "nicehash.com" <<< $XMRIG_URL
+		[[ $? -eq 0 ]] && nicehash="true" || nicehash="false"
 		pool=$(cat <<EOF
-				{"user": "$XMRIG_TEMPLATE", "url": "$t_pool", "pass": "$XMRIG_PASS", "nicehash": $nicehash, "keepalive": true, "tls": $use_tls, "tls-fingerprint": ""${variant}${rig_id}}
+					{"url": "$url", "user": "$XMRIG_TEMPLATE", "pass": "$XMRIG_PASS", "rig_id": "$rig_id", "use_nicehash": $nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "variant": $variant, "keepalive": true }
 EOF
 )
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`

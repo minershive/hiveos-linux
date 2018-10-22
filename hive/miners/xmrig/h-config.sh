@@ -26,12 +26,21 @@ function miner_config_gen() {
 		done <<< "$XMRIG_USER_CONFIG"
 	fi
 
+	#merge pools into main config
 	pools='[]'
+	tls=$(jq -r .tls <<< "$conf")
+	[[ -z $tls || $tls == "null" ]] && tls="false"
+	tls_fp=$(jq -r '."tls-fingerprint"' <<< "$conf")
+	[[ -z $tls_fp || $tls_fp == "null" ]] && tls_fp="null"
+	variant=$(jq -r '."variant"' <<< "$conf")
+	[[ -z $variant= || $variant= == "null" ]] && variant=-1
+	rig_id=$(jq -r '."rig_id"' <<< "$conf")
+	[[ -z $rig_id= || $rig_id= == "null" ]] && rig_id=""
 	for url in $XMRIG_URL; do
 		grep -q "nicehash.com" <<< $XMRIG_URL
 		[[ $? -eq 0 ]] && nicehash="true" || nicehash="false"
 		pool=$(cat <<EOF
-			{"url": "$url", "user": "$XMRIG_TEMPLATE", "pass": "$XMRIG_PASS", "use_nicehash": $nicehash, "keepalive": true }
+					{"url": "$url", "user": "$XMRIG_TEMPLATE", "pass": "$XMRIG_PASS", "rig_id": "$rig_id", "use_nicehash": $nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "variant": $variant, "keepalive": true }
 EOF
 )
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
@@ -57,5 +66,3 @@ EOF
 
 	echo "$conf" | jq . > $MINER_CONFIG
 }
-
-
