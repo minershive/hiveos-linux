@@ -310,6 +310,9 @@ function miner_stats {
 			if [[ $? -ne 0 || -z $stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner from localhost:60045${NOCOLOR}"
 			else
+				#fixing invalid unescaped json
+				stats_raw=$(sed 's/"out of time job!"/\\"out of time job!\\"/g' <<< "$stats_raw")
+
 				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 				local cpu_temp=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
 				local gpus_disabled=
