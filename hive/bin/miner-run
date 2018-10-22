@@ -20,19 +20,28 @@ MINER_NAME=$1
 
 # Check base miner package ==========================================================================
 
+function hive-package-install-do () {
+	local package_name=$1
+	apt-wait
+	apt-get install -y $package_name 2>&1 | tee /tmp/package-install.log
+	return ${PIPESTATUS[0]}
+}
 
 function hive-package-install () {
 	local package_name=$1
 	dpkg -s $package_name > /dev/null 2>&1
 	if [[ $? -ne 0 ]]; then
 		echo -e "${YELLOW}Installing $package_name${NOCOLOR}"
-		apt-get install -y $package_name 2>&1 | tee /tmp/package-install.log
-
-		[[ ${PIPESTATUS[0]} -ne 0 ]] &&
-			cat /tmp/package-install.log | message error "Error installing $package_name" payload &&
-			return 1
-
-		apt-get clean
+		hive-package-install-do $package_name
+		if [[ $? -ne 0 ]]; then
+			#Second try
+			sleep 1
+			hive-package-install-do $package_name
+			[[ $? -ne 0 ]] &&
+				cat /tmp/package-install.log | message error "Error installing $package_name" payload &&
+				return 1
+			apt-get clean
+		fi
 	fi
 	return 0
 }
@@ -46,7 +55,7 @@ hive-package-install $package_name || exit $?
 # Further actions ==========================================================================
 
 MINER_DIR=/hive/miners/$MINER_NAME
-[[ ! -e $MINER_DIR ]] && "${RED}$MINER_DIR does not exist, check miner installation${NOCOLOR}" && exit 1
+[[ ! -e $MINER_DIR ]] && echo -e "${RED}$MINER_DIR does not exist, check miner installation${NOCOLOR}" && exit 1
 
 
 LIBCURL3_COMPAT=
@@ -82,7 +91,7 @@ function mkfile_from_symlink() {
 # Generate config ==========================================================================
 
 if [[ ! -e $MINER_DIR/h-config.sh ]]; then
-	echo -e "${RED}No h-config.sh found for $MINER_NAME${NOCOLOR}" && return 1
+	echo -e "${RED}No h-config.sh found for $MINER_NAME${NOCOLOR}" && exit 1
 else
 	# Define default fallback value
 	[[ -z $MINER_LOG_BASENAME ]] && MINER_LOG_BASENAME=/var/log/miner/$MINER_NAME/$MINER_NAME

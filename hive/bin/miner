@@ -80,6 +80,7 @@ function start() {
 	for mindex in {32..2}; do
 		eval minerval=\$MINER$mindex
 		[[ ! -z $minerval ]] &&
+			sleep 0.2 && #to allow to grab dpkg lock
 			screen -S miner -X screen $mindex miner-run $minerval &&
 			screen -S miner -X title $minerval #set nice title
 	done

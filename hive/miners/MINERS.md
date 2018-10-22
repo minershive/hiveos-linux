@@ -105,9 +105,17 @@ Example of `$stats` var:
 	"temp": [60, 63], //array of miner temps
 	"fan": [80, 100], //array of miner fans
 	"uptime": 12313232, //seconds elapsed from miner stats
-	"ar": [123, 3], //Optional: acceped, rejected shares 
-	"algo": "customalgo", //Optional: algo used by miner, should one of the exiting in Hive
-	"bus_numbers": [0, 1, 12, 13] //Pci buses array in decimal format. E.g. 0a:00.0 is 10
+	
+	//Optional: accepted, rejected shares.
+	//2 numbers are required, you can add total invalids as 3rd number
+	//4th array item can be string with invalids per gpu semicolon separated in order or bus_numbers, e.g. "0;1;0;5" where 5 is for 13th pci bus
+	"ar": [123, 3, optional Invalids, "optional Invalids per GPU"], 
+	
+	//Optional: algo used by miner, should one of the exiting in Hive
+	"algo": "customalgo", 
+	
+	//Pci buses array in decimal format. E.g. 0a:00.0 is 10
+	"bus_numbers": [0, 1, 12, 13] 
 }
 ```
  

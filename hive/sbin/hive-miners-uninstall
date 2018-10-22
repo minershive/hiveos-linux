@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# Uninstall all miners packages to save space
-# Optional argument "nostart" - don't run miners
-# Optional argument "noinstall" - don't install default packages
+. colors
+
+[[ $1 == "-h" || $1 == "--help" ]] &&
+	echo -e "${CYAN}Uninstall all miners packages to save space${NOCOLOR}
+${YELLOW}nostart${NOCOLOR} - don't run miners
+${YELLOW}noinstall${NOCOLOR} - don't run and don't install default packages" &&
+	exit 0
 
 
-[ -t 1 ] && . colors
 
 packages=`apt list --installed 'hive-miners-*' 2>&1 | grep -o "hive-miners-.*-.*/"`
 [[ -z $packages ]] && echo "Nothing to uninstall" && exit 0

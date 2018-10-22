@@ -37,7 +37,7 @@ exitcode=$?
 
 
 if [[ -z $VERSION ]]; then #no target version
-	updateavail=`apt list --upgradable 2>&1 | grep hive | wc -l`
+	updateavail=`apt list --upgradable | grep '^hive' | wc -l`
 	if [[ $updateavail == 0 ]]; then
 		echo -e "${GREEN}Hive is up to date already${NOCOLOR}"
 		exit 0
