@@ -307,12 +307,19 @@ function miner_stats {
 		xmr-stak)
 			stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:60045/api.json`
 			#echo $stats_raw | jq .
+
+			if echo $stats_raw | grep -q '""'; then
+				#echo "fixing invalid unescaped json"
+				#stats_raw=$(sed 's/"out of time job!"/\\"out of time job!\\"/g' <<< "$stats_raw")
+				# "error_log":[{"count":490,"last_seen":1540293687,"text":"AMD Invalid Result GPU ID 9"},{"count":1,"last_seen":1540233037,"text":"invalid share: "invalid hash bytes!""}]}
+				stats_raw=$(echo $stats_raw | sed 's/""/\\""/' |  perl -pe 's/\ (\".+?)\\\"/\ \\$1\\\"/gx')
+				echo $stats_raw | jq -c . > /dev/null ||
+					(echo "Invalid json" && stats_raw="")
+			fi
+
 			if [[ $? -ne 0 || -z $stats_raw ]]; then
 				echo -e "${YELLOW}Failed to read $miner from localhost:60045${NOCOLOR}"
 			else
-				#fixing invalid unescaped json
-				stats_raw=$(sed 's/"out of time job!"/\\"out of time job!\\"/g' <<< "$stats_raw")
-
 				khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 				local cpu_temp=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
 				local gpus_disabled=
