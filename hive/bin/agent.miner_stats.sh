@@ -309,12 +309,17 @@ function miner_stats {
 			#echo $stats_raw | jq .
 
 			if echo $stats_raw | grep -q '""'; then
-				#echo "fixing invalid unescaped json"
+				echo "Fixing invalid unescaped json"
 				#stats_raw=$(sed 's/"out of time job!"/\\"out of time job!\\"/g' <<< "$stats_raw")
 				# "error_log":[{"count":490,"last_seen":1540293687,"text":"AMD Invalid Result GPU ID 9"},{"count":1,"last_seen":1540233037,"text":"invalid share: "invalid hash bytes!""}]}
-				stats_raw=$(echo $stats_raw | sed 's/""/\\""/' |  perl -pe 's/\ (\".+?)\\\"/\ \\$1\\\"/gx')
-				echo $stats_raw | jq -c . > /dev/null ||
-					(echo "Invalid json" && stats_raw="")
+				#stats_raw=$(echo $stats_raw | sed 's/""/\\""/' |  perl -pe 's/\ (\".+?)\\\"/\ \\$1\\\"/gx')
+				#"error_log":[{"count":1,"last_seen":1540304281,"text":"invalid share: \"invalid hash bytes!\""},{"count":1,"last_seen":1540313734,"text":"invalid share: "out of time job!""},{"count":1,"last_seen":1540320745,"text":"AMD Invalid Result GPU ID 2"}]
+				stats_raw=$(echo $stats_raw | perl -pe 's/,"error_log":\[.*?\]//') #just remove whole array
+				echo $stats_raw | jq -c . > /dev/null
+				if [[ $? -ne 0 ]]; then
+					echo "Invalid JSON"
+					stats_raw=""
+				fi
 			fi
 
 			if [[ $? -ne 0 || -z $stats_raw ]]; then
