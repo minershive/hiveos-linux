@@ -16,7 +16,7 @@ function miner_config_gen() {
 	local MINER_CONFIG="$MINER_DIR/$MINER_VER/$MINER_NAME.conf"
 	mkfile_from_symlink $MINER_CONFIG
 
-	case ${CAST_XMR_VEGA_ALGO} in
+	case ${CAST_XMR_ALGO} in
 		"cryptonight" )
 			algo=" --algo=0"
 		;;
@@ -48,17 +48,17 @@ function miner_config_gen() {
 			algo=" --algo=-1"
 		;;
 		* )
-			algo=" --algo=${CAST_XMR_VEGA_ALGO}"
+			algo=" --algo=${CAST_XMR_ALGO}"
 		;;
 		#--algo=3 for CryptoNight-Lite
 		#--algo=9 for CryptoNightFEST
 esac
 
-[[ -z $CAST_XMR_VEGA_TEMPLATE ]] && echo -e "${YELLOW}CAST_XMR_VEGA_TEMPLATE is empty${NOCOLOR}" && return 1
-[[ -z $CAST_XMR_VEGA_URL ]] && echo -e "${YELLOW}CAST_XMR_VEGA_URL is empty${NOCOLOR}" && return 1
-local pool=`head -n 1 <<< "$CAST_XMR_VEGA_URL"`
+[[ -z $CAST_XMR_TEMPLATE ]] && echo -e "${YELLOW}CAST_XMR_TEMPLATE is empty${NOCOLOR}" && return 1
+[[ -z $CAST_XMR_URL ]] && echo -e "${YELLOW}CAST_XMR_URL is empty${NOCOLOR}" && return 1
+local pool=`head -n 1 <<< "$CAST_XMR_URL"`
 
-conf="-S ${pool} -u ${CAST_XMR_VEGA_TEMPLATE} -p ${CAST_XMR_VEGA_PASS}${algo} ${CAST_XMR_VEGA_USER_CONFIG}"
+conf="-S ${pool} -u ${CAST_XMR_TEMPLATE} -p ${CAST_XMR_PASS}${algo} ${CAST_XMR_USER_CONFIG}"
 
 #replace tpl values in whole file
 #Don't remove until Hive 1 is gone

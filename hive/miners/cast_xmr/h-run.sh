@@ -15,5 +15,5 @@ while true; do
 done
 
 cd $MINER_DIR/$MINER_VER
-#--remoteport=${MINER_API_PORT} 
-./cast_xmr-vega $(< cast_xmr-vega.conf) --remoteaccess --remoteport=${MINER_API_PORT} 2>&1 | tee $MINER_LOG_BASENAME.log
+#--remoteport=${MINER_API_PORT}
+./cast_xmr $(< cast_xmr-vega.conf) --remoteaccess --remoteport=${MINER_API_PORT} 2>&1 | tee $MINER_LOG_BASENAME.log
