@@ -29,6 +29,9 @@ function miner_ver() {
 		phi )
 			echo $MINER_LATEST_VER_PHI
 		;;
+		kl )
+			echo $MINER_LATEST_VER_KL
+		;;
   esac
 }
 
