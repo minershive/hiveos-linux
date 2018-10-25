@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 	#@see https://www.bminer.me/references/
-	stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://${MINER_API_HOST}:${MINER_API_PORT}/api/status`
-	if [[ $? -ne 0 || -z $stats_raw ]]; then
-		echo -e "${YELLOW}Failed to read $miner from ${MINER_API_HOST}:{$MINER_API_PORT}${NOCOLOR}"
+	stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:${MINER_API_PORT}/api/status`
+/	if [[ $? -ne 0 || -z $stats_raw ]]; then
+		echo -e "${YELLOW}Failed to read $miner from 127.0.0.1:{$MINER_API_PORT}${NOCOLOR}"
 	else
 	#fucking bminer sorts it's keys as numerics, not natual, e.g. "1", "10", "11", "2", fix that with sed hack by replacing "1": with "01":
 	stats_raw=$(echo "$stats_raw" | sed -E 's/"([0-9])":\s*\{/"0\1":\{/g' | jq -c --sort-keys .) #"

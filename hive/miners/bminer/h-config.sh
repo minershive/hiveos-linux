@@ -36,28 +36,56 @@ function miner_config_gen() {
 	local MINER_CONFIG="$MINER_DIR/$MINER_VER/bminer.conf"
 	mkfile_from_symlink $MINER_CONFIG
 
-	conf="-api ${MINER_API_HOST}:${MINER_API_PORT} -max-temperature 82"
+	conf=
 
-	local pool=`head -n 1 <<< "$BMINER_URL"`
-	pool=$(sed 's/\//%2F/g; s/ /%20/g' <<< $pool)
-	[[ `echo $pool | sed 's/@/@\n/g'|grep -c @` -gt 1 ]] && pool=$(sed 's/@/%40/1' <<< $pool)
+	pool=
+	#local pool=`head -n 1 <<< "$BMINER_URL"`
+	for url in $BMINER_URL; do
+		grep -q "://" <<< $url
+		if [[ $? -ne 0 ]]; then
+			url_t=$(sed 's/\//%2F/g; s/ /%20/g' <<< $url)
+			[[ `echo $url_t | sed 's/@/@\n/g'|grep -c @` -gt 1 ]] && url_t=$(sed 's/@/%40/1' <<< $url_t)
+			#pool=`translate_algo $BMINER_ALGO`${pool}
+			url_t="${BMINER_ALGO}://${url_t}"
+		else
+			url_t=$(sed 's/\//%2F/3g; s/ /%20/g' <<< $url)
+			[[ `echo $url_t | sed 's/@/@\n/g' | grep -c @` -gt 1 ]] && url_t=$(sed 's/@/%40/1' <<< $url_t)
+			#uri=$(sed "s/:\/\//:\/\/$tpl@/g; s/@/%40/1" <<< $pool)
+		fi
 
-	grep -q "://" <<< $pool
-	[[ $? -ne 0 ]] && uri=`translate_algo $BMINER_ALGO`${pool}
-	conf+=" -uri $uri"
+		[[ ! -z $pool ]] && pool+=","
+		pool+=$url_t
+
+	done
+
+	conf+=" -uri $pool"
 
 	if [[ ! -z $BMINER_URL2 ]]; then
-		local pool=`head -n 1 <<< "$BMINER_URL2"`
-		pool=$(sed 's/\//%2F/g; s/ /%20/g' <<< $pool)
-		[[ `echo $pool | sed 's/@/@\n/g'|grep -c @` -gt 1 ]] && pool=$(sed 's/@/%40/1' <<< $pool)
-		grep -q "://" <<< $pool
-		if [[ $? -ne 0 ]]; then #protocol not found
-			uri=`translate_algo $BMINER_ALGO2`${pool}
-		else
-			uri=$(sed "s/:\/\//:\/\/$tpl@/g; s/@/%40/1" <<< $pool) #replace :// with username
-		fi
-		conf+=" -uri2 $uri"
+		pool=
+		#local pool=`head -n 1 <<< "$BMINER_URL2"`
+		for url in $BMINER_URL2; do
+
+			grep -q "://" <<< $url
+			if [[ $? -ne 0 ]]; then #protocol not found
+				url_t=$(sed 's/\//%2F/g; s/ /%20/g' <<< $url)
+				[[ `echo $url_t | sed 's/@/@\n/g'|grep -c @` -gt 1 ]] && url_t=$(sed 's/@/%40/1' <<< $url_t)
+				#pool=`translate_algo $BMINER_ALGO2`${pool}
+				url_t="${BMINER_ALGO2}://${url_t}"
+			else
+				url_t=$(sed 's/\//%2F/3g; s/ /%20/g' <<< $url)
+				[[ `echo $url_t | sed 's/@/@\n/g'|grep -c @` -gt 1 ]] && url_t=$(sed 's/@/%40/1' <<< $url_t)
+				#uri=$(sed "s/:\/\//:\/\/$tpl@/g; s/@/%40/1" <<< $pool) #replace :// with username
+			fi
+
+			[[ ! -z $pool ]] && pool+=","
+			pool+=$url_t
+
+		done
+
+		conf+=" -uri2 $pool"
+
 		[[ ! -z $BMINER_INTENSITY ]] && conf+=" -dual-intensity $BMINER_INTENSITY"
+		
 	fi
 
 	[[ ! -z $BMINER_USER_CONFIG ]] && conf+=" $BMINER_USER_CONFIG"
@@ -69,6 +97,9 @@ function miner_config_gen() {
 	[[ ! -z $ZWAL ]] && conf=$(sed "s/%ZWAL%/$ZWAL/g" <<< $conf) #|| echo "${RED}ZWAL not set${NOCOLOR}"
 	[[ ! -z $EMAIL ]] && conf=$(sed "s/%EMAIL%/$EMAIL/g" <<< $conf)
 	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $conf) #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
+
+	conf+=" -api 127.0.0.1:${MINER_API_PORT}"
+	#-max-temperature ${CRITICAL_TEMP}"
 
 	echo "$conf" > $MINER_CONFIG
 }
