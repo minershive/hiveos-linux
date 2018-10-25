@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
+. /hive-config/wallet.conf
+
 	#@see https://www.bminer.me/references/
 	stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:${MINER_API_PORT}/api/status`
-/	if [[ $? -ne 0 || -z $stats_raw ]]; then
+	if [[ $? -ne 0 || -z $stats_raw ]]; then
 		echo -e "${YELLOW}Failed to read $miner from 127.0.0.1:{$MINER_API_PORT}${NOCOLOR}"
 	else
 	#fucking bminer sorts it's keys as numerics, not natual, e.g. "1", "10", "11", "2", fix that with sed hack by replacing "1": with "01":
@@ -14,12 +16,11 @@
 	local hs_units="hs"
 	[[ -z $BMINER_ALGO ]] && BMINER_ALGO="ethash"
 
-	local bus_numbers=$(echo $stats_raw | jq -r '[ .miners | to_entries[] | select(.value) | .key|tonumber ]')
+	local bus_numbers=$(echo $stats_raw | jq -r '[ .miners | to_entries[] | select(.value) | .key|tonumber ]') #'
 
 	stats=$(jq -c --arg uptime "$uptime" \
 				--arg algo "$BMINER_ALGO" \
 				--arg hs_units "$hs_units" \
-				--argjson hs "`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`" \
 				--argjson bus_numbers "$bus_numbers" \
 				'{hs: [.miners[].solver.solution_rate], $hs_units,
 						temp: [.miners[].device.temperature], fan: [.miners[].device.fan_speed], $uptime, $algo,
