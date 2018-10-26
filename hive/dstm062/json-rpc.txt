@@ -23,6 +23,7 @@ Response:
         "gpu_pci_device_id": 0,         // PCI device id
         "gpu_uuid":          "string"   // GPU UUID
         "temperature":       0,         // current GPU temperature
+        "fan_speed":         0,         // intended operating speed of the device's fan in % (*Note1)
         "sol_ps":            0.00,      // current Sol/s
         "avg_sol_ps":        0.00,      // average Sol/s
         "sol_pw":            0.00,      // current Sol/s / Watt
@@ -42,3 +43,8 @@ Response:
     "version":  "string",                // zm version
     "error":    null
 }
+
+
+(*Note1)
+The reported speed is the intended fan speed. If the fan is physically blocked
+and unable to spin, the output will not match the actual fan speed.
