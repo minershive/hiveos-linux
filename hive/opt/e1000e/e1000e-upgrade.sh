@@ -1,8 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-[ -t 1 ] && . /hive/bin/colors
+. colors
 
-driverVersion="3.4.0.2"
+[[ ! -z $1 ]] &&
+	driverVersion=$1 ||
+	driverVersion="3.4.2.1"
+
+
 archName="e1000e-$driverVersion.tar.gz"
 downloadUrl="https://downloadmirror.intel.com/15817/eng/$archName"
 tmpDir="/hive/tmp"
