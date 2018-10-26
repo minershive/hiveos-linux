@@ -41,6 +41,9 @@ function miner_config_gen() {
 		"cryptonight-fast" )
 			algo=" --algo=8"
 		;;
+		"сryptonight-fest"
+			algo=" --algo=9"
+		;;
 		"cryptonight-v8" )
 			algo=" --algo=10"
 		;;
@@ -51,22 +54,21 @@ function miner_config_gen() {
 			algo=" --algo=${CAST_XMR_ALGO}"
 		;;
 		#--algo=3 for CryptoNight-Lite
-		#--algo=9 for CryptoNightFEST
-esac
+	esac
 
-[[ -z $CAST_XMR_TEMPLATE ]] && echo -e "${YELLOW}CAST_XMR_TEMPLATE is empty${NOCOLOR}" && return 1
-[[ -z $CAST_XMR_URL ]] && echo -e "${YELLOW}CAST_XMR_URL is empty${NOCOLOR}" && return 1
-local pool=`head -n 1 <<< "$CAST_XMR_URL"`
+	[[ -z $CAST_XMR_TEMPLATE ]] && echo -e "${YELLOW}CAST_XMR_TEMPLATE is empty${NOCOLOR}" && return 1
+	[[ -z $CAST_XMR_URL ]] && echo -e "${YELLOW}CAST_XMR_URL is empty${NOCOLOR}" && return 1
+	local pool=`head -n 1 <<< "$CAST_XMR_URL"`
 
-conf="-S ${pool} -u ${CAST_XMR_TEMPLATE} -p ${CAST_XMR_PASS}${algo} ${CAST_XMR_USER_CONFIG}"
+	conf="-S ${pool} -u ${CAST_XMR_TEMPLATE} -p ${CAST_XMR_PASS}${algo} ${CAST_XMR_USER_CONFIG}"
 
-#replace tpl values in whole file
-#Don't remove until Hive 1 is gone
-[[ ! -z $EWAL ]] && conf=$(sed "s/%EWAL%/$EWAL/g" <<< "$conf") #|| echo "${RED}EWAL not set${NOCOLOR}"
-[[ ! -z $DWAL ]] && conf=$(sed "s/%DWAL%/$DWAL/g" <<< "$conf") #|| echo "${RED}DWAL not set${NOCOLOR}"
-[[ ! -z $ZWAL ]] && conf=$(sed "s/%ZWAL%/$ZWAL/g" <<< "$conf") #|| echo "${RED}ZWAL not set${NOCOLOR}"
-[[ ! -z $EMAIL ]] && conf=$(sed "s/%EMAIL%/$EMAIL/g" <<< "$conf")
-[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
+	#replace tpl values in whole file
+	#Don't remove until Hive 1 is gone
+	[[ ! -z $EWAL ]] && conf=$(sed "s/%EWAL%/$EWAL/g" <<< "$conf") #|| echo "${RED}EWAL not set${NOCOLOR}"
+	[[ ! -z $DWAL ]] && conf=$(sed "s/%DWAL%/$DWAL/g" <<< "$conf") #|| echo "${RED}DWAL not set${NOCOLOR}"
+	[[ ! -z $ZWAL ]] && conf=$(sed "s/%ZWAL%/$ZWAL/g" <<< "$conf") #|| echo "${RED}ZWAL not set${NOCOLOR}"
+	[[ ! -z $EMAIL ]] && conf=$(sed "s/%EMAIL%/$EMAIL/g" <<< "$conf")
+	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
 
-echo "$conf" > $MINER_CONFIG
+	echo "$conf" > $MINER_CONFIG
 }
