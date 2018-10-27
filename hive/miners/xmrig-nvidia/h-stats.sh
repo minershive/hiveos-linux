@@ -5,12 +5,12 @@ if [[ $? -ne 0 || -z $stats_raw ]]; then
 	echo -e "${YELLOW}Failed to read $miner from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
 
-	[[ -z $XMRIG_ALGO ]] && XMRIG_ALGO="cryptonight"
+	[[ -z $XMRIG_NVIDIA_ALGO ]] && XMRIG_NVIDIA_ALGO="cryptonight"
 
 	khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 	local ac=$(jq '.results.shares_good' <<< "$stats_raw")
 	local rj=$(( $(jq '.results.shares_total' <<< "$stats_raw") - $ac ))
-	stats=$(jq --arg ac "$ac" --arg rj "$rj" --arg algo "$XMRIG_ALGO" \
+	stats=$(jq --arg ac "$ac" --arg rj "$rj" --arg algo "$XMRIG_NVIDIA_ALGO" \
 			'{hs: [.hashrate.threads[][0]], $algo, temp: [.health[].temp], fan: [.health[].fan], uptime: .connection.uptime, ar: [$ac, $rj]}' <<< "$stats_raw")
 fi
 

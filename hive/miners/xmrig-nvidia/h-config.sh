@@ -10,22 +10,22 @@ function miner_config_echo() {
 }
 
 function miner_config_gen() {
-	[[ -z $XMRIG_PASS ]] && XMRIG_PASS="x"
+	[[ -z $XMRIG_NVIDIA_PASS ]] && XMRIG_NVIDIA_PASS="x"
 
 	local MINER_CONFIG="$MINER_DIR/$MINER_VER/config.json"
 	mkfile_from_symlink $MINER_CONFIG
 
 	conf=`cat $MINER_DIR/$MINER_VER/config_global.json | envsubst`
 
-	if [[ ! -z ${XMRIG_ALGO} ]]; then
-	algo=${XMRIG_ALGO}
+	if [[ ! -z ${XMRIG_NVIDIA_ALGO} ]]; then
+	algo=${XMRIG_NVIDIA_ALGO}
 	#translate CUSTOM_ALGO to a view clear for miner
-	# 	case ${XMRIG_ALGO} in
+	# 	case ${XMRIG_NVIDIA_ALGO} in
 	# 		"cryptonight-lite-v7" )
 	# 			algo="cryptonight-lite"
 	# 		;;
 	# 		* )
-	# 		algo=${XMRIG_ALGO}
+	# 		algo=${XMRIG_NVIDIA_ALGO}
 	# 		;;
 	# 	esac
 		algo=`jq --null-input --arg algo "$algo" '{$algo}'`
@@ -33,11 +33,11 @@ function miner_config_gen() {
 	fi
 
 	#merge user config options into main config
-	if [[ ! -z $XMRIG_USER_CONFIG ]]; then
+	if [[ ! -z $XMRIG_NVIDIA_USER_CONFIG ]]; then
 		while read -r line; do
 			[[ -z $line ]] && continue
 				conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
-		done <<< "$XMRIG_USER_CONFIG"
+		done <<< "$XMRIG_NVIDIA_USER_CONFIG"
 	fi
 
 	[[ -z $conf || $conf == '[]' || $conf == 'null' ]] && echo -e "${RED}Error in \"Extra config arguments\" value, check your Miner Config please.${NOCOLOR}" && exit 1
@@ -59,11 +59,14 @@ function miner_config_gen() {
 	[[ -z $variant= || $variant= == "null" ]] && variant=-1
 	rig_id=$(jq -r '."rig_id"' <<< "$conf")
 	[[ -z $rig_id= || $rig_id= == "null" ]] && rig_id=""
-	for url in $XMRIG_URL; do
-		grep -q "nicehash.com" <<< $XMRIG_URL
-		[[ $? -eq 0 ]] && nicehash="true" || nicehash="false"
+	nicehash=$(jq -r .nicehash <<< "$conf")
+	[[ -z $nicehash || $nicehash == "null" ]] && nicehash="false"
+
+	for url in $XMRIG_NVIDIA_URL; do
+		[[ ${nicehash,,} = "true" || ${url,,} = *"nicehash"* ]] && c_nicehash='true' || c_nicehash='false'
+
 		pool=$(cat <<EOF
-					{"url": "$url", "user": "$XMRIG_TEMPLATE", "pass": "$XMRIG_PASS", "rig_id": "$rig_id", "use_nicehash": $nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "variant": $variant, "keepalive": true }
+					{"url": "$url", "user": "$XMRIG_NVIDIA_TEMPLATE", "pass": "$XMRIG_NVIDIA_PASS", "rig_id": "$rig_id", "use_nicehash": $c_nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "variant": $variant, "keepalive": true }
 EOF
 )
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
@@ -79,10 +82,10 @@ EOF
 	[[ -z $conf || $conf == '[]' || $conf == 'null' ]] && echo -e "${RED}Error in \"Pool URL\" value, check your Miner Config please.${NOCOLOR}" && exit 1
 
 	#merge GPU settings into main config
-	if [[ -z $XMRIG_THREADS || $XMRIG_THREADS == '[]' || $XMRIG_THREADS == 'null' ]]; then
+	if [[ -z $XMRIG_NVIDIA_THREADS || $XMRIG_NVIDIA_THREADS == '[]' || $XMRIG_NVIDIA_THREADS == 'null' ]]; then
 		echo -e "${YELLOW}CUSTOM_GPU_CONFIG is empty, useing autoconfig${NOCOLOR}"
 	else
-		threads=$XMRIG_THREADS
+		threads=$XMRIG_NVIDIA_THREADS
 		threads=`jq --null-input --argjson threads "$threads" '{"threads": $threads}'`
 		conf=$(jq -s '.[0] * .[1]' <<< "$conf $threads")
 	fi

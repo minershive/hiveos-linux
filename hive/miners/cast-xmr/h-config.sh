@@ -8,7 +8,7 @@ function miner_ver() {
 
 function miner_config_echo() {
 	local MINER_VER=`miner_ver`
-	miner_echo_config_file "$MINER_DIR/$MINER_VER/$MINER_NAME.conf"
+	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/$MINER_NAME.conf"
 }
 
 
