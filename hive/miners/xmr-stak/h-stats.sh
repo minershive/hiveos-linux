@@ -1,12 +1,24 @@
 #!/usr/bin/env bash
 
 stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:${MINER_API_PORT}/api.json`
+
+if echo $stats_raw | grep -q '""'; then
+	echo "Fixing invalid unescaped json"
+	#stats_raw=$(sed 's/"out of time job!"/\\"out of time job!\\"/g' <<< "$stats_raw")
+	# "error_log":[{"count":490,"last_seen":1540293687,"text":"AMD Invalid Result GPU ID 9"},{"count":1,"last_seen":1540233037,"text":"invalid share: "invalid hash bytes!""}]}
+	#stats_raw=$(echo $stats_raw | sed 's/""/\\""/' |  perl -pe 's/\ (\".+?)\\\"/\ \\$1\\\"/gx')
+	#"error_log":[{"count":1,"last_seen":1540304281,"text":"invalid share: \"invalid hash bytes!\""},{"count":1,"last_seen":1540313734,"text":"invalid share: "out of time job!""},{"count":1,"last_seen":1540320745,"text":"AMD Invalid Result GPU ID 2"}]
+	stats_raw=$(echo $stats_raw | perl -pe 's/,"error_log":\[.*?\]//') #just remove whole array
+	echo $stats_raw | jq -c . > /dev/null
+	if [[ $? -ne 0 ]]; then
+		echo "Invalid JSON"
+		stats_raw=""
+	fi
+fi
+
 if [[ $? -ne 0 || -z $stats_raw ]]; then
 	echo -e "${YELLOW}Failed to read $miner from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
-	#fixing invalid unescaped json
-	stats_raw=$(sed 's/"out of time job!"/\\"out of time job!\\"/g' <<< "$stats_raw")
-
 	# [[ -z $XMR_STAK_ALGO ]] && XMR_STAK_ALGO="cryptonight"
 
 	khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
