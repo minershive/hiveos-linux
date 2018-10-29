@@ -9,7 +9,6 @@ echo ""
 DEFAULT_CORE_STATE=5
 
 n=`gpu-detect AMD`
-
 if [[ $n == 0 ]]; then
 	echo "No AMD cards detected, exiting"
 	exit
@@ -128,14 +127,21 @@ for bdir in $busids_dirs; do
 
 	[[ ! -e $savedpp ]] && echo -e "ERROR: $savedpp not found, try to reboot" && continue
 
+##Start introducing VEGA
 
+VINFO=$( lspci -vnns $busid | grep VGA -A 2 | grep AMD -A 2 | grep Vega -A 2 | grep -v "Vega 8"|wc -l )
+
+#exit 0
 
 	if [[ $AGGRESSIVE == 1 ]]; then
 		. /hive/sbin/amd-oc.aggressive.sh
+	elif [[ $VINFO -ne 0 ]]; then
+		. /hive/sbin/amd-oc.vega.sh
 	else
 		. /hive/sbin/amd-oc.classic.sh
 	fi
 
+    if [[ -z $VINFO ]] ; then
 
 	if [[ ! -z $coreState || ! -z $memoryState ]]; then
 		echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
@@ -147,8 +153,7 @@ for bdir in $busids_dirs; do
 		[[ ! -z $memoryState ]] &&
 			echo $memoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
 	fi
-
-
+    fi
 
 	#wolfamdctrl -i $i --mem-clock 2000 --mem-state 1
 	#wolfamdctrl -i $i --core-clock 1100 --core-state 7
