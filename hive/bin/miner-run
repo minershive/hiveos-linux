@@ -17,6 +17,9 @@ export LD_LIBRARY_PATH=/hive/lib
 MINER_NAME=$1
 [[ -z $MINER_NAME ]] && "${RED}Give some miner name${NOCOLOR}" && exit 1
 
+# HARDCODE FIX
+[[ $MINER_NAME == "sgminer-gm" ]] && MINER_NAME="sgminer"
+
 
 # Check base miner package ==========================================================================
 

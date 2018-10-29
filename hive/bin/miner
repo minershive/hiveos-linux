@@ -25,6 +25,23 @@ fi
 
 [[ -z $MINER ]] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
 
+
+#HARDCODE FIX
+function fix_sgminer_gm() {
+	local mindex=
+	local minerval=
+	for mindex in {1..32}; do
+		[[ $mindex == 1 ]] && mindex=
+		eval minerval=\$MINER$mindex
+		if [[ ! -z $minerval ]]; then
+			[[ $minerval == "sgminer-gm" ]] &&
+				eval MINER$mindex="sgminer"
+		fi
+	done
+}
+fix_sgminer_gm
+
+
 #sgminer-gm is deprecated...
 #miners_avail=("claymore" "claymore-z" "claymore-x" "ewbf" "ccminer" "ethminer" "sgminer" "sgminer-gm" "dstm" "bminer" "lolminer" "optiminer" "xmr-stak" "xmrig" "cpuminer-opt" "custom")
 #if ! printf '%s\n' "${miners_avail[@]}" | grep -xq $MINER ; then
