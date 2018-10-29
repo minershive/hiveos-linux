@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-[[ `ps aux | grep "./cast_xmr-vega" | grep -v grep | wc -l` != 0 ]] &&
+[[ `ps aux | grep "./cast_xmr" | grep -v grep | wc -l` != 0 ]] &&
 	echo -e "${RED}$MINER_NAME miner is already running${NOCOLOR}" &&
 	exit 1
 
