@@ -1,25 +1,51 @@
 #!/usr/bin/env bash
 # !!! also can be started from cron and on startup !!!
-source /etc/environment
-export PATH
-export CUDA_DEVICE_ORDER
 
-#Check for proxy var. Or agent and others started from here will not see it
+if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
+	source /etc/environment
+	export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+fi
+
+
+# Check for proxy var. Or agent and others started from here will not see it
 . http_proxy.sh
 
 
+# Check for screen
+#screen -ls agent | grep -q agent && running=1 || running=0
 
+# As we have several processes in screen need to check for actual agent, not just for screen
+ps aux | grep -q 'bash /hive/bin/agent$' && running=1 || running=0
 
-screen -ls agent | grep -q agent && running=1 || running=0
 
 [[ $1 != "dontattach" ]] &&
 	screen -x -S agent #attach to screen
 
-[[ $running -ne 1 ]] &&
-    echo "Starting new agent screen session" &&
-    screen -dm -S agent "agent" &&
-    exit 1 #was not running, starting
+if [[ $running -ne 1 ]]; then
 
-#    screen -dm -S agent bash -c "agent; bash"
+	# We have checked for the agent process, but maybe there is a screen with dead agent
+	screen -ls agent | grep -q agent &&
+		echo "Quiting previous screen" &&
+		screen -S agent -X quit
+
+
+	echo "Starting new agent screen session"
+
+	#screen -dm -S agent "agent"
+
+	screen -dm -S agent
+	for i in {1..25}; do
+		sleep 0.2 #it needs some time? it happens that you'll have "No screen session found" without sleep
+		session_count=`screen -ls agent | grep agent | wc -l`
+		[[ $session_count > 0 ]] && break
+		[[ $i == 25 ]] && echo -e "${RED}screen agent not found in 25 iterations, check logs and maybe flash drive speed${NOCOLOR}"
+	done
+
+	screen -S agent -X screen 2 agent.gpu-stats
+	screen -S agent -X screen 1 agent
+
+	exit 1 #was not running, starting
+fi
+
 
 exit 0 #all was running

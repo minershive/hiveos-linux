@@ -1,0 +1,8 @@
+Package: hive-miners-ccminer-nevermore
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-ccminer-nevermore-0.2.3
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner

@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#Checks ccminer for newer versions
+
+echo "Depreacted"
+exit 0
+
+cd /hive/ccminer
+[ -t 1 ] && . colors
+
+md5url=http://download.hiveos.farm/ccminer/cuda9/md5sum.txt
+
+echo "Fetching checksums"
+echo ""
+md5sums=`curl --insecure -L --connect-timeout 7 --max-time 15 --silent $md5url`
+exitcode=$?
+[[ $exitcode -ne 0 ]] &&
+	message error "Error fetching $md5url" &&
+	return $exitcode
+
+
+md5sums=`echo "$md5sums" | grep "ccminer-"`
+[[ -z $md5sums ]] &&
+	message error "Empty md5sums" &&
+	return 1
+
+#echo "$md5sums"
+
+
+while read -r line; do
+	[[ -z $line ]] && continue
+	linearray=($line) #convert to array
+	md5server=${linearray[0]}
+	binary=${linearray[1]}
+
+	if [[ ! -e $binary ]]; then
+		echo -e "$line ${YELLOW}${NOCOLOR}"
+	else
+		md5local=`md5sum $binary | awk '{ print $1 }'`
+		#echo "local $md5local for $binary"
+
+		if [[ "$md5local" == "$md5server" ]]; then
+			echo -e "$line ${GREEN}OK${NOCOLOR}"
+		else
+			echo -e "$line ${CYAN}Updated${NOCOLOR} (local md5=$md5local)"
+			rm $binary
+		fi
+	fi
+
+done <<< "$md5sums"
+
+
+echo ""
+echo "Updated versions will downloaded on miner restart"

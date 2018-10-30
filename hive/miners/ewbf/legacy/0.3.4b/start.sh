@@ -1,0 +1,1 @@
+miner --server zec-eu1.nanopool.org --user t1emzuNbemjqnEhEue74NL3BxsR4cA1ajfP.worker/fern@kgroup.biz --pass z --port 6666

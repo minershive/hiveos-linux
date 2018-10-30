@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Network config setup
+
+. colors
+. $RIG_CONF
+
+
+SYSCONF=/etc/systemd/network/20-ethernet.network
+HIVECONF=/hive-config/network/20-ethernet.network
+
+
+dhcp=
+address=
+gateway=
+dns=
+
+test=1 #tests connection, if it does not work then revert to previous config
+
+for i in "$@"; do
+	case $i in
+		--dhcp=*)
+			dhcp="${i#*=}"
+			shift
+		;;
+		--address=*)
+			address="${i#*=}"
+			shift
+		;;
+		--gateway=*)
+			gateway="${i#*=}"
+			shift
+		;;
+		--dns=*)
+			dns="${i#*=}"
+			shift
+		;;
+		--test=*)
+			test="${i#*=}"
+			shift
+		;;
+		*)
+			# unknown option
+		;;
+	esac
+done
+
+
+
+[[ $dhcp != "yes" && $dhcp != "no" ]] && echo "dhcp required to be \"yes\" or \"no\"" && exit 1
+[[ $test != "0" && $test != "1" ]] && echo "test should be \"0\" or \"1\"" && exit 1
+
+if [[ $dhcp == "no" ]]; then
+	[[ -z $address ]] && echo "address required" && exit 1
+	[[ -z $gateway ]] && echo "gateway required" && exit 1
+	[[ -z $dns ]] && echo "dns required" && exit 1
+
+	config="[Match]
+Name=e*
+
+[Network]
+DHCP=no
+Address=$address
+Gateway=$gateway
+DNS=$dns
+
+[DHCP]
+ClientIdentifier=mac
+RouteMetric=10
+"
+else
+
+	config="[Match]
+Name=e*
+
+[Network]
+DHCP=yes
+
+[DHCP]
+ClientIdentifier=mac
+RouteMetric=10
+"
+
+fi
+
+echo -e "${YELLOW}> Writing config${NOCOLOR}"
+echo "$config"
+
+#exit
+
+echo "$config" > $SYSCONF
+
+echo -e "${YELLOW}> Restarting network service${NOCOLOR}"
+
+
+systemctl restart systemd-networkd
+#systemctl restart systemd-resolved
+
+
+if [[ $test == "1" ]]; then
+	sleep 1
+
+	wait-online --ping --count=3 -v
+	online_exitcode=$?
+
+	if [[ $online_exitcode -ne 0 ]]; then
+		echo -e "${YELLOW}> Restoring original config${NOCOLOR}"
+		cat $HIVECONF > $SYSCONF
+		dos2unix-safe $SYSCONF
+
+		systemctl restart systemd-networkd
+		sleep 1
+		wait-online --ping --count=3 -v
+
+		exit 1
+	fi
+
+fi
+
+# Just to show config
+ifconfig eth0
+
+echo -e "${GREEN}> Saving persistent config${NOCOLOR}"
+echo "$config" | unix2dos > $HIVECONF
+
+exit 0

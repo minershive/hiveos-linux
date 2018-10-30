@@ -6,11 +6,9 @@
 date
 echo ""
 
-AMD_OC_CONF="/hive-config/amd-oc.conf"
 DEFAULT_CORE_STATE=5
 
 n=`gpu-detect AMD`
-
 if [[ $n == 0 ]]; then
 	echo "No AMD cards detected, exiting"
 	exit
@@ -41,7 +39,7 @@ done
 [[ ! -z $CORE_VDDC ]] &&
 CORE_VDDC=($CORE_VDDC) &&
 for (( i=${#CORE_VDDC[@]}; i < $n; ++i )); do
-    CORE_VDDC[$i]=${CORE_VDDC[$i-1]}
+	CORE_VDDC[$i]=${CORE_VDDC[$i-1]}
 done
 
 #[[ - z $CORE_STATE ]] && CORE_STATE="5" #default is 5
@@ -129,27 +127,32 @@ for bdir in $busids_dirs; do
 
 	[[ ! -e $savedpp ]] && echo -e "ERROR: $savedpp not found, try to reboot" && continue
 
+	##Start introducing VEGA
+	VEGAS_COUNT=$( lspci -vnns $busid | grep VGA -A 2 | grep AMD -A 2 | grep Vega -A 2 | grep -v "Vega 8" | wc -l )
 
-
-	if [[ $AGGRESSIVE == 1 ]]; then
-		. /hive/sbin/amd-oc.aggressive.sh
+	if [[ $VEGAS_COUNT -ne 0 ]]; then
+		. /hive/sbin/amd-oc.vega.sh
 	else
-		. /hive/sbin/amd-oc.classic.sh
+		if [[ $AGGRESSIVE == 1 ]]; then
+			. /hive/sbin/amd-oc.aggressive.sh
+		else
+			. /hive/sbin/amd-oc.classic.sh
+		fi
 	fi
 
 
-	if [[ ! -z $coreState || ! -z $memoryState ]]; then
-		echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
+	if [[ -z $VEGAS_COUNT ]] ; then
+		if [[ ! -z $coreState || ! -z $memoryState ]]; then
+			echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
 
-		[[ ! -z $coreState ]] &&
-			echo $coreState > /sys/class/drm/card$cardno/device/pp_dpm_sclk &&
-			echo "Setting DPM core state to $coreState"
+			[[ ! -z $coreState ]] &&
+				echo $coreState > /sys/class/drm/card$cardno/device/pp_dpm_sclk &&
+				echo "Setting DPM core state to $coreState"
 
-		[[ ! -z $memoryState ]] &&
-			echo $memoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
+			[[ ! -z $memoryState ]] &&
+				echo $memoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
+		fi
 	fi
-
-
 
 	#wolfamdctrl -i $i --mem-clock 2000 --mem-state 1
 	#wolfamdctrl -i $i --core-clock 1100 --core-state 7

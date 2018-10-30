@@ -1,6 +1,8 @@
 # ROOT CRON
 # applied on every startup
 
+PATH="./:/hive/bin:/hive/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+
 # clear log file to avoid disk usage
 */15 * * * * /hive/bin/miner logtruncateall
 
@@ -20,9 +22,9 @@
 
 
 # update DNS cache, just in case IP changes once in a lifetime
-*/30 * * * * /hive/bin/cache-hive-ip
+*/30 * * * * cache-hive-ip
 
 
 #check agent is running...
-*/10 * * * * /hive/bin/agent-screen dontattach || echo "[`date`] STARTED BY CRON" >> /var/log/hive-agent.log
+*/10 * * * * agent-screen dontattach || echo "[`date`] STARTED BY CRON" >> /var/log/hive-agent.log
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Part of agent
+
 function do_command () {
 	#body=$1
 	[[ -z $command ]] && command=`echo "$body" | jq -r '.command'` #get command for batch
@@ -19,8 +21,10 @@ function do_command () {
 			#superreboot
 		;;
 		upgrade)
+			local version=$(echo "$body" | jq -r '.version')
+			[[ $version == "null" ]] && version=
 			nohup bash -c '
-				payload=`selfupgrade 2>&1`
+				payload=`selfupgrade '$version' 2>&1`
 				upgrade_exitcode=$?
 				echo "$payload"
 				[[ $upgrade_exitcode -eq 0 ]] &&
@@ -30,8 +34,9 @@ function do_command () {
 		;;
 		exec)
 			local exec=$(echo "$body" | jq '.exec' --raw-output)
-			payload=`timeout 360 bash -c "$exec" 2>&1`
+			timeout -s9 600 bash -c "$exec" 2>&1 | tee /tmp/exec.log
 			exitcode=$?
+			payload=`cat /tmp/exec.log`
 			echo "$payload"
 			[[ $exitcode -eq 0 ]] &&
 				echo "$payload" | message info "$exec" payload --id=$cmd_id ||
@@ -169,14 +174,16 @@ function do_command () {
 			fi
 		;;
 		amd_download)
-			gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
+			local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
 			listjson=`gpu-detect listjson AMD`
 			gpu_biosid=`echo "$listjson" | jq -r ".[$gpu_index].vbios" | sed -e 's/[\ ]/_/g'`
 			gpu_type=`echo "$listjson" | jq -r ".[$gpu_index].name" | sed -e 's/[\,\.\ ]//g'`
 			gpu_memsize=`echo "$listjson" | jq -r ".[$gpu_index].mem" | sed -e 's/^\(..\).*/\1/' | sed -e 's/.$/G/'`
 			gpu_memtype=`echo "$listjson" | jq -r ".[$gpu_index].mem_type" | sed -e 's/[\,\.\ ]/_/g'`
 			if [[ ! -z $gpu_index && $gpu_index != "null" ]]; then
-			    payload=`atiflash -s $gpu_index /tmp/amd.saved.rom`
+				local gpu_index_hex=$gpu_index
+				[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
+			    payload=`atiflash -s $gpu_index_hex /tmp/amd.saved.rom`
 			    exitcode=$?
 			    echo "$payload"
 				if [[ $exitcode == 0 ]]; then
@@ -191,8 +198,8 @@ function do_command () {
 			fi
 		;;
 		amd_upload)
-			gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
-			rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
+			local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
+			local rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
 			if [[ -z $gpu_index || $gpu_index == "null" ]]; then
 				message error "No \"gpu_index\" given" --id=$cmd_id
 			elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
@@ -208,7 +215,9 @@ function do_command () {
 					if [[ $gpu_index == -1 ]]; then # -1 = all
 				    	payload=`atiflashall $extra_args /tmp/amd.uploaded.rom`
 					else
-				    	payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index $extra_args /tmp/amd.uploaded.rom`
+						local gpu_index_hex=$gpu_index
+						[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
+				    	payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index_hex $extra_args /tmp/amd.uploaded.rom`
 					fi
 				    exitcode=$?
 				    echo "$payload"

@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
-
 #[ -t 1 ] &&
 . colors
 
 date
 echo ""
 
-NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
 export DISPLAY=":0"
 
 n=`gpu-detect NVIDIA`

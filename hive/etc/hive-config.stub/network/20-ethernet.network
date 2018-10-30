@@ -1,4 +1,5 @@
 [Match]
+#Match eth0, eth1, ... interfaces. Don't change it to other names
 Name=e*
 
 [Network]

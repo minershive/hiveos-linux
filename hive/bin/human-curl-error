@@ -37,11 +37,20 @@ case "$code" in
 	22)
 		msg="CURLE_HTTP_RETURNED_ERROR (22) HTTP server returns an error code that is >= 400.";
 		;;
+	23)
+		msg="CURLE_WRITE_ERROR (23) An error occurred when writing received data to a local file, or an error was returned to libcurl from a write callback.";
+		;;
 	28)
 		msg="CURLE_OPERATION_TIMEDOUT (28) Operation timeout. The specified time-out period was reached according to the conditions.";
 		;;
 	34)
 		msg="CURLE_HTTP_POST_ERROR (34) This is an odd error that mainly occurs due to internal confusion.";
+		;;
+	47)
+		msg="CURLE_TOO_MANY_REDIRECTS (47) Too many redirects. When following redirects, libcurl hit the maximum amount.";
+		;;
+	56)
+		msg="CURLE_RECV_ERROR (56) Failure with receiving network data.";
 		;;
 	*)
 		msg="CURL ERROR ($code)";

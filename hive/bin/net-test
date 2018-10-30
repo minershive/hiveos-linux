@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 
-source colors
+. colors
 
 
 HEADER_COLOR=$YELLOW
@@ -18,9 +18,11 @@ LAST_RESULT=0
 unset GREP_OPTIONS
 
 
-LOCAL_IP=`ifconfig | grep -m1 'inet ' | grep -v 127.0.0.1 | cut -d ' ' -f 12 | cut -d ':' -f 2`
+LOCAL_IP=`hostname -I | awk '{print $1}'`
 LOCAL_GW=`ip route | awk '/default/ { print $3 }'`
-LOCAL_DNS=`nslookup server | grep Server | cut -d ":" -f 2 | sed -e 's/^[ \t]*//'`
+
+#LOCAL_DNS=`nslookup server | grep Server | cut -d ":" -f 2 | sed -e 's/^[ \t]*//'`
+LOCAL_DNS=`cat /run/systemd/resolve/resolv.conf | grep -m1 ^nameserver | awk '{print $2}'`
 
 CASE_WIDTH='%-64s'
 
@@ -124,25 +126,37 @@ function Connections {
 	Ping "1.1.1.1 (Cloudflare)" "1.1.1.1"
 	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping Cloudflare DNS. Please check your internet connection"$NOCOLOR
 
-	Connection "hiveos.farm"
 
+	API_HOST="api.hiveos.farm"
+	[[ -e $RIG_CONF ]] && . $RIG_CONF
+	[[ ! -z $HIVE_HOST_URL ]] && API_HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
 
-	echo
-	echo -e "${YELLOW}Checking connection to Hive servers:${NOCOLOR}"
-	echo
-	echo -e "${WHITE}>>> api.hiveos.farm${NOCOLOR}"
-	Connection "api.hiveos.farm" api
-	Curl "https://api.hiveos.farm:8443" $2
-	[[ $? -ne 0 ]] && echo -e "${ERROR_COLOR}HTTPS (SSL) on port 8443 connection failed. Please check Firewall rules or connection setup.${NOCOLOR}"
-	echo
-	echo -e "${WHITE}>>> paris.hiveos.farm${NOCOLOR}"
-	Connection "paris.hiveos.farm" api
-	echo
-	echo -e "${WHITE}>>> amster.hiveos.farm${NOCOLOR}"
-	Connection "amster.hiveos.farm" api
-	echo
-	echo -e "${WHITE}>>> helsinki.hiveos.farm${NOCOLOR}"
-	Connection "helsinki.hiveos.farm" api
+	if (echo "$API_HOST" | grep -q "hiveos.farm"); then
+		Connection "hiveos.farm"
+		echo
+		echo -e "${YELLOW}Checking connection to worker API servers:${NOCOLOR}"
+		echo
+		echo -e "${WHITE}>>> api.hiveos.farm${NOCOLOR}"
+		Connection "api.hiveos.farm" api
+		Curl "https://api.hiveos.farm:8443" $2
+		[[ $? -ne 0 ]] && echo -e "${ERROR_COLOR}HTTPS (SSL) on port 8443 connection failed. Please check Firewall rules or connection setup.${NOCOLOR}"
+		echo
+
+		echo -e "${WHITE}>>> paris.hiveos.farm${NOCOLOR}"
+		Connection "paris.hiveos.farm" api
+		echo
+
+		echo -e "${WHITE}>>> amster.hiveos.farm${NOCOLOR}"
+		Connection "amster.hiveos.farm" api
+		echo
+
+		echo -e "${WHITE}>>> helsinki.hiveos.farm${NOCOLOR}"
+		Connection "helsinki.hiveos.farm" api
+	else
+		echo
+		echo -e "${WHITE}>>> $API_HOST${NOCOLOR}"
+		Connection "$API_HOST" api
+	fi
 }
 
 

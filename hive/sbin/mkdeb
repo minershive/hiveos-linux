@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+
+cd `dirname $0`/../..
+. hive/bin/colors
+
+
+date
+echo -e $GREEN`pwd`$NOCOLOR
+
+#buildroot=/tmp/hivebuild
+buildroot=../hiveos-linux-packages
+if [[ ! -d $buildroot ]]; then
+	mkdir -p $buildroot
+	[[ $? -ne 0 ]] && echo "Error creating $buildroot" && exit 1
+fi
+buildroot=`realpath $buildroot`
+#echo $buildroot
+
+
+controls=$1
+[[ -z $controls ]] && echo "Usage: $0 all - build all packages, or specify package dir like hive/miners/claymore" && exit 1
+
+
+if [[ $controls == "all" ]]; then
+	controls=`find . -name "control" | sort`
+else
+	controls=./$controls/control
+	[[ ! -e $controls ]] && echo "$controls not found" && exit 1
+fi
+
+
+
+for control in $controls; do
+	#echo -e ${YELLOW}$control${NOCOLOR}
+	#sourcedir=${control//\/control/}
+	sourcedir=`dirname $control`
+	#echo sourcedir=$sourcedir
+	pkgname=${sourcedir//\//-}
+	pkgname=${pkgname//.-/}
+	echo -e ${CYAN}$pkgname${NOCOLOR}
+
+	pkgdir=$buildroot/$pkgname
+	#[[ -e $pkgdir ]] && rm -rf $pkgdir
+	mkdir -p $pkgdir/DEBIAN
+	sudo chown -R $USER:`id -gn` $pkgdir #to make it able to write there when updating
+
+	cp -Lf $control $pkgdir/DEBIAN
+	if [[ $pkgname == "hive" ]]; then #special root hive package
+		cp -Lf hive/etc/apt/postinst $pkgdir/DEBIAN
+		cp -Lf hive/etc/apt/preinst $pkgdir/DEBIAN
+	fi
+
+	rsynctargetdir=$pkgdir/${sourcedir/.\//}
+	mkdir -p $rsynctargetdir
+
+	#find and exlude subdirs containting control file, these folders are subpackages
+	d=${sourcedir//\//\\\/}'\/' #escape replacement
+	echo ".DS_Store" > $buildroot/tmp-exclude-from
+	find $sourcedir -mindepth 2 -name "control" -exec dirname {} \; | sed "s/$d//g" >> $buildroot/tmp-exclude-from
+	rsync -av --exclude-from $buildroot/tmp-exclude-from --delete $sourcedir/ $rsynctargetdir/ > $buildroot/tmp-rsync.log #| tee $buildroot/tmp-rsync.log
+	changes=$(( `cat $buildroot/tmp-rsync.log | grep -v '^./$' | wc -l` - 4 ))
+	if [[ $changes > 0 ]]; then
+		cat $buildroot/tmp-rsync.log
+		sudo chown -R 1000:1000 $pkgdir
+		echo -e "${PURPLE}Changes: $changes${NOCOLOR}"
+
+		dpkg-deb --build $pkgdir $buildroot/
+
+		sudo chown -R $USER:`id -gn` $pkgdir #to make it able to write there when updating
+
+		echo
+	fi
+
+	rm $buildroot/tmp-exclude-from
+	rm $buildroot/tmp-rsync.log
+done
+
+
+
+
+
+#dpkg-deb --build $hivebuilddir ./
+##dpkg-deb --build hiverepotry_0.2 ./
+#
+#echo --- dpkg-sig start
+#dpkg-sig --sign builder *.deb
+#echo --- dpkg-sig end
+#
+#mv -f *.deb binary/
+#
+##mv -f hive_0.1-1.deb binary/
+##mv -f hiverepotry_0.1-1.deb binary/
+#
+##dpkg-scanpackages binary /dev/null | gzip > binary/Packages.gz
+#
+

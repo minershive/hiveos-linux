@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 #we don't care about interface so wont use /lib/systemd/systemd-networkd-wait-online
 
-export PATH="./:/hive/bin:/hive/sbin:$PATH"
+source /etc/environment
+export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+
 
 #[ -t 1 ] &&
 . colors #use them anyway
@@ -12,27 +14,78 @@ function echo2 {
 }
 
 
+#Also ping in addition to nslookup
+PING_ENABLED=0
+#Tries count
+COUNT=6
+#Verbose
+VERBOSE=0
+
+
+for i in "$@"; do
+	case $i in
+		--ping)
+			PING_ENABLED=1
+			shift
+		;;
+		--count=*)
+			COUNT="${i#*=}"
+			shift
+		;;
+		--verbose|-v)
+			VERBOSE=1
+			shift
+		;;
+		*)
+			# unknown option
+			shift
+		;;
+	esac
+done
+
+
+
+API_HOST="api.hiveos.farm"
+[[ -e $RIG_CONF ]] && . $RIG_CONF
+[[ ! -z $HIVE_HOST_URL ]] && API_HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
+
+
+
 host=1.1.1.1
 #nslookuphost=hiveos.farm
-nslookuphost=hiveos.farm
+#nslookuphost=$API_HOST #can't use this as it is cached in /etc/hosts
+nslookuphost=`echo $API_HOST | awk -F'.' '{print substr($0,index($0,$2))}'` #drop api. from hostname
 #wifi_active=`systemctl is-active wpa_supplicant@wlan0.service`
 
 
 check_online() {
-#	ping -n -c 1 -w 1 $host > /dev/null 2>&1
-# returns "Network unreachable" and does not wait
-#	sleep 1
+	ping_ok=1
+	if [[ $PING_ENABLED == 1 ]]; then
+		ping_ok=0
+		timeout -s9 6 ping -n -c 1 -w 5 $nslookuphost > /dev/null 2>&1
+		exitcode=$?
+		[[ $VERBOSE == 1 && $exitcode -ne 0 ]] && echo2 "ping $nslookuphost failed"
+		[[ $exitcode == 0 ]] && ping_ok=1
+		# returns "Network unreachable" and does not wait
+		[[ $exitcode -ne 0 ]] && sleep 1 && return 1
+	fi
 
 	#ICMP can be blocked in datacenters so we need to use something else
 
+	ns_ok=0
 	timeout 5 nslookup $nslookuphost > /dev/null 2>&1
 	exitcode=$?
-	[[ $exitcode -ne 0 ]] && echo "nslookup $nslookuphost failed"
-	return $exitcode
+	[[ $VERBOSE == 1 && $exitcode -ne 0 ]] && echo2 "nslookup $nslookuphost failed"
+	[[ $exitcode == 0 ]] && ns_ok=1
+
+	#Ales gut
+	[[ $ping_ok == 1 && $ns_ok == 1 ]] && return 0
+
+	return 1
 }
 
 # Do you want a timeout ?
-for i in {1..6}; do
+for ((i = 1; i <= $COUNT; i++ )) do
 	check_online &&
 		echo2 "${GREEN}Network is online${NOCOLOR}" &&
 		exit 0

@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+
+MINER_NAME="custom"
+[ -t 1 ] && . colors
+
+export LD_LIBRARY_PATH=/hive/lib
+
+#Ubuntu 18.04 compat
+[[ -e /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3.0.0 ]] && export LD_PRELOAD=libcurl-compat.so.3.0.0
+
+
+[[ ! -e $RIG_CONF ]] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && exit 1
+[[ ! -e $WALLET_CONF ]] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && exit 1
+
+. $RIG_CONF
+. $WALLET_CONF
+
+
+if [[ ! -z $CUSTOM_INSTALL_URL ]]; then
+	custom-get "$CUSTOM_INSTALL_URL"
+	[[ $? -ne 0 ]] &&
+		message error "Unable to install miner from $CUSTOM_INSTALL_URL" &&
+		exit 1
+fi
+
+
+[[ -z $CUSTOM_MINER ]] && echo -e "${RED}\$CUSTOM_MINER is not defined${NOCOLOR}" && exit 1
+if [[ ! -z $CUSTOM_INSTALL_URL ]]; then
+	#Get the name of miner directory. Same as with the installation. To prevent errors similar to "file not found"
+	basename=`basename -s .tar.gz "$CUSTOM_INSTALL_URL"`
+	version=`echo "$basename" | awk -F '-' '{ print $NF }'`
+	DETECTED_CUSTOM_MINER=`echo "$basename" | sed 's/'-$version'$//'`
+	[[ $CUSTOM_MINER != $DETECTED_CUSTOM_MINER ]] &&
+		echo -e "${RED}Custom miner name should be \"$DETECTED_CUSTOM_MINER\"${NOCOLOR}" &&
+		message error "Custom miner name should be \"$DETECTED_CUSTOM_MINER\", \"$CUSTOM_MINER\" is wrong" &&
+		exit 1
+fi
+
+
+[[ ! -e /hive/custom/$CUSTOM_MINER/h-manifest.conf ]] && echo -e "${RED}No $CUSTOM_MINER/h-manifest.conf${NOCOLOR}" && exit 1
+. /hive/custom/$CUSTOM_MINER/h-manifest.conf
+
+
+[[ `ps aux | grep "/hive/$MINER_NAME/$CUSTOM_MINER/h-run.sh" | grep -v grep | wc -l` != 0 ]] &&
+	echo -e "${RED}$MINER_NAME $CUSTOM_MINER miner is already running${NOCOLOR}" &&
+	exit 1
+
+
+
+function config_gen() {
+	# Call custom config
+	[ ! -e /hive/custom/$CUSTOM_MINER/h-config.sh ] && echo -e "${RED}No custom config generator${NOCOLOR}" && return 1
+	. /hive/custom/$CUSTOM_MINER/h-config.sh
+}
+
+
+config_gen
+
+
+cd /hive/$MINER_NAME/$CUSTOM_MINER
+while true; do
+	[[ ! -e /hive/$MINER_NAME/$CUSTOM_MINER/h-run.sh ]] &&
+		echo -e "${RED}/hive/$MINER_NAME/$CUSTOM_MINER/h-run.sh is not implemented${NOCOLOR}" &&
+		sleep 3 &&
+		continue
+
+	miner logrotate $MINER_NAME
+	/hive/$MINER_NAME/$CUSTOM_MINER/h-run.sh
+	echo ""
+	echo -e "${YELLOW}$MINER_NAME $CUSTOM_MINER exited, waiting to cooldown a bit${NOCOLOR}"
+	echo ""
+	sleep 3
+done

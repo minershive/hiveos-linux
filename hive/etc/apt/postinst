@@ -11,7 +11,7 @@ chown -R root:root /hive/etc/logrotate.d/* #or the rules will not work
 mkdir -p /var/log/journal
 
 
-miner logdirscreate
+#miner logdirscreate
 
 #can be fat partition, no more messages
 #chown -R user:user /hive-config > /dev/null
@@ -137,12 +137,14 @@ cp -r --no-clobber /hive/etc/hive-config.stub/* /hive-config/
 
 
 # Teleconsole env check ------------------------------------------------------------------------
-cat /root/.bashrc | grep -qE '^# Teleconsole required start' ||
-(echo "Adding environment to /root/.bashrc for Teleconsole";
-echo -e "\n\n# Teleconsole required start
-source /etc/environment
-export PATH
-export CUDA_DEVICE_ORDER
+cat /root/.bashrc | grep -qE '^# Teleconsole required start v2$' ||
+(echo "Updating environment in /root/.bashrc for Teleconsole";
+sed -i '/^# Teleconsole required start/,/^# Teleconsole required end/d' /root/.bashrc #removing old version
+echo -e "# Teleconsole required start v2
+if [[ ! -z \$TELEPORT_SESSION ]]; then
+	source /etc/environment
+	export \$(cat /etc/environment | grep -vE \"^$|^#\" | cut -d= -f1)
+fi
 # Teleconsole required end" >> /root/.bashrc)
 
 
@@ -150,6 +152,20 @@ export CUDA_DEVICE_ORDER
 # Add chinadogs --------------------------------------------------------------------------------
 [[ ! -e /etc/udev/rules.d/99-chinadogs.rules ]] &&
 	ln -s /hive/etc/udev/rules.d/99-chinadogs.rules /etc/udev/rules.d/99-chinadogs.rules
+
+
+
+# Ubuntu 18 fixes --------------------------------------------------------------------------------
+# fixing incorrect libcurl3 naming in 18.04.
+# can be removed after few updates after 0.5-74
+[[ -e /usr/lib/x86_64-linux-gnu/libcurl3.so.4.5.0 ]] && mv /usr/lib/x86_64-linux-gnu/libcurl3.so.4.5.0 /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3.0.0
+[[ -L /usr/lib/x86_64-linux-gnu/libcurl3.so ]] && rm /usr/lib/x86_64-linux-gnu/libcurl3.so && ln -s /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3.0.0 /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3
+
+
+
+# Remove old 0.5 files to same space ---------------------------------------------------------------------------
+rm -rf /hive/bminer* /hive/claymore* /hive/ccminer* /hive/cpuminer* /hive/custom* /hive/dstm* \
+/hive/ethminer* /hive/ewbf* /hive/lolminer* /hive/sgminer* /hive/xmr*
 
 
 

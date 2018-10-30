@@ -1,0 +1,8 @@
+Package: hive-miners-ewbf
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-ewbf-legacy-0.3.4b, hive-miners-ewbf-zhash-0.6
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+
+case $1 in
+	on)
+		echo  "Switching ON support for Arduino Nano Watchdog. Reboot now."
+		echo "If this file exists then Arduino Nano Watchdog support in ON" > /hive-config/watchdog/wd-nano.on
+	;;
+	off)
+		echo  "Switching OFF support for Arduino Nano Watchdog. Reboot now."
+		[[ -e /hive-config/wd-nano.on ]] &&
+			rm -f /hive-config/watchdog/wd-nano.on
+	;;
+	*)
+		echo  "Usage: \"`basename $0` on\" or \"`basename $0` off\" Arduino Nano Watchdog support"
+	;;
+esac

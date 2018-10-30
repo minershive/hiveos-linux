@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #This is run every time X is starting
 #Can be symlinked to users .xinitrc
 #Exec bit is important to run script in bash, not sh
@@ -15,12 +15,12 @@ fi
 
 
 #Startx VNC server
-if [[ -e /hive-config/vnc-password.txt ]]; then
-	cp /hive-config/vnc-password.txt /tmp/vnc-password.txt
+if [[ -e $VNC_PASSWD ]]; then
+	cp $VNC_PASSWD /tmp/vnc-password.txt
 	dos2unix-safe /tmp/vnc-password.txt
-	x11vnc -display :0 -forever -shared -passwdfile /tmp/vnc-password.txt &
+	x11vnc -display :0 -rfbport 5900 -no6 -forever -shared -passwdfile /tmp/vnc-password.txt &
 else
-	echo "No /hive-config/vnc-password.txt then no VNC"
+	echo "No $VNC_PASSWD then no VNC"
 fi
 #-nopw
 #> /var/log/x11vnc.log 2>&1 &
@@ -59,7 +59,6 @@ termcmd+="amd-oc-safe;"
 
 #NVIDIA OC is there are GPUs
 GPU_COUNT_NVIDIA=`gpu-detect NVIDIA`
-NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
 [[ $GPU_COUNT_NVIDIA > 0 && -e $NVIDIA_OC_CONF ]] &&
 	echo "> Nvidia OC" &&
 #    nvidia-oc > /var/log/nvidia-oc.log 2>&1 &&
@@ -67,7 +66,9 @@ NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
     termcmd+="nvidia-oc-log;"
 
 
-roxterm --replace --maximise --disable-sm -e bash -c "$termcmd motd; firstrun; ([ -e /home/user/xinit.user.sh ] && bash /home/user/xinit.user.sh); bash" &
+roxargs="--replace --maximise"
+(lsb_release -a 2>&1 | grep -q '16\.04') && roxargs+=' --disable-sm'
+roxterm $roxargs -e bash -c "$termcmd motd; firstrun; ([ -e /home/user/xinit.user.sh ] && bash /home/user/xinit.user.sh); bash" &
 
 
 

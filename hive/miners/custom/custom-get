@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+MINER_DIR="/hive/miners/custom"
+cd $MINER_DIR
+
+. colors
+
+if [[ $# -le 0 ]]; then
+	echo "Downloads and installs custom miner from a given URL"
+	echo -e "Usage:  ${YELLOW}custom-get URL [-f]${NOCOLOR}"
+	echo -e "URL http or https URL of tar.gz archive with custom miner"
+	echo -e "-f  optional argument to force reinstall"
+	exit 1
+fi
+
+
+url=$1
+force=
+[[ $2 == "-f" ]] && force=1
+
+
+basename=`basename -s .tar.gz "$url"`
+archname=`basename "$url"`
+archive="$MINER_DIR/downloads/$archname"
+
+version=`echo "$basename" | awk -F '-' '{ print $NF }'`
+miner=`echo "$basename" | sed 's/'-$version'$//'`
+
+[[ -z $miner ]] &&
+	echo -e "${RED}Unable to detect miner name from given URL${NOCOLOR}" &&
+	exit 1
+
+
+echo -e "${GREEN}$miner${NOCOLOR}"
+echo -e "$url"
+
+
+if [[ -e $archive ]]; then
+	if [[ $force == 1 ]]; then
+		rm $archive
+		rm -rf $MINER_DIR/$miner
+	else
+		[[ -d $MINER_DIR/$miner ]] &&
+			echo -e "${YELLOW}Already installed${NOCOLOR}" &&
+			exit 0
+	fi
+else #no archive but directory exists
+	[[ -d $MINER_DIR/$miner ]] &&
+		echo -e "${YELLOW}> Removing previous installation${NOCOLOR}" &&
+		rm -rf $MINER_DIR/$miner
+fi
+
+
+#if [[ -d /hive/custom/$miner ]]; then
+#	[[ -z $force ]] &&
+#		echo -e "${YELLOW}Already installed${NOCOLOR}" &&
+#		exit 0
+#
+#	echo -e "${YELLOW}> Removing previous installation${NOCOLOR}" &&
+#	rm -rf /hive/custom/$miner
+#fi
+
+
+## Downloading
+cd $MINER_DIR/downloads
+echo -e "${YELLOW}> Downloading $url${NOCOLOR}"
+[[ -f $archive ]] && echo "> $archive found locally, maybe incomplete, trying to recover"
+wget -c "$url"
+[[ $? -ne 0 ]] && echo -e "${RED}Error downloading $url${NOCOLOR}" && exit 1
+
+
+cd $MINER_DIR
+echo -e "${YELLOW}> Unpacking $archive${NOCOLOR}"
+tar -xzv -f $archive
+[ $? -ne 0 ] && echo -e "${RED}Error extracting $archive${NOCOLOR}" && exit 1
+
+chown -R user $MINER_DIR/$miner
+
+
+
+# Fix old paths. Try to do this automatically
+#CUSTOM_CONFIG_FILENAME=${CUSTOM_CONFIG_FILENAME/\/hive\/custom/\/hive\/miners\/custom}
+#CUSTOM_LOG_BASENAME=${CUSTOM_LOG_BASENAME/\/hive\/custom/\/hive\/miners\/custom}
+sed -i 's/\/hive\/custom/\/hive\/miners\/custom/g' $MINER_DIR/$miner/h-manifest.conf
+sed -i 's/\/hive\/custom/\/hive\/miners\/custom/g' $MINER_DIR/$miner/h-config.sh
+sed -i 's/\/hive\/custom/\/hive\/miners\/custom/g' $MINER_DIR/$miner/h-run.sh
+sed -i 's/\/hive\/custom/\/hive\/miners\/custom/g' $MINER_DIR/$miner/h-stats.sh
+
+
+#echo "> Removing downloaded $archive"
+#rm -f $archive

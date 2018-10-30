@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 #Send stats, receives commands
 
+
 INTERVAL=10
-RIG_CONF="/hive-config/rig.conf"
-NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
-AMD_OC_CONF="/hive-config/amd-oc.conf"
-WALLET_CONF="/hive-config/wallet.conf"
-AUTOFAN_CONF="/hive-config/autofan.conf"
 LOG="/var/log/hive-agent.log"
 
 API_TIMEOUT=15 #timeout to wait for miner API response, can take very long time on 13+ gpus
@@ -32,10 +28,10 @@ function process_gpu_detect_json() {
 	#gpu_detect_json=`gpu-detect listjson`
 
 
-	if [[ $1 == "redetect" || ! -e /run/hive/gpu-detect.json ]]; then #this is needed only when upgrading version. later we can remove this
-		gpu-detect listjson > /run/hive/gpu-detect.json
+	if [[ $1 == "redetect" || ! -e $GPU_DETECT_JSON ]]; then #this is needed only when upgrading version. later we can remove this
+		gpu-detect listjson > $GPU_DETECT_JSON
 	fi
-	gpu_detect_json=`cat /run/hive/gpu-detect.json`
+	gpu_detect_json=`cat $GPU_DETECT_JSON`
 	[[ -z $gpu_detect_json ]] &&
 		echo "gpu_detect_json was empty after reading" > /run/hive/agent-no-gpu-detect
 	amd_indexes_array=$(jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]' <<< "$gpu_detect_json")
@@ -51,7 +47,33 @@ process_gpu_detect_json
 
 ########################################################################################################################
 
-. agent.miner_stats.sh
+function miner_stats {
+	local miner=$1
+	local mindex=$2 #empty or 2, 3, 4, ...
+
+	khs=0
+	stats=
+
+	local MINER_DIR=/hive/miners/$miner
+	if [[ -e $MINER_DIR/h-stats.sh ]]; then
+		source $MINER_DIR/h-manifest.conf
+		source $MINER_DIR/h-config.sh
+		source $MINER_DIR/h-stats.sh
+	else
+		echo -e "${YELLOW}$MINER_DIR/h-stats.sh does not exist${NOCOLOR}"
+		miner="unknown"
+		eval "MINER${mindex}=unknown"
+	fi
+
+
+	[[ -z $khs ]] && khs=0
+	[[ -z $stats ]] && stats="null"
+
+#	[[ ! -z $mindex ]] &&
+#		eval "khs${mindex}"
+}
+
+########################################################################################################################
 
 . agent.do_command.sh
 
@@ -66,11 +88,43 @@ function reset_miner_vars() {
 }
 
 
+
+# Waits for new stats to appear in file
+function wait-for-gpu-stats() {
+	local i=
+	local max_tries=$(($INTERVAL*2*2))
+	for (( i=1; i<=$max_tries; i++)); do
+		local mtime=`stat -c %Y /run/hive/gpu-stats.json`
+		[[ -z $mtime ]] && mtime=0
+
+		local now=`date +%s`
+		local stats_age=$(( $now - $mtime ))
+
+		#echo "stats_age=$stats_age"
+		echo -n '.'
+		if [[ $stats_age -le 1 ]]; then #gotcha!
+			gpu_stats=`cat /run/hive/gpu-stats.json`
+			echo -en " ${GREEN}+"
+			return
+		elif [[ $i == $max_tries && $stats_age -ge 70 ]]; then #it seems gpu-stats hanged for more than 1.5 minutes
+		 	gpu_stats='{}'
+			echo -en " ${RED}hanged gpu-stats?"
+		 	return
+		elif [[ $i == $max_tries ]]; then #&& $stats_age -ge $(($INTERVAL*2))  #too long to wait for it, giving up. taking old value
+			gpu_stats=`cat /run/hive/gpu-stats.json`
+			echo -en " ${YELLOW}gave up waiting"
+			return
+		fi
+
+		sleep 0.5
+	done
+}
+
+
+# Main loop cycle
 function loop {
 	#In some rare cases he have empty stats array
 	[[ -z $gpu_detect_json ]] && process_gpu_detect_json redetect
-
-	date
 
 	[ ! -f $RIG_CONF ] && echo -e "No config $RIG_CONF" && return
 
@@ -84,8 +138,13 @@ function loop {
 	[[ -z $MINER ]] && MINER="claymore"
 	HIVE_URL="$HIVE_HOST_URL/worker/api"
 
-	gpu_stats=`gpu-stats`
-	echo "$gpu_stats" > /run/hive/gpu-stats.json
+	echo -en "${YELLOW}"
+	wait-for-gpu-stats
+	echo -en "\n"
+	echo -en "${NOCOLOR}"
+	date
+
+	[[ -z $gpu_stats ]] && gpu_stats='{}'
 	local temp=$(jq '.temp' <<< $gpu_stats)
 	local fan=$(jq '.fan' <<< $gpu_stats)
 	local power=$(jq '.power' <<< $gpu_stats)
@@ -131,7 +190,7 @@ function loop {
 	done
 
 	echo -en "\n"
-	echo $khs > /run/hive/khs
+	echo $khs > $HASHRATE_KHS
 
 
 
@@ -227,22 +286,28 @@ function loop {
 
 echo -e "\n\n[`date`] Started" >> $LOG
 
-while true
-do
+while true; do
 	time_start=`date +%s`
 	loop
-	time_finish=`date +%s`
+	sleep 2 #to make sure we will not grab the same gpu-stats file
+	continue
 
-	wasted=$(( $time_finish - $time_start ))
+	#sleeping is controlled also by agent.gpu-stats now
 
-	tosleep=$(( $INTERVAL - $wasted ))
 
-	#echo "Sleeping $tosleep"
-	echo ""
-
-	if [[ $tosleep > 0 ]]; then
-		sleep $INTERVAL
-	else
-		echo -e "${YELLOW}WARNING: Stats sending interval > $INTERVAL seconds, hanging driver?${NOCOLOR}"
-	fi
+#	time_finish=`date +%s`
+#
+#
+#	wasted=$(( $time_finish - $time_start ))
+#	tosleep=$(( $INTERVAL - $wasted )) #let's wake 2 seconds before the next potential
+#
+#	#echo ""
+#
+#	if [[ $tosleep -ge 0 ]]; then
+#		echo "Sleeping $tosleep"
+#		#sleep $INTERVAL
+#		read -t $tosleep
+#	else
+#		echo -e "${YELLOW}WARNING: Stats collecting time > $INTERVAL seconds, hanging driver?${NOCOLOR}"
+#	fi
 done

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+#[ -t 1 ] &&
+. colors
+
+MAX_WAIT=$1
+[[ -z $MAX_WAIT ]] && MAX_WAIT=300
+
+
+free=0
+for ((i=0; i<$MAX_WAIT; i++)); do
+	if fuser /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock > /dev/null 2>&1; then
+		[[ $i == 0 ]] && echo -en "Waiting for dpkg lock to be released "
+
+		echo -en "${YELLOW}.${NOCOLOR}"
+		sleep 1
+	else
+		[[ $i -ne 0 ]] && echo -en "\n"
+		exit 0
+	fi
+done
+
+
+echo -en "\n"
+echo -e "${RED}Gave up waiting for dpkg lock release${NOCOLOR}"
+
+
+exit 1

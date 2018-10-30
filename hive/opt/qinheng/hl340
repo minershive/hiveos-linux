@@ -1,28 +1,36 @@
 #!/usr/bin/env bash
 
 [[ -z $1 ]] &&
-        echo "Usage: `basename $0` ping|reset[port]" &&
-        exit 1
+	echo "Usage: `basename $0` ping|reset [port]" &&
+	exit 1
 
 PORT=/dev/china_dog0
 
 [[ ! -z $2 ]] &&
-        PORT=$2 ||
-        echo "No port given, using default"
+	PORT=$2 ||
+	echo "No port given, using default"
 
 echo "Using $PORT"
 
 
 
 [[ ! -c $PORT ]] &&
-        echo "$PORT is not a character device" &&
-        exit 1
+	echo "$PORT is not a character device" &&
+	exit 1
+
+ping="echo -ne "r90p90""
+reset="echo -ne "r2p90""
+
+if [[ ! -e /hive-config/watchdog/wd-nano.on ]]; then
+	ping="echo -ne "\x1E\x00""
+	reset="echo -ne "\xFF\x55""
+fi
 
 
 if [[ $1 == "reset" ]]; then
-        echo "Pushing Reset"
-        echo -ne "\xFF\x55" > $PORT
-        exit 0
+	echo "Pushing Reset"
+	$reset > $PORT
+	exit 0
 fi
 
 
@@ -36,9 +44,8 @@ fi
 #should be ping here, but will work with any
 #Send 60 second timeout to WD in HEX , if WD dont  received 2*timeout, then WD RESET the MB.
 
-while true
-do
-        echo "Pinging watchdog"
-        echo -ne "\x1E\x00" > $PORT
-        sleep 5
+while true; do
+	echo "Pinging watchdog"
+	$ping > $PORT
+	sleep 5
 done

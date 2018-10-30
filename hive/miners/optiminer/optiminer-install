@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+echo "Deprecated"
+exit 0
+
+
+version=2.1.2
+archname="optiminer-equihash-$version.tar.gz"
+url=http://download.optiminer.pl/$archname
+
+tmpdir="/hive/tmp"
+archpath="$tmpdir/$archname"
+mkdir -p $tmpdir
+cd $tmpdir
+## Pre-cleaning
+#[ -e $archpath ] && rm $archpath
+
+## Downloading
+echo "> Downloading $url"
+[[ -f $archpath ]] && echo "> $archpath found locally, maybe incomplete, trying to recover"
+wget -c $url
+[ $? -ne 0 ] && echo "Error downloading $url" && exit 1
+
+
+sleep 2
+
+## Extraction
+echo ""
+echo "> Extracting $archname"
+unpackdir="$tmpdir/optiminer-$version"
+installdir="/hive/optiminer-$version"
+maindir="/hive/optiminer"
+mkdir -p $unpackdir
+tar -C $unpackdir -xvz -f $archpath optiminer-equihash --strip-components=1
+[ $? -ne 0 ] && echo "Error extracting $archpath" && exit 1
+
+## Installation
+[[ -e $maindir ]] && rm -rf $maindir
+mv $unpackdir $installdir
+ln -s $installdir $maindir
+
+echo "> Removing downloaded $archpath"
+rm -f $archpath
+
+## Post-installation
+chmod +x $maindir/*.sh
+#/hive/bin/miner logdirscreate
+chown -R user $maindir*
+
+echo "> Optiminer installed"

@@ -5,10 +5,10 @@
 # \  /\  /  __/ / _  \  __/ (_| | |_| | | | |  __/  / /\/\ \ (_) | | |  __/ / /\/\ \ | | | |  __/ | | (_| | \__ \
 #  \/  \/ \___| \/ \_/\___|\__, |\__,_|_|_|  \___|  \/    \/\___/|_|  \___| \/    \/_|_| |_|\___|_|  \__,_|_|___/
 #                             |_|
-#export PATH="./:/hive/bin:/hive/sbin:$PATH"
 source /etc/environment
-export PATH
-export CUDA_DEVICE_ORDER
+export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+#export PATH
+#export CUDA_DEVICE_ORDER
 export HOME=/home/user #required by ccminer
 
 #[ -t 1 ] &&
@@ -62,7 +62,7 @@ BRANDING_LOGO="${BYELLOW}${BRANDING_LOGO}${NOCOLOR}"
 mkdir -p /run/hive
 
 #Make directory for miners logs in /var/log/miner
-miner logdirscreate
+#miner logdirscreate
 
 #ensure we have unix config
 dos2unix-safe /hive-config/rig.conf
@@ -73,20 +73,9 @@ export GPU_COUNT_NVIDIA=`gpu-detect NVIDIA`
 export GPU_FIRST_AMD=`gpu-detect AMD_FIRST`
 export GPU_FIRST_NVIDIA=`gpu-detect NVIDIA_FIRST`
 
-RIG_CONF="/hive-config/rig.conf"
-AMD_OC_CONF="/hive-config/amd-oc.conf"
-NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
-
-
 #cd $(dirname $(realpath $0))
 
-#let some other services to finish
-#sleep 2
-
-#Log to file, bad idea as there is no log rotate
-#journalctl -u hive --no-pager -x -a -f > /tmp/hive-startup.log &
-
-uname=`uname -a`
+uname="`uname -sr`   ${YELLOW}H `dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`${NOCOLOR}"
 
 msg=$(cat <<EOF
 $uname
@@ -172,11 +161,20 @@ if [ $GPU_COUNT_AMD -gt 0 ]; then
     fi
 
     echo2 "`amd-save-pp_tables`"
+
+	#Moved here from gpu-detect
+	amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
+	[[ -f $AMDMEMINFO_FILE ]] && amdmeminfo=`cat $AMDMEMINFO_FILE`
+	#amdmeminfo can fail from the first time and skip some cards, let's rerun it
+	if [[ `echo "$amdmeminfo" | wc -l` != $GPU_COUNT_AMD ]]; then
+		sleep 0.1
+		amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
+	fi
 fi
 #sleep 1
 
 
-gpu-detect listjson > /run/hive/gpu-detect.json
+gpu-detect listjson > $GPU_DETECT_JSON
 
 
 ### Loading continues ##################################################################
@@ -238,7 +236,9 @@ if [[ $X_DISABLED != 1 ]]; then
 	sleep 7
 
 	#Apply Nvidia OC before miner or it can hang on 13+ GPUs
-	if [[ $GPU_COUNT_NVIDIA > 0 && -e $NVIDIA_OC_CONF ]]; then
+	eval `cat $NVIDIA_OC_CONF | grep '^RUNNING_DELAY'` #import only 1 variable
+	if [[ $GPU_COUNT_NVIDIA > 0 && -e $NVIDIA_OC_CONF && -z $RUNNING_DELAY ]]; then
+		#wait for oc only if RUNNING_DELAY is empty, otherwise we count on manual waiting delay
 		if [[ -z `pidof xinit` ]]; then
 			echo2 "xinit process not found, will not wait for Nvidia OC"
 			break

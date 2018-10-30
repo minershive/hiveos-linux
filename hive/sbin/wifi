@@ -16,13 +16,13 @@ WIFI_PASSWORD=$2
 
 #Check packages
 
-installed=`dpkg -s wireless-tools | grep 'Status: install ok installed' | wc -l`
+installed=`dpkg -s wireless-tools | grep 'Status: .* ok installed' | wc -l`
 if [[ $installed == 0 ]]; then
 	apt-get install -y wireless-tools wpasupplicant
 	[[ $? > 0 ]] && echo "Error installing wireless-tools package" && exit 1
 fi
 
-installed=`dpkg -s wpasupplicant | grep 'Status: install ok installed' | wc -l`
+installed=`dpkg -s wpasupplicant | grep 'Status: .* ok installed' | wc -l`
 if [[ $installed == 0 ]]; then
 	apt-get install -y wireless-tools wpasupplicant
 	[[ $? > 0 ]] && echo "Error installing wpasupplicant package" && exit 1
@@ -132,7 +132,8 @@ if [[ $interactive == 1 ]]; then
 
 
 	sleep 4 #to wait for dhcp
-		ifconfig | grep -m1 -A1 $wlandev
+	#ifconfig | grep -m1 -A1 $wlandev
+	ip addr show $wlandev
 
 	echo ""
 	echo -e "${GREEN}WiFi setup done${NOCOLOR}"

@@ -1,0 +1,8 @@
+Package: hive-miners-dstm
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-dstm-0.6.2
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner
