@@ -257,7 +257,7 @@ check_overheat() {
 		local t
 		local allisok=1
 		for t in ${temperatures_array[@]}; do
-			if [[ $t -ge $TARGET_TEMP ]]; then #cold enough to start miner again
+			if [[ $t -ge $(( $CRITICAL_TEMP-20 )) ]]; then #cold enough to start miner again
 				allisok=0
 				break
 			fi
