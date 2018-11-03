@@ -150,13 +150,13 @@ get_fan_speed () {
 				error_in_temp_readings=1
 			fi
 		fi
-		break
+		#break ??? not working in function
 	fi
-	#
+
 
 	target_fan_speed=
 	#check current temp and set fan speed
-	if [[ $prev_temp -ne 0 && $cur_temp -gt $TARGET_TEMP ]]; then #current temp 
+	if [[ $prev_temp -ne 0 && $cur_temp -gt $TARGET_TEMP ]]; then #current temp
 		if [[ $cur_temp -lt $prev_temp ]]; then #adjustment from 2 degrees 
 			target_fan_speed=$(( $cur_fan_speed-1 ))
 		elif [[ $cur_temp -ge $prev_temp ]]; then
@@ -360,7 +360,8 @@ nvidia_auto_fan_control () {
 		local card_bus_id=${card_bus_ids_array[index]}
 		local brand="Nvidia"
 		#event_by_temperature $gpu_temperature
-		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $i $brand
+		#echo "get_fan_speed \"$gpu_temperature\" \"$gpu_temperature_previous\" \"$gpu_fan_speed\" \"$card_bus_id\" $i $brand"
+		get_fan_speed "$gpu_temperature" "$gpu_temperature_previous" "$gpu_fan_speed" "$card_bus_id" $i $brand
 		#not set fan_speed if not changed
 		[[ -n $target_fan_speed && $target_fan_speed -ne $gpu_fan_speed ]] && 
 			args+=" -a [gpu:$i]/GPUFanControlState=1 -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
@@ -398,7 +399,8 @@ amd_auto_fan_control () {
 		local card_bus_id=${card_bus_ids_array[index]}
 		local brand="AMD   "
 		#event_by_temperature $gpu_temperature
-		get_fan_speed $gpu_temperature $gpu_temperature_previous $gpu_fan_speed $card_bus_id $index $brand
+		#echo "get_fan_speed \"$gpu_temperature\" \"$gpu_temperature_previous\" \"$gpu_fan_speed\" \"$card_bus_id\" $index $brand"
+		get_fan_speed "$gpu_temperature" "$gpu_temperature_previous" "$gpu_fan_speed" "$card_bus_id" $index $brand
 		#not set fan_speed if not changed
 		[[ $target_fan_speed -ne $gpu_fan_speed ]] &&
 			[[ $DEBUG_COMMANDS == 1 ]] && echo "wolfamdctrl -i ${cardnum[index]} --set-fanspeed $target_fan_speed"
