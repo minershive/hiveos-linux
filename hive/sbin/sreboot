@@ -20,15 +20,8 @@ if [[ $1 == "wakealarm" && ! -e /sys/class/rtc/rtc0/wakealarm ]]; then
 fi
 
 
-#Why should I do this at all????
 #screen -S agent -X quit
-#miner stop
-
-sync
-
-#mount -o remount,ro /hive-config
-umount /hive-config
-
+miner stop
 
 #unRaw      (take control of keyboard back from X),
 # tErminate (send SIGTERM to all processes),
@@ -39,8 +32,13 @@ umount /hive-config
 #‘o’ – Shutdown the system immediately.
 #‘t’ – Output a list of current tasks and their information to the console.
 
+#Enables sysrq
 echo 1 > /proc/sys/kernel/sysrq
+#sync
 echo s > /proc/sysrq-trigger
+
+#mount -o remount,ro /hive-config
+#umount /hive-config
 echo u > /proc/sysrq-trigger
 
 if [[ $1 == "shutdown" ]]; then
