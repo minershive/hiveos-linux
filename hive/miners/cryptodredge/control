@@ -3,6 +3,6 @@ Version: 0.6-01
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-cryptodredge-0.9.4-cuda100
+Depends: hive-miners-cryptodredge-0.9.5-cuda100
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
