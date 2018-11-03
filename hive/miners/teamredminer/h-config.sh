@@ -17,6 +17,9 @@ function miner_config_gen() {
 
   [[ -z $TEAMREDMINER_ALGO ]] && TEAMREDMINER_ALGO=lyra2z
   local pool=`head -n 1 <<< "$TEAMREDMINER_URL"`
+	grep -q "://" <<< $pool
+	[[ $? -ne 0 ]] && pool="stratum+tcp://${pool}"   
+
   conf="-a ${TEAMREDMINER_ALGO} -o $pool -u ${TEAMREDMINER_TEMPLATE} -p ${TEAMREDMINER_PASS} ${TEAMREDMINER_USER_CONFIG}"
 
   #replace tpl values in whole file
