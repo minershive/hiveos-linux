@@ -55,6 +55,12 @@ ips=`hostname -I | sed 's/ /\n/g'`
 ips_json=`echo "${ips[@]}" | jq -R . | jq -s -c .`
 net_interfaces=`ip -o link | grep -vE 'LOOPBACK|POINTOPOINT' | awk '{  printf "{\"iface\": \"%s\", \"mac\": \"%s\"}\n", substr($2, 1, length($2)-1), $(NF-2)  }' | jq -sc .`
 [ -f $VPN_INSTALLED ] && openvpn=1 || openvpn=0
+#taken from netconf
+lan_address=`ip -o -f inet addr show | grep eth0 | awk '/scope global/ {print $4}'`
+lan_gateway=`ip route | awk '/default/ { print $3 }'`
+lan_dns=`cat /run/systemd/resolve/resolv.conf | grep -m1 ^nameserver | awk '{print $2}'`
+cat /etc/systemd/network/20-ethernet.network | grep -q '^DHCP=yes' && lan_dhcp=1 || lan_dhcp=0
+lan_config="{\"dhcp\": $lan_dhcp, \"address\": \"$lan_address\", \"gateway\": \"$lan_gateway\", \"dns\": \"$lan_dns\"}"
 
 mb_manufacturer=`dmidecode | grep -A4 '^Base Board Information' | grep "Manufacturer:" | sed -E 's/\sManufacturer:\s+(.*)/\1/'`
 mb_product=`dmidecode | grep -A4 '^Base Board Information' | grep "Product Name:" | sed -E 's/\sProduct Name:\s+(.*)/\1/'`
@@ -69,13 +75,21 @@ bootdisk=${bootpart::-1} #cutoff partnumber
 disk_model=`parted -ml | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
 
 kernel=`uname --kernel-release`
-version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 amd_version=`dpkg -s amdgpu-pro 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`
 #if there is no driver but only OpenCL
 [[ -z $amd_version ]] && amd_version="OpenCL `dpkg -s opencl-amdgpu-pro-icd 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`"
 
 #System pseudo unique number
 uid=$(echo ${cpu_id}-$(cat /sys/class/net/eth0/address | sed 's/://g') | tr '[:upper:]' '[:lower:]' | sha1sum | awk '{print $1}')
+
+
+version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
+inrelease_filename=/var/lib/apt/lists/`cat /etc/apt/sources.list.d/hiverepo.list | grep -m1 '^deb http' | awk '{print $2}' | sed 's/http:\/\///g' | sed 's/\//_/g'`InRelease
+inrelease_hash=
+[[ -e $inrelease_filename ]] &&
+	inrelease_hash=$(cat $inrelease_filename | grep -m1 -A3 '^SHA1:' | grep 'Packages$' | awk '{print $1}')
+
+
 
 
 request=$(
@@ -87,11 +101,11 @@ jq -n \
 --arg boot_event "$arg_boot" \
 --argjson ip "$ips_json" \
 --argjson net_interfaces "$net_interfaces" \
+--argjson lan_config "$lan_config" \
 --arg openvpn "$openvpn" \
 --argjson gpu "$gpus_json" \
 --arg gpu_count_amd "$gpu_count_amd" \
 --arg gpu_count_nvidia "$gpu_count_nvidia" \
---arg version "$version" \
 --arg nvidia_version "`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//'`" \
 --arg amd_version "$amd_version" \
 --arg manufacturer "$mb_manufacturer" --arg product "$mb_product" \
@@ -99,14 +113,17 @@ jq -n \
 --arg disk_model "$disk_model" \
 --arg kernel "$kernel" \
 --arg server_url "$HIVE_HOST_URL" \
+--arg version "$version" \
+--arg inrelease_hash "$inrelease_hash" \
 '{
 	"method": "hello", "jsonrpc": "2.0", "id": 0,
 	"params": {
 		$rig_id, $passwd, $server_url, $uid,
-		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn,
+		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn, $lan_config,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
 		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes, $cpu_id}, $disk_model,
-		$kernel, $version, $amd_version, $nvidia_version
+		$kernel, $amd_version, $nvidia_version,
+		$version, $inrelease_hash
 	}
 }'
 )
