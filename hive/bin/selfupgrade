@@ -29,15 +29,11 @@ fi
 dpkg --configure -a
 
 
-#apt-get update -o Dir::Etc::sourcelist=hiverepo.list
-#apt-get update
-apt-get update -o Dir::Etc::sourcelist="sources.list.d/hiverepo.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
-exitcode=$?
-[[ $exitcode -ne 0 ]] && echo -e "${RED}Repository update failed${NOCOLOR}" && exit $exitcode ##don't exit as some mirrors can fail
+hpkg update || exit $?
 
 
 if [[ -z $VERSION ]]; then #no target version
-	updateavail=`apt list --upgradable | grep '^hive' | wc -l`
+	updateavail=`apt list --upgradable 2>&1 | grep '^hive' | wc -l`
 	if [[ $updateavail == 0 ]]; then
 		echo -e "${GREEN}Hive is up to date already${NOCOLOR}"
 		exit 0
@@ -48,12 +44,26 @@ echo ------------------------------------------------------
 
 if [[ -z $VERSION ]]; then #normal upgrade to the latest available
 	#apt-get upgrade -y hive
-	apt-get install --only-upgrade -y hive
+
+	apt-get install -y --only-upgrade hive
+	exitcode=$?
+
+	#Update root miners packages, maybe some versions will be uninstalled
+	packages=$(hpkg getlist miners | grep -v '[0-9]')
+	if [[ ! -z $packages ]]; then
+		apt-get install -y --only-upgrade $packages
+	fi
+
+	#Update version miners packages
+	packages=$(hpkg getlist miners | grep '[0-9]')
+	if [[ ! -z $packages ]]; then
+		apt-get install -y --only-upgrade $packages
+	fi
 else
 	apt-get install -y --only-upgrade --allow-downgrades --reinstall hive=$VERSION
+	exitcode=$?
 fi
 
-exitcode=$?
 [[ $exitcode -ne 0 ]] && echo -e "${RED}Upgrade failed${NOCOLOR}" && exit $exitcode
 
 echo ------------------------------------------------------

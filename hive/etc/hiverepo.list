@@ -5,5 +5,3 @@
 deb http://download.hiveos.farm/repo/binary/ /
 # Direct mirror
 #deb http://download2.hiveos.farm/repo/binary/ /
-
-#deb http://download.hiveos.farm/repo/0.6-beta/ /
