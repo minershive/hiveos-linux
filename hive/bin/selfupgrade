@@ -51,12 +51,14 @@ if [[ -z $VERSION ]]; then #normal upgrade to the latest available
 	#Update root miners packages, maybe some versions will be uninstalled
 	packages=$(hpkg getlist miners | grep -v '[0-9]')
 	if [[ ! -z $packages ]]; then
+		echo -e "${YELLOW}> Checking miners packages${NOCOLOR}"
 		apt-get install -y --only-upgrade $packages
 	fi
 
 	#Update version miners packages
 	packages=$(hpkg getlist miners | grep '[0-9]')
 	if [[ ! -z $packages ]]; then
+		echo -e "${YELLOW}> Checking miners version packages${NOCOLOR}"
 		apt-get install -y --only-upgrade $packages
 	fi
 else
