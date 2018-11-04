@@ -67,6 +67,9 @@ function remove_miners() {
 		exit 0
 
 
+	echo -e "${CYAN}> Updating repository${NOCOLOR}"
+	update
+
 	echo -e "${CYAN}> Checking miners default installation${NOCOLOR}"
 	. $RIG_CONF
 
