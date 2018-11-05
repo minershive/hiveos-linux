@@ -1,0 +1,131 @@
+******************************************************************************
+This End-User License Agreement ("EULA") is a legal agreement between you and
+Technobyl LLC
+
+This EULA agreement governs your acquisition and use of our CryptoDredge
+software ("Software") directly from Technobyl LLC or indirectly through a
+Technobyl LLC authorized reseller or any other source (a "Reseller").
+
+Please read this EULA agreement carefully before completing the installation
+process and using the CryptoDredge software. It provides a license to use
+the CryptoDredge software and contains warranty information and liability
+disclaimers.
+
+By clicking "accept" or installing and/or using the CryptoDredge software,
+you are confirming your acceptance of the Software and agreeing to become
+bound by the terms of this EULA agreement.
+
+If you do not agree with the terms and conditions of this EULA agreement,
+do not install or use the Software, and you must not accept this
+EULA agreement.
+
+This EULA agreement shall apply only to the Software supplied by Technobyl
+LLC herewith regardless of whether other software is referred to or
+described herein. The terms also apply to any Technobyl LLC updates,
+supplements, Internet-based services, and support services for the
+Software, unless other terms accompany those items on delivery.
+If so, those terms apply.
+
+License Grant
+
+Technobyl LLC hereby grants you a personal, non-transferable, non-exclusive
+licence to use the CryptoDredge software on your devices in accordance
+with the terms of this EULA agreement.
+
+You are permitted to load the CryptoDredge software (for example a PC,
+laptop, mobile or tablet) under your control. You are responsible for
+ensuring your device meets the minimum requirements of the CryptoDredge
+software.
+
+You are not permitted to:
+
+Edit, alter, modify, adapt, translate or otherwise change the whole or any
+part of the Software nor permit the whole or any part of the Software to be
+combined with or become incorporated in any other software, nor decompile,
+disassemble or reverse engineer the Software or attempt to do any of the
+following:
+Reproduce, copy, distribute, resell or otherwise use the Software for any
+commercial purpose.
+Allow any third party to use the Software on behalf of or for the benefit
+of any third party.
+Use the Software in any way which breaches any applicable local, national
+or international law.
+use the Software for any purpose that Technobyl LLC considers is a breach
+of this EULA agreement
+
+Intellectual Property and Ownership
+
+Technobyl LLC shall at all times retain ownership of the Software as
+originally downloaded by you and all subsequent downloads of the Software
+by you. The Software (and the copyright, and other intellectual property
+rights of whatever nature in the Software,
+including any modifications made thereto) are and shall remain the
+property of Technobyl LLC.
+
+Technobyl LLC reserves the right to grant licences to use the Software
+to third parties.
+
+Termination
+
+This EULA agreement is effective from the date you first use the Software
+and shall continue until terminated. You may terminate it at any time
+upon written notice to Technobyl LLC.
+
+It will also terminate immediately if you fail to comply with any term
+of this EULA agreement. Upon such termination, the licenses granted
+by this EULA agreement will immediately terminate and you agree to stop
+all access and use of the Software. The provisions that by their nature
+continue and survive will survive any termination of this EULA agreement.
+
+No Warranties
+
+THE SOFTWARE IS PROVIDED TO YOU "AS IS" AND "AS AVAILABLE" AND WITH ALL
+FAULTS AND DEFECTS WITHOUT WARRANTY OF ANY KIND. TO THE MAXIMUM EXTENT
+PERMITTED UNDER APPLICABLE LAW, Technobyl LLC, ON ITS OWN
+BEHALF AND ON BEHALF OF ITS AFFILIATES AND ITS AND THEIR RESPECTIVE
+LICENSORS AND SERVICE PROVIDERS, EXPRESSLY DISCLAIMS ALL WARRANTIES,
+WHETHER EXPRESS, IMPLIED, STATUTORY OR OTHERWISE, WITH RESPECT TO THE
+SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT, AND
+WARRANTIES THAT MAY ARISE OUT OF COURSE OF DEALING, COURSE OF PERFORMANCE,
+USAGE OR TRADE PRACTICE. WITHOUT LIMITATION TO THE FOREGOING,
+Technobyl LLC PROVIDES NO WARRANTY OR UNDERTAKING,
+AND MAKES NO REPRESENTATION OF ANY KIND THAT THE SOFTWARE WILL MEET
+YOUR REQUIREMENTS, ACHIEVE ANY INTENDED RESULTS, BE COMPATIBLE OR WORK
+WITH ANY OTHER SOFTWARE, APPLICATIONS, SYSTEMS OR SERVICES, OPERATE
+WITHOUT INTERRUPTION, MEET ANY PERFORMANCE OR RELIABILITY STANDARDS OR
+BE ERROR FREE OR THAT ANY ERRORS OR DEFECTS CAN OR WILL BE CORRECTED.
+WITHOUT LIMITING THE FOREGOING, NEITHER Technobyl LLC NOR
+ANY Technobyl LLC'S PROVIDER MAKES ANY REPRESENTATION OR
+WARRANTY OF ANY KIND, EXPRESS OR IMPLIED: (I) AS TO THE OPERATION OR
+AVAILABILITY OF THE SOFTWARE, OR THE INFORMATION, CONTENT, AND
+MATERIALS OR PRODUCTS INCLUDED THEREON; (II) THAT THE SOFTWARE
+WILL BE UNINTERRUPTED OR ERROR-FREE; (III) AS TO THE ACCURACY,
+RELIABILITY, OR CURRENCY OF ANY INFORMATION OR CONTENT PROVIDED
+THROUGH THE SOFTWARE; OR (IV) THAT THE SOFTWARE, ITS SERVERS,
+THE CONTENT, OR E-MAILS SENT FROM OR ON BEHALF OF Technobyl LLC
+ARE FREE OF VIRUSES, SCRIPTS, TROJAN HORSES, WORMS, MALWARE, TIMEBOMBS
+OR OTHER HARMFUL COMPONENTS. SOME JURISDICTIONS DO NOT ALLOW THE EXCLUSION
+OF OR LIMITATIONS ON IMPLIED WARRANTIES OR THE LIMITATIONS ON THE APPLICABLE
+STATUTORY RIGHTS OF A CONSUMER, SO SOME OR ALL OF THE ABOVE EXCLUSIONS
+AND LIMITATIONS MAY NOT APPLY TO YOU.
+
+Limitation of Liability
+
+NOTWITHSTANDING ANY DAMAGES THAT YOU MIGHT INCUR, THE ENTIRE LIABILITY
+OF Technobyl LLC AND ANY OF ITS SUPPLIERS UNDER ANY PROVISION
+OF THIS AGREEMENT AND YOUR EXCLUSIVE REMEDY FOR ALL OF THE FOREGOING SHALL
+BE LIMITED TO THE AMOUNT ACTUALLY PAID BY YOU FOR THE SOFTWARE.
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
+Technobyl LLC OR ITS SUPPLIERS BE LIABLE FOR ANY SPECIAL, INCIDENTAL,
+INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, BUT NOT LIMITED
+TO, DAMAGES FOR LOSS OF PROFITS, FOR LOSS OF DATA OR OTHER INFORMATION,
+FOR BUSINESS INTERRUPTION, FOR PERSONAL INJURY, FOR LOSS OF PRIVACY
+ARISING OUT OF OR IN ANY WAY RELATED TO THE USE OF OR INABILITY TO
+USE THE SOFTWARE, THIRD-PARTY SOFTWARE AND/OR THIRD-PARTY HARDWARE
+USED WITH THE SOFTWARE, OR OTHERWISE IN CONNECTION WITH ANY
+PROVISION OF THIS AGREEMENT), EVEN IF Technobyl LLC
+OR ANY SUPPLIER HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES AND
+EVEN IF THE REMEDY FAILS OF ITS ESSENTIAL PURPOSE. SOME STATES/JURISDICTIONS
+DO NOT ALLOW THE EXCLUSION OR LIMITATION OF INCIDENTAL OR CONSEQUENTIAL
+DAMAGES, SO THE ABOVE LIMITATION OR EXCLUSION MAY NOT APPLY TO YOU.
