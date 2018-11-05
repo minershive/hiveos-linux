@@ -11,8 +11,8 @@ else
 	local fan=$(jq '.fan' <<< $gpu_stats)
 	local ac=$(jq '.results.shares_good' <<< "$stats_raw")
 	local rj=$(( $(jq '.results.shares_total' <<< "$stats_raw") - $ac ))
-	stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --arg ac "$ac" --arg rj "$rj" --arg algo "$XMRIG_AMD_ALGO" \
-		'{hs: [.hashrate.threads[][0]], $algo, $temp, $fan, uptime: .connection.uptime, ar: [$ac, $rj]}' <<< "$stats_raw")
+	stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --arg ac "$ac" --arg rj "$rj" \
+		'{hs: [.hashrate.threads[][0]], algo: .algo, $temp, $fan, uptime: .connection.uptime, ar: [$ac, $rj]}' <<< "$stats_raw")
 fi
 
 	[[ -z $khs ]] && khs=0
