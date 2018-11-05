@@ -2,7 +2,7 @@
 
 # Not required
 function miner_fork() {
-	local MINER_FORK=$CCMINER_FORK
+	local MINER_FORK=$SGMINER_FORK
 	[[ -z $MINER_FORK ]] && MINER_FORK=$MINER_DEFAULT_FORK
 
 	echo $MINER_FORK
