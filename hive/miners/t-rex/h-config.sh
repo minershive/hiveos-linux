@@ -12,20 +12,26 @@ function miner_config_echo() {
 
 function miner_config_gen() {
 	local MINER_CONFIG="$MINER_DIR/$MINER_VER/config.json"
-	local TREX_GLOBAL_CONFIG="$MINER_DIR/$MINER_VER/global_config.json"
+	local TREX_GLOBAL_CONFIG="$MINER_DIR/$MINER_VER/config_global.json"
 	mkfile_from_symlink $MINER_CONFIG
 
 	#[[ -z $TREX_ALGO ]] && echo -e "${YELLOW}TREX_ALGO is empty${NOCOLOR}" && return 1
-	[[ -z $TREX_TEMPLATE ]] && echo -e "${YELLOW}CUSTOM_TEMPLATE is empty${NOCOLOR}" && return 1
-	[[ -z $TREX_URL ]] && echo -e "${YELLOW}CUSTOM_URL is empty${NOCOLOR}" && return 1
-	[[ -z $TREX_PASS ]] && CUSTOM_PASS="x"
+	[[ -z $TREX_TEMPLATE ]] && echo -e "${YELLOW}TREX_TEMPLATE is empty${NOCOLOR}" && return 1
+	[[ -z $TREX_URL ]] && echo -e "${YELLOW}TREX_URL is empty${NOCOLOR}" && return 1
+	[[ -z $TREX_PASS ]] && TREX_PASS="x"
 
-	pools='[]'
-	for url in $TREX_URL; do
-		pool=$(cat <<EOF
-			{"user": "$TREX_TEMPLATE", "url": "$url", "pass": "$TREX_PASS" }
+	local line=""
+	local url=""
+	for line in $CUSTOM_URL; do
+	    local url=`head -n 1 <<< "$line"`
+	    grep -q "://" <<< $url
+	    [[ $? -ne 0 ]] && url="stratum+tcp://${url}"
+
+	    pool=$(cat <<EOF
+		{"user": "$CUSTOM_TEMPLATE", "url": "$url", "pass": "$CUSTOM_PASS" }
 EOF
 )
+
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
 	done
 
