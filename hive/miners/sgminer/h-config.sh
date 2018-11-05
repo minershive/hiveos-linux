@@ -32,6 +32,9 @@ function miner_ver() {
 		kl )
 			echo $MINER_LATEST_VER_KL
 		;;
+		fancyIX )
+			echo $MINER_LATEST_VER_FANCYIX
+		;;
   esac
 }
 
