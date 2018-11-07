@@ -20,15 +20,16 @@ function miner_config_gen() {
 	[[ -z $TREX_URL ]] && echo -e "${YELLOW}TREX_URL is empty${NOCOLOR}" && return 1
 	[[ -z $TREX_PASS ]] && TREX_PASS="x"
 
+	pools='[]'
 	local line=""
 	local url=""
-	for line in $CUSTOM_URL; do
+	for line in $TREX_URL; do
 	    local url=`head -n 1 <<< "$line"`
 	    grep -q "://" <<< $url
 	    [[ $? -ne 0 ]] && url="stratum+tcp://${url}"
 
 	    pool=$(cat <<EOF
-		{"user": "$CUSTOM_TEMPLATE", "url": "$url", "pass": "$CUSTOM_PASS" }
+		{"user": "$TREX_TEMPLATE", "url": "$url", "pass": "$TREX_PASS" }
 EOF
 )
 
