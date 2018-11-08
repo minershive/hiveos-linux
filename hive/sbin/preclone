@@ -78,6 +78,8 @@ rm -rf /opt/amdgpu-pro/lib/i386-linux-gnu
 selfupgrade
 apt install --reinstall hive
 stop-everything
+hpkg remove miners noinstall
+hpkg install miners claymore #preinstall
 apt clean
 apt purge
 
