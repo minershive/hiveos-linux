@@ -10,62 +10,9 @@ function miner_fork() {
 
 
 function miner_ver() {
-  case $MINER_FORK in
-	alexis )
-		echo $MINER_LATEST_VER_ALEXIS
-		;;
-	allium )
-		echo $MINER_LATEST_VER_ALLIUM
-		;;
-	bcd	)
-		echo $MINER_LATEST_VER_BCD
-		;;
-	"dace-cryptonight" )
-		echo $MINER_LATEST_VER_DACE_CRYPTONIGHT
-		;;
-	djm34 )
-		echo $MINER_LATEST_VER_DJM34
-		;;
-	enemy )
-		echo $MINER_LATEST_VER_ENEMY
-		;;
-	klaust )
-		echo $MINER_LATEST_VER_KLAUST
-		;;
-	nanashi )
-		echo $MINER_LATEST_VER_NANASHI
-		;;
-	nevermore )
-		echo $MINER_LATEST_VER_NEVERMORE
-		;;
-	"nevermore-x16s" )
-		echo $MINER_LATEST_VER_NEVERMORE_X16S
-		;;
-	"phi-anxmod" )
-		echo $MINER_LATEST_VER_PHI_ANXMOD
-		;;
-	rvn )
-		echo $MINER_LATEST_VER_RVN
-		;;
-	"sp-mod" )
-		echo $MINER_LATEST_VER_SP_MOD
-		;;
-	suprminer )
-		echo $MINER_LATEST_VER_SUPRMINER
-		;;
-	tpruvot )
-		echo $MINER_LATEST_VER_TPRUVOT
-		;;
-	vertminer )
-		echo $MINER_LATEST_VER_VERTMINER
-		;;
-	xevan )
-		echo $MINER_LATEST_VER_XEVAN
-		;;
-	zp )
-		echo $MINER_LATEST_VER_ZP
-		;;
-  esac
+	local MINER_VER=$CCMINER_VER
+	[[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${MINER_FORK^^}" #uppercase MINER_FORK
+	echo $MINER_VER
 }
 
 

@@ -10,32 +10,9 @@ function miner_fork() {
 
 
 function miner_ver() {
-  case $MINER_FORK in
-		avermore )
-			echo $MINER_LATEST_VER_AVERMORE
-		;;
-		djm34 )
-			echo $MINER_LATEST_VER_DJM34
-		;;
-		gatelessgate )
-			echo $MINER_LATEST_VER_GATELESSGATE
-		;;
-		gm )
-			echo $MINER_LATEST_VER_GM
-		;;
-		"gm-nicehash" )
-			echo $MINER_LATEST_VER_GM_NICEHASH
-		;;
-		phi )
-			echo $MINER_LATEST_VER_PHI
-		;;
-		kl )
-			echo $MINER_LATEST_VER_KL
-		;;
-		fancyIX )
-			echo $MINER_LATEST_VER_FANCYIX
-		;;
-  esac
+	local MINER_VER=$SGMINER_VER
+	[[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${MINER_FORK^^}" #uppercase MINER_FORK
+	echo $MINER_VER
 }
 
 
