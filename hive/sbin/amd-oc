@@ -141,7 +141,7 @@ for bdir in $busids_dirs; do
 	fi
 
 
-#	if [[ -z $VEGAS_COUNT ]] ; then
+	if [[ $VEGAS_COUNT -eq 0 ]] ; then
 		if [[ ! -z $coreState || ! -z $memoryState ]]; then
 			echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
 
@@ -152,7 +152,7 @@ for bdir in $busids_dirs; do
 			[[ ! -z $memoryState ]] &&
 				echo $memoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
 		fi
-#	fi
+	fi
 
 	#wolfamdctrl -i $i --mem-clock 2000 --mem-state 1
 	#wolfamdctrl -i $i --core-clock 1100 --core-state 7
