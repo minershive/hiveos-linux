@@ -57,7 +57,7 @@ net_interfaces=`ip -o link | grep -vE 'LOOPBACK|POINTOPOINT' | awk '{  printf "{
 [ -f $VPN_INSTALLED ] && openvpn=1 || openvpn=0
 #taken from netconf
 lan_address=`ip -o -f inet addr show | grep eth0 | awk '/scope global/ {print $4}'`
-lan_gateway=`ip route | awk '/default/ { print $3 }'`
+lan_gateway=`ip route | awk '/default/ && /eth0/ { print $3 }' | head -1`
 lan_dns=`cat /run/systemd/resolve/resolv.conf | grep -m1 ^nameserver | awk '{print $2}'`
 cat /etc/systemd/network/20-ethernet.network | grep -q '^DHCP=yes' && lan_dhcp=1 || lan_dhcp=0
 lan_config="{\"dhcp\": $lan_dhcp, \"address\": \"$lan_address\", \"gateway\": \"$lan_gateway\", \"dns\": \"$lan_dns\"}"
