@@ -84,10 +84,10 @@ uid=$(echo ${cpu_id}-$(cat /sys/class/net/eth0/address | sed 's/://g') | tr '[:u
 
 
 version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
-inrelease_filename=/var/lib/apt/lists/`cat /etc/apt/sources.list.d/hiverepo.list | grep -m1 '^deb http' | awk '{print $2}' | sed 's/http:\/\///g' | sed 's/\//_/g'`InRelease
-packages_hash=
-[[ -e $inrelease_filename ]] &&
-	packages_hash=$(cat $inrelease_filename | grep -m1 -A3 '^SHA1:' | grep 'Packages$' | awk '{print $1}')
+#inrelease_filename=/var/lib/apt/lists/`cat /etc/apt/sources.list.d/hiverepo.list | grep -m1 '^deb http' | awk '{print $2}' | sed 's/http:\/\///g' | sed 's/\//_/g'`InRelease
+#packages_hash=
+#[[ -e $inrelease_filename ]] &&
+#	packages_hash=$(cat $inrelease_filename | grep -m1 -A3 '^SHA1:' | grep 'Packages$' | awk '{print $1}')
 
 
 
@@ -114,7 +114,6 @@ jq -n \
 --arg kernel "$kernel" \
 --arg server_url "$HIVE_HOST_URL" \
 --arg version "$version" \
---arg packages_hash "$packages_hash" \
 '{
 	"method": "hello", "jsonrpc": "2.0", "id": 0,
 	"params": {
@@ -123,7 +122,7 @@ jq -n \
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
 		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes, $cpu_id}, $disk_model,
 		$kernel, $amd_version, $nvidia_version,
-		$version, $packages_hash
+		$version
 	}
 }'
 )
@@ -211,6 +210,22 @@ autofan=$(echo $response | jq '.result.autofan' --raw-output)
 if [[ ! -z $autofan && $autofan != "null" ]]; then
 	echo "Saving Autofan config"
 	echo "$autofan" > $AUTOFAN_CONF
+fi
+
+# Repositpry URLs ================================================================
+HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
+repository_list=$(echo $response | jq '.result.repository_list' --raw-output)
+[[ -z $repository_list || $repository_list == "null" ]] &&
+	repository_list=$(cat /hive/etc/hiverepo.list)
+#remove old symlink
+[[ -L $HIVEREPO_LIST ]] && rm $HIVEREPO_LIST
+
+existing_repository_list=
+[[ -e $HIVEREPO_LIST ]] && existing_repository_list=$(cat $HIVEREPO_LIST)
+
+if [[ $existing_repository_list != $repository_list ]]; then
+	echo "Saving repository URLs"
+	echo "$repository_list" > $HIVEREPO_LIST
 fi
 
 # Post actions =================================================================
