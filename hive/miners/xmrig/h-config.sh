@@ -26,6 +26,15 @@ function miner_config_gen() {
 		done <<< "$XMRIG_USER_CONFIG"
 	fi
 
+	#merge CPU settings into main config
+	if [[ -z $XMRIG_THREADS || $XMRIG_THREADS == '[]' || $XMRIG_THREADS == 'null' ]]; then
+		echo -e "${YELLOW}CUSTOM_CPU_CONFIG is empty, useing autoconfig${NOCOLOR}"
+	else
+		threads="{$XMRIG_THREADS}"
+		threads=`jq --null-input --argjson threads "$threads" '$threads'`
+		conf=$(jq -s '.[0] * .[1]' <<< "$conf $threads")
+	fi
+
 	#merge pools into main config
 	pools='[]'
 	tls=$(jq -r .tls <<< "$conf")
