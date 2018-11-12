@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function miner_ver() {
-	echo $MINER_LATEST_VER
+	[[ -z $BMINER_VERSION ]] && echo $MINER_LATEST_VER || echo $BMINER_VERSION
 }
 
 function miner_config_echo() {
@@ -39,18 +39,16 @@ function miner_config_gen() {
 	conf=
 
 	pool=
-	#local pool=`head -n 1 <<< "$BMINER_URL"`
 	for url in $BMINER_URL; do
+		tpl=$BMINER_TEMPLATE
+		tpl=$(sed 's/\//%2F/g; s/ /%20/g; s/@/%40/g' <<< $tpl)
+		[[ ! -z $BMINER_PASS ]] && tpl+=":$BMINER_PASS"
+
 		grep -q "://" <<< $url
 		if [[ $? -ne 0 ]]; then
-			url_t=$(sed 's/\//%2F/g; s/ /%20/g' <<< $url)
-			[[ `echo $url_t | sed 's/@/@\n/g'|grep -c @` -gt 1 ]] && url_t=$(sed 's/@/%40/1' <<< $url_t)
-			#pool=`translate_algo $BMINER_ALGO`${pool}
-			url_t="${BMINER_ALGO}://${url_t}"
+			url_t="${BMINER_ALGO}://${tpl}@${url}"
 		else
-			url_t=$(sed 's/\//%2F/3g; s/ /%20/g' <<< $url)
-			[[ `echo $url_t | sed 's/@/@\n/g' | grep -c @` -gt 1 ]] && url_t=$(sed 's/@/%40/1' <<< $url_t)
-			#uri=$(sed "s/:\/\//:\/\/$tpl@/g; s/@/%40/1" <<< $pool)
+			url_t=$(sed "s/:\/\//:\/\/$tpl@/g" <<< $url) #replace :// with username
 		fi
 
 		[[ ! -z $pool ]] && pool+=","
@@ -62,19 +60,16 @@ function miner_config_gen() {
 
 	if [[ ! -z $BMINER_URL2 ]]; then
 		pool=
-		#local pool=`head -n 1 <<< "$BMINER_URL2"`
 		for url in $BMINER_URL2; do
+		tpl=$BMINER_TEMPLATE2
+		tpl=$(sed 's/\//%2F/g; s/ /%20/g; s/@/%40/g' <<< $tpl)
+		[[ ! -z $BMINER_PASS2 ]] && tpl+=":$BMINER_PASS2"
 
 			grep -q "://" <<< $url
 			if [[ $? -ne 0 ]]; then #protocol not found
-				url_t=$(sed 's/\//%2F/g; s/ /%20/g' <<< $url)
-				[[ `echo $url_t | sed 's/@/@\n/g'|grep -c @` -gt 1 ]] && url_t=$(sed 's/@/%40/1' <<< $url_t)
-				#pool=`translate_algo $BMINER_ALGO2`${pool}
-				url_t="${BMINER_ALGO2}://${url_t}"
+				url_t="${BMINER_ALGO2}://${tpl}@${url}"
 			else
-				url_t=$(sed 's/\//%2F/3g; s/ /%20/g' <<< $url)
-				[[ `echo $url_t | sed 's/@/@\n/g'|grep -c @` -gt 1 ]] && url_t=$(sed 's/@/%40/1' <<< $url_t)
-				#uri=$(sed "s/:\/\//:\/\/$tpl@/g; s/@/%40/1" <<< $pool) #replace :// with username
+				url_t=$(sed "s/:\/\//:\/\/$tpl@/g" <<< $url) #replace :// with username
 			fi
 
 			[[ ! -z $pool ]] && pool+=","
@@ -85,7 +80,7 @@ function miner_config_gen() {
 		conf+=" -uri2 $pool"
 
 		[[ ! -z $BMINER_INTENSITY ]] && conf+=" -dual-intensity $BMINER_INTENSITY"
-		
+
 	fi
 
 	[[ ! -z $BMINER_USER_CONFIG ]] && conf+=" $BMINER_USER_CONFIG"

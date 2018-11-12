@@ -14,9 +14,10 @@
 
 		local uptime=$(( `date +%s` - $(jq '.start_time' <<< "$stats_raw") ))
 		local hs_units="hs"
-		[[ -z $BMINER_ALGO ]] && BMINER_ALGO="ethash"
+		[[ -z $BMINER_ALGO ]] && BMINER_ALGO="stratum"
 
-		local bus_numbers=$(echo $stats_raw | jq -r '[ .miners | to_entries[] | select(.value) | .key|tonumber ]') #'
+		#not working at the moment, just gives numbers from 0 to n, not bus numbers
+		#local bus_numbers=$(echo $stats_raw | jq -r '[ .miners | to_entries[] | select(.value) | .key|tonumber ]') #'
 
 		devices_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:${MINER_API_PORT}/api/v1/status/solver`
 		#fucking bminer sorts it's keys as numerics, not natual, e.g. "1", "10", "11", "2", fix that with sed hack by replacing "1": with "01" once again:
@@ -38,24 +39,22 @@
 			stats=$(jq -c --arg uptime "$uptime" \
 						--arg algo "$BMINER_ALGO" \
 						--arg hs_units "$hs_units" \
-						--argjson bus_numbers "$bus_numbers" \
 						--arg algo2 "$BMINER_ALGO2" \
 						--arg hs_units2 "$hs_units2" \
 						--arg ac2 "$ac2" --arg rj2 "$rj2" \
 						--argjson hs2 "`echo ${hs2[@]} | tr " " "\n" | jq -cs '.'`" \
 						'{hs: [.miners[].solver.solution_rate], $hs_units,
 							temp: [.miners[].device.temperature], fan: [.miners[].device.fan_speed], $uptime, $algo,
-							ar: [.stratum.accepted_shares, .stratum.rejected_shares], $bus_numbers,
+							ar: [.stratum.accepted_shares, .stratum.rejected_shares],
 							$hs2, $hs_units2, $algo2, ar2: [$ac2, $rj2]}' <<< "$stats_raw")
 		else
 			#single mode
 			stats=$(jq -c --arg uptime "$uptime" \
 						--arg algo "$BMINER_ALGO" \
 						--arg hs_units "$hs_units" \
-						--argjson bus_numbers "$bus_numbers" \
 						'{hs: [.miners[].solver.solution_rate], $hs_units,
 							temp: [.miners[].device.temperature], fan: [.miners[].device.fan_speed], $uptime, $algo,
-							ar: [.stratum.accepted_shares, .stratum.rejected_shares], $bus_numbers}' <<< "$stats_raw")
+							ar: [.stratum.accepted_shares, .stratum.rejected_shares]}' <<< "$stats_raw")
 		fi
 
 	fi
