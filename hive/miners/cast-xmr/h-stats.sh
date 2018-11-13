@@ -13,7 +13,9 @@ else
 	local iv=$(jq '."shares"."num_invalid"' <<< "$stats_raw")
 
 	stats=$(jq --arg ac "$ac" --arg rj "$rj" --arg iv "$iv" --arg algo "$CAST_XMR_ALGO" \
-			'{hs: [.devices[].hash_rate], hs_units: "hs", $algo, temp: [.devices[].gpu_temperature], fan: [.devices[].gpu_fan_rpm], uptime: .pool.online, ar: [$ac, $rj, $iv], bus_numbers: [.devices[].device_id]}' <<< "$stats_raw")
+			'{hs: [.devices[].hash_rate], hs_units: "hs", $algo, temp: [.devices[].gpu_temperature],
+			fan: [.devices[].gpu_fan_rpm], uptime: .pool.online, ar: [$ac, $rj, $iv]}' <<< "$stats_raw")
+	#bus_numbers: [.devices[].device_id] - excluded, it's not device ids, just numbers
 fi
 
 	[[ -z $khs ]] && khs=0
