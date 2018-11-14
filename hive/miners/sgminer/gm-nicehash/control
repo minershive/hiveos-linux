@@ -1,0 +1,8 @@
+Package: hive-miners-sgminer-gm-nicehash
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-sgminer-gm-nicehash-5.5.5_8
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner

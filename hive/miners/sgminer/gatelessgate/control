@@ -1,0 +1,8 @@
+Package: hive-miners-sgminer-gatelessgate
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-sgminer-gatelessgate-0.1.3_pre6b
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner
