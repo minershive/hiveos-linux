@@ -42,7 +42,7 @@ function hive-package-install () {
 			sleep 1
 			hive-package-install-do $package_name
 			if [[ $? -ne 0 ]]; then
-				#repover-touch #don't touch as we did not do apt update
+				#repover-touch #don't touch as we did not update all packages
 				cat /tmp/package-install.log | message error "Error installing $package_name" payload
 				return 1
 			fi
