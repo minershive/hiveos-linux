@@ -56,11 +56,6 @@ function miner_config_gen() {
 		echo -e "${RED}ZTEMPLATE not set{NOCOLOR}"
 	else
 		#Don't remove until Hive 1 is gone
-#		[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
-		[[ ! -z $EWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%EWAL\%/$EWAL}
-		[[ ! -z $ZWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%ZWAL\%/$ZWAL}
-		[[ ! -z $DWAL ]] && ZTEMPLATE=${ZTEMPLATE/\%DWAL\%/$DWAL}
-		[[ ! -z $EMAIL ]] && ZTEMPLATE=${ZTEMPLATE/\%EMAIL\%/$EMAIL}
 		[[ ! -z $WORKER_NAME ]] && ZTEMPLATE=${ZTEMPLATE/\%WORKER_NAME\%/$WORKER_NAME} || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}";
 
 		#escape variable

@@ -98,11 +98,5 @@ function miner_config_gen() {
 	sed -i '/--stratum-protocol/d' $MINER_CONFIG
 
 	#replace tpl values in whole file
-	#Don't remove until Hive 1 is gone
-#	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
-	[[ ! -z $EWAL ]] && sed -i --follow-symlinks "s/%EWAL%/$EWAL/g" $MINER_CONFIG #|| echo -e "${RED}EWAL not set${NOCOLOR}"
-	[[ ! -z $DWAL ]] && sed -i --follow-symlinks "s/%DWAL%/$DWAL/g" $MINER_CONFIG #|| echo -e "${RED}DWAL not set${NOCOLOR}"
-	[[ ! -z $ZWAL ]] && sed -i --follow-symlinks "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG #|| echo -e "${RED}ZWAL not set${NOCOLOR}"
 	[[ ! -z $WORKER_NAME ]] && sed -i --follow-symlinks "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG || echo "${RED}WORKER_NAME not set${NOCOLOR}"
-	[[ ! -z $EMAIL ]] && sed -i --follow-symlinks "s/%EMAIL%/$EMAIL/g" $MINER_CONFIG
 }

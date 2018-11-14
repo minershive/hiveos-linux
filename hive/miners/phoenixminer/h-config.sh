@@ -33,11 +33,6 @@ function miner_config_gen() {
 	echo "Creating epools.txt"
 	echo "$PHOENIXMINER_URL" > $MINER_EPOOLS
 
-	#Don't remove until Hive 1 is gone
-	[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $MINER_EPOOLS #|| echo "${RED}EWAL not set${NOCOLOR}"
-	[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $MINER_EPOOLS #|| echo "${RED}DWAL not set${NOCOLOR}"
-	[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $MINER_EPOOLS #|| echo "${RED}ZWAL not set${NOCOLOR}"
-	[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $MINER_EPOOLS
 	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_EPOOLS
 
 	if [[ ! -z $PHOENIXMINER_USER_CONFIG ]]; then
@@ -45,11 +40,6 @@ function miner_config_gen() {
 		echo "Appending user config";
 		echo "$PHOENIXMINER_USER_CONFIG" >> $MINER_CONFIG
 
-		#Don't remove until Hive 1 is gone
-		[[ ! -z $EWAL ]] && sed -i "s/%EWAL%/$EWAL/g" $MINER_CONFIG #|| echo "${RED}EWAL not set${NOCOLOR}"
-		[[ ! -z $DWAL ]] && sed -i "s/%DWAL%/$DWAL/g" $MINER_CONFIG #|| echo "${RED}DWAL not set${NOCOLOR}"
-		[[ ! -z $ZWAL ]] && sed -i "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG #|| echo "${RED}ZWAL not set${NOCOLOR}"
-		[[ ! -z $EMAIL ]] && sed -i "s/%EMAIL%/$EMAIL/g" $MINER_CONFIG
 		[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG
 	fi
 }

@@ -7,11 +7,6 @@ function claymore_zpools_gen() {
 
 	echo "Creating epools.txt"
 
-#	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
-	[[ ! -z $EWAL ]] && ZPOOLS_TPL=$(sed "s/%EWAL%/$EWAL/g" <<< $ZPOOLS_TPL)
-	[[ ! -z $DWAL ]] && ZPOOLS_TPL=$(sed "s/%DWAL%/$DWAL/g" <<< $ZPOOLS_TPL)
-	[[ ! -z $ZWAL ]] && ZPOOLS_TPL=$(sed "s/%ZWAL%/$ZWAL/g" <<< $ZPOOLS_TPL)
-	[[ ! -z $EMAIL ]] && ZPOOLS_TPL=$(sed "s/%EMAIL%/$EMAIL/g" <<< $ZPOOLS_TPL)
 	[[ ! -z $WORKER_NAME ]] && ZPOOLS_TPL=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $ZPOOLS_TPL) || echo -e "${RED}WORKER_NAME not set${NOCOLOR}"
 
 	echo "$ZPOOLS_TPL" > $CLAYMORE_ZPOOLS_TXT
