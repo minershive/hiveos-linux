@@ -40,9 +40,11 @@ function hive-package-install () {
 			#Second try
 			sleep 1
 			hive-package-install-do $package_name
-			[[ $? -ne 0 ]] &&
-				cat /tmp/package-install.log | message error "Error installing $package_name" payload &&
+			if [[ $? -ne 0 ]]; then
+				#repover-touch #don't touch as we did not do apt update
+				cat /tmp/package-install.log | message error "Error installing $package_name" payload
 				return 1
+			fi
 			apt-get clean
 		fi
 	fi

@@ -36,6 +36,7 @@ if [[ -z $VERSION ]]; then #no target version
 	updateavail=`apt list --upgradable 2>&1 | grep '^hive' | wc -l`
 	if [[ $updateavail == 0 ]]; then
 		echo -e "${GREEN}Hive is up to date already${NOCOLOR}"
+		repover-touch
 		exit 0
 	fi
 fi
@@ -74,12 +75,7 @@ fi
 [[ $exitcode -ne 0 ]] && echo -e "${RED}Upgrade failed${NOCOLOR}" && exit $exitcode
 
 # Save RepoVer ---------------------------------------------------------------------------------------
-# same code in postinst
-repourl=`cat /etc/apt/sources.list.d/hiverepo.list | grep -m1 '^deb http' | awk '{print $2}'`
-repover=`curl -s "$repourl/RepoVer"`
-[[ ! -z $repover ]] &&
-	echo "$repover" > /hive-config/RepoVer
-
+repover-touch
 
 
 echo ------------------------------------------------------

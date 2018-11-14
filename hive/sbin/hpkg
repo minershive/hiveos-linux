@@ -140,6 +140,8 @@ function install_miners_all() {
 	done
 
 	apt-get clean
+
+	repover-touch
 }
 
 

@@ -176,11 +176,7 @@ rm -rf /hive/bminer* /hive/claymore* /hive/ccminer* /hive/cpuminer* /hive/custom
 
 
 # Save RepoVer ---------------------------------------------------------------------------------------
-# same code in selfupgrade
-repourl=`cat /etc/apt/sources.list.d/hiverepo.list | grep -m1 '^deb http' | awk '{print $2}'`
-repover=`curl -s "$repourl/RepoVer"`
-[[ ! -z $repover ]] &&
-	echo "$repover" > /hive-config/RepoVer
+repover-touch
 
 
 exit 0
