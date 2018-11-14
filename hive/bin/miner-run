@@ -35,6 +35,7 @@ function hive-package-install () {
 	dpkg -s $package_name > /dev/null 2>&1
 	if [[ $? -ne 0 ]]; then
 		echo -e "${YELLOW}Installing $package_name${NOCOLOR}"
+		hpkg update
 		hive-package-install-do $package_name
 		if [[ $? -ne 0 ]]; then
 			#Second try
