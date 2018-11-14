@@ -88,8 +88,10 @@ version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 #packages_hash=
 #[[ -e $inrelease_filename ]] &&
 #	packages_hash=$(cat $inrelease_filename | grep -m1 -A3 '^SHA1:' | grep 'Packages$' | awk '{print $1}')
-
-
+[[ -e /hive-config/RepoVer ]] &&
+	repover=`cat /hive-config/RepoVer` ||
+	repover=0
+version="$version@$repover"
 
 
 request=$(
