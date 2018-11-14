@@ -87,8 +87,8 @@ EOF
 	if [[ -z $XMRIG_AMD_THREADS || $XMRIG_AMD_THREADS == '[]' || $XMRIG_AMD_THREADS == 'null' ]]; then
 		echo -e "${YELLOW}CUSTOM_GPU_CONFIG is empty, useing autoconfig${NOCOLOR}"
 	else
-		threads=$XMRIG_AMD_THREADS
-		threads=`jq --null-input --argjson threads "$threads" '{"threads": $threads}'`
+		threads="{$XMRIG_AMD_THREADS}"
+		threads=`jq --null-input --argjson threads "$threads" '$threads'`
 		conf=$(jq -s '.[0] * .[1]' <<< "$conf $threads")
 	fi
 

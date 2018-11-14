@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function claymore_zpools_gen() {
-	[[ -z $XPOOLS_TPL ]] &&
+	[[ -z $ZPOOLS_TPL ]] &&
 		echo -e "${YELLOW}WARNING: ZPOOLS_TPL is not set, skipping epools.txt generation${NOCOLOR}" &&
 		return 1
 
