@@ -2,18 +2,12 @@
 # This code is included
 
 function claymore_epools_gen() {
-	[[ -z $EPOOLS_TPL || -z $EWAL ]] &&
-		echo -e "${YELLOW}WARNING: EWAL or EPOOLS_TPL is not set, skipping epools.txt generation${NOCOLOR}" &&
+	[[ -z $EPOOLS_TPL ]] &&
+		echo -e "${YELLOW}WARNING: EPOOLS_TPL is not set, skipping epools.txt generation${NOCOLOR}" &&
 		return 1
 
 	echo "Creating epools.txt"
 
-	#Don't remove until Hive 1 is gone
-#	[[ -z $EWAL && -z $ZWAL && -z $DWAL ]] && echo -e "${RED}No WAL address is set${NOCOLOR}"
-	[[ ! -z $EWAL ]] && EPOOLS_TPL=$(sed "s/%EWAL%/$EWAL/g" <<< $EPOOLS_TPL)
-	[[ ! -z $DWAL ]] && EPOOLS_TPL=$(sed "s/%DWAL%/$DWAL/g" <<< $EPOOLS_TPL)
-	[[ ! -z $ZWAL ]] && EPOOLS_TPL=$(sed "s/%ZWAL%/$ZWAL/g" <<< $EPOOLS_TPL)
-	[[ ! -z $EMAIL ]] && EPOOLS_TPL=$(sed "s/%EMAIL%/$EMAIL/g" <<< $EPOOLS_TPL)
 	[[ ! -z $WORKER_NAME ]] && EPOOLS_TPL=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $EPOOLS_TPL) || echo -e "${RED}WORKER_NAME not set${NOCOLOR}"
 
 	echo "$EPOOLS_TPL" > $CLAYMORE_EPOOLS_TXT

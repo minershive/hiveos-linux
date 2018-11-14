@@ -34,11 +34,6 @@ function miner_config_gen() {
 
 		echo "Generating $MINER_CONFIG"
 
-		#Don't remove until Hive 1 is gone
-		[[ ! -z $EWAL ]] && sed -i --follow-symlinks "s/%EWAL%/$EWAL/g" $MINER_CONFIG #|| echo "EWAL not set"
-		[[ ! -z $ZWAL ]] && sed -i --follow-symlinks "s/%ZWAL%/$ZWAL/g" $MINER_CONFIG #|| echo "ZWAL not set"
-		[[ ! -z $DWAL ]] && sed -i --follow-symlinks "s/%DWAL%/$DWAL/g" $MINER_CONFIG #|| echo "DWAL not set"
-		[[ ! -z $EMAIL ]] && sed -i --follow-symlinks "s/%EMAIL%/$EMAIL/g" $MINER_CONFIG #|| echo "EMAIL not set"
 		[[ ! -z $WORKER_NAME ]] && sed -i --follow-symlinks "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG #||  "WORKER_NAME not set"
 	fi
 
