@@ -46,9 +46,6 @@ EOF
 		done <<< "$TREX_USER_CONFIG"
 	fi
 
-	#replace tpl values in whole file
-	[[ ! -z $EMAIL ]] && conf=$(sed "s/%EMAIL%/$EMAIL/g" <<< "$conf")
-	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf")
 	notes=`echo Generated at $(date)`
 	conf=`jq --null-input --argjson conf "$conf" --arg notes "$notes" -n '$conf | ._notes = $notes'`
 	echo "$conf" > $MINER_CONFIG

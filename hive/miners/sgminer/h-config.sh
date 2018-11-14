@@ -54,8 +54,5 @@ function miner_config_gen() {
 
 	conf=`jq -n --argjson g "$config_global" --argjson p "$pools" '$g * $p'`
 
-	#replace tpl values in whole file
-	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
-
 	echo "$conf" | jq . > $MINER_CONFIG
 }

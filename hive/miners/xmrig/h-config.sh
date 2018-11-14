@@ -62,9 +62,6 @@ EOF
 	if [[ -z $pools || $pools == '[]' || $pools == 'null' ]]; then
 		echo -e "${RED}No pools configured, using default${NOCOLOR}"
 	else
-		#pass can also contain %var%
-		[[ ! -z $WORKER_NAME ]] && pools=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $pools) #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
-
 		pools=`jq --null-input --argjson pools "$pools" '{"pools": $pools}'`
 		conf=$(jq -s '.[0] * .[1]' <<< "$conf $pools")
 	fi

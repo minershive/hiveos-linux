@@ -44,8 +44,5 @@ function miner_config_gen() {
 	# Add user config options
 	[[ ! -z $WILDRIG_MULTI_USER_CONFIG ]] && conf+="${WILDRIG_MULTI_USER_CONFIG}"
 
-	#replace tpl values in whole file
-	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
-
 	echo -e "$conf" > $MINER_CONFIG
 }

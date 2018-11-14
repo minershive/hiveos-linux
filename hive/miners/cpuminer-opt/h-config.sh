@@ -29,17 +29,13 @@ function miner_config_gen() {
 	[[ ! -z $CPUMINER_OPT_PASS ]] &&
 		conf=`jq --null-input --argjson conf "$conf" --arg pass "$CPUMINER_OPT_PASS" '$conf + {$pass}'`
 
-		#merge user config options into main config
-		if [[ ! -z $CPUMINER_OPT_USER_CONFIG ]]; then
-		    while read -r line; do
-				[[ -z $line ]] && continue
-				conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
-		    done <<< "$CPUMINER_OPT_USER_CONFIG"
-		fi
-
-	#replace tpl values in whole file
-	#Don't remove until Hive 1 is gone
-	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
+	#merge user config options into main config
+	if [[ ! -z $CPUMINER_OPT_USER_CONFIG ]]; then
+		while read -r line; do
+			[[ -z $line ]] && continue
+			conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
+		done <<< "$CPUMINER_OPT_USER_CONFIG"
+	fi
 
 	echo $conf | jq . > $MINER_CONFIG
 }

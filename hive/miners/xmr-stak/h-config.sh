@@ -122,9 +122,6 @@ EOF
 	if [[ -z $pools || $pools == '[]' || $pools == 'null' ]]; then
 		echo -e "${RED}No pools configured, using default${NOCOLOR}"
 	else
-		#Don't remove until Hive 1 is gone
-		#pass can also contain %var%
-		[[ ! -z $WORKER_NAME ]] && pools=${pools/\%WORKER_NAME\%/$WORKER_NAME} || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}";
 		[[ ! -z $XMR_STAK_ALGO ]] && pools=${pools/\%XMR_STAK_ALGO\%/$XMR_STAK_ALGO}
 		[[ ! -z $MINER_API_PORT ]] && pools=${pools/\%MINER_API_PORT\%/$MINER_API_PORT}
 

@@ -30,11 +30,8 @@ function miner_config_gen() {
 	if [[ -z $CCMINERCONF || $CCMINERCONF = "{}" ]]; then
 		echo -e "${YELLOW}WARNING: No CCMINERCONF set, skipping $MINER_CONFIG generation${NOCOLOR}"
 	else
-		echo $CCMINERCONF | jq . > $MINER_CONFIG
-
 		echo "Generating $MINER_CONFIG"
-
-		[[ ! -z $WORKER_NAME ]] && sed -i --follow-symlinks "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG #||  "WORKER_NAME not set"
+		echo $CCMINERCONF | jq . > $MINER_CONFIG
 	fi
 
 	scratch_path="$HOME/.cache/boolberry"

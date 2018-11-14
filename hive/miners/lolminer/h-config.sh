@@ -29,8 +29,5 @@ function miner_config_gen() {
 		conf+="$LOLMINER_USER_CONFIG\n"
 	fi
 
-	#replace tpl values in whole file
-	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
-
 	echo -e "$conf" > $MINER_CONFIG
 }

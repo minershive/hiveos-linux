@@ -7,8 +7,6 @@ function claymore_zpools_gen() {
 
 	echo "Creating epools.txt"
 
-	[[ ! -z $WORKER_NAME ]] && ZPOOLS_TPL=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $ZPOOLS_TPL) || echo -e "${RED}WORKER_NAME not set${NOCOLOR}"
-
 	echo "$ZPOOLS_TPL" > $CLAYMORE_ZPOOLS_TXT
 
 	return 0
@@ -43,9 +41,6 @@ function miner_config_echo() {
 
 
 function miner_config_gen() {
-	[[ -z $WORKER_NAME ]] && echo "ERROR: No WORKER_NAME set" && return 1
-
-
 	local MINER_VER=`miner_ver`
 
 	CLAYMORE_Z_CONFIG="$MINER_DIR/$MINER_VER/config.txt"

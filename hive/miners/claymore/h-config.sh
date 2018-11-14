@@ -8,8 +8,6 @@ function claymore_epools_gen() {
 
 	echo "Creating epools.txt"
 
-	[[ ! -z $WORKER_NAME ]] && EPOOLS_TPL=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $EPOOLS_TPL) || echo -e "${RED}WORKER_NAME not set${NOCOLOR}"
-
 	echo "$EPOOLS_TPL" > $CLAYMORE_EPOOLS_TXT
 
 #	if [[ -z $EPOOLS_TPL ]]; then
@@ -33,11 +31,6 @@ function claymore_dpools_gen() {
 	fi
 
 	echo "Creating dpools.txt"
-
-	[[ ! -z $DWAL ]] && DPOOLS_TPL=$(sed "s/%DWAL%/$DWAL/g" <<< $DPOOLS_TPL)
-	[[ ! -z $EMAIL ]] && DPOOLS_TPL=$(sed "s/%EMAIL%/$EMAIL/g" <<< $DPOOLS_TPL)
-	[[ ! -z $WORKER_NAME ]] && DPOOLS_TPL=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $DPOOLS_TPL) || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}"
-
 	echo "$DPOOLS_TPL" > $CLAYMORE_DPOOLS_TXT
 
 	#Claymore is degrading if no dcoin, but he still uses dcri and eth performance is lower
@@ -89,8 +82,6 @@ function miner_config_echo() {
 
 
 function miner_config_gen() {
-	[[ -z $WORKER_NAME ]] && echo "ERROR: No WORKER_NAME set" && return 1
-
 	CLAYMORE_CONFIG="$MINER_DIR/$MINER_VER/config.txt"
 	CLAYMORE_EPOOLS_TXT="$MINER_DIR/$MINER_VER/epools.txt"
 	CLAYMORE_DPOOLS_TXT="$MINER_DIR/$MINER_VER/dpools.txt"

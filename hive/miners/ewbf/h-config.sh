@@ -55,9 +55,6 @@ function miner_config_gen() {
 	if [[ -z $ZTEMPLATE ]]; then
 		echo -e "${RED}ZTEMPLATE not set{NOCOLOR}"
 	else
-		#Don't remove until Hive 1 is gone
-		[[ ! -z $WORKER_NAME ]] && ZTEMPLATE=${ZTEMPLATE/\%WORKER_NAME\%/$WORKER_NAME} || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}";
-
 		#escape variable
 		#ZTEMPLATE=$(sed 's/[]\/$*.^|[]/\\&/g' <<<"$ZTEMPLATE")
 		#sed -i --follow-symlinks "s/^user .*/user $ZTEMPLATE/g" $EWBF_CONFIG

@@ -62,8 +62,5 @@ function miner_config_gen() {
 
 	conf="-S ${pool} -u ${CAST_XMR_TEMPLATE} -p ${CAST_XMR_PASS}${algo} ${CAST_XMR_USER_CONFIG}"
 
-	#replace tpl values in whole file
-	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< "$conf") #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
-
 	echo "$conf" > $MINER_CONFIG
 }

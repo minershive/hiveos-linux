@@ -85,9 +85,6 @@ function miner_config_gen() {
 
 	[[ ! -z $BMINER_USER_CONFIG ]] && conf+=" $BMINER_USER_CONFIG"
 
-	#pass can also contain %var%
-	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $conf) #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
-
 	conf+=" -api 127.0.0.1:${MINER_API_PORT}"
 	#-max-temperature ${CRITICAL_TEMP}"
 

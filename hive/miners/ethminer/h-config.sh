@@ -96,7 +96,4 @@ function miner_config_gen() {
 
 	#remove deprecated option
 	sed -i '/--stratum-protocol/d' $MINER_CONFIG
-
-	#replace tpl values in whole file
-	[[ ! -z $WORKER_NAME ]] && sed -i --follow-symlinks "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG || echo "${RED}WORKER_NAME not set${NOCOLOR}"
 }

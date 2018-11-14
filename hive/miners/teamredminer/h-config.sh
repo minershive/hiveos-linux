@@ -21,8 +21,5 @@ function miner_config_gen() {
 
 	conf="-a ${TEAMREDMINER_ALGO} -o $pool -u ${TEAMREDMINER_TEMPLATE} -p ${TEAMREDMINER_PASS} ${TEAMREDMINER_USER_CONFIG}"
 
-	#replace tpl values in whole file
-	[[ ! -z $WORKER_NAME ]] && conf=$(sed "s/%WORKER_NAME%/$WORKER_NAME/g" <<< $conf) #|| echo "${RED}WORKER_NAME not set${NOCOLOR}"
-
 	echo "$conf" > $MINER_CONFIG
 }

@@ -23,7 +23,6 @@ function miner_config_gen() {
 	[[ -z ${coin} ]] && coin="auto"
 	[[ ! -z ${coin} ]] && coin="-coin ${coin}"
 
-	#cat /hive/custom/${CUSTOM_NAME}/config_global.txt > $MINER_CONFIG || echo -e "${YELLOW}WORKER_NAME not set${NOCOLOR}"
 	echo "-mport $MINER_API_PORT" > $MINER_CONFIG
 	echo "-rmode 1" >> $MINER_CONFIG
 	echo "-logfile ${MINER_LOG_BASENAME}.log" >> $MINER_CONFIG
@@ -33,13 +32,9 @@ function miner_config_gen() {
 	echo "Creating epools.txt"
 	echo "$PHOENIXMINER_URL" > $MINER_EPOOLS
 
-	[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_EPOOLS
-
 	if [[ ! -z $PHOENIXMINER_USER_CONFIG ]]; then
 		echo "### USER CONFIG ###" >> $MINER_CONFIG
 		echo "Appending user config";
 		echo "$PHOENIXMINER_USER_CONFIG" >> $MINER_CONFIG
-
-		[[ ! -z $WORKER_NAME ]] && sed -i "s/%WORKER_NAME%/$WORKER_NAME/g" $MINER_CONFIG
 	fi
 }
