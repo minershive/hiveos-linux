@@ -37,14 +37,30 @@ function miner_config_gen() {
 	local POOLS_CONFIG="$MINER_DIR/$MINER_FORK/$MINER_VER/pools.txt"
 	mkfile_from_symlink $POOLS_CONFIG
 
+	#amd nvidia cpu overrides or default
 	local AMD_CONFIG="$MINER_DIR/$MINER_FORK/$MINER_VER/amd.txt"
-	mkfile_from_symlink $AMD_CONFIG
+	if [[ ! -z $XMR_STAK_AMD ]]; then
+		mkfile_from_symlink $AMD_CONFIG
+		echo "$XMR_STAK_AMD" > $AMD_CONFIG
+	else
+		rmfile_from_symlink $AMD_CONFIG
+	fi
 
 	local NVIDIA_CONFIG="$MINER_DIR/$MINER_FORK/$MINER_VER/nvidia.txt"
-	mkfile_from_symlink $NVIDIA_CONFIG
+	if [[ ! -z $XMR_STAK_NVIDIA ]]; then
+		mkfile_from_symlink $NVIDIA_CONFIG
+		echo "$XMR_STAK_NVIDIA" > $NVIDIA_CONFIG
+	else
+		rmfile_from_symlink $NVIDIA_CONFIG
+	fi
 
 	local CPU_CONFIG="$MINER_DIR/$MINER_FORK/$MINER_VER/cpu.txt"
-	mkfile_from_symlink $CPU_CONFIG
+	if [[ ! -z $XMR_STAK_CPU ]]; then
+		mkfile_from_symlink $CPU_CONFIG
+		echo "$XMR_STAK_CPU" > $CPU_CONFIG
+	else
+		rmfile_from_symlink $CPU_CONFIG
+	fi
 
 	conf=`cat $MINER_DIR/$MINER_FORK/$MINER_VER/config_global.json`
 
@@ -128,15 +144,6 @@ EOF
 		pools=`jq --null-input --argjson pool_list "$pools" '{$pool_list}'`
 		conf=$(jq -s '.[0] * .[1]' <<< "$conf $pools")
 	fi
-
-
-	#amd nvidia cpu overrides or default
-	#[[ ! -z $XMR_STAK__AMD ]] &&
-	echo "$XMR_STAK_AMD" > $AMD_CONFIG
-	#[[ ! -z $XMR_STAK__NVIDIA ]] &&
-	echo "$XMR_STAK_NVIDIA" > $NVIDIA_CONFIG
-	#[[ ! -z $XMR_STAK__CPU ]] &&
-	echo "$XMR_STAK_CPU" > $CPU_CONFIG
 
 	#delete { and } lines
 	echo $conf | jq . | sed 1d | sed '$d' > $MINER_CONFIG
