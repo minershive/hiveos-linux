@@ -9,36 +9,14 @@ function miner_config_echo() {
 	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/bminer.conf"
 }
 
-function translate_algo() {
-	case $1 in
-		"ethash" )
-			echo "ethash://"
-		;;
-		"equihash 144/5" )
-			echo "zhash://"
-		;;
-		"blake2s" )
-			echo "blake2s://"
-		;;
-		"blake14r")
-			echo "blake14r://"
-		;;
-		"tensority" )
-			echo "tensority://"
-		;;
-		* )
-			echo "stratum://"
-		;;
-	esac
-}
-
 function miner_config_gen() {
 	local MINER_CONFIG="$MINER_DIR/$MINER_VER/bminer.conf"
 	mkfile_from_symlink $MINER_CONFIG
 
+	[[ ! -z $BMINER_ALGO ]] && algo=$BMINER_ALGO || algo="stratum"
 	conf=
-
 	pool=
+
 	for url in $BMINER_URL; do
 		tpl=$BMINER_TEMPLATE
 		tpl=$(sed 's/\//%2F/g; s/ /%20/g; s/@/%40/g' <<< $tpl)
@@ -46,7 +24,7 @@ function miner_config_gen() {
 
 		grep -q "://" <<< $url
 		if [[ $? -ne 0 ]]; then
-			url_t="${BMINER_ALGO}://${tpl}@${url}"
+			url_t="${algo}://${tpl}@${url}"
 		else
 			url_t=$(sed "s/:\/\//:\/\/$tpl@/g" <<< $url) #replace :// with username
 		fi
@@ -59,6 +37,7 @@ function miner_config_gen() {
 	conf+=" -uri $pool"
 
 	if [[ ! -z $BMINER_URL2 ]]; then
+		[[ ! -z $BMINER_ALGO2 ]] && algo2=$BMINER_ALGO2 || algo2="blake2s"
 		pool=
 		for url in $BMINER_URL2; do
 		tpl=$BMINER_TEMPLATE2
@@ -67,7 +46,7 @@ function miner_config_gen() {
 
 			grep -q "://" <<< $url
 			if [[ $? -ne 0 ]]; then #protocol not found
-				url_t="${BMINER_ALGO2}://${tpl}@${url}"
+				url_t="${algo2}://${tpl}@${url}"
 			else
 				url_t=$(sed "s/:\/\//:\/\/$tpl@/g" <<< $url) #replace :// with username
 			fi
