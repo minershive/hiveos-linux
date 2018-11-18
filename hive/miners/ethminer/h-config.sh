@@ -95,5 +95,6 @@ function miner_config_gen() {
 	[[ ! -z $ETHMINER_USER_CONFIG ]] && echo "$ETHMINER_USER_CONFIG" >> $MINER_CONFIG
 
 	#remove deprecated option
-	sed -i '/--stratum-protocol/d' $MINER_CONFIG
+	conf=`cat $MINER_CONFIG | sed '/--stratum-protocol/d'`
+	echo $conf > $MINER_CONFIG
 }
