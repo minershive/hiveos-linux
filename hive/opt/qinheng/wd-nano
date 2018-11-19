@@ -1,17 +1,31 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
+
+file=/hive-config/watchdog/wd-nano.on
+[[ ! -z $1 ]] && file=$1
+
+title="Arduino Nano"
+[[ ! -z $2 ]] && title=$2
+
+
+
+#mkdir -p /hive-config/watchdog
 
 case $1 in
 	on)
-		echo  "Switching ON support for Arduino Nano Watchdog. Reboot now."
-		echo "If this file exists then Arduino Nano Watchdog support in ON" > /hive-config/watchdog/wd-nano.on
+		echo  "Switching ON support for $title Watchdog. Reboot now."
+		echo "If this file exists then $title Watchdog support in ON" > $file
 	;;
 	off)
-		echo  "Switching OFF support for Arduino Nano Watchdog. Reboot now."
-		[[ -e /hive-config/wd-nano.on ]] &&
-			rm -f /hive-config/watchdog/wd-nano.on
+		echo  "Switching OFF support for $title Watchdog. Reboot now."
+		if [[ -e $file ]]; then
+			echo "Removing $file"
+			rm -f $file
+		else
+			echo "$file not found, might be already OFF"
+		fi
 	;;
 	*)
-		echo  "Usage: \"`basename $0` on\" or \"`basename $0` off\" Arduino Nano Watchdog support"
+		echo  "Usage: \"`basename $0` on\" or \"`basename $0` off\" $title Watchdog support"
 	;;
 esac
