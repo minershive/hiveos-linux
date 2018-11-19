@@ -152,6 +152,11 @@ if [ $GPU_COUNT_NVIDIA -gt 0 ]; then
 	echo2 "`nvidia-xorg`"
 fi
 if [ $GPU_COUNT_AMD -gt 0 ]; then
+
+    if [ ! -z /opt/dkms-vega/amdgpu.ko ]; then
+    . /hive/bin/opencl_insert
+    fi
+
     echo2 "modprobe ${RED}AMD${NOCOLOR} drivers"
     modprobe amdgpu
     #if there are nvidias then their config should be used, amd will not work anyways

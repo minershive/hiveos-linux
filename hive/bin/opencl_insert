@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+
+function module_insert {
+
+	insmod /opt/dkms-vega/amdkcl.ko
+	insmod /opt/dkms-vega/amdttm.ko
+	insmod /opt/dkms-vega/amdchash.ko
+	modprobe amd_iommu_v2
+	insmod /opt/dkms-vega/amd-sched.ko
+	insmod /opt/dkms-vega/amdkfd.ko
+	insmod /opt/dkms-vega/amdgpu.ko ppfeaturemask=0xffffffff vm_fragment_size=9
+	sleep 5
+	echo "/opt/opencl-vega/lib/x86_64-linux-gnu" > /etc/ld.so.conf.d/hive-amdgpu.conf
+	ldconfig
+	amd-save-pp_tables
+}
+
+amd_version=`modinfo amdgpu |grep '^version'| sed 's/version:        //'`
+
+if [[  -z $amd_version ]]; then
+
+VEGAS_COUNT=$( lspci | grep Vega  | wc -l )
+
+	if [[ $VEGAS_COUNT -ne 0 ]]; then
+	
+		if [ $GPU_COUNT_AMD -gt $VEGAS_COUNT ]; then
+			
+			    warnmsg=$(cat <<WARN
+$YELLOW
+#####################################################################
+###
+###   WARNING
+###
+###   You have mix of AMD (VEGA|NO_VEGA) cards.
+###   Dont do this, its not work
+###
+#####################################################################
+$NOCOLOR
+WARN
+)
+
+    echo2 "$warnmsg"
+    sleep 2
+		fi
+
+	
+		
+		module_insert
+		echo2 "insert ${RED}AMD VEGA${NOCOLOR} drivers and Opencl"	
+	else
+		
+		echo "/opt/opencl-prevega/lib/x86_64-linux-gnu" > /etc/ld.so.conf.d/hive-amdgpu.conf
+		ldconfig
+		echo2 "insert ${RED}AMD PREVEGA${NOCOLOR} drivers and Opencl"
+	fi
+
+	
+		
+fi
