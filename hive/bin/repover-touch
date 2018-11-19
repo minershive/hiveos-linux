@@ -2,6 +2,16 @@
 # Saves repository version
 
 repourl=`cat /etc/apt/sources.list.d/hiverepo.list | grep -m1 '^deb http' | awk '{print $2}'`
-repover=`curl -s "$repourl/RepoVer"`
-[[ ! -z $repover ]] &&
+response=`curl --insecure -L --connect-timeout 7 --max-time 15 --silent --include "$repourl/RepoVer"`
+repover=
+
+if (echo "$response" | grep -q '^HTTP/1.1 200 OK'); then
+	repover=$(echo "$response" | tail -n 1)
+fi
+
+if [[ ! -z $repover ]]; then
 	echo "$repover" > /hive-config/RepoVer
+	exit 0
+fi
+
+exit 1
