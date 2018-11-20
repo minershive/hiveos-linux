@@ -11,16 +11,16 @@ else
 	local t_temp=$(jq '.temp' <<< $gpu_stats)
 	local t_fan=$(jq '.fan' <<< $gpu_stats)
 
-	[[ $cpu_indexes_array != '[]' ]] && #remove Internal Gpus
-		t_temp=$(jq -c "del(.$cpu_indexes_array)" <<< $t_temp) &&
-		t_fan=$(jq -c "del(.$cpu_indexes_array)" <<< $t_fan)
+	# [[ $cpu_indexes_array != '[]' ]] && #remove Internal Gpus
+	# 	t_temp=$(jq -c "del(.$cpu_indexes_array)" <<< $t_temp) &&
+	# 	t_fan=$(jq -c "del(.$cpu_indexes_array)" <<< $t_fan)
 
 	bus_ids=""
 	a_fans=""
 	a_temp=""
 	bus_no=$(jq .devs.DEVS[]."GPU" <<< "$stats_raw")
 	local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
-	for ((i = 0; i < `awk "{ print NF }" <<< $bus_no`; i++)); do
+	for ((i = 0; i < `echo $bus_no | awk "{ print NF }"`; i++)); do
 		bus_id=`head -n 40 ${MINER_LOG_BASENAME}.log | grep "Successfully initialized GPU $i" | awk '{ printf $12"\n" }' | cut -d ':' -f 1`
 		bus_id=$(( 0x${bus_id} ))
 		bus_ids+=${bus_id}" "

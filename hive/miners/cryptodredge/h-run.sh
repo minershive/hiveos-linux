@@ -15,9 +15,6 @@ while true; do
 		break
 done
 
-#installing libc-ares2 if necessary
-[[ `dpkg -s libc-ares2 2>/dev/null | grep -c "ok installed"` -eq 0 ]] && apt-get install -y libc-ares2
-
 cd $MINER_DIR/$MINER_VER
 
 # #switching cuda version
