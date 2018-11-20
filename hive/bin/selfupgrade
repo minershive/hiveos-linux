@@ -8,7 +8,10 @@ export DEBIAN_FRONTEND=noninteractive
 . colors
 
 current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
-echo -e "Current version: ${YELLOW}$current_version${NOCOLOR}"
+[[ -e /hive-config/RepoVer ]] &&
+	repover=`cat /hive-config/RepoVer` ||
+	repover=0
+echo -e "Current version: ${YELLOW}$current_version@$repover${NOCOLOR}"
 
 
 VERSION=$1
@@ -118,7 +121,10 @@ autofan
 
 
 current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
-echo -e "${GREEN}Upgrade to ${YELLOW}$current_version${GREEN} complete. Have a happy mining.${NOCOLOR}"
+[[ -e /hive-config/RepoVer ]] &&
+	repover=`cat /hive-config/RepoVer` ||
+	repover=0
+echo -e "${GREEN}Upgrade to ${YELLOW}$current_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
 
 
 #Flush buffers if any files changed
