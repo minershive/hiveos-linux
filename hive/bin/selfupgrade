@@ -55,7 +55,7 @@ echo ------------------------------------------------------
 if [[ -z $VERSION ]]; then #normal upgrade to the latest available
 	exitcode=0
 
-	apt-get install -y --only-upgrade hive
+	apt-get install -y --only-upgrade hive hive-lib hive-opt
 	aexitcode=$?
 	[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 
