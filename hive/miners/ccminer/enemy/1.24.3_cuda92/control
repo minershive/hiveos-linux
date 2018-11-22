@@ -1,0 +1,7 @@
+Package: hive-miners-ccminer-enemy-1.24.3-cuda92
+Version: 0.6-02
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner

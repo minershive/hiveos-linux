@@ -1,8 +1,8 @@
 Package: hive-miners-ccminer-enemy
-Version: 0.6-01
+Version: 0.6-02
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-ccminer-enemy-1.23-cuda92
+Depends: hive-miners-ccminer-enemy-1.24.3-cuda92
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
