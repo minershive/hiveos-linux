@@ -1,0 +1,7 @@
+Package: hive-miners-xmrig-amd-2.8.6
+Version: 0.6-03
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner
