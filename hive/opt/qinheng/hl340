@@ -18,16 +18,16 @@ echo "Using $PORT"
 	echo "$PORT is not a character device" &&
 	exit 1
 
-ping='echo -ne "r90p90"'
-reset='echo -ne "r2p90"'
+ping=""echo -ne "r90p90""
+reset=""echo -ne "r2p90""
 
 if [[ ! -e /hive-config/watchdog/wd-nano.on ]]; then
-	ping='echo -ne "\x1E\x00"'
-	reset='echo -ne "\xFF\x55"'
+	ping="echo -ne "\x1E\x00""
+	reset="echo -ne "\xFF\x55""
 elif [[ ! -e /hive-config/watchdog/wd-fixorgua.on ]]; then
 	#https://fix.org.ua/index.php/fix-forum/tekhpodderzhka/67-po-dlya-watchdog?start=6#135
-	ping='echo -ne "\x31\x41"'
-	reset='echo -ne "\x33\x33"'
+	ping="echo -ne ""\x31""\x41"""
+	reset="echo -ne "\x33\x33""
 fi
 
 
