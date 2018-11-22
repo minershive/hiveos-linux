@@ -1,0 +1,7 @@
+Package: hive-miners-bminer-10.6.0
+Version: 0.6-03
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner
