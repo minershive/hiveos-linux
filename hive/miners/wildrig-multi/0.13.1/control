@@ -1,8 +1,7 @@
-Package: hive-miners-wildrig-multi
+Package: hive-miners-wildrig-multi-0.13.1
 Version: 0.6-02
 Section: base
 Priority: optional
 Architecture: all
-Depends: libuv1, hive-miners-wildrig-multi-0.13.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
