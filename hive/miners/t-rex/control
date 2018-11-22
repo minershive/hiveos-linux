@@ -3,6 +3,6 @@ Version: 0.6-02
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-t-rex-0.7.3
+Depends: hive-miners-t-rex-0.8.0
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
