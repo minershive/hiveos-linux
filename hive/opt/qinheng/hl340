@@ -18,22 +18,22 @@ echo "Using $PORT"
 	echo "$PORT is not a character device" &&
 	exit 1
 
-ping='echo -ne "r90p90"'
-reset='echo -ne "r2p90"'
+ping="r90p90"
+reset="r2p90"
 
 if [[ ! -e /hive-config/watchdog/wd-nano.on ]]; then
-	ping='echo -ne "\x1E\x00"'
-	reset='echo -ne "\xFF\x55"'
+	ping="\x1E\x00"
+	reset="\xFF\x55"
 elif [[ ! -e /hive-config/watchdog/wd-fixorgua.on ]]; then
 	#https://fix.org.ua/index.php/fix-forum/tekhpodderzhka/67-po-dlya-watchdog?start=6#135
-	ping='echo -ne "\x31\x41"'
-	reset='echo -ne "\x33\x33"'
+	ping="\x31\x41"
+	reset="\x33\x33"
 fi
 
 
 if [[ $1 == "reset" ]]; then
 	echo "Pushing Reset"
-	$reset > $PORT
+	echo -ne $reset > $PORT
 	exit 0
 fi
 
@@ -46,10 +46,10 @@ fi
 
 
 #should be ping here, but will work with any
-#Send 60 second timeout to WD in HEX , if WD dont  received 2*timeout, then WD RESET the MB.
+#Send 60 second timeout to WD in HEX , if WD does not receive 2*timeout, then WD RESET the MB.
 
 while true; do
 	echo "Pinging watchdog"
-	$ping > $PORT
+	echo -ne $ping > $PORT
 	sleep 5
 done
