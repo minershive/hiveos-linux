@@ -105,6 +105,7 @@ Example of `$stats` var:
 	"temp": [60, 63], //array of miner temps
 	"fan": [80, 100], //array of miner fans
 	"uptime": 12313232, //seconds elapsed from miner stats
+	"ver": "1.2.3.4-beta", //miner version currently run, parsed from it's api or manifest 
 	
 	//Optional: accepted, rejected shares.
 	//2 numbers are required, you can add total invalids as 3rd number
