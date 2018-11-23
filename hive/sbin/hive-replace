@@ -2,6 +2,18 @@
 
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
+
+BLACK=`tput setaf 0`
+RED=`tput setaf 1`
+GREEN=`tput setaf 2`
+YELLOW=`tput setaf 3`
+BLUE=`tput setaf 4`
+MAGENTA=`tput setaf 5`
+CYAN=`tput setaf 6`
+WHITE=`tput setaf 7`
+NOCOLOR=`tput sgr0`
+
+
 SCRIPT_PATH=`dirname $0`
 SCRIPT_NAME=`basename $0`
 TMPDIR="/tmp/tmproot"
@@ -24,17 +36,18 @@ if [[ $(id -u) -ne 0 ]]; then
 fi
 
 
+# Gets/downloads image
 function get {
 	cd $TMPDIR
 	rm $TMPDIR/*hive* > /dev/null 2>&1
 
-	[[ ! -z $url ]] && echo -e  "${GREEN}\nCurrent URL|path to HiveOS image is ${YELLOW}\"$url\"${GREEN}.\nIf this URL|path is correct press ENTER, or re-type correct URL|path.${NOCOLOR}"
-	echo -en "${GREEN}\nLink|path to zip-file with HiveOS image (HTTP|FTP link or local|NFS path) : ${NOCOLOR}"
+	[[ ! -z $url ]] && echo -e  "${GREEN}\nCurrent URL|path to HiveOS image is ${YELLOW}\"$url\"${GREEN}.\nIf this URL|path is correct press ENTER or retype correct URL|path.${NOCOLOR}"
+	echo -en "${GREEN}\nLink|path to ZIP file with HiveOS image (HTTP|FTP link or local|NFS path): ${NOCOLOR}"
 	read answer
 	[[ ! -z $answer ]] && url=$answer
 
 	#Copy|download hive image to tmmfs
-	echo -e "${GREEN}\nGet HiveOS image${NOCOLOR}"
+	echo -e "\n${CYAN}> Downloading image file${NOCOLOR}"
 	if [[ "$url" == *http* ||  "$url" == *ftp* ]]; then
 		echo ""
 		wget -t 5 --show-progress $url
@@ -53,33 +66,25 @@ function get {
 	mdsum=$(sed -n "/$archname/p" $TMPDIR/VERSIONS.txt | awk '{print$2}')
 
 	#check md5
-	echo "${GREEN}Check MD5 summ of image file${NOCOLOR}"
+	echo "\n${CYAN}> Checking MD5 summ of image file${NOCOLOR}"
 	mdsum_hive=$(md5sum $TMPDIR/$archname | awk '{print$1}')
-	[[ $mdsum != $mdsum_hive ]] && echo "${RED}MD5-summ of image file incorrect${NOCOLOR}" && return 1
-	echo "${GREEN}Download|copy HiveOS image success!${NOCOLOR}"
+	[[ $mdsum != $mdsum_hive ]] && echo "${RED}MD5-summ of image file is incorrect${NOCOLOR}" && return 1
+	echo "${GREEN}Download|copy HiveOS image successful!${NOCOLOR}"
 	return 0
 }
 
 
+# Starting actions
 function prepare {
-	BLACK=`tput setaf 0`
-	RED=`tput setaf 1`
-	GREEN=`tput setaf 2`
-	YELLOW=`tput setaf 3`
-	BLUE=`tput setaf 4`
-	MAGENTA=`tput setaf 5`
-	CYAN=`tput setaf 6`
-	WHITE=`tput setaf 7`
-	NOCOLOR=`tput sgr0`
-
 	mem=$(free -m | awk 'NR == 2{print$2}')
 	clear
-	echo "***********************************"
-	echo "${GREEN}Install HiveOS${NOCOLOR}"
+	echo -e "${CYAN}***********************************${NOCOLOR}"
+	echo -e "${YELLOW}Hive OS Image Installation${NOCOLOR}"
+	echo -e "${CYAN}***********************************${NOCOLOR}"
 	echo
 	echo "Total RAM=$mem Mb"
 	echo
-	[[ $mem -lt 3900 ]] && echo "${YELLOW}4 Gb of memory required. Exit${NOCOLOR}" && exit
+	[[ $mem -lt 3900 ]] && echo "${YELLOW}4 Gb RAM is required. Exiting.${NOCOLOR}" && exit
 
 	PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
 	DISK_PART=`blkid | grep -m1 $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
@@ -88,9 +93,10 @@ function prepare {
 	PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
 
 
-	echo -e "Current OS booted from ${GREEN}$DISK_NAME${NOCOLOR} and whole drive size is ${WHITE}$DISK_SIZE${NOCOLOR} MB"
-	[[ $DISK_SIZE -lt 8192 ]] && echo -e "\n${YELLOW}The minimum disk size for HiveOS is 8 Gb${NOCOLOR}" && exit
-	echo -e "${RED}Warning: After install HiveOS, all your data on ${GREEN}$DISK_NAME${NOCOLOR}${RED} will be lost!${NOCOLOR}"
+	echo -e "Current OS booted from ${GREEN}$DISK_NAME${NOCOLOR} and whole drive size is ${WHITE}$DISK_SIZE${NOCOLOR} Mb"
+	[[ $DISK_SIZE -lt 8192 ]] && echo -e "\n${YELLOW}The minimum disk size for Hive OS is 8 Gb${NOCOLOR}" && exit
+	echo -e "${RED}Warning: After Hive OS installation, all your data on ${GREEN}$DISK_NAME${NOCOLOR} ${RED}will be lost!${NOCOLOR}"
+
 	echo -en "\nType ${GREEN}\"yes\"${NOCOLOR} if you want to install Hive OS on ${GREEN}$DISK_NAME${NOCOLOR} : "
 	read answer
 	[[ $answer != "yes" ]] && echo -e "${YELLOW}\nBye, bye!${NOCOLOR}" && exit
@@ -106,7 +112,7 @@ function prepare {
 	dpkg -s unzip > /dev/null 2>&1
 	[[ $? -ne 0 ]] && programs=1
 	if [[ $programs -ne 0 ]]; then
-		echo "Install the necessary programs"
+		echo -e "${CYAN}> Installing required packages${NOCOLOR}"
 		apt-get update
 		apt-get install -y lsof curl wget unzip
 	fi
@@ -122,7 +128,7 @@ function prepare {
 	else
 		farm=""
 		while [[ -z $farm ]]; do
-			echo -en "${GREEN}\nType you FARM_HASH from Web-interface : ${NOCOLOR}"
+			echo -en "${GREEN}\nFARM_HASH from Web-interface: ${NOCOLOR}"
 			read farm
 			[[ -z $farm ]] && echo "${RED}FAMR_HASH can't be empty. Please retype.${NOCOLOR}"
 		done
@@ -136,7 +142,7 @@ function prepare {
 		flag_get=$?
 		if [[ $flag_get -ne 0 ]]; then
 			repeat="y"
-			echo -en "You want to try again (Y/n) : "
+			echo -en "You want to try again (Y/n): "
 			read answer
 			[[ ! -z $answer ]] && repeat=$answer
 			[[ $repeat != y* && $repeat != Y* ]] && echo -e "${YELLOW}\nBye, bye!${NOCOLOR}" && exit
@@ -151,13 +157,14 @@ function prepare {
 
 	#stop services and remount RO
 	swapoff -a
-	echo -e "${YELLOW}\nStop services${NOCOLOR}"
+	echo -e "\n${CYAN}> Stopping services${NOCOLOR}"
 
 	[[ $thishive -eq 1 ]] && miner stop > /dev/null 2>&1 && killall xinit
 
 	for SOCKET in \
 	`systemctl list-units -t socket | awk '{print $1}' | grep -v -e ssh | grep -v -e ssh | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions`; \
 	do systemctl stop $SOCKET > /dev/null 2>&1; done
+
 	for SERVICE in \
 	`systemctl list-units -t service | awk '{print $1}' | grep -v -e ssh | grep -v -e ssh | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions`; \
 	do systemctl stop $SERVICE > /dev/null 2>&1; done
@@ -167,15 +174,19 @@ function prepare {
 		pid=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | sed '2!d' | awk '{print $2}')
 		[[ -z $pid ]] && continue
 		process=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | sed '2!d' | awk '{print $1}')
-		echo -e "Kill $process"
+		echo -e "kill $process"
 		kill $pid
 		sleep 1
 	done
 
-	for MOUNTS in `cat /proc/mounts | grep $DISK_NAME | awk '{print $2}'`; do mount -n -o remount,ro $MOUNTS > /dev/null 2>&1; done
+
+	#Readonly remount
+	for MOUNTS in `cat /proc/mounts | grep $DISK_NAME | awk '{print $2}'`; do
+		mount -n -o remount,ro $MOUNTS > /dev/null 2>&1;
+	done
 
 
-	##get config partition and mount it to loop
+	#get config partition and mount it to loop
 	arch=$(ls $TMPDIR/*hive*zip)
 	unzip -p $arch | dd of=$TMPDIR/conf.img bs=1M count=50 iflag=fullblock > /dev/null 2>&1
 	begin_conf=$(( $(fdisk -l $TMPDIR/conf.img | grep NTFS | awk '{print $2}') * 512 ))
@@ -196,7 +207,7 @@ function prepare {
 
 
 	#create temp root
-	echo -e "${YELLOW}\nCreate a temporary root fs${NOCOLOR}"
+	echo -e "\n${CYAN}> Creating temporary root filesystem${NOCOLOR}"
 	mkdir -p $TMPDIR/{proc,sys,run,dev,usr,var,oldroot,bin,sbin,lib,tmp,usr/lib,usr/share,usr/lib/x86_64-linux-gnu,lib/lsb}
 	cp -aR /{bin,sbin,etc} $TMPDIR > /dev/null 2>&1
 	cp -aR /usr/{bin,sbin} $TMPDIR/usr > /dev/null 2>&1
@@ -219,57 +230,65 @@ function prepare {
 	echo "root_dev=$DISK_NAME" >> $TMPDIR/replace.conf
 	echo "conf_loop=$conf_loop" >> $TMPDIR/replace.conf
 
-	#Cehroot to temp root
+
+	#chroot to temp root
 	mount --bind /proc $TMPDIR/proc
 	mount --bind /sys $TMPDIR/sys
 	mount --bind /dev $TMPDIR/dev
 	sync
 	cd $TMPDIR
 	exec chroot . /bin/bash /$SCRIPT_NAME
-
 }
 
+
+# Writing to disk
 function write {
 	cd /
 
 	arch=$(ls *hive*zip)
 	conf_part=$root_dev"1"
 
-	echo -e "\n\nCreate a HIVE OS File system on $root_dev"
-	echo -e "\nPlease wait. This can take a long time."
-	echo -e "To prevent damage to your disk device,\ndo not turn off your computer until the end of the process.\n"
+	echo -e "\n\n${CYAN}> Writing Hive OS filesystem to $root_dev${NOCOLOR}"
+	echo -e "Please wait, this can take long"
+	echo -e "To prevent damage to your disk device\ndo not turn off your computer until the end of the process.\n"
 
 	unzip -p $arch | dd of=/dev/$root_dev status=progress bs=20M
-	[[ $? -ne 0 ]] && "Write image failed. Exit" && return
+	[[ $? -ne 0 ]] && echo -e "${RED}Write image failed. Exiting.${NOCOLOR}" && return
 
 
 	#Rewrite config partition
 	partprobe > /dev/null 2>&1
 	dd if=/new_conf.img of=/dev/$conf_part > /dev/null 2>&1
 
+
 	#Reboot
 	sync
-	echo -e "\nCreate a HIVE OS File system on $root_dev successfull!"
 
-	echo -e "\nYour rig is configured and ready to work under Hive OS."
-	echo "After the reboot, it will be automatically registered on the web"
-	echo "as part of the farm whose FARM HASH you entered"
-	echo
-	echo -e "\nHappy mining!"
-	echo "Reboot"
+	echo -e
+	echo -e "${GREEN}Filesystem creating on $root_dev is successfull!${NOCOLOR}"
+	echo -e
+	echo -e "Your rig is configured and ready to work under Hive OS."
+	echo -e "After reboot it should appear on the web"
+	echo -e
+	echo -e "${GREEN}Have a happy mining!${NOCOLOR}"
+	echo -e "Rebooting in 15 seconds"
+
 	sleep 15
 
 	echo 1 > /proc/sys/kernel/sysrq
 	echo b > /proc/sysrq-trigger
 }
 
+
+
 function sel {
 	wr=0
 	[[ -f replace.conf ]] && source /replace.conf
-	if [[ $wr -eq 1 ]]; then
-		write
-	else
+
+	if [[ $wr -ne 1 ]]; then
 		prepare
+	else
+		write
 	fi
 }
 
