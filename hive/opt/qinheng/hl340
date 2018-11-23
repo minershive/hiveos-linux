@@ -18,16 +18,20 @@ echo "Using $PORT"
 	echo "$PORT is not a character device" &&
 	exit 1
 
-ping="r90p90"
-reset="r2p90"
 
-if [[ ! -e /hive-config/watchdog/wd-nano.on ]]; then
-	ping="\x1E\x00"
-	reset="\xFF\x55"
-elif [[ ! -e /hive-config/watchdog/wd-fixorgua.on ]]; then
+if [[ -e /hive-config/watchdog/wd-nano.on ]]; then
+	# Arduino nano
+	ping="r90p90"
+	reset="r2p90"
+elif [[ -e /hive-config/watchdog/wd-fixorgua.on ]]; then
+	# FixOrgUa
 	#https://fix.org.ua/index.php/fix-forum/tekhpodderzhka/67-po-dlya-watchdog?start=6#135
 	ping="\x31\x41"
 	reset="\x33\x33"
+else
+	# Default China dog
+	ping="\x1E\x00"
+	reset="\xFF\x55"
 fi
 
 
