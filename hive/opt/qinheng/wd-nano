@@ -27,6 +27,6 @@ case $onoff in
 		fi
 	;;
 	*)
-		echo  "Usage: \"`basename $0` on\" or \"`basename $0` off\" $title Watchdog support"
+		echo  "Usage: Run with \"on\" or \"off\" for $title Watchdog support"
 	;;
 esac

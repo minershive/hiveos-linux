@@ -3,5 +3,5 @@
 
 cd `dirname $0`
 
-./wd-nano $1 "/hive-config/watchdog/wd-fixorgua.on" "FixOrgUa"
+./wd-nano "$1" "/hive-config/watchdog/wd-fixorgua.on" "FixOrgUa"
 
