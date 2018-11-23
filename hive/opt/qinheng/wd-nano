@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 
+onoff=$1
 
 file=/hive-config/watchdog/wd-nano.on
-[[ ! -z $1 ]] && file=$1
+[[ ! -z $2 ]] && file="$2"
 
 title="Arduino Nano"
-[[ ! -z $2 ]] && title=$2
+[[ ! -z $3 ]] && title="$3"
 
 
 
 #mkdir -p /hive-config/watchdog
 
-case $1 in
+case $onoff in
 	on)
 		echo  "Switching ON support for $title Watchdog. Reboot now."
 		echo "If this file exists then $title Watchdog support in ON" > $file
