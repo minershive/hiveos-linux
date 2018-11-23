@@ -9,6 +9,7 @@
 
 		local ac=`echo "$summary" | tr ';' '\n' | grep -m1 'ACC=' | sed -e 's/.*=//'`
 		local rj=`echo "$summary" | tr ';' '\n' | grep -m1 'REJ=' | sed -e 's/.*=//'`
+		local ver=`echo "$summary" | tr ';' '\n' | grep -m1 'VER=' | sed -e 's/.*=//'`
 		#stats=`echo $threads | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176' | grep -E 'KHS=' | sed -e 's/.*=//' | jq -cs '{khs:.}'`
 		striplines=`echo "$threads" | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176'`
 
@@ -53,7 +54,8 @@
 				--argjson fan "`echo \"$striplines\" | grep 'FAN=' | sed -e 's/.*=//' | jq -cs '.'`" \
 				--arg ac "$ac" --arg rj "$rj" \
 				--argjson bus_numbers "`echo ${ccbusids[@]} | tr " " "\n" | jq -cs '.'`" \
-				'{$hs, $temp, $fan, $uptime, $algo, ar: [$ac, $rj], $bus_numbers}')
+				--arg ver "$ver" \
+				'{$hs, $temp, $fan, $uptime, $algo, ar: [$ac, $rj], $bus_numbers, $ver}')
 	fi
 
 	[[ -z $khs ]] && khs=0
