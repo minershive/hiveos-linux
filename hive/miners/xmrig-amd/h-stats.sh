@@ -12,7 +12,8 @@ else
 	local ac=$(jq '.results.shares_good' <<< "$stats_raw")
 	local rj=$(( $(jq '.results.shares_total' <<< "$stats_raw") - $ac ))
 	stats=$(jq --argjson temp "$temp" --argjson fan "$fan" --arg ac "$ac" --arg rj "$rj" \
-		'{hs: [.hashrate.threads[][0]], algo: .algo, $temp, $fan, uptime: .connection.uptime, ar: [$ac, $rj]}' <<< "$stats_raw")
+		'{hs: [.hashrate.threads[][0]], algo: .algo, $temp, $fan, uptime: .connection.uptime,
+		  ar: [$ac, $rj], ver: .version}' <<< "$stats_raw")
 fi
 
 	[[ -z $khs ]] && khs=0
