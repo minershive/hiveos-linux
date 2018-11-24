@@ -2,6 +2,9 @@
 
 
 function module_insert {
+	modprobe drm
+	modprobe drm_kms_helper
+	modprobe i2c_algo_bit
 	insmod /opt/dkms-vega/amdkcl.ko
 	insmod /opt/dkms-vega/amdttm.ko
 	insmod /opt/dkms-vega/amdchash.ko
