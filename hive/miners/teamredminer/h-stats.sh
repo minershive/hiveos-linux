@@ -35,12 +35,17 @@ else
 	local ac=$(jq '."summary"."SUMMARY"[0]."Accepted"' <<< "$stats_raw")
 	local rj=$(jq '."summary"."SUMMARY"[0]."Rejected"' <<< "$stats_raw")
 
+	local ver=`echo $stats_raw | jq -r .summary.STATUS[0].Description | awk '{ printf $2 }'`
+
 	stats=$(jq \
 		--argjson fan "`echo ${a_fans[@]} | tr " " "\n" | jq -cs '.'`" \
 		--argjson temp "`echo ${a_temp[@]} | tr " " "\n" | jq -cs '.'`" \
 		--argjson bus_numbers "`echo ${bus_ids[@]} | tr " " "\n" | jq -cs '.'`" \
 		--arg ac "$ac" --arg rj "$rj" --arg algo "$TEAMREDMINER_ALGO" \
-		'{hs: [.devs.DEVS[]."KHS 30s"], $algo, $temp, $fan, uptime: .summary.SUMMARY[0].Elapsed, ar: [$ac, $rj], $bus_numbers}' <<< "$stats_raw")
+		--arg ver "$ver" \
+		'{hs: [.devs.DEVS[]."KHS 30s"], $algo, $temp, $fan,
+		  uptime: .summary.SUMMARY[0].Elapsed, ar: [$ac, $rj], $bus_numbers,
+		  $ver}' <<< "$stats_raw")
 fi
 
 	[[ -z $khs ]] && khs=0
