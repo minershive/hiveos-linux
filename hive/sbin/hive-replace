@@ -2,80 +2,101 @@
 
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
-
-BLACK=`tput setaf 0`
-RED=`tput setaf 1`
-GREEN=`tput setaf 2`
-YELLOW=`tput setaf 3`
-BLUE=`tput setaf 4`
-MAGENTA=`tput setaf 5`
-CYAN=`tput setaf 6`
-WHITE=`tput setaf 7`
-NOCOLOR=`tput sgr0`
-
-
 SCRIPT_PATH=`dirname $0`
 SCRIPT_NAME=`basename $0`
+myself=$0
 TMPDIR="/tmp/tmproot"
 md5_url="http://download.hiveos.farm/VERSIONS.txt"
 url=""
 root_dev=""
 farm_hash=""
 farm=""
+force=0
+no_confirm=0
 thishive=0
 [[ $(uname -sr) == *hive* ]] && thishive=1
-
-#Prevent start from local console
-[[ $(tty) == *tty* || ! -z $DISPLAY ]] && echo "This script does not work in the local console. Exit" && exit
 
 #Get root
 if [[ $(id -u) -ne 0 ]]; then
 	echo "Root privileges required"
 	sudo chmod +x $0
-	exec sudo $0
+	exec sudo $0 $*
 fi
 
+
+
+function color {
+	BLACK=`tput setaf 0`
+	RED=`tput setaf 1`
+	GREEN=`tput setaf 2`
+	YELLOW=`tput setaf 3`
+	BLUE=`tput setaf 4`
+	MAGENTA=`tput setaf 5`
+	CYAN=`tput setaf 6`
+	WHITE=`tput setaf 7`
+	NOCOLOR=`tput sgr0`
+}
+
+function usage {
+	echo -e "\nUsage: hive-replace [option] <Link|path to zip-file with HiveOS image>"
+	echo -e "Options:"
+	echo -e "${GREEN}\t-y\t\t\t${NOCOLOR}: Do not ask for confirmation of replacement with HiveOS\n"
+	echo -e "${GREEN}\t-f\t\t\t${NOCOLOR}: Forced replace. Do not check the checksum of image archive. Use with caution!\n"
+	echo -e "${GREEN}\t--hash=FARM_HASH\t${NOCOLOR}: FARM_HASH from Web-interface\n"
+	echo -e "${GREEN}\t-h\t\t\t${NOCOLOR}: Help. Print this text and exit\n"
+	echo -e "Example:"
+	echo -e "${GREEN}\thive-replace -y --hash=46e9602837d0bda99f0 http://server.loc/hiveos-0.6-01@181121.zip\n${NOCOLOR}"
+	exit
+}
 
 # Gets/downloads image
 function get {
 	cd $TMPDIR
 	rm $TMPDIR/*hive* > /dev/null 2>&1
 
-	[[ ! -z $url ]] && echo -e  "${GREEN}\nCurrent URL|path to HiveOS image is ${YELLOW}\"$url\"${GREEN}.\nIf this URL|path is correct press ENTER or retype correct URL|path.${NOCOLOR}"
-	echo -en "${GREEN}\nLink|path to ZIP file with HiveOS image (HTTP|FTP link or local|NFS path): ${NOCOLOR}"
-	read answer
-	[[ ! -z $answer ]] && url=$answer
+	#Remove interactive	
+	#[[ ! -z $url ]] && echo -e  "${GREEN}\nCurrent URL|path to HiveOS image is ${YELLOW}\"$url\"${GREEN}.\nIf this URL|path is correct press ENTER or retype correct URL|path.${NOCOLOR}"
+	#echo -en "${GREEN}\nLink|path to ZIP file with HiveOS image (HTTP|FTP link or local|NFS path): ${NOCOLOR}"
+	#read answer
+	#[[ ! -z $answer ]] && url=$answer
+	###
 
 	#Copy|download hive image to tmmfs
 	echo -e "\n${CYAN}> Downloading image file${NOCOLOR}"
 	if [[ "$url" == *http* ||  "$url" == *ftp* ]]; then
 		echo ""
 		wget -t 5 --show-progress $url
-		[[ $? -ne 0 ]] && echo "${RED}Download Hive OS image failed. Check url${NOCOLOR}" && return 1
+		[[ $? -ne 0 ]] && echo -e "${RED}Download Hive OS image failed. Check url${NOCOLOR}" && return 1
 	else
-		[[ ! -f $url ]] && echo "${RED}Hive OS image not found. Check path${NOCOLOR}" && return 1
+		[[ ! -f $url ]] && echo -e "${RED}Hive OS image not found. Check path${NOCOLOR}" && return 1
 		cp -v $url $TMPDIR
-		[[ $? -ne 0 ]] && echo "${RED}Copy Hive OS image failed${NOCOLOR}" && return 1
+		[[ $? -ne 0 ]] && echo -e "${RED}Copy Hive OS image failed${NOCOLOR}" && return 1
+	fi
+	
+	#get correct md5summ from hive repo
+	if [[ $force -ne 1 ]]; then
+		curl -s $md5_url > $TMPDIR/VERSIONS.txt
+		[[ $? -ne 0 ]] && echo -e "${RED}Сan't get the required data from Hive OS server. Check you internet connection${NOCOLOR}" && return 1
+		basename=`basename -s .zip "$url"`
+		archname=`basename "$url"`
+		mdsum=$(sed -n "/$archname/p" $TMPDIR/VERSIONS.txt | awk '{print$2}')
+		#check md5
+		echo -e "\n${CYAN}> Checking MD5 summ of image file${NOCOLOR}"
+		mdsum_hive=$(md5sum $TMPDIR/$archname | awk '{print$1}')
+		[[ $mdsum != $mdsum_hive ]] && echo -e "${RED}MD5-summ of image file is incorrect${NOCOLOR}" && return 1
 	fi
 
-	#get correct md5summ from hive repo
-	curl -s $md5_url > $TMPDIR/VERSIONS.txt
-	[[ $? -ne 0 ]] && "${RED}Сan't get the required data from Hive OS server. Check you internet connection${NOCOLOR}" && return 1
-	basename=`basename -s .zip "$url"`
-	archname=`basename "$url"`
-	mdsum=$(sed -n "/$archname/p" $TMPDIR/VERSIONS.txt | awk '{print$2}')
-
-	#check md5
-	echo "\n${CYAN}> Checking MD5 summ of image file${NOCOLOR}"
-	mdsum_hive=$(md5sum $TMPDIR/$archname | awk '{print$1}')
-	[[ $mdsum != $mdsum_hive ]] && echo "${RED}MD5-summ of image file is incorrect${NOCOLOR}" && return 1
-	echo "${GREEN}Download|copy HiveOS image successful!${NOCOLOR}"
+	echo -e "${GREEN}Download|copy HiveOS image successful!${NOCOLOR}"
 	return 0
 }
 
 
 # Starting actions
 function prepare {
+
+	#Prevent start from local console
+	[[ $(tty) == *tty* || ! -z $DISPLAY ]] && echo "This script does not work in the local console. Exit" && exit
+	
 	mem=$(free -m | awk 'NR == 2{print$2}')
 	clear
 	echo -e "${CYAN}***********************************${NOCOLOR}"
@@ -95,11 +116,13 @@ function prepare {
 
 	echo -e "Current OS booted from ${GREEN}$DISK_NAME${NOCOLOR} and whole drive size is ${WHITE}$DISK_SIZE${NOCOLOR} Mb"
 	[[ $DISK_SIZE -lt 8192 ]] && echo -e "\n${YELLOW}The minimum disk size for Hive OS is 8 Gb${NOCOLOR}" && exit
-	echo -e "${RED}Warning: After Hive OS installation, all your data on ${GREEN}$DISK_NAME${NOCOLOR} ${RED}will be lost!${NOCOLOR}"
 
-	echo -en "\nType ${GREEN}\"yes\"${NOCOLOR} if you want to install Hive OS on ${GREEN}$DISK_NAME${NOCOLOR} : "
-	read answer
-	[[ $answer != "yes" ]] && echo -e "${YELLOW}\nBye, bye!${NOCOLOR}" && exit
+	if [[ $no_confirm -ne 1 ]]; then
+		echo -e "${RED}Warning: After Hive OS installation, all your data on ${GREEN}$DISK_NAME${NOCOLOR} ${RED}will be lost!${NOCOLOR}"
+		echo -en "\nType ${GREEN}\"yes\"${NOCOLOR} if you want to install Hive OS on ${GREEN}$DISK_NAME${NOCOLOR} : "
+		read answer
+		[[ $answer != "yes" ]] && echo -e "${YELLOW}\nBye, bye!${NOCOLOR}" && exit
+	fi
 
 	##check programs
 	programs=0
@@ -123,31 +146,37 @@ function prepare {
 
 
 	#get farm_hash or old config
-	if [[ $thishive -eq 1 && -f /hive-config/rig.conf ]]; then
-		cp /hive-config/rig.conf $TMPDIR/
-	else
-		farm=""
-		while [[ -z $farm ]]; do
-			echo -en "${GREEN}\nFARM_HASH from Web-interface: ${NOCOLOR}"
-			read farm
-			[[ -z $farm ]] && echo "${RED}FAMR_HASH can't be empty. Please retype.${NOCOLOR}"
-		done
-	fi
+	[[ $thishive -eq 1 && -f /hive-config/rig.conf ]] && cp /hive-config/rig.conf $TMPDIR/
+	
+	#Remove interactive
+	#	if [[ $thishive -eq 1 && -f /hive-config/rig.conf ]]; then
+	#	cp /hive-config/rig.conf $TMPDIR/
+	#else
+	#	farm=""
+	#	while [[ -z $farm ]]; do
+	#		echo -en "${GREEN}\nFARM_HASH from Web-interface: ${NOCOLOR}"
+	#		read farm
+	#		[[ -z $farm ]] && echo "${RED}FAMR_HASH can't be empty. Please retype.${NOCOLOR}"
+	#	done
+	#fi
 
-
+	
 	#get hive zip
-	flag_get=1
-	while [[ $flag_get -ne 0 ]]; do
-		get
-		flag_get=$?
-		if [[ $flag_get -ne 0 ]]; then
-			repeat="y"
-			echo -en "You want to try again (Y/n): "
-			read answer
-			[[ ! -z $answer ]] && repeat=$answer
-			[[ $repeat != y* && $repeat != Y* ]] && echo -e "${YELLOW}\nBye, bye!${NOCOLOR}" && exit
-		fi
-	done
+	get
+	[[ $? -ne 0 ]] && exit
+	
+	#flag_get=1
+	#while [[ $flag_get -ne 0 ]]; do
+	#	get
+	#	flag_get=$?
+	#	if [[ $flag_get -ne 0 ]]; then
+	#		repeat="y"
+	#		echo -en "You want to try again (Y/n): "
+	#		read answer
+	#		[[ ! -z $answer ]] && repeat=$answer
+	#		[[ $repeat != y* && $repeat != Y* ]] && echo -e "${YELLOW}\nBye, bye!${NOCOLOR}" && exit
+	#	fi
+	#done
 
 	#Disable kernel message to tty
 	echo 0 > /proc/sys/kernel/printk
@@ -159,7 +188,13 @@ function prepare {
 	swapoff -a
 	echo -e "\n${CYAN}> Stopping services${NOCOLOR}"
 
-	[[ $thishive -eq 1 ]] && miner stop > /dev/null 2>&1 && killall xinit
+	if [[ $thishive -eq 1 ]]; then
+		miner stop > /dev/null 2>&1
+		wd stop > /dev/null 2>&1
+		screen -S autofan -X quit > /dev/null 2>&1
+		systemctl stop hivex > /dev/null 2>&1
+		[[ ! -z `pidof xinit` ]] && kill -9 `pidof xinit` > /dev/null 2>&1
+	fi
 
 	for SOCKET in \
 	`systemctl list-units -t socket | awk '{print $1}' | grep -v -e ssh | grep -v -e ssh | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions`; \
@@ -243,17 +278,18 @@ function prepare {
 
 # Writing to disk
 function write {
+
 	cd /
 
 	arch=$(ls *hive*zip)
 	conf_part=$root_dev"1"
 
-	echo -e "\n\n${CYAN}> Writing Hive OS filesystem to $root_dev${NOCOLOR}"
+	echo -e "\n\nWriting Hive OS filesystem to $root_dev"
 	echo -e "Please wait, this can take long"
 	echo -e "To prevent damage to your disk device\ndo not turn off your computer until the end of the process.\n"
 
 	unzip -p $arch | dd of=/dev/$root_dev status=progress bs=20M
-	[[ $? -ne 0 ]] && echo -e "${RED}Write image failed. Exiting.${NOCOLOR}" && return
+	[[ $? -ne 0 ]] && echo -e "Write image failed. Exiting." && return
 
 
 	#Rewrite config partition
@@ -265,12 +301,12 @@ function write {
 	sync
 
 	echo -e
-	echo -e "${GREEN}Filesystem creating on $root_dev is successfull!${NOCOLOR}"
+	echo -e "Filesystem creating on $root_dev is successfull!"
 	echo -e
 	echo -e "Your rig is configured and ready to work under Hive OS."
 	echo -e "After reboot it should appear on the web"
 	echo -e
-	echo -e "${GREEN}Have a happy mining!${NOCOLOR}"
+	echo -e "Have a happy mining!"
 	echo -e "Rebooting in 15 seconds"
 
 	sleep 15
@@ -286,11 +322,35 @@ function sel {
 	[[ -f replace.conf ]] && source /replace.conf
 
 	if [[ $wr -ne 1 ]]; then
+		color
+		[[ -z $url ]] && echo -e "${YELLOW}\nPath|url to HiveOS image required.${NOCOLOR}" && usage
 		prepare
 	else
 		write
 	fi
 }
 
+
+[[ $1 == "-h" ]] && color && usage
+
+for param in "$@"; do
+	case "$param" in
+		-f)
+			force=1
+		;;
+		-y)
+			no_confirm=1
+		;;
+		--hash=*)
+			farm="${param#*=}"
+		;;
+		*hive*zip)
+			url=$param
+		;;
+		*)
+			#none
+		;;
+	esac
+done
 
 sel
