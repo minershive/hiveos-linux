@@ -3,6 +3,6 @@ Version: 0.6-03
 Section: base
 Priority: optional
 Architecture: all
-Depends: libc-ares2
+Depends: libc-ares2, hive-miners-cryptodredge-0.11.0-cuda92
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
