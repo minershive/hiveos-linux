@@ -17,5 +17,6 @@ ${PURPLE}hive-passwd${NOCOLOR} - change system password
 ${PURPLE}logs-off${NOCOLOR} - for USB Flash Drives move logs to RAM
 ${PURPLE}disk-expand${NOCOLOR} - enlarge disk to use all space
 ${PURPLE}hpkg${NOCOLOR} - Hive package manager
+${PURPLE}hive-replace${NOCOLOR} - system image replacement tool
 EOF
 )"
