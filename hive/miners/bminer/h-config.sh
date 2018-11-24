@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
 function miner_ver() {
-	[[ -z $BMINER_VERSION ]] && echo $MINER_LATEST_VER || echo $BMINER_VERSION
+	local MINER_VER=$BMINER_VER
+	[[ -z $MINER_VER ]] && MINER_VER=$MINER_LATEST_VER
+	echo $MINER_VER
 }
 
 function miner_config_echo() {

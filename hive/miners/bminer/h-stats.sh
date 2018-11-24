@@ -46,7 +46,7 @@
 						'{hs: [.miners[].solver.solution_rate], $hs_units,
 							temp: [.miners[].device.temperature], fan: [.miners[].device.fan_speed], $uptime, $algo,
 							ar: [.stratum.accepted_shares, .stratum.rejected_shares],
-							$hs2, $hs_units2, $algo2, ar2: [$ac2, $rj2]}' <<< "$stats_raw")
+							$hs2, $hs_units2, $algo2, ar2: [$ac2, $rj2], ver: .version}' <<< "$stats_raw")
 		else
 			#single mode
 			stats=$(jq -c --arg uptime "$uptime" \
@@ -54,7 +54,7 @@
 						--arg hs_units "$hs_units" \
 						'{hs: [.miners[].solver.solution_rate], $hs_units,
 							temp: [.miners[].device.temperature], fan: [.miners[].device.fan_speed], $uptime, $algo,
-							ar: [.stratum.accepted_shares, .stratum.rejected_shares]}' <<< "$stats_raw")
+							ar: [.stratum.accepted_shares, .stratum.rejected_shares], ver: .version}' <<< "$stats_raw")
 		fi
 
 	fi
