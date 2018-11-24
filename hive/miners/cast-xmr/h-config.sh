@@ -2,7 +2,9 @@
 
 
 function miner_ver() {
-	echo $MINER_LATEST_VER
+	local MINER_VER=$CAST_XMR_VER
+	[[ -z $MINER_VER ]] && MINER_VER=$MINER_LATEST_VER
+	echo $MINER_VER
 }
 
 

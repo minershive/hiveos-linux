@@ -14,9 +14,12 @@ else
 
         local hs=`echo $stats_raw | jq -r '.devices[].hash_rate' | awk '{print $1/1000}' | tr ' ' '\n' | jq -cs '.'`
 
-        stats=$(jq --arg ac "$ac" --arg rj "$rj" --arg iv "$iv" --arg algo "$CAST_XMR_ALGO" --argjson hs "$hs" \
+        stats=$(jq --arg ac "$ac" --arg rj "$rj" --arg iv "$iv" \
+                   --arg algo "$CAST_XMR_ALGO" --argjson hs "$hs" \
+                   --arg ver `miner_ver` \
                         '{$hs, hs_units: "hs", $algo, temp: [.devices[].gpu_temperature],
-                        fan: [.devices[].gpu_fan_rpm], uptime: .pool.online, ar: [$ac, $rj, $iv]}' <<< "$stats_raw")
+                        fan: [.devices[].gpu_fan_rpm], uptime: .pool.online,
+                        ar: [$ac, $rj, $iv], $ver}' <<< "$stats_raw")
         #bus_numbers: [.devices[].device_id] - excluded, it's not device ids, just numbers
 fi
 
