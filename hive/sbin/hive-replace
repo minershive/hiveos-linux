@@ -6,8 +6,8 @@ SCRIPT_PATH=`dirname $0`
 SCRIPT_NAME=`basename $0`
 myself=$0
 TMPDIR="/tmp/tmproot"
-md5_url="http://download.hiveos.farm/VERSIONS.txt"
-url=""
+md5_url=
+url=
 root_dev=""
 farm_hash=""
 farm=""
@@ -38,14 +38,17 @@ function color {
 }
 
 function usage {
-	echo -e "\nUsage: hive-replace [option] <Link|path to zip-file with HiveOS image>"
+	echo -e "${CYAN}Usage: hive-replace [option] <Path or URL to ZIP file with Hive OS image>${NOCOLOR}"
+	echo -e
 	echo -e "Options:"
-	echo -e "${GREEN}\t-y\t\t\t${NOCOLOR}: Do not ask for confirmation of replacement with HiveOS\n"
-	echo -e "${GREEN}\t-f\t\t\t${NOCOLOR}: Forced replace. Do not check the checksum of image archive. Use with caution!\n"
-	echo -e "${GREEN}\t--hash=FARM_HASH\t${NOCOLOR}: FARM_HASH from Web-interface\n"
-	echo -e "${GREEN}\t-h\t\t\t${NOCOLOR}: Help. Print this text and exit\n"
+	echo -e "${GREEN}  -y|--yes         ${NOCOLOR}Do not ask for confirmation, answer yes to all questions"
+	echo -e "${GREEN}  -f|--force       ${NOCOLOR}Forced replace. Do not check the checksum of ZIP archive. Use with caution!"
+	echo -e "${GREEN}  --hash=FARM_HASH ${NOCOLOR}FARM_HASH from Web-interface"
+	echo -e "${GREEN}  -h|--help        ${NOCOLOR}Show this message"
+	echo -e
 	echo -e "Example:"
-	echo -e "${GREEN}\thive-replace -y --hash=46e9602837d0bda99f0 http://server.loc/hiveos-0.6-01@181121.zip\n${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 http://mylocalserver/hiveos-0.6-01@181121.zip${NOCOLOR}"
+
 	exit
 }
 
@@ -55,11 +58,26 @@ function get {
 	rm $TMPDIR/*hive* > /dev/null 2>&1
 
 	#Remove interactive	
-	#[[ ! -z $url ]] && echo -e  "${GREEN}\nCurrent URL|path to HiveOS image is ${YELLOW}\"$url\"${GREEN}.\nIf this URL|path is correct press ENTER or retype correct URL|path.${NOCOLOR}"
-	#echo -en "${GREEN}\nLink|path to ZIP file with HiveOS image (HTTP|FTP link or local|NFS path): ${NOCOLOR}"
+	#[[ ! -z $url ]] && echo -e  "${GREEN}\nCurrent URL|path to Hive OS image is ${YELLOW}\"$url\"${GREEN}.\nIf this URL|path is correct press ENTER or retype correct URL|path.${NOCOLOR}"
+	#echo -en "${GREEN}\nLink|path to ZIP file with Hive OS image (HTTP|FTP link or local|NFS path): ${NOCOLOR}"
 	#read answer
 	#[[ ! -z $answer ]] && url=$answer
 	###
+
+	#download VERSIONS.txt to get md5 later
+	if [[ $force -ne 1 ]]; then
+		#default is "http://download.hiveos.farm/VERSIONS.txt"
+		md5_url=$(dirname "$url")/VERSIONS.txt
+		curl -s $md5_url > $TMPDIR/VERSIONS.txt
+		[[ $? -ne 0 ]] && echo -e "${RED}Сan't get VERSIONS.txt to check MD5 checksum. Use -f to ignore this.${NOCOLOR}" && return 1
+
+		basename=`basename -s .zip "$url"`
+		archname=`basename "$url"`
+		mdsum=$(sed -n "/$archname/p" $TMPDIR/VERSIONS.txt | awk '{print$2}')
+		[[ -z $mdsum ]] && echo -e "${RED}Сan't get md5sum from VERSIONS.txt to check MD5 checksum. Use -f to ignore this.${NOCOLOR}" && return 1
+	fi
+
+
 
 	#Copy|download hive image to tmmfs
 	echo -e "\n${CYAN}> Downloading image file${NOCOLOR}"
@@ -73,20 +91,15 @@ function get {
 		[[ $? -ne 0 ]] && echo -e "${RED}Copy Hive OS image failed${NOCOLOR}" && return 1
 	fi
 	
-	#get correct md5summ from hive repo
+	#check md5
 	if [[ $force -ne 1 ]]; then
-		curl -s $md5_url > $TMPDIR/VERSIONS.txt
-		[[ $? -ne 0 ]] && echo -e "${RED}Сan't get the required data from Hive OS server. Check you internet connection${NOCOLOR}" && return 1
-		basename=`basename -s .zip "$url"`
-		archname=`basename "$url"`
-		mdsum=$(sed -n "/$archname/p" $TMPDIR/VERSIONS.txt | awk '{print$2}')
-		#check md5
 		echo -e "\n${CYAN}> Checking MD5 summ of image file${NOCOLOR}"
 		mdsum_hive=$(md5sum $TMPDIR/$archname | awk '{print$1}')
-		[[ $mdsum != $mdsum_hive ]] && echo -e "${RED}MD5-summ of image file is incorrect${NOCOLOR}" && return 1
+		[[ $mdsum != $mdsum_hive ]] && echo -e "${RED}MD5 checksum of image file does not match${NOCOLOR}\nGot $mdsum_hive, expected $mdsum" && return 1
 	fi
 
-	echo -e "${GREEN}Download|copy HiveOS image successful!${NOCOLOR}"
+
+	echo -e "${GREEN}Download|copy Hive OS image successful!${NOCOLOR}"
 	return 0
 }
 
@@ -105,7 +118,7 @@ function prepare {
 	echo
 	echo "Total RAM=$mem Mb"
 	echo
-	[[ $mem -lt 3900 ]] && echo "${YELLOW}4 Gb RAM is required. Exiting.${NOCOLOR}" && exit
+	[[ $mem -lt 3800 ]] && echo "${YELLOW}4 Gb RAM is required. Exiting.${NOCOLOR}" && exit
 
 	PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
 	DISK_PART=`blkid | grep -m1 $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
@@ -119,7 +132,7 @@ function prepare {
 
 	if [[ $no_confirm -ne 1 ]]; then
 		echo -e "${RED}Warning: After Hive OS installation, all your data on ${GREEN}$DISK_NAME${NOCOLOR} ${RED}will be lost!${NOCOLOR}"
-		echo -en "\nType ${GREEN}\"yes\"${NOCOLOR} if you want to install Hive OS on ${GREEN}$DISK_NAME${NOCOLOR} : "
+		echo -en "\nType ${GREEN}\"yes\"${NOCOLOR} if you want to install Hive OS on ${GREEN}$DISK_NAME${NOCOLOR}: "
 		read answer
 		[[ $answer != "yes" ]] && echo -e "${YELLOW}\nBye, bye!${NOCOLOR}" && exit
 	fi
@@ -284,7 +297,7 @@ function write {
 	arch=$(ls *hive*zip)
 	conf_part=$root_dev"1"
 
-	echo -e "\n\nWriting Hive OS filesystem to $root_dev"
+	echo -e "\n${CYAN}> Writing Hive OS filesystem to $root_dev${NOCOLOR}"
 	echo -e "Please wait, this can take long"
 	echo -e "To prevent damage to your disk device\ndo not turn off your computer until the end of the process.\n"
 
@@ -301,13 +314,13 @@ function write {
 	sync
 
 	echo -e
-	echo -e "Filesystem creating on $root_dev is successfull!"
+	echo -e "${GREEN}Image writing to $root_dev is successfull!${NOCOLOR}"
 	echo -e
 	echo -e "Your rig is configured and ready to work under Hive OS."
-	echo -e "After reboot it should appear on the web"
+	echo -e "After reboot it should appear on the web."
 	echo -e
-	echo -e "Have a happy mining!"
-	echo -e "Rebooting in 15 seconds"
+	echo -e "${GREEN}Have a happy mining!${NOCOLOR}"
+	echo -e "${YELLOW}Rebooting in 15 seconds${NOCOLOR}"
 
 	sleep 15
 
@@ -323,7 +336,7 @@ function sel {
 
 	if [[ $wr -ne 1 ]]; then
 		color
-		[[ -z $url ]] && echo -e "${YELLOW}\nPath|url to HiveOS image required.${NOCOLOR}" && usage
+		[[ -z $url ]] && echo -e "${YELLOW}Filesystem path or URL to Hive OS image is required.${NOCOLOR}\n" && usage
 		prepare
 	else
 		write
@@ -331,14 +344,14 @@ function sel {
 }
 
 
-[[ $1 == "-h" ]] && color && usage
+[[ $1 == "-h" || $1 == "--help" ]] && color && usage
 
 for param in "$@"; do
 	case "$param" in
-		-f)
+		-f|--force)
 			force=1
 		;;
-		-y)
+		-y|--yes)
 			no_confirm=1
 		;;
 		--hash=*)
