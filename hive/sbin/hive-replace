@@ -4,7 +4,6 @@ export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
 SCRIPT_PATH=`dirname $0`
 SCRIPT_NAME=`basename $0`
-myself=$0
 TMPDIR="/tmp/tmproot"
 md5_url=
 url=
@@ -210,11 +209,11 @@ function prepare {
 	fi
 
 	for SOCKET in \
-	`systemctl list-units -t socket | awk '{print $1}' | grep -v -e ssh | grep -v -e ssh | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions`; \
+	`systemctl list-units -t socket | awk '{print $1}' | grep -v -e ssh | grep -v -e openvpn | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions`; \
 	do systemctl stop $SOCKET > /dev/null 2>&1; done
 
 	for SERVICE in \
-	`systemctl list-units -t service | awk '{print $1}' | grep -v -e ssh | grep -v -e ssh | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions`; \
+	`systemctl list-units -t service | awk '{print $1}' | grep -v -e ssh | grep -v -e openvpn | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions`; \
 	do systemctl stop $SERVICE > /dev/null 2>&1; done
 
 	pid="1"
