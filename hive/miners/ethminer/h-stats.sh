@@ -28,6 +28,7 @@ else
 
 	local ac=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $2}'`
 	local rj=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $3}'`
+	local ver=`echo $stats_raw | jq -r '.[0]'`
 
 	local algo="ethash"
 	[[ $ETHMINER_VER == "progpow" ]] && algo="progpow"
@@ -36,6 +37,7 @@ else
 		--argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" \
 		--arg algo "$algo" \
 		--arg ac "$ac" --arg rj "$rj" \
-		'{$hs, $temp, $fan, $uptime, $algo, ar: [$ac, $rj]}')
+		--arg ver "$ver" \
+		'{$hs, $temp, $fan, $uptime, $algo, ar: [$ac, $rj], $ver}')
 		#TODO: bus_numbers
 fi
