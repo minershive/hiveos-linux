@@ -43,13 +43,13 @@ else
 
 	local ac=$(jq '.results.shares_good' <<< "$stats_raw")
 	local rj=$(( $(jq '.results.shares_total' <<< "$stats_raw") - $ac ))
-
+	local ver=`echo $stats_raw | jq -r '.version' | tr '/' " " | awk '{ print $2 }'`
 	local algo=`cat /run/hive/miners/xmr-stak/config.txt | grep -m1 '"currency"' | sed -E 's/\s*".*":\s*"(.*)",/\1/g'`
 
-	stats=$(jq --argjson temp "$temp" --argjson fan "$fan" \
+	stats=$(jq --arg ver "$ver" --argjson temp "$temp" --argjson fan "$fan" \
 				--argjson cpu_temp "$cpu_temp" --arg ac "$ac" --arg rj "$rj" \
 				--arg algo "$algo" \
-		'{hs: [.hashrate.threads[][0]], $algo, $temp, $fan, $cpu_temp, uptime: .connection.uptime, ar: [$ac, $rj]}' <<< "$stats_raw")
+		'{ver: $ver, hs: [.hashrate.threads[][0]], $algo, $temp, $fan, $cpu_temp, uptime: .connection.uptime, ar: [$ac, $rj]}' <<< "$stats_raw")
 fi
 
 [[ -z $khs ]] && khs=0
