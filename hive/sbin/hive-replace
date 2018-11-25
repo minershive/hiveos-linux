@@ -4,6 +4,10 @@ export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
 SCRIPT_PATH=`dirname $0`
 SCRIPT_NAME=`basename $0`
+cd $SCRIPT_PATH
+mydir=`pwd`
+myself="$mydir/$SCRIPT_NAME"
+
 TMPDIR="/tmp/tmproot"
 md5_url=
 url=
@@ -127,7 +131,7 @@ function prepare {
 	echo
 	echo "Total RAM=$mem Mb"
 	echo
-	[[ $mem -lt 3800 ]] && echo "${YELLOW}4 Gb RAM is required. Exiting.${NOCOLOR}" && exit
+	[[ $mem -lt 3600 ]] && echo "${YELLOW}4 Gb RAM is required. Exiting.${NOCOLOR}" && exit
 
 	PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
 	DISK_PART=`blkid | grep -m1 $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
@@ -275,7 +279,7 @@ function prepare {
 	cp -a /usr/lib/x86_64-linux-gnu/libsigsegv* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
 	cp -a /usr/lib/x86_64-linux-gnu/libgmp* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
 	cp -aR /dev $TMPDIR > /dev/null 2>&1
-	cp $0 $TMPDIR > /dev/null 2>&1
+	cp $myself $TMPDIR > /dev/null 2>&1
 	chmod +x $TMPDIR/$SCRIPT_NAME > /dev/null 2>&1
 
 	mount --bind /proc $TMPDIR/proc
