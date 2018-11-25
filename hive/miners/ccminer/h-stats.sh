@@ -10,6 +10,7 @@ else
 	algo=`echo "$summary" | tr ';' '\n' | grep -m1 'ALGO=' | sed -e 's/.*=//'`
 	local ac=`echo "$summary" | tr ';' '\n' | grep -m1 'ACC=' | sed -e 's/.*=//'`
 	local rj=`echo "$summary" | tr ';' '\n' | grep -m1 'REJ=' | sed -e 's/.*=//'`
+	local ver=`echo "$summary" | tr ';' '\n' | grep -m1 'VER=' | sed -e 's/.*=//'`
 	#stats=`echo $threads | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176' | grep -E 'KHS=' | sed -e 's/.*=//' | jq -cs '{khs:.}'`
 	striplines=`echo "$threads" | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176'`
 
@@ -53,5 +54,6 @@ else
 		--argjson temp "`echo ${cctemps[@]} | tr " " "\n" | jq -cs '.'`" \
 		--argjson fan "`echo \"$striplines\" | grep 'FAN=' | sed -e 's/.*=//' | jq -cs '.'`" \
 		--arg ac "$ac" --arg rj "$rj" --argjson bus_numbers "$bus_numbers" \
-		'{$khs, $temp, $fan, $uptime, ar: [$ac, $rj], $bus_numbers, $algo}')
+		--arg ver "$ver" \
+		'{$khs, $temp, $fan, $uptime, ar: [$ac, $rj], $bus_numbers, $algo, $ver}')
 fi
