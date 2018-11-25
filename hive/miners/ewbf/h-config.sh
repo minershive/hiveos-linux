@@ -15,11 +15,10 @@ function miner_fork() {
 
 
 function miner_ver() {
-	if [[ $MINER_FORK == "legacy" ]]; then
-		echo $MINER_LATEST_VER_LEGACY
-	elif [[ $MINER_FORK == "zhash" ]]; then
-		echo $MINER_LATEST_VER_ZHASH
-	fi
+	[[ -z $MINER_FORK ]] && MINER_FORK=`miner_fork`
+	local MINER_VER=$EWBF_VER
+	[[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${MINER_FORK^^}" #uppercase MINER_FORK
+	echo $MINER_VER
 }
 
 

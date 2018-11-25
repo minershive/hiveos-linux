@@ -47,7 +47,9 @@ else
 	local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
 
 	stats=$(jq -c --argjson temp "$temp" --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
-			--arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" --argjson bus_numbers "$bus_numbers" --arg algo "$EWBF_ALGO"  \
+			--arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" \
+			--argjson bus_numbers "$bus_numbers" --arg algo "$EWBF_ALGO"  \
+			--arg ver `miner_ver` \
 		'{hs: [.result[].speed_sps], $temp, $fan,
-			$uptime, ar: [$ac, $rj], $bus_numbers, $algo}' <<< "$stats_raw")
+			$uptime, ar: [$ac, $rj], $bus_numbers, $algo, $ver}' <<< "$stats_raw")
 fi
