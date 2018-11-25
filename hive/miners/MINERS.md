@@ -10,7 +10,8 @@ minername/[fork]/version
 
 Miner generated config MUST be a symlink to `/run/hive/miners/minername/someconfig.json`.
 This is required for PXE boot to keep hive folder readonly.
-Real file is created with `mkfile_from_symlink` command in h-config.sh
+Real file is created with `mkfile_from_symlink` command in h-config.sh.
+If you need to delete real file for miner autoconfig or etc. use `rmfile_from_symlink()`.
 
 
 The following files are not run as scripts, they are included as `source` from running script, `miner`, `miner-run`.
@@ -37,8 +38,8 @@ MINER_API_PORT=60050
 # If miner has configurable fork this should define default
 #MINER_DEFAULT_FORK=legacy
 
-# Required 
-# Should be set to the latest version of miner which you have implemented 
+# Required
+# Should be set to the latest version of miner which you have implemented
 MINER_LATEST_VER=2.6.4
 
 
@@ -52,7 +53,7 @@ Should generate miner config file.
 
 MUST implement the following functions
 ```bash
-# Returns the version which is running now. 
+# Returns the version which is running now.
 function miner_ver() {
 	echo $MINER_LATEST_VER
 }
@@ -77,7 +78,7 @@ function miner_config_gen() {
 
 	conf=`cat $MINER_DIR/miner.global.cfg | envsubst`
 	#...
-	
+
 	echo -e "$conf" > $MINER_CONFIG
 }
 ```
@@ -89,34 +90,33 @@ Runs the miner. Checks for exiting process, API bindings and just runs the binna
 
 
 ##### h-stats.sh
-Script is included inside a function. 
-Please try to define your variables **local**. 
+Script is included inside a function.
+Please try to define your variables **local**.
 
 The script MUST define 2 variables.
-`$khs` should hold total hashrate of the miner. 
+`$khs` should hold total hashrate of the miner.
 `$stats` should hold JSON stats data.
 
 
 Example of `$stats` var:
 ```json
-{ 
+{
 	"hs": [123, 223.3], //array of hashes
 	"hs_units": "khs", //Optional: units that are uses for hashes array, "hs", "khs", "mhs", ... Default "khs".   
 	"temp": [60, 63], //array of miner temps
 	"fan": [80, 100], //array of miner fans
 	"uptime": 12313232, //seconds elapsed from miner stats
-	"ver": "1.2.3.4-beta", //miner version currently run, parsed from it's api or manifest 
-	
+	"ver": "1.2.3.4-beta", //miner version currently run, parsed from it's api or manifest
+
 	//Optional: accepted, rejected shares.
 	//2 numbers are required, you can add total invalids as 3rd number
 	//4th array item can be string with invalids per gpu semicolon separated in order or bus_numbers, e.g. "0;1;0;5" where 5 is for 13th pci bus
-	"ar": [123, 3, optional Invalids, "optional Invalids per GPU"], 
-	
+	"ar": [123, 3, optional Invalids, "optional Invalids per GPU"],
+
 	//Optional: algo used by miner, should one of the exiting in Hive
-	"algo": "customalgo", 
-	
+	"algo": "customalgo",
+
 	//Pci buses array in decimal format. E.g. 0a:00.0 is 10
-	"bus_numbers": [0, 1, 12, 13] 
+	"bus_numbers": [0, 1, 12, 13]
 }
 ```
- 
