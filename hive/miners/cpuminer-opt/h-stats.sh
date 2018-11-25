@@ -12,6 +12,7 @@ else
 	local algo=`echo "$summary" | tr ';' '\n' | grep -m1 'ALGO=' | sed -e 's/.*=//'`
 	local acc=`echo "$summary" | tr ';' '\n' | grep -m1 'ACC=' | sed -e 's/.*=//'`
 	local rej=`echo "$summary" | tr ';' '\n' | grep -m1 'REJ=' | sed -e 's/.*=//'`
+	local ver=`echo "$summary" | tr ';' '\n' | grep -m1 'VER=' | sed -e 's/.*=//'`
 	local striplines=`echo "$threads" | tr "|" "\n" | tr ";" "\n" | tr -cd '\11\12\15\40-\176'`
 	local hashes_val=(`echo "$striplines" | grep -E "H/s=" | sed -e 's/.*=//'`)
 	local hashes_pre=(`echo "$striplines" | grep -E "H/s=" | sed -e 's/H.*//'`)
@@ -57,5 +58,6 @@ else
 		--arg uptime "$uptime" --arg algo "$algo" \
 		--argjson hs "`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`" \
 		--argjson temp "`echo ${temps[@]} | tr " " "\n" | jq -cs '.'`" \
-		'{$vers, $algo, $hs, ar: [$acc, $rej], $temp, $uptime}')
+		--arg ver "$ver" \
+		'{$vers, $algo, $hs, ar: [$acc, $rej], $temp, $uptime, $ver}')
 fi
