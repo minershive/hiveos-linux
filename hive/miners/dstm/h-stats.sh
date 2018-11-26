@@ -37,5 +37,5 @@ else
 
 	stats=$(jq --argjson temp "$temp" --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
 		--arg uptime "$uptime" --arg ac "$ac" --arg rj "$rj" --argjson bus_numbers "$bus_numbers" \
-		'{ hs: [.result[].sol_ps], $temp, $fan, $uptime, ar: [$ac, $rj], $bus_numbers }' <<< "$stats_raw")
+		'{ hs: [.result[].sol_ps], $temp, $fan, $uptime, ar: [$ac, $rj], $bus_numbers, ver: .version }' <<< "$stats_raw")
 fi
