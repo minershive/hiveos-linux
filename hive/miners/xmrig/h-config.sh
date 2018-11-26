@@ -54,7 +54,7 @@ function miner_config_gen() {
 		[[ ${nicehash,,} = "true" || ${url,,} = *"nicehash"* ]] && c_nicehash='true' || c_nicehash='false'
 
 		pool=$(cat <<EOF
-					{"url": "$url", "user": "$XMRIG_TEMPLATE", "pass": "$XMRIG_PASS", "rig_id": "$rig_id", "use_nicehash": $c_nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "variant": $variant, "keepalive": true }
+					{"url": "$url", "user": "$XMRIG_TEMPLATE", "pass": "$XMRIG_PASS", "rig_id": "$rig_id", "use_nicehash": $c_nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "variant": "$variant", "keepalive": true }
 EOF
 )
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
