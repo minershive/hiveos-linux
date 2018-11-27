@@ -59,19 +59,19 @@ function usage {
 	echo -e "${CYAN}Usage: hive-replace [option] <Path or URL to ZIP file with Hive OS image>${NOCOLOR}"
 	echo -e
 	echo -e "Options:"
-	echo -e "${GREEN}  -y|--yes                           ${NOCOLOR}Do not ask for confirmation, answer yes to all questions"
-	echo -e "${GREEN}  -f|--force                         ${NOCOLOR}Forced replace. Do not check the checksum of ZIP archive. Use with caution!"
-	echo -e "${GREEN}  -nfs                               ${NOCOLOR}To use NFS Shared resource. e.g.: ${GREEN}IP_NFS_server:/shared_dir/hive_zip${NOCOLOR}"
-	echo -e "${GREEN}  -smb                               ${NOCOLOR}To use Windows Shared resource. e.g.: ${GREEN}//IP_Windows_comp/shared_folder/hive_zip${NOCOLOR}"
-	echo -e "${GREEN}  --smbuser=Windows user             ${NOCOLOR}UserName for Windows Shared resource. Do not set this option for guest/anonymous access"
-	echo -e "${GREEN}  --smbpasswd=Windows password       ${NOCOLOR}Password for Windows Shared resource. Do not set this option for guest/anonymous access"
-	echo -e "${GREEN}  --hash=FARM_HASH                   ${NOCOLOR}FARM_HASH from Web-interface"
-	echo -e "${GREEN}  -h|--help                          ${NOCOLOR}Show this message"
+	echo -e "${GREEN}  -y|--yes                    ${NOCOLOR}Do not ask for confirmation, answer yes to all questions"
+	echo -e "${GREEN}  -f|--force                  ${NOCOLOR}Forced replace. Do not check the checksum of ZIP archive. Use with caution!"
+	echo -e "${GREEN}  --nfs                       ${NOCOLOR}To use NFS Shared resource. e.g.: ${GREEN}IP_NFS_server:/shared_dir/hive_zip${NOCOLOR}"
+	echo -e "${GREEN}  --smb                       ${NOCOLOR}To use Windows Shared resource. e.g.: ${GREEN}//IP_Windows_comp/shared_folder/hive_zip${NOCOLOR}"
+	echo -e "${GREEN}  --smbuser=Windows user      ${NOCOLOR}UserName for Windows Shared resource. Do not set this option for guest/anonymous access"
+	echo -e "${GREEN}  --smbpass=Windows password  ${NOCOLOR}Password for Windows Shared resource. Do not set this option for guest/anonymous access"
+	echo -e "${GREEN}  --hash=FARM_HASH            ${NOCOLOR}FARM_HASH from Web-interface"
+	echo -e "${GREEN}  -h|--help                   ${NOCOLOR}Show this message"
 	echo -e
 	echo -e "Example:"
-	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 http://mylocalserver/hiveos-0.6-01@181121.zip${NOCOLOR}\n"
-	echo -e "${GREEN}  hive-replace -y -f --hash=46e9602837d0bda99f0 -nfs 192.168.10.100:/home/john/hive/hiveos-0.6-01@181121.zip${NOCOLOR}\n"
-	echo -e "${GREEN}  hive-replace -y -f --hash=46e9602837d0bda99f0 -smb --smbuser=winuser --smbpasswd=secret //192.168.0.1/shared_folder/hiveos-0.6-01@181121.zip${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 http://mylocalserver/hiveos-0.6-01@181121.zip${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y -f --hash=46e9602837d0bda99f0 --nfs 192.168.10.100:/home/john/hive/hiveos-0.6-01@181121.zip${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y -f --hash=46e9602837d0bda99f0 --smb --smbuser=winuser --smbpass=secret //192.168.0.1/shared_folder/hiveos-0.6-01@181121.zip${NOCOLOR}"
 
 	exit
 }
@@ -203,8 +203,8 @@ function prepare {
 		echo -e "${CYAN}> Installing required packages${NOCOLOR}"
 		apt-get update
 		apt-get install -y $need_install
-		[[ $? -ne 0 ]] && echo -e "${RED}Failed install required packages${NOCOLOR}" && exit
-		echo -e "${GREEN}> Install required packages successfull${NOCOLOR}"
+		[[ $? -ne 0 ]] && echo -e "${RED}Failed to install required packages${NOCOLOR}" && exit
+		echo -e "${GREEN}> Installed required packages successfully${NOCOLOR}"
 	fi
 
 	#create tmpfs
@@ -413,16 +413,16 @@ for param in "$@"; do
 		-y|--yes)
 			no_confirm=1
 		;;
-		-nfs)
+		--nfs)
 			nfs=1
 		;;
-		-smb)
+		--smb)
 			smb=1
 		;;
 		--smbuser=*)
 			smbuser="${param#*=}"	
 		;;
-		--smbpasswd=*)
+		--smbpass=*)
 			smbpasswd="${param#*=}"	
 		;;
 		--hash=*)
@@ -437,9 +437,9 @@ for param in "$@"; do
 	esac
 done
 
-[[ $nfs -eq 1 && $smb -eq 1 ]] && echo -e "${YELLOW}Specify only one of the options: ${GREEN}-smb${NOCOLOR} or ${GREEN}-nfs${NOCOLOR}. Both are not allowed${NOCOLOR}\n" && usage
+[[ $nfs -eq 1 && $smb -eq 1 ]] && echo -e "${YELLOW}Specify only one of the options: ${GREEN}--smb${NOCOLOR} or ${GREEN}--nfs${NOCOLOR}. Both are not allowed${NOCOLOR}\n" && usage
 if [[ $nfs -eq 1 || $smb -eq 1 ]]; then
-	[[ "$url" == *http* ||  "$url" == *ftp* ]] && echo -e "${YELLOW}-nfs or -smb and http or ftp - incompatible\n" && usage
+	[[ "$url" == *http* ||  "$url" == *ftp* ]] && echo -e "${YELLOW}--nfs or --smb and http or ftp - incompatible\n" && usage
 fi
 
 sel
