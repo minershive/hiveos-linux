@@ -8,7 +8,7 @@ cd $SCRIPT_PATH
 mydir=`pwd`
 myself="$mydir/$SCRIPT_NAME"
 
-TMPDIR="/tmp/tmproot"
+TMPDIR="/tmp/tmphive"
 md5_url=
 url=
 root_dev=""
@@ -16,6 +16,10 @@ farm_hash=""
 farm=""
 force=0
 no_confirm=0
+smb=0
+smbuser=
+smbpasswd=
+nfs=0
 thishive=0
 [[ $(uname -sr) == *hive* ]] && thishive=1
 
@@ -23,7 +27,7 @@ thishive=0
 if [[ $(id -u) -ne 0 ]]; then
 	echo "Root privileges required"
 	sudo chmod +x $0
-	exec sudo $0 $*
+	exec sudo $myself $*
 fi
 
 
@@ -55,13 +59,19 @@ function usage {
 	echo -e "${CYAN}Usage: hive-replace [option] <Path or URL to ZIP file with Hive OS image>${NOCOLOR}"
 	echo -e
 	echo -e "Options:"
-	echo -e "${GREEN}  -y|--yes         ${NOCOLOR}Do not ask for confirmation, answer yes to all questions"
-	echo -e "${GREEN}  -f|--force       ${NOCOLOR}Forced replace. Do not check the checksum of ZIP archive. Use with caution!"
-	echo -e "${GREEN}  --hash=FARM_HASH ${NOCOLOR}FARM_HASH from Web-interface"
-	echo -e "${GREEN}  -h|--help        ${NOCOLOR}Show this message"
+	echo -e "${GREEN}  -y|--yes                           ${NOCOLOR}Do not ask for confirmation, answer yes to all questions"
+	echo -e "${GREEN}  -f|--force                         ${NOCOLOR}Forced replace. Do not check the checksum of ZIP archive. Use with caution!"
+	echo -e "${GREEN}  -nfs                               ${NOCOLOR}To use NFS Shared resource. e.g.: ${GREEN}IP_NFS_server:/shared_dir/hive_zip${NOCOLOR}"
+	echo -e "${GREEN}  -smb                               ${NOCOLOR}To use Windows Shared resource. e.g.: ${GREEN}//IP_Windows_comp/shared_folder/hive_zip${NOCOLOR}"
+	echo -e "${GREEN}  --smbuser=Windows user             ${NOCOLOR}UserName for Windows Shared resource. Do not set this option for guest/anonymous access"
+	echo -e "${GREEN}  --smbpasswd=Windows password       ${NOCOLOR}Password for Windows Shared resource. Do not set this option for guest/anonymous access"
+	echo -e "${GREEN}  --hash=FARM_HASH                   ${NOCOLOR}FARM_HASH from Web-interface"
+	echo -e "${GREEN}  -h|--help                          ${NOCOLOR}Show this message"
 	echo -e
 	echo -e "Example:"
-	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 http://mylocalserver/hiveos-0.6-01@181121.zip${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 http://mylocalserver/hiveos-0.6-01@181121.zip${NOCOLOR}\n"
+	echo -e "${GREEN}  hive-replace -y -f --hash=46e9602837d0bda99f0 -nfs 192.168.10.100:/home/john/hive/hiveos-0.6-01@181121.zip${NOCOLOR}\n"
+	echo -e "${GREEN}  hive-replace -y -f --hash=46e9602837d0bda99f0 -smb --smbuser=winuser --smbpasswd=secret //192.168.0.1/shared_folder/hiveos-0.6-01@181121.zip${NOCOLOR}"
 
 	exit
 }
@@ -78,20 +88,40 @@ function get {
 	#[[ ! -z $answer ]] && url=$answer
 	###
 
+	basename=`basename -s .zip "$url"`
+	archname=`basename "$url"`
+	
+	if [[ $nfs -eq 1 || $smb -eq 1 ]]; then
+		[[ ! -d $TMPDIR/share ]] && mkdir $TMPDIR/share
+		mnt_flag=1
+		mnt_share=1
+		cat /proc/mounts | grep $TMPDIR/share > /dev/null 2>&1
+		mnt_share=$?
+		[[ $mnt_share -eq 0 ]] && mnt_flag=0
+		[[ $nfs -eq 1 && $mnt_share -ne 0 ]] && mount -t nfs $(dirname "$url") $TMPDIR/share > /dev/null 2>&1 && mnt_flag=$?
+		if [[ $smb -eq 1 && $mnt_share -ne 0 ]]; then
+			psw=
+			[[ -z $smbuser ]] && smbuser="nobody"
+			[[ ! -z $smbpasswd ]] && psw="password=$smbpasswd"
+			mount -v -t cifs -o username=$smbuser,$psw,iocharset=utf8,vers=3.0 $(dirname "$url") $TMPDIR/share > /dev/null 2>&1
+			mnt_flag=$?
+		fi	
+		[[ $mnt_flag -ne 0 ]] && echo -e "${RED}Сan't mount network shared resource.${NOCOLOR}" && return 1
+		url="$TMPDIR/share/$archname"
+	fi
+	
+	
 	#download VERSIONS.txt to get md5 later
 	if [[ $force -ne 1 ]]; then
 		#default is "http://download.hiveos.farm/VERSIONS.txt"
 		md5_url=$(dirname "$url")/VERSIONS.txt
 		curl -s $md5_url > $TMPDIR/VERSIONS.txt
 		[[ $? -ne 0 ]] && echo -e "${RED}Сan't get $md5_url to check MD5 checksum. Use -f to ignore this.${NOCOLOR}" && return 1
-
-		basename=`basename -s .zip "$url"`
-		archname=`basename "$url"`
 		mdsum=$(sed -n "/$archname/p" $TMPDIR/VERSIONS.txt | awk '{print$2}')
 		[[ -z $mdsum ]] && echo -e "${RED}Сan't get md5sum from $md5_url to check MD5 checksum. Use -f to ignore this.${NOCOLOR}" && return 1
 	fi
 
-
+	
 
 	#Copy|download hive image to tmmfs
 	echo -e "\n${CYAN}> Downloading image file${NOCOLOR}"
@@ -152,27 +182,44 @@ function prepare {
 
 	##check programs
 	programs=0
+	need_install=
 	dpkg -s lsof > /dev/null 2>&1
-	[[ $? -ne 0 ]] && programs=1
+	[[ $? -ne 0 ]] && programs=1 && need_install="lsof"
 	dpkg -s curl > /dev/null 2>&1
-	[[ $? -ne 0 ]] && programs=1
+	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install curl"
 	dpkg -s wget > /dev/null 2>&1
-	[[ $? -ne 0 ]] && programs=1
+	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install wget"
 	dpkg -s unzip > /dev/null 2>&1
-	[[ $? -ne 0 ]] && programs=1
+	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install unzip"
+	if [[ smb -eq 1 ]]; then
+		dpkg -s smbclient > /dev/null 2>&1
+		[[ $? -ne 0 ]] && programs=1 && need_install="$need_install smbclient"
+	fi
+	if [[ nfs -eq 1 ]]; then
+		dpkg -s nfs-common > /dev/null 2>&1
+		[[ $? -ne 0 ]] && programs=1 && need_install="$need_install nfs-common"
+	fi
 	if [[ $programs -ne 0 ]]; then
 		echo -e "${CYAN}> Installing required packages${NOCOLOR}"
 		apt-get update
-		apt-get install -y lsof curl wget unzip
+		apt-get install -y $need_install
+		[[ $? -ne 0 ]] && echo -e "${RED}Failed install required packages${NOCOLOR}" && exit
+		echo -e "${GREEN}> Install required packages successfull${NOCOLOR}"
 	fi
 
 	#create tmpfs
-	mkdir $TMPDIR > /dev/null 2>&1
-	mount none $TMPDIR -t tmpfs -o size=3000m
+	cat /proc/mounts | grep $TMPDIR > /dev/null 2>&1
+	if [[ $? -ne 0 ]]; then
+		mkdir $TMPDIR > /dev/null 2>&1
+		mount none $TMPDIR -t tmpfs -o size=3000m
+	fi
 
 
 	#get farm_hash or old config
 	[[ $thishive -eq 1 && -f /hive-config/rig.conf ]] && cp /hive-config/rig.conf $TMPDIR/
+	
+	
+	
 	
 	#Remove interactive
 	#	if [[ $thishive -eq 1 && -f /hive-config/rig.conf ]]; then
@@ -190,7 +237,7 @@ function prepare {
 	#get hive zip
 	get
 	[[ $? -ne 0 ]] && exit
-	
+		
 	#flag_get=1
 	#while [[ $flag_get -ne 0 ]]; do
 	#	get
@@ -223,23 +270,23 @@ function prepare {
 	fi
 
 	for SOCKET in \
-	`systemctl list-units -t socket | awk '{print $1}' | grep -v -e ssh | grep -v -e openvpn | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions`; \
-	do systemctl stop $SOCKET > /dev/null 2>&1; done
+	`systemctl list-units -t socket | awk '{print $1}' | grep -v -e ssh | grep -v -e openvpn | grep -v -e shellinabox | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions | grep -v -e hive`; \
+	do systemctl stop $SOCKET > /dev/null 2>&1 && echo "> stop $SOCKET"; done
 
 	for SERVICE in \
-	`systemctl list-units -t service | awk '{print $1}' | grep -v -e ssh | grep -v -e openvpn | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions`; \
-	do systemctl stop $SERVICE > /dev/null 2>&1; done
-
+	`systemctl list-units -t service | awk '{print $1}' | grep -v -e ssh | grep -v -e openvpn | grep -v -e shellinabox | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions | grep -v -e hive`; \
+	do systemctl stop $SERVICE > /dev/null 2>&1 && echo "> stop $SERVICE"; done
+	
 	pid="1"
 	while [[ ! -z $pid ]]; do
-		pid=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | sed '2!d' | awk '{print $2}')
+		pid=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | sed '2!d' | awk '{print $2}')
 		[[ -z $pid ]] && continue
-		process=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | sed '2!d' | awk '{print $1}')
-		echo -e "kill $process"
+		process=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | sed '2!d' | awk '{print $1}')
+		echo -e "> kill $process"
 		kill $pid
 		sleep 1
 	done
-
+	
 
 	#Readonly remount
 	for MOUNTS in `cat /proc/mounts | grep $DISK_NAME | awk '{print $2}'`; do
@@ -366,6 +413,18 @@ for param in "$@"; do
 		-y|--yes)
 			no_confirm=1
 		;;
+		-nfs)
+			nfs=1
+		;;
+		-smb)
+			smb=1
+		;;
+		--smbuser=*)
+			smbuser="${param#*=}"	
+		;;
+		--smbpasswd=*)
+			smbpasswd="${param#*=}"	
+		;;
 		--hash=*)
 			farm="${param#*=}"
 		;;
@@ -377,5 +436,10 @@ for param in "$@"; do
 		;;
 	esac
 done
+
+[[ $nfs -eq 1 && $smb -eq 1 ]] && echo -e "${YELLOW}Specify only one of the options: ${GREEN}-smb${NOCOLOR} or ${GREEN}-nfs${NOCOLOR}. Both are not allowed${NOCOLOR}\n" && usage
+if [[ $nfs -eq 1 || $smb -eq 1 ]]; then
+	[[ "$url" == *http* ||  "$url" == *ftp* ]] && echo -e "${YELLOW}-nfs or -smb and http or ftp - incompatible\n" && usage
+fi
 
 sel
