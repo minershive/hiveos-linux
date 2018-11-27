@@ -36,7 +36,7 @@ function miner_config_gen() {
 
 	echo "mport = -$MINER_API_PORT" >> $MINER_CONFIG
 
-	echo "logPath = $MINER_LOG_BASENAME.log"
+	echo "logPath = $MINER_LOG_BASENAME.log" >> $MINER_CONFIG
 
 	#merge user config options into main config
 	if [[ ! -z $FINMINER_USER_CONFIG ]]; then
