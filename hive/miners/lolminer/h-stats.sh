@@ -8,9 +8,11 @@ else
 	khs=`echo $stats_raw | jq -r '.Session.Performance_Summary' | awk '{ print $1/1000 }'`
 	local fan=$(jq -c "[.fan$amd_indexes_array]" <<< $gpu_stats)
 	local temp=$(jq -c "[.temp$amd_indexes_array]" <<< $gpu_stats)
+	local ver=`echo $stats_raw | jq -c -r ".Software" | awk '{ print $2 }'`
 	stats=$(jq 	--argjson temp "$temp" \
 			--argjson fan "$fan" \
-			'{hs: [.GPUs[].Performance], hs_units: "hs", $temp, $fan, uptime: .Session.Uptime, ar: [.Session.Accepted, .Session.Submitted - .Session.Accepted ], algo: .Mining.Algorithm}' <<< "$stats_raw")
+			--arg ver "$ver" \
+			'{hs: [.GPUs[].Performance], hs_units: "hs", $temp, $fan, uptime: .Session.Uptime, ar: [.Session.Accepted, .Session.Submitted - .Session.Accepted ], algo: .Mining.Algorithm, ver: $ver}' <<< "$stats_raw")
 fi
 
 [[ -z $khs ]] && khs=0

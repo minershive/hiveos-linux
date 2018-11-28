@@ -12,6 +12,7 @@ function miner_config_echo() {
 function miner_config_gen() {
 	MINER_CONFIG="$MINER_DIR/$MINER_VER/lolminer.conf"
 	GLOBAL_CONFIG="$MINER_DIR/$MINER_VER/global_config.conf"
+	mkfile_from_symlink $MINER_CONFIG
 
 	if [ -z $LOLMINER_ALGO ]; then
 	    coin="AUTO144_5"
