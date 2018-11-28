@@ -1,0 +1,25 @@
+{
+  "pools": [
+    {
+      "user": "34um6A8dmT4JHWNuAvqigsERsD61toVAbY.worker",
+      "url": "stratum+tcp://x16r.usa.nicehash.com:3366",
+      "pass": "x"
+    }
+  ],
+
+  "api-bind-telnet": "127.0.0.1:4058",
+  "api-bind-http": 0,
+  "json-response": true,
+
+  "retries": 3,
+  "retry-pause": 10,
+  "timeout": 180,
+
+  "algo": "x16r",
+  "hashrate-avr": 30,
+
+  "log-path": "/var/log/miner/t-rex/t-rex.log",
+
+  "exit-on-cuda-error": true,
+  "exit-on-connection-lost": false
+}
