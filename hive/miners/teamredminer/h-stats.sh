@@ -26,6 +26,7 @@ else
 		local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
 		for ((i = 0; i < `echo $bus_no | awk "{ print NF }"`; i++)); do
 			bus_id=`head -n 40 ${MINER_LOG_BASENAME}.log | grep "Successfully initialized GPU $i" | awk '{ printf $12"\n" }' | cut -d ':' -f 1`
+			[[ $i -gt 9 ]] && bus_id=`head -n 50 ${MINER_LOG_BASENAME}.log | grep "Successfully initialized GPU$i" | awk '{ printf $11"\n" }' | cut -d ':' -f 1`
 			bus_id=$(( 0x${bus_id} ))
 			bus_ids+=${bus_id}" "
 			for ((j = 0; j < ${#all_bus_ids_array[@]}; j++)); do
@@ -39,6 +40,7 @@ else
 		local bus_no=$(jq .devs.DEVS[]."GPU" <<< "$stats_raw")
 		for ((i = 0; i < `echo $bus_no | awk "{ print NF }"`; i++)); do
 			bus_id=`head -n 40 ${MINER_LOG_BASENAME}.log | grep "Successfully initialized GPU $i" | awk '{ printf $12"\n" }' | cut -d ':' -f 1`
+			[[ $i -gt 9 ]] && bus_id=`head -n 50 ${MINER_LOG_BASENAME}.log | grep "Successfully initialized GPU$i" | awk '{ printf $11"\n" }' | cut -d ':' -f 1`
 			bus_id=$(( 0x${bus_id} ))
 			bus_ids+=${bus_id}" "
 		done
