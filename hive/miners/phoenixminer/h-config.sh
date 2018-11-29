@@ -21,14 +21,14 @@ function miner_config_gen() {
 	local MINER_EPOOLS="$MINER_DIR/$MINER_VER/epools.txt"
 	mkfile_from_symlink $MINER_EPOOLS
 
-	coin=`echo $META | jq -r '.phoenixminer.coin' | awk '{print tolower($0)}'`
-	[[ -z ${coin} ]] && coin="auto"
-	[[ ! -z ${coin} ]] && coin="-coin ${coin}"
-
 	echo "-mport $MINER_API_PORT" > $MINER_CONFIG
 	echo "-rmode 1" >> $MINER_CONFIG
 	echo "-logfile ${MINER_LOG_BASENAME}.log" >> $MINER_CONFIG
 	echo "-allpools 1" >> $MINER_CONFIG
+
+	coin=`echo $META | jq -r '.phoenixminer.coin' | awk '{print tolower($0)}'`
+	[[ -z ${coin} ]] && coin="auto"
+	[[ ! -z ${coin} ]] && coin="-coin ${coin}" && echo $coin >> $MINER_CONFIG
 
 	[[ -z $PHOENIXMINER_URL ]] && echo -e "${YELLOW}PHOENIX_URL is empty${NOCOLOR}" && return 1
 	echo "Creating epools.txt"
