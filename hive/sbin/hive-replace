@@ -161,7 +161,7 @@ function prepare {
 	echo
 	echo "Total RAM=$mem Mb"
 	echo
-	[[ $mem -lt 3600 ]] && echo "${YELLOW}4 Gb RAM is required. Exiting.${NOCOLOR}" && exit
+	[[ $mem -lt 3600 ]] && echo -e "${YELLOW}4 Gb RAM is required. Exiting.${NOCOLOR}" && exit
 
 	PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
 	DISK_PART=`blkid | grep -m1 $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
