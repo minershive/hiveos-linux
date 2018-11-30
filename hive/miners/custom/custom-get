@@ -50,13 +50,13 @@ else #no archive but directory exists
 fi
 
 
-#if [[ -d /hive/custom/$miner ]]; then
+#if [[ -d /hive/miners/custom/$miner ]]; then
 #	[[ -z $force ]] &&
 #		echo -e "${YELLOW}Already installed${NOCOLOR}" &&
 #		exit 0
 #
 #	echo -e "${YELLOW}> Removing previous installation${NOCOLOR}" &&
-#	rm -rf /hive/custom/$miner
+#	rm -rf /hive/miners/custom/$miner
 #fi
 
 
