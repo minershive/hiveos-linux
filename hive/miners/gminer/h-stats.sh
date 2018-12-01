@@ -42,7 +42,7 @@ else
 
 	stats=$(jq -c --argjson temp "$temp" --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
 			--arg ac "$ac" --arg rj "$rj" \
-			--argjson bus_numbers "$bus_numbers" --arg algo "$EWBF_ALGO"  \
+			--argjson bus_numbers "$bus_numbers" --arg algo "$GMINER_ALGO"  \
 			--arg ver `miner_ver` \
 		'{hs: [.devices[].speed], $temp, $fan,
 			uptime: .uptime, ar: [$ac, $rj], $bus_numbers, $algo, $ver}' <<< "$stats_raw")
