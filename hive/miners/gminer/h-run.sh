@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-[[ `ps aux | grep "./miner" | grep -v grep | wc -l` != 0 ]] &&
+[[ `ps aux | grep "./gminer" | grep -v grep | wc -l` != 0 ]] &&
 	echo -e "${RED}$MINER_NAME miner is already running${NOCOLOR}" &&
 	exit 1
 
@@ -16,4 +16,4 @@ done
 
 cd $MINER_DIR/$MINER_VER
 
-./miner $(< $MINER_NAME.conf) --logfile $MINER_LOG_BASENAME.log --api $MINER_API_PORT
+./gminer $(< $MINER_NAME.conf) --logfile $MINER_LOG_BASENAME.log --api $MINER_API_PORT
