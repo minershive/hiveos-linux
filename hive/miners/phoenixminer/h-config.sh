@@ -27,8 +27,9 @@ function miner_config_gen() {
 	echo "-allpools 1" >> $MINER_CONFIG
 
 	coin=`echo $META | jq -r '.phoenixminer.coin' | awk '{print tolower($0)}'`
-	[[ -z ${coin} ]] && coin="auto"
-	[[ ! -z ${coin} ]] && coin="-coin ${coin}" && echo $coin >> $MINER_CONFIG
+	grep -q "nicehash" <<< $coin
+	[[ $? -eq 0 || -z ${coin} ]] && coin="auto"
+	[[ ! -z ${coin} ]] && echo "-coin $coin" >> $MINER_CONFIG
 
 	[[ -z $PHOENIXMINER_URL ]] && echo -e "${YELLOW}PHOENIX_URL is empty${NOCOLOR}" && return 1
 	echo "Creating epools.txt"
