@@ -49,6 +49,9 @@ function miner_config_gen() {
 		"cryptonight-v8" )
 			algo=" --algo=10"
 		;;
+		"сryptonight-superfast" )
+			algo=" --algo=11"
+		;;
 		"" )
 			algo=" --algo=-1"
 		;;

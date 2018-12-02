@@ -1,8 +1,8 @@
 Package: hive-miners-cast-xmr
-Version: 0.6-03
+Version: 0.6-04
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-cast-xmr-1.6.0
+Depends: hive-miners-cast-xmr-1.6.6
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
