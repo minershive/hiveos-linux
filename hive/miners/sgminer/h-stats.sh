@@ -7,6 +7,6 @@ if [[ $? -ne 0 || -z $stats_raw ]]; then
 else
 	khs=`echo $stats_raw | jq '.["summary"][0]["SUMMARY"][0]["KHS 15s"]'`
 	stats=`echo $stats_raw | jq --arg ver "$ver" --arg algo "$SGMINER_ALGO" \
-			'{khs: [.devs[0].DEVS[]."KHS 15s"], temp: [.devs[0].DEVS[].Temperature],
+			'{khs: [.devs[0].DEVS[]."KHS 15s"], temp: [.devs[0].DEVS[].Temperature], ar: [.summary[0].SUMMARY[0].Accepted,.summary[0].SUMMARY[0].Rejected],
 			fan: [.devs[0].DEVS[]."Fan Percent"], uptime: .summary[0].SUMMARY[0].Elapsed, $algo, $ver}'`
 fi
