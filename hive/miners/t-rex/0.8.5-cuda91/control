@@ -1,5 +1,5 @@
-Package: hive-miners-t-rex-0.8.4-cuda91
-Version: 0.6-05
+Package: hive-miners-t-rex-0.8.5-cuda91
+Version: 0.6-06
 Section: base
 Priority: optional
 Architecture: all
