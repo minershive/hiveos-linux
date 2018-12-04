@@ -1,8 +1,7 @@
-Package: hive-miners-lolminer
+Package: hive-miners-lolminer-0.6.a4
 Version: 0.6-05
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-lolminer-0.6.a4
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
