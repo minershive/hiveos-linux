@@ -24,7 +24,7 @@ function miner_config_gen() {
 	echo "-mport $MINER_API_PORT" > $MINER_CONFIG
 	echo "-rmode 1" >> $MINER_CONFIG
 	echo "-logfile ${MINER_LOG_BASENAME}.log" >> $MINER_CONFIG
-	echo "-allpools 1" >> $MINER_CONFIG
+	# echo "-allpools 1" >> $MINER_CONFIG
 
 	# coin=`echo $META | jq -r '.phoenixminer.coin' | awk '{print tolower($0)}'`
 	# grep -q "nicehash" <<< $coin
