@@ -46,6 +46,9 @@ fi
 if [[ ! -z $CORE_VDDC && ${CORE_VDDC[$i]} > 0 ]]; then
 	_SetcoreVDDC ${CORE_VDDC[$i]}
 	cat $pp_work | xxd -r -p > /sys/class/drm/card$cardno/device/pp_table
+	echo 1 > /sys/class/drm/card$cardno/device/hwmon/hwmon*/pwm1_enable
+	echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
+	echo 4 > /sys/class/drm/card$cardno/device/pp_power_profile_mode
 	rocm-smi -d $cardno --setfan 125
 fi
 
