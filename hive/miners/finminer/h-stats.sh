@@ -4,8 +4,6 @@
 # MAIN script body
 #######################
 
-. /hive/custom/finminer/h-manifest.conf
-
 stats_raw=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w $API_TIMEOUT localhost $MINER_API_PORT | jq '.result'`
 if [[ $? -ne 0  || -z $stats_raw ]]; then
 	echo -e "${YELLOW}Failed to read $miner stats_raw from localhost:${MINER_API_PORT}${NOCOLOR}"
