@@ -99,14 +99,14 @@ The script MUST define 2 variables.
 
 
 Example of `$stats` var:
-```json
+```javascript
 {
 	"hs": [123, 223.3], //array of hashes
 	"hs_units": "khs", //Optional: units that are uses for hashes array, "hs", "khs", "mhs", ... Default "khs".   
 	"temp": [60, 63], //array of miner temps
 	"fan": [80, 100], //array of miner fans
 	"uptime": 12313232, //seconds elapsed from miner stats
-	"ver": "1.2.3.4-beta", //miner version currently run, parsed from it's api or manifest
+	"ver": "1.2.3.4-beta", //miner version currently run, parsed from it's API or manifest
 
 	//Optional: accepted, rejected shares.
 	//2 numbers are required, you can add total invalids as 3rd number
