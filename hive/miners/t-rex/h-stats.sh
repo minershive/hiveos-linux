@@ -17,7 +17,7 @@ else
 		idx=$((idx+1))
 	done
 	stats=$(jq --argjson gpus `echo ${busids[@]} | jq -cs '.'` \
-	'{ver: .version, hs: [.gpus[].hashrate], hs_units: "hs", temp: [.gpus[].temperature], fan: [.gpus[].fan_speed], uptime: .uptime, ar: [.accepted_count, .rejected_count], bus_numbers: $gpus, algo: .algorithm}' <<< $stat_raw)
+	'{ hs: [.gpus[].hashrate], hs_units: "hs", temp: [.gpus[].temperature], fan: [.gpus[].fan_speed], uptime: .uptime, ar: [.accepted_count, .rejected_count], bus_numbers: $gpus, algo: .algorithm, ver: .version }' <<< $stat_raw)
 
 	# total hashrate in khs
 	khs=$(jq ".hashrate/1000" <<< $stat_raw)
