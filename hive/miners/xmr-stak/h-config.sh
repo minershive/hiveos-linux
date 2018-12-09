@@ -9,11 +9,9 @@ function miner_fork() {
 
 
 function miner_ver() {
-	if [[ $MINER_FORK == "fireice-uk" ]]; then
-		echo $MINER_LATEST_VER_FIREICE_UK
-	elif [[ $MINER_FORK == "indeedminers" ]]; then
-		echo $MINER_LATEST_VER_INDEEDMINERS
-	fi
+	local MINER_VER=$XMR_STAK_VER
+	[[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${MINER_FORK^^}" #uppercase MINER_FORK
+	echo $MINER_VER
 }
 
 
