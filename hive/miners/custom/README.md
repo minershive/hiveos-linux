@@ -48,7 +48,7 @@ The script MUST define 2 variables.
 `$stats` should hold JSON stats data.
 
 Example of `$stats` var:
-```json
+```javascript
 { 
 	"hs": [123, 223.3], //array of hashes
 	"hs_units": "khs", //Optional: units that are uses for hashes array, "hs", "khs", "mhs", ... Default "khs".   
