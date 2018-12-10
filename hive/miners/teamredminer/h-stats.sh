@@ -50,6 +50,8 @@ else
 
 	local ac=$(jq '."summary"."SUMMARY"[0]."Accepted"' <<< "$stats_raw")
 	local rj=$(jq '."summary"."SUMMARY"[0]."Rejected"' <<< "$stats_raw")
+	local iv=$(jq '."summary"."SUMMARY"[0]."Hardware Errors"' <<< "$stats_raw")
+	local iv_bus=`echo $stats_raw | jq '.devs.DEVS[]."Hardware Errors"' | jq -cs '.' | sed  's/,/;/g' | tr -d [ | tr -d ]`
 
 
 
@@ -57,10 +59,10 @@ else
 		--argjson fan "`echo ${a_fans[@]} | tr " " "\n" | jq -cs '.'`" \
 		--argjson temp "`echo ${a_temp[@]} | tr " " "\n" | jq -cs '.'`" \
 		--argjson bus_numbers "`echo ${bus_ids[@]} | tr " " "\n" | jq -cs '.'`" \
-		--arg ac "$ac" --arg rj "$rj" --arg algo "$TEAMREDMINER_ALGO" \
+		--arg ac "$ac" --arg rj "$rj" --arg iv "$iv" --arg iv_bus "$iv_bus" --arg algo "$TEAMREDMINER_ALGO" \
 		--arg ver "$ver" \
 		'{hs: [.devs.DEVS[]."KHS 30s"], $algo, $temp, $fan,
-		  uptime: .summary.SUMMARY[0].Elapsed, ar: [$ac, $rj], $bus_numbers,
+		  uptime: .summary.SUMMARY[0].Elapsed, ar: [$ac, $rj, $iv, $iv_bus], $bus_numbers,
 		  $ver}' <<< "$stats_raw")
 fi
 
