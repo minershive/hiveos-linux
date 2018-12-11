@@ -10,7 +10,8 @@ function miner_fork() {
 
 function miner_ver() {
 	local MINER_VER=$XMR_STAK_VER
-	[[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${MINER_FORK^^}" #uppercase MINER_FORK
+	local fork=${MINER_FORK^^} #uppercase MINER_FORK
+	[[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${fork//-/_}" #char replace
 	echo $MINER_VER
 }
 
