@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
 function miner_ver() {
-        echo $MINER_LATEST_VER
+	local MINER_VER=$WILDRIG_MULTI_VER
+	[[ -z $MINER_VER ]] && MINER_VER=$MINER_LATEST_VER
+	echo $MINER_VER
 }
 
 function miner_config_echo() {
