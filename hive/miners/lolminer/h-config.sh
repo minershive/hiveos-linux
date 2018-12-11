@@ -25,7 +25,7 @@ function miner_config_gen() {
 	[[ ! -z $LOLMINER_TEMPLATE ]] && conf+="--user $LOLMINER_TEMPLATE\n"
 	[[ ! -z $LOLMINER_PASS ]]     && conf+="--pass $LOLMINER_PASS\n"
 	conf+="--apiport $MINER_API_PORT\n"
-	conf+=`cat $GLOBAL_CONFIG`
+	conf+=`cat $GLOBAL_CONFIG`"\n"
 	if [[ ! -z $LOLMINER_USER_CONFIG ]]; then
 		conf+="$LOLMINER_USER_CONFIG\n"
 	fi
