@@ -100,6 +100,9 @@
   // Shutdown miner after timeout in sec. By default disabled. (set to 0)
   "time-limit": 0,
 
+  // Set temperature color for GPUs stat. To disable set the same values.
+  "temperature-color": "67,77",
+
   // Disables device till miner shutdown in case of overheat. Limit in Celsius. (set to 0)
   "temperature-limit": 0,
 

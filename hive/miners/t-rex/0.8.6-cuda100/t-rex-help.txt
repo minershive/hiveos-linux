@@ -24,7 +24,6 @@ Options:
                                     lyra2z
                                     phi
                                     polytimos
-                                    renesis
                                     sha256t
                                     skunk
                                     sonoa
@@ -45,6 +44,9 @@ Options:
     -R, --retry-pause              Pause in seconds between retries.
     -T, --timeout                  Network timeout, in seconds (default: 180)
         --time-limit               Miner shutdown interval in seconds. (default: 0 - disabled)
+
+        --temperature-color        Set temperature color for GPUs stat. Example: 55,65 - it means that
+                                   temperatures above 55 will have yellow color, above 65 - red color. (default: 67,77)
         --temperature-limit        GPU shutdown temperature. (default: 0 - disabled)
         --temperature-start        GPU temperature to enable card after disable. (default: 0 - disabled)
 
