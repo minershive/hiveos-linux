@@ -22,8 +22,9 @@ else
 
 	local ac=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $2}'`
 	local rj=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $3}'`
-	local algo="ethash"
 	local ver=`echo $stats_raw | jq -r '.[0]'`
+	local algo="ethash"
+	[[ `echo $META | jq -r .phoenixminer.coin` == "UBQ" ]] && algo="ubiqhash"
 
 	stats=$(jq -n \
 		--arg uptime "`echo \"$stats_raw\" | jq -r '.[1]' | awk '{print $1*60}'`" \
