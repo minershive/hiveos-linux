@@ -32,6 +32,7 @@ else
 
 	local algo="ethash"
 	[[ $ETHMINER_VER == "progpow" ]] && algo="progpow"
+	[[ $ETHMINER_VER == "ubqminer" ]] && algo="ubiqhash"
 	stats=$(jq -n \
 		--arg uptime "`echo \"$stats_raw\" | jq -r '.[1]' | awk '{print $1*60}'`" \
 		--argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" \
