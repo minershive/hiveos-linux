@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
 function miner_ver() {
-	echo $MINER_LATEST_VER
+	local MINER_VER=$LOLMINER_VER
+	[[ -z $MINER_VER ]] && MINER_VER=$MINER_LATEST_VER
+	echo $MINER_VER
 }
 
 function miner_config_echo() {
 	local MINER_VER=`miner_ver`
--	miner_echo_config_file "$MINER_DIR/$MINER_VER/lolminer.conf"
+	miner_echo_config_file "$MINER_DIR/$MINER_VER/lolminer.conf"
 }
 
 function miner_config_gen() {
