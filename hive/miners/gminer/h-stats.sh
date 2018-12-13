@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-#######################
-# MAIN script body
-#######################
-
-. /hive/custom/finminer/h-manifest.conf
-
 stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:$MINER_API_PORT/stat`
 if [[ $? -ne 0  || -z $stats_raw ]]; then
 	echo -e "${YELLOW}Failed to read $miner stats_raw from localhost:${MINER_API_PORT}${NOCOLOR}"
