@@ -1,8 +1,8 @@
 Package: hive-miners-finminer
-Version: 0.6-06
+Version: 0.6-07
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-finminer-2.4.4
+Depends: hive-miners-finminer-2.4.6
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
