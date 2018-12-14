@@ -38,7 +38,7 @@ else
 			--arg ac "$ac" --arg rj "$rj" \
 			--argjson bus_numbers "$bus_numbers" --arg algo "$GMINER_ALGO"  \
 			--arg ver `miner_ver` \
-		'{hs: [.devices[].speed], $temp, $fan,
+		'{hs: [.devices[].speed], hs_units: "hs", $temp, $fan,
 			uptime: .uptime, ar: [$ac, $rj], $bus_numbers, $algo, $ver}' <<< "$stats_raw")
 fi
 
