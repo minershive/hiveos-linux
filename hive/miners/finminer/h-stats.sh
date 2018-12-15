@@ -29,13 +29,15 @@ else
 	local ver=`echo $stats_raw | jq -r '.[0]' | awk '{print $1}'`
 
 	[[ ! -z $FINMINER_ALGO ]] && local algo=$FINMINER_ALGO || local algo="ethash"
+	local hs_units=''
+	[[ $algo == "ethash" ]] && hs_units="khs" || hs_units="hs"
 
 	stats=$(jq -n \
 		--arg uptime "`echo \"$stats_raw\" | jq -r '.[1]' | awk '{print $1*60}'`" \
 		--argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" \
 		--arg ac "$ac" --arg rj "$rj" \
-		--arg algo "$algo" --arg ver "$ver" \
-		'{$hs, $temp, $fan, $uptime, $algo, ar: [$ac, $rj], $ver}')
+		--arg algo "$algo" --arg hs_units "$hs_units" --arg ver "$ver" \
+		'{$hs, $hs_units, $temp, $fan, $uptime, $algo, ar: [$ac, $rj], $ver}')
 fi
 
 [[ -z $khs ]] && khs=0
