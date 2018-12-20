@@ -38,6 +38,8 @@ function miner_config_gen() {
 
 	echo "logPath = $MINER_LOG_BASENAME.log" >> $MINER_CONFIG
 
+	echo "restarts = 0" >> $MINER_CONFIG
+
 	#merge user config options into main config
 	if [[ ! -z $FINMINER_USER_CONFIG ]]; then
 		while read -r line; do

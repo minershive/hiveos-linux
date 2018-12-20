@@ -1,0 +1,1 @@
+../finminer-on-reboot
