@@ -35,13 +35,9 @@ else
 	local bus_str=""
 	for (( i = 1; i <= `echo $fan | jq length`; i++ )); do
 		#2018.12.22:13:38:35.674: main GPU1: GeForce GTX 1050 Ti (pcie 1), CUDA cap. 6.1, 3.9 GB VRAM, 6 CUs
-		echo $i
 		bus_str=`cat ${MINER_LOG_BASENAME}_head.log | grep "main GPU$i"`
-		echo $bus_str
 		bus_id=`echo ${bus_str#*" (pcie "} | cut -d \) -f 1`
-		echo $bus_id
 		bus_ids+=${bus_id}" "
-		echo $bus_ids
 	done
 
 	stats=$(jq -n \
