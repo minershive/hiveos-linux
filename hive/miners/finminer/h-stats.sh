@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-. /hive/miners/finminer/h-manifest.conf
-
 get_cores_hs(){
 	for (( i=0; i < ${num_cores}; i++ )); do
 		hs[$i]=`echo $khs | awk '{ printf($1/'$num_cores') }'`
