@@ -42,9 +42,9 @@ function miner_config_gen() {
 		[[ ! -z $BMINER_ALGO2 ]] && algo2=$BMINER_ALGO2 || algo2="blake2s"
 		pool=
 		for url in $BMINER_URL2; do
-		tpl=$BMINER_TEMPLATE2
-		tpl=$(sed 's/\//%2F/g; s/ /%20/g; s/@/%40/g' <<< $tpl)
-		[[ ! -z $BMINER_PASS2 ]] && tpl+=":$BMINER_PASS2"
+		  tpl=$BMINER_TEMPLATE2
+		  tpl=$(sed 's/\//%2F/g; s/ /%20/g; s/@/%40/g' <<< $tpl)
+		  [[ ! -z $BMINER_PASS2 ]] && tpl+=":$BMINER_PASS2"
 
 			grep -q "://" <<< $url
 			if [[ $? -ne 0 ]]; then #protocol not found
