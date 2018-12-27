@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-stats_raw=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat1"}' | nc -w $API_TIMEOUT localhost ${MINER_API_PORT} | jq '.result'`
+stats_raw=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstat2"}' | nc -w $API_TIMEOUT localhost ${MINER_API_PORT} | jq '.result'`
 if [[ $? -ne 0  || -z $stats_raw ]]; then
 	echo -e "${YELLOW}Failed to read $miner stats_raw from localhost:${MINER_API_PORT} ${NOCOLOR}"
 else
@@ -23,6 +23,8 @@ else
 
 	local ac=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $2}'`
 	local rj=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $3}'`
+	local ir=`echo $stats_raw | jq -r '.[8]' | awk -F';' '{print $1}'`
+	local ir_gpu=`echo $stats_raw | jq '.[11]'`
 	local ver=`echo $stats_raw | jq -r '.[0]'`
 	local algo="ethash"
 	[[ `echo $META | jq -r .phoenixminer.coin` == "UBQ" ]] && algo="ubiqhash"
@@ -43,11 +45,11 @@ else
 	stats=$(jq -n \
 		--arg uptime "$uptime" \
 		--argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" \
-		--arg ac "$ac" --arg rj "$rj" \
+		--arg ac "$ac" --arg rj "$rj" --arg ir "$ir" --arg ir_gpu "$ir_gpu" \
 		--arg algo "$algo" \
 		--arg ver "$ver" \
 		--argjson bus_numbers "`echo ${bus_ids[@]} | tr " " "\n" | jq -cs '.'`" \
-		'{$hs, $temp, $fan, $uptime, $algo, ar: [$ac, $rj], $ver, $bus_numbers}')
+		'{$hs, $temp, $fan, $uptime, $algo, ar: [$ac, $rj, $ir, $ir_gpu], $ver, $bus_numbers}')
 fi
 
 [[ -z $khs ]] && khs=0
