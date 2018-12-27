@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
 
+VERS="0.2"
+DELAY=5
 FREE_SPACE_LIMIT=100
 
 #[ -t 1 ] &&
 . colors
+
+function DelayDot(){
+        local i=0
+        while [ "$i" -le "$DELAY" ]
+        do
+                echo -n '.'
+                sleep 1
+                i=$((i+1))
+        done
+        echo
+}
 
 part_expand(){
 	[[ -z $1 ]] && echo -e "${YELLOW}No drive name given${NOCOLOR}" && return 1
@@ -53,6 +66,9 @@ function install-deps() {
 		exit 1
 }
 
+######################################################################
+
+echo -e "${CYAN}Hive Disk Expand Utility v${VERS}${NOCOLOR}"
 
 install-deps
 
@@ -63,8 +79,8 @@ install-deps
 
 PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
 #echo $PART_UUID
-DISK_PART=`blkid | grep -m1 $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
-
+#DISK_PART=`blkid | grep -m1 $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
+DISK_PART=`blkid -U "${PART_UUID}" | sed 's/\(^\/dev\/\)//'`
 #echo "/dev/sda2:" | sed 's/\([[:digit:]]\)://'
 DISK_NAME=`echo ${DISK_PART} | sed 's/\([[:digit:]]\)//'`
 #echo $DISK_NAME $DISK_PART
@@ -87,7 +103,8 @@ else
 
 	echo -e "Press Ctrl+C to stop or wait 5 seconds to continue";
 	# Give user time for break process
-	read -t 5
+	DelayDot
+#	read -t 5
 
 	part_expand "$DISK_NAME" "$DISK_PART"
 
