@@ -47,20 +47,13 @@ else
 		[[ $uptime -lt 60 ]] && head -n 50 $MINER_LOG_BASENAME.log > ${MINER_LOG_BASENAME}_head.log
 		#2018-12-20 22:22:44: <info> Using CPU threads: 6
 		num_cores=`cat ${MINER_LOG_BASENAME}_head.log | grep "<info> Using CPU threads:" | awk '{print $7}'`
-		echo num_cores=$num_cores
 		khs=`get_total_hs`
-		echo khs=$khs
 		get_cores_hs
-		echo hs=${hs[@]}
 		hs=`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`
-		echo hs=$hs
 		khs=`echo $khs | awk '{ printf($1/1000) }'`
 		get_cpu_temps
-		echo temp=${temp[@]}
 		temp=`echo ${temp[@]} | tr " " "\n" | jq -cs '.'`
-		echo temp=${temp}
 		fan="[]"
-
 	else
 		khs=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $1}'`
 		local tempfans=`echo $stats_raw | jq -r '.[6]' | tr ';' ' '`
