@@ -1,4 +1,4 @@
-Package: hive-miners-ccminer-mtp-1.0.0
+Package: hive-miners-ccminer-mtp-1.0.0-cuda100
 Version: 0.6-02
 Section: base
 Priority: optional
