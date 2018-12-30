@@ -14,7 +14,7 @@ fi
 
 HIVE_URL="$HIVE_HOST_URL/worker/api"
 LOG="/var/log/hive-agent.log"
-
+echo $#
 if [[ $# < 2 ]]; then
 	echo "Usage: $0 success|danger|warning|info|default \"message\" [payload] [-i|--id=msgid]"
 	echo "Aliases: ok|error|err|warn|default|file"
@@ -55,6 +55,13 @@ for i in "$@"; do
 			request=`echo "$request $id_json" | jq -sc '.[0] * .[1]'`
 			shift
 		;;
+		--meta=*)
+			meta="${i#*=}"
+			echo $meta | jq
+			meta_json=`jq --argjson meta "$meta" -n '{"params": {$meta}}'`
+			request=`echo "$request $meta_json" | jq -sc '.[0] * .[1]'`
+			shift
+		;;
 		payload)
 			echo "With payload"
 			payload=$(cat)
@@ -71,7 +78,7 @@ done
 
 #date
 echo -e "> Sending \"$type\": ${MSGCOLOR}$data${NOCOLOR}"
-
+echo $request
 #Show output and exit for debug
 #echo $request | jq . && exit
 

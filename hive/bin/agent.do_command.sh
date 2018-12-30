@@ -198,34 +198,87 @@ function do_command () {
 			fi
 		;;
 		amd_upload)
-			local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
-			local rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
-			if [[ -z $gpu_index || $gpu_index == "null" ]]; then
-				message error "No \"gpu_index\" given" --id=$cmd_id
-			elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
-				message error "No \"rom_base64\" given" --id=$cmd_id
-			else
-				force=$(echo $body | jq '.force' --raw-output)
-				[[ ! -z $force && $force == "1" ]] && extra_args="-f" || extra_args=""
-				echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded.rom
-				fsize=`cat /tmp/amd.uploaded.rom | wc -c`
-				if [[ -z $fsize || $fsize < 250000 ]]; then #too short file
-					message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping" --id=$cmd_id
-				else
-					if [[ $gpu_index == -1 ]]; then # -1 = all
-				    	payload=`atiflashall $extra_args /tmp/amd.uploaded.rom`
-					else
+			# Batch mode
+			if [ $(echo $body | jq --raw-output '.batch != null') == 'true' ]; then
+				local gpu_groups=$(echo $body | jq --raw-output '.batch | length')
+				local queue=0
+				local errors=0
+				local meta_good=()
+				local meta_bad=()
+				payload=""
+				for (( queue=0; queue<$gpu_groups; queue++ )); do
+					local gpu_list=`echo $body | jq --raw-output --arg queue $queue '.batch[$queue|tonumber].gpu_index' | tr ',' ' '`
+					local rom_base64=$(echo $body | jq --arg queue $queue '.batch[$queue|tonumber].rom_base64' --raw-output)
+					if [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
+						message error "No \"rom_base64\" given" --id=$cmd_id      # Cards list
+						errors=1
+						continue
+					fi
+					local force=$(echo $body | jq --arg queue $queue '.batch[$queue|tonumber].force' --raw-output)
+					local need_reboot=$(echo $body | jq '.reboot' --raw-output)
+					[[ ! -z $force && $force == "1" ]] && extra_args="-f" || extra_args=""
+					# Save ROM
+					echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded.rom
+					fsize=`cat /tmp/amd.uploaded.rom | wc -c`
+					#echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded${queue}.rom
+					#fsize=`cat /tmp/amd.uploaded${queue}.rom | wc -c`
+					local gpu_index=""
+					for gpu_index in $gpu_list; do
 						local gpu_index_hex=$gpu_index
 						[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
-				    	payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index_hex $extra_args /tmp/amd.uploaded.rom`
-					fi
-				    exitcode=$?
-				    echo "$payload"
-					if [[ $exitcode == 0 ]]; then
-						echo "$payload" | message ok "ROM flashing OK, now reboot" payload --id=$cmd_id
+						# payload+=`echo "=== Flashing card $gpu_index ===" && `
+						#payload+=`echo "Flashing card by CMD: atiflash -p $gpu_index_hex $extra_args /tmp/amd.uploaded${queue}.rom"`
+						payload+=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index_hex $extra_args /tmp/amd.uploaded.rom`
+						exitcode=$?
+						if [[ $exitcode == 0 ]]; then
+							meta_good+=($gpu_index)
+						else
+							meta_bad+=($gpu_index)
+							errors=1
+						fi
+						payload+=`echo -e "\r\n"`
+					done
+				done
+				local meta=$(jq -n --arg good "`echo ${meta_good[@]} | tr " " ","`" --arg bad "`echo ${meta_bad[@]} | tr " " ","`" '{$good,$bad}')
+				local reboot_msg=""
+				[[ $need_reboot && $error == 0 ]] && reboot_msg=", now reboot"
+				if [ $errors == 0 ]; then
+					echo "$payload" | message ok "ROM flashing OK$reboot_msg" payload --id=$cmd_id --meta="$meta"
+				else
+					echo "$payload" | message warn "ROM flashing with errors$reboot_msg" payload --id=$cmd_id --meta="$meta"
+				fi
+				[[ $need_reboot && $error == 0 ]] && nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+			# Single mode
+			else
+			    local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
+			    local rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
+			    if [[ -z $gpu_index || $gpu_index == "null" ]]; then
+				message error "No \"gpu_index\" given" --id=$cmd_id
+				elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
+				    message error "No \"rom_base64\" given" --id=$cmd_id
+				else
+				    force=$(echo $body | jq '.force' --raw-output)
+				    [[ ! -z $force && $force == "1" ]] && extra_args="-f" || extra_args=""
+				    echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded.rom
+				    fsize=`cat /tmp/amd.uploaded.rom | wc -c`
+				    if [[ -z $fsize || $fsize < 250000 ]]; then #too short file
+					message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping" --id=$cmd_id
+				    else
+					if [[ $gpu_index == -1 ]]; then # -1 = all
+					    payload=`atiflashall $extra_args /tmp/amd.uploaded.rom`
 					else
-						echo "$payload" | message warn "ROM flashing failed" payload --id=$cmd_id
+					    local gpu_index_hex=$gpu_index
+					    [[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
+					    payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index_hex $extra_args /tmp/amd.uploaded.rom`
 					fi
+					exitcode=$?
+					echo "$payload"
+					if [[ $exitcode == 0 ]]; then
+					    echo "$payload" | message ok "ROM flashing OK, now reboot" payload --id=$cmd_id
+					else
+					    echo "$payload" | message warn "ROM flashing failed" payload --id=$cmd_id
+					fi
+				    fi
 				fi
 			fi
 		;;
