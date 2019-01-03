@@ -1,0 +1,8 @@
+Package: hive-miners-beamcuda
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-beamcuda-1.0.0.82
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner
