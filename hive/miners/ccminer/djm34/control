@@ -1,8 +1,8 @@
 Package: hive-miners-ccminer-djm34
-Version: 0.6-09
+Version: 0.6-10
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-ccminer-djm34-1.1.9
+Depends: hive-miners-ccminer-djm34-1.1.10
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
