@@ -54,8 +54,10 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 	while read -r s; do
 		[[ -z $s ]] && continue
 		unset gputype
-		[[ $s =~ "NVIDIA" && ! $s =~ "nForce" ]] && gputype="NVIDIA" && COLOR=$GREEN && gpu_brand_i=$((gpu_brand_i+1))
-		[[ $s =~ "Advanced Micro Devices" ]] && gputype="AMD" && COLOR=$RED && gpu_brand_i=$((gpu_brand_i+1))
+		[[ $s =~ "NVIDIA" && ! $s =~ "nForce" ]] &&
+			gputype="NVIDIA" && COLOR=$GREEN && gpu_brand_i=$((gpu_brand_i+1))
+		[[ $s =~ "Advanced Micro Devices" && ! $s =~ "RS880" && ! $s =~ "Stoney" ]] &&
+			gputype="AMD" && COLOR=$RED && gpu_brand_i=$((gpu_brand_i+1))
 
 		#[[ $s =~ ^([0-9a-z:.]+).*\[(.+)\] ]]
 		#re='^([0-9a-z\:\.]+) VGA compatible controller: (.*)$'
