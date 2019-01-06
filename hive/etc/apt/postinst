@@ -175,6 +175,17 @@ rm -rf /hive/bminer* /hive/claymore* /hive/ccminer* /hive/cpuminer* /hive/custom
 
 
 
+# Fix systemd-journald persistent files
+if (cat /etc/fstab | grep -q '^# LOGS OFF START$') && ! (cat /etc/systemd/journald.conf | grep -q '^Storage=volatile$'); then
+	# logs are OFF, let's fix persistent logs storage
+	echo "Fixing systemd-journald volatile storage"
+	sed -E 's/^[#]?Storage=.*$/Storage=volatile/g' -i /etc/systemd/journald.conf
+	systemctl restart systemd-journald #this will put logs to ram now
+	mount --bind / /mnt && rm -rf /mnt/var/log/* && umount /mnt
+fi
+
+
+
 # Save RepoVer ---------------------------------------------------------------------------------------
 # actually we should leave this only in selfupgrade
 # but when updating from 0.5 to 0.6 selfupgrade will not fetch this

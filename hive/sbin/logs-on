@@ -12,6 +12,12 @@ ENDCMNT="# LOGS OFF END"
 fstab=`cat /etc/fstab`
 
 
+# Enable systemd-journald persistent files
+if ! (cat /etc/systemd/journald.conf | grep -q '^Storage=persistent$'); then
+	sed -E 's/^[#]?Storage=.*$/Storage=persistent/g' -i /etc/systemd/journald.conf
+fi
+
+
 echo "$fstab" | grep -q "$STARTCMNT"
 
 [[ $? -ne 0 ]] &&

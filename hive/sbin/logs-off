@@ -10,6 +10,15 @@ ENDCMNT="# LOGS OFF END"
 
 fstab=`cat /etc/fstab`
 
+
+# Fix systemd-journald persistent files
+if ! (cat /etc/systemd/journald.conf | grep -q '^Storage=volatile$'); then
+	sed -E 's/^[#]?Storage=.*$/Storage=volatile/g' -i /etc/systemd/journald.conf
+	systemctl restart systemd-journald #this will put logs to ram now
+	mount --bind / /mnt && rm -rf /mnt/var/log/* && umount /mnt
+fi
+
+
 echo "$fstab" | grep -q "$STARTCMNT"
 
 [[ $? -eq 0 ]] &&

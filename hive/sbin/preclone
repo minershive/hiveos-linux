@@ -33,6 +33,7 @@ find /hive/ccminer -type f -name "ccminer_*" -exec rm -f {} \;
 find /hive/custom/ -maxdepth 1 -mindepth 1 -type d -exec rm -rf {} \;
 rm /hive/ethminer/progpow/kernel*
 
+mount --bind / /mnt && rm -rf /mnt/var/log/* && umount /mnt
 rm -r /var/log/*
 #rm /var/log/*.1; rm /var/log/*.2; rm /var/log/*.gz; echo "" > /var/log/kern.log; echo "" > /var/log/syslog
 #rm /var/log/*.log
