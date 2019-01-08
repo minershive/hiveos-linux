@@ -29,7 +29,7 @@ function miner_config_gen() {
     conf+=" --server $host --port $port --user $GMINER_TEMPLATE --pass $GMINER_PASS"
   done
 
-  conf+=" --pec $GMINER_USER_CONFIG"
+  conf+=" $GMINER_USER_CONFIG"
 
   echo "$conf" > $MINER_CONFIG
 }
