@@ -5,8 +5,13 @@ if [[ $? -ne 0  || -z $stats_raw ]]; then
   echo -e "${YELLOW}Failed to read $miner stats_raw from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
   khs=`echo $stats_raw | jq -r '.devices[].speed' | awk '{s+=$1} END {print s/1000}'` #sum up and convert to khs
-  local ac=$(jq '[.devices[].accepted_shares] | add' <<< "$stats_raw")
-  local rj=$(jq '[.devices[].rejected_shares] | add' <<< "$stats_raw")
+  if [ $GMINER_ALGO == "150_5" ]; then
+    local ac=$(jq -r '.total_accepted_shares' <<< "$stats_raw")
+    local rj=$(jq -r '.total_rejected_shares' <<< "$stats_raw")
+  else
+    local ac=$(jq '[.devices[].accepted_shares] | add' <<< "$stats_raw")
+    local rj=$(jq '[.devices[].rejected_shares] | add' <<< "$stats_raw")
+  fi
 
   #All fans speed array
   local fan=$(jq -r ".fan | .[]" <<< $gpu_stats)
