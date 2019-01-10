@@ -9,7 +9,7 @@ get_cards_hashes(){
   hs=''
   khs=0
   local i=0; local a=0
-  local perf=`cat $log_name | tail -n 100 | grep "Performance:" | tail -n 1`
+  local perf=`cat $log_name | tail -n 100 | grep "Performance:" | tail -n 1 | sed 's/| Total.*$//g'`
   for t_hs in $perf; do
     let "i++"
     let a=$i%2
@@ -94,5 +94,5 @@ fi
 # debug output
 ##echo temp:  $temp
 ##echo fan:   $fan
-#echo stats: $stats
+#echo stats: $statsOD
 #echo khs:   $khs
