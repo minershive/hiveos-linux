@@ -20,8 +20,11 @@ get_cards_hashes(){
 }
 
 get_miner_uptime(){
-  local a=0
-  let a=`stat --format='%Y' $log_name`-`stat --format='%Y' $conf_name`
+  local a=`cat $log_name | tail -n 100 | grep "Uptime:" | tail -n 1 | awk '{ print $7 }'`
+  if [ $a == '' ]; then
+  	local a=0
+  	let a=`stat --format='%Y' $log_name`-`stat --format='%Y' $conf_name`
+  fi
   echo $a
 }
 
@@ -61,6 +64,14 @@ if [ "$diffTime" -lt "$maxDelay" ]; then
   get_cards_hashes # hashes array
   local hs_units='hs' # hashes utits
   local uptime=$(get_miner_uptime) # miner uptime
+  local sols=`cat $log_name | tail -n 100 | grep "Solutions (A/R)" | tail -n 1`
+  if [ "$sols" == "" ]; then
+	local acc=0
+	local rej=0
+  else
+  	acc=`echo $sols | awk '{ print $3 }'`
+  	rej=`echo $sols | awk '{ print $5 }'`
+  fi
 
 # make JSON
 #--argjson hs "`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`" \
@@ -70,9 +81,11 @@ if [ "$diffTime" -lt "$maxDelay" ]; then
         --argjson temp "$temp" \
         --argjson fan "$fan" \
         --arg uptime "$uptime" \
+        --arg acc "$acc" \
+        --arg rej "$rej" \
         --arg algo "$algo" \
 				--arg ver "$ver" \
-        '{$hs, $hs_units, $temp, $fan, $uptime, $algo, $ver}')
+        '{$hs, $hs_units, ar: [$acc, $rej], $temp, $fan, $uptime, $algo, $ver}')
 else
   stats=""
   khs=0
@@ -81,5 +94,5 @@ fi
 # debug output
 ##echo temp:  $temp
 ##echo fan:   $fan
-#echo stats: $statsOD
+#echo stats: $stats
 #echo khs:   $khs
