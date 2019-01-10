@@ -31,7 +31,7 @@ function miner_config_gen() {
 	echo "log_file_append = true" >> $MINER_CONFIG
 
 	echo "[mining]" >> $MINER_CONFIG
-	echo "run_tui = true" >> $MINER_CONFIG
+	echo "run_tui = false" >> $MINER_CONFIG
 	local pool=`head -n 1 <<< "$GRINMINER_URL"`
 	echo "stratum_server_addr = \"$pool\"" >> $MINER_CONFIG
 	echo "stratum_server_login = \"$GRINMINER_TEMPLATE\"" >> $MINER_CONFIG
