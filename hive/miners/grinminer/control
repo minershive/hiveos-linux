@@ -1,8 +1,8 @@
 Package: hive-miners-grinminer
-Version: 0.6-02
+Version: 0.6-03
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-grinminer-0.5.1
+Depends: hive-miners-grinminer-0.5.2
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
