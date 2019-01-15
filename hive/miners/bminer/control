@@ -3,6 +3,6 @@ Version: 0.6-12
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-bminer-12.0.0
+Depends: hive-miners-bminer-12.0.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
