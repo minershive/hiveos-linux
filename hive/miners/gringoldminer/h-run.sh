@@ -6,4 +6,4 @@
 
 cd $MINER_DIR/$MINER_VER
 
-./GrinGoldMinerCLI
+./GrinGoldMinerCLI mode=rolling

@@ -45,7 +45,7 @@ function miner_config_gen() {
   echo '  </SecondaryConnection>' >> $MINER_CONFIG
   echo '  <LogOptions>' >> $MINER_CONFIG
   echo '    <FileMinimumLogLevel>DEBUG</FileMinimumLogLevel>' >> $MINER_CONFIG
-  echo '    <ConsoleMinimumLogLevel>INFO</ConsoleMinimumLogLevel>' >> $MINER_CONFIG
+  echo '    <ConsoleMinimumLogLevel>DEBUG</ConsoleMinimumLogLevel>' >> $MINER_CONFIG
   echo '  </LogOptions>' >> $MINER_CONFIG
   echo '  <CPUOffloadValue>0</CPUOffloadValue>' >> $MINER_CONFIG
   echo '  <GPUOptions>' >> $MINER_CONFIG

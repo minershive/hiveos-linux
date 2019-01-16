@@ -3,6 +3,6 @@ Version: 0.6-01
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-gringoldminer-2.6
+Depends: hive-miners-gringoldminer-2.7b
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
