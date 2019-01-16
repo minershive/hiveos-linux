@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <PrimaryConnection>
+    <ConnectionAddress>your_pool_address</ConnectionAddress>
+    <ConnectionPort>13416</ConnectionPort>
+    <Ssl>false</Ssl>
+    <Login>pool_login</Login>
+    <Password>pool_password</Password>
+  </PrimaryConnection>
+  <SecondaryConnection>
+    <ConnectionAddress>backup_pooladdress</ConnectionAddress>
+    <ConnectionPort>13416</ConnectionPort>
+    <Ssl>false</Ssl>
+    <Login>login</Login>
+    <Password>password</Password>
+  </SecondaryConnection>
+  <LogOptions>
+    <FileMinimumLogLevel>WARNING</FileMinimumLogLevel>
+    <ConsoleMinimumLogLevel>INFO</ConsoleMinimumLogLevel>
+  </LogOptions>
+  <CPUOffloadValue>0</CPUOffloadValue>
+  <GPUOptions>
+    <GPUOption>
+      <GPUName>GeForce GTX 1080 Ti</GPUName>
+      <GPUType>NVIDIA</GPUType>
+      <DeviceID>0</DeviceID>
+      <PlatformID>0</PlatformID>
+      <Enabled>true</Enabled>
+    </GPUOption>
+    <GPUOption>
+      <GPUName>Ellesmere</GPUName>
+      <GPUType>AMD</GPUType>
+      <DeviceID>0</DeviceID>
+      <PlatformID>0</PlatformID>
+      <Enabled>true</Enabled>
+    </GPUOption>
+  </GPUOptions>
+</Config>
