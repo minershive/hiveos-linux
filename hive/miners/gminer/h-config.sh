@@ -26,7 +26,8 @@ function miner_config_gen() {
     host=`awk '(NR == '$i')' <<< "$GMINER_HOST"`
     [[ ! -z `awk '(NR == '$i')' <<< "$GMINER_PORT"` ]] && port=`awk '(NR == '$i')' <<< "$GMINER_PORT"`
 
-    conf+=" --server $host --port $port --user $GMINER_TEMPLATE --pass $GMINER_PASS"
+    conf+=" --server $host --port $port --user $GMINER_TEMPLATE"
+    [[ ! -z $GMINER_PASS ]] && conf+=" --pass $GMINER_PASS"
   done
 
   conf+=" $GMINER_USER_CONFIG"
