@@ -1,7 +1,7 @@
 Package: hive-miners-sgminer
-Version: 0.6-11
+Version: 0.6-12
 Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner
+Description: Hive miner - SGminer
