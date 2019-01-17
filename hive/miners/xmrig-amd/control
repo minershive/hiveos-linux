@@ -3,6 +3,6 @@ Version: 0.6-05
 Section: base
 Priority: optional
 Architecture: all
-Depends: libuv1, hive-miners-xmrig-amd-2.9.1
+Depends: libuv1, hive-miners-xmrig-amd-2.9.3
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
