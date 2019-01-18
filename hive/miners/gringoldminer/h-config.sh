@@ -27,19 +27,21 @@ function miner_config_gen() {
   local pool2=`head -n 2 <<< "$GRINGOLDMINER_URL" | tail -n 1 | cut -f 1 -d ":" -s`
   local port2=`head -n 2 <<< "$GRINGOLDMINER_URL" | tail -n 1 | cut -f 2 -d ":" -s`
 
+  [[ $GRINGOLDMINER_TLS -eq 1 ]] && GRINGOLDMINER_TLS=true || GRINGOLDMINER_TLS=false
+
   echo '<?xml version="1.0" encoding="utf-8"?>' > $MINER_CONFIG
   echo '<Config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">' >> $MINER_CONFIG
   echo '  <PrimaryConnection>' >> $MINER_CONFIG
   echo '    <ConnectionAddress>'$pool1'</ConnectionAddress>' >> $MINER_CONFIG
   echo '    <ConnectionPort>'$port1'</ConnectionPort>' >> $MINER_CONFIG
-  echo '    <Ssl>false</Ssl>' >> $MINER_CONFIG
+  echo '    <Ssl>'$GRINGOLDMINER_TLS'</Ssl>' >> $MINER_CONFIG
   echo '    <Login>'$GRINGOLDMINER_TEMPLATE'</Login>' >> $MINER_CONFIG
   echo '    <Password>'$GRINGOLDMINER_PASS'</Password>' >> $MINER_CONFIG
   echo '  </PrimaryConnection>' >> $MINER_CONFIG
   echo '  <SecondaryConnection>' >> $MINER_CONFIG
   echo '    <ConnectionAddress>'$pool2'</ConnectionAddress>' >> $MINER_CONFIG
   echo '    <ConnectionPort>'$port2'</ConnectionPort>' >> $MINER_CONFIG
-  echo '    <Ssl>false</Ssl>' >> $MINER_CONFIG
+  echo '    <Ssl>'$GRINGOLDMINER_TLS'</Ssl>' >> $MINER_CONFIG
   echo '    <Login>'$GRINGOLDMINER_TEMPLATE'</Login>' >> $MINER_CONFIG
   echo '    <Password>'$GRINGOLDMINER_PASS'</Password>' >> $MINER_CONFIG
   echo '  </SecondaryConnection>' >> $MINER_CONFIG
