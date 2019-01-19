@@ -59,7 +59,7 @@ local maxDelay=120
 
 local algo="cuckoo"
 
-GPU_COUNT=`echo $(gpu-detect AMD) $(gpu-detect NVIDIA) | awk '{ printf($1 + $2) }'`
+GPU_COUNT=`cat $conf_name | grep -c "<DeviceID>"`
 
 # If log is fresh the calc miner stats or set to null if not
 if [ "$diffTime" -lt "$maxDelay" ]; then
