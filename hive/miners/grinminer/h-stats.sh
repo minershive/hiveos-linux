@@ -8,7 +8,7 @@ get_cards_hashes(){
 #Jan 07 13:01:38.090 DEBG Mining: Plugin 0 - Device 0 (GeForce GTX 1080 Ti) at Cuck(at)oo29 - Status: OK : Last Graph time: 0.206706559s; Graphs per second: 4.838 - Total Attempts: 760
   hs=''; local t_hs=0
   local i=0
-  for (( i=0; i < ${GPU_COUNT_NVIDIA}; i++ )); do
+  for (( i=0; i < ${GPU_COUNT}; i++ )); do
     t_hs=`cat $log_name | tail -n 50 | grep "DEBG Mining:" | grep "Device $i" | tail -n 1`
     t_hs=`echo ${t_hs#*" Graphs per second: "} | cut -d " " -f 1`
     hs+=\"$t_hs\"" "
@@ -43,10 +43,14 @@ local log_name="$MINER_LOG_BASENAME.log"
 local ver=`miner_ver`
 local conf_name="/hive/miners/$MINER_NAME/$ver/grin-miner.toml"
 
-local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
-local fan=$(jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
+local temp=$(jq '.temp' <<< $gpu_stats)
+local fan=$(jq '.fan' <<< $gpu_stats)
 
-[[ -z $GPU_COUNT_NVIDIA ]] && GPU_COUNT_NVIDIA=`gpu-detect NVIDIA`
+[[ $cpu_indexes_array != '[]' ]] && #remove Internal Gpus
+  temp=$(jq -c "del(.$cpu_indexes_array)" <<< $temp) &&
+  fan=$(jq -c "del(.$cpu_indexes_array)" <<< $fan)
+
+GPU_COUNT=`cat $conf_name | grep -c "device"`
 
 # Calc log freshness
 local diffTime=$(get_log_time_diff)
