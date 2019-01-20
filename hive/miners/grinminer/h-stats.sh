@@ -50,7 +50,7 @@ local fan=$(jq '.fan' <<< $gpu_stats)
   temp=$(jq -c "del(.$cpu_indexes_array)" <<< $temp) &&
   fan=$(jq -c "del(.$cpu_indexes_array)" <<< $fan)
 
-GPU_COUNT=`cat $conf_name | grep -c "device"`
+GPU_COUNT=`echo $(gpu-detect AMD) $(gpu-detect NVIDIA) | awk '{ printf($1 + $2) }'`
 
 # Calc log freshness
 local diffTime=$(get_log_time_diff)
