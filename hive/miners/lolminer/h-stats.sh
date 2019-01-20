@@ -9,10 +9,22 @@ else
 	local fan=$(jq -c "[.fan$amd_indexes_array]" <<< $gpu_stats)
 	local temp=$(jq -c "[.temp$amd_indexes_array]" <<< $gpu_stats)
 	local ver=`echo $stats_raw | jq -c -r ".Software" | awk '{ print $2 }'`
+	local bus_numbers=$(echo $stats_raw | jq -r ".GPUs[].PCIE_Address" | cut -f 1 -d ':' | jq -sc .)
+	local algo=""
+	case "$(echo $stats_raw | jq -r '.Mining.Coin')" in
+		BEAM)
+			algo="equihash 150/5"
+			;;
+		default)
+			algo=$(echo $stats_raw | jq -r '.Mining.Algorithm')
+			;;
+	esac
 	stats=$(jq 	--argjson temp "$temp" \
 			--argjson fan "$fan" \
 			--arg ver "$ver" \
-			'{hs: [.GPUs[].Performance], hs_units: "hs", $temp, $fan, uptime: .Session.Uptime, ar: [.Session.Accepted, .Session.Submitted - .Session.Accepted ], algo: .Mining.Algorithm, ver: $ver}' <<< "$stats_raw")
+			--argjson bus_numbers "$bus_numbers" \
+			--arg algo "$algo" \
+			'{hs: [.GPUs[].Performance], hs_units: "hs", $temp, $fan, uptime: .Session.Uptime, ar: [.Session.Accepted, .Session.Submitted - .Session.Accepted ], $bus_numbers, algo: $algo, ver: $ver}' <<< "$stats_raw")
 fi
 
 [[ -z $khs ]] && khs=0
