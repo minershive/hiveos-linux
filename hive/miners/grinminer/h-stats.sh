@@ -60,6 +60,17 @@ local maxDelay=120
 
 local algo="cuckoo"
 
+#Jan 21 18:43:30.001 INFO Status for worker RIG-0 - Height: 8322, Difficulty: 1, (8/0/0)
+local ac=`cat $log_name | tail -n 50 | grep "INFO Status for worker" | tail -n 1`
+ac=`echo ${ac#*", Difficulty: "} | cut -d " " -f 2`;
+ac=`echo ${ac#\(}`;
+ac=`echo ${ac%\)} | cut -d "/" -f 1`
+
+local rj=`cat $log_name | tail -n 50 | grep "INFO Status for worker" | tail -n 1`
+rj=`echo ${rj#*", Difficulty: "} | cut -d " " -f 2`;
+rj=`echo ${rj#\(}`;
+rj=`echo ${rj%\)} | cut -d "/" -f 2`
+
 # If log is fresh the calc miner stats or set to null if not
 if [ "$diffTime" -lt "$maxDelay" ]; then
   get_cards_hashes # hashes, temp, fan array
@@ -77,7 +88,8 @@ if [ "$diffTime" -lt "$maxDelay" ]; then
         --arg uptime "$uptime" \
         --arg algo "$algo" \
         --arg ver "$ver" \
-        '{$hs, $hs_units, $temp, $fan, $uptime, $algo, $ver}')
+        --arg ac "$ac" --arg rj "$rj" \
+        '{$hs, $hs_units, $temp, $fan, $uptime, $algo, $ver, ar: [$ac, $rj]}')
 else
   stats=""
   khs=0
