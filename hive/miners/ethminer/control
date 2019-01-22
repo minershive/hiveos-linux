@@ -1,7 +1,7 @@
 Package: hive-miners-ethminer
-Version: 0.6-06
+Version: 0.6-07
 Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner
+Description: Hive miner - ETHminer and forks
