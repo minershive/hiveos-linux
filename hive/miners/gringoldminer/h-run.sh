@@ -6,4 +6,5 @@
 
 cd $MINER_DIR/$MINER_VER
 
+export GPU_MAX_WORKGROUP_SIZE=1024
 ./GrinGoldMinerCLI mode=rolling
