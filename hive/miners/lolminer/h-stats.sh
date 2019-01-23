@@ -8,7 +8,7 @@ else
 	khs=`echo $stats_raw | jq -r '.Session.Performance_Summary' | awk '{ print $1/1000 }'`
 	local fan=$(jq -c "[.fan$amd_indexes_array]" <<< $gpu_stats)
 	local temp=$(jq -c "[.temp$amd_indexes_array]" <<< $gpu_stats)
-	local ver=`echo $stats_raw | jq -c -r ".Software" | awk '{ print $2 }'`
+	local ver=`echo $stats_raw | jq -c -r ".Software" | sed 's/lolMiner //'`
 	local bus_numbers=$(echo $stats_raw | jq -r ".GPUs[].PCIE_Address" | cut -f 1 -d ':' | jq -sc .)
 	local algo=""
 	case "$(echo $stats_raw | jq -r '.Mining.Coin')" in
