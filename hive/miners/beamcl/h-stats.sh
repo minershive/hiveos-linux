@@ -84,7 +84,7 @@ if [ "$diffTime" -lt "$maxDelay" ]; then
         --arg acc "$acc" \
         --arg rej "$rej" \
         --arg algo "$algo" \
-				--arg ver "$ver" \
+        --arg ver "$ver" \
         '{$hs, $hs_units, ar: [$acc, $rej], $temp, $fan, $uptime, $algo, $ver}')
 else
   stats=""
@@ -94,5 +94,5 @@ fi
 # debug output
 ##echo temp:  $temp
 ##echo fan:   $fan
-#echo stats: $statsOD
+#echo stats: $stats
 #echo khs:   $khs
