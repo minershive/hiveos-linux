@@ -1,0 +1,7 @@
+Package: hive-miners-lolminer-0.7.a3
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - lolMiner 0.7 alpha 3
