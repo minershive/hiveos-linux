@@ -8,11 +8,28 @@ get_cards_hashes(){
 #Jan 07 13:01:38.090 DEBG Mining: Plugin 0 - Device 0 (GeForce GTX 1080 Ti) at Cuck(at)oo29 - Status: OK : Last Graph time: 0.206706559s; Graphs per second: 4.838 - Total Attempts: 760
   hs=''; local t_hs=0
   local i=0
-  for (( i=0; i < ${GPU_COUNT}; i++ )); do
+  for (( i=0; i < ${GPU_COUNT_NVIDIA}; i++ )); do
     t_hs=`cat $log_name | tail -n 50 | grep "DEBG Mining:" | grep "Device $i" | tail -n 1`
     t_hs=`echo ${t_hs#*" Graphs per second: "} | cut -d " " -f 1`
+    [[ $t_hs > $test_hs_value ]] && test_hs $i
     hs+=\"$t_hs\"" "
   done
+}
+
+test_hs() {
+  local j_hs=0
+  local min_hs=99
+  for (( j=1; j < 6; j++ )); do
+    j_hs=`cat $log_name | tail -n 250 | grep "DEBG Mining:" | grep "Device $1" | tail -n $j | head -n 1`
+    j_hs=`echo ${j_hs#*" Graphs per second: "} | cut -d " " -f 1`
+    [[ $j_hs < $min_hs ]] && min_hs=$j_hs
+  done
+  if [[ $min_hs > $test_hs_value ]]; then
+    khs=0
+    t_hs=0
+  else
+    t_hs=$min_hs
+  fi
 }
 
 
@@ -37,7 +54,7 @@ get_log_time_diff(){
 #######################
 # MAIN script body
 #######################
-
+test_hs_value=20
 
 local log_name="$MINER_LOG_BASENAME.log"
 local ver=`miner_ver`
@@ -73,8 +90,8 @@ rj=`echo ${rj%\)} | cut -d "/" -f 2`
 
 # If log is fresh the calc miner stats or set to null if not
 if [ "$diffTime" -lt "$maxDelay" ]; then
-  get_cards_hashes # hashes, temp, fan array
   get_total_hashes # total hashes, accepted, rejected
+  get_cards_hashes # hashes, temp, fan array
   local hs_units='hs' # hashes utits
   local uptime=$(get_miner_uptime) # miner uptime
 
