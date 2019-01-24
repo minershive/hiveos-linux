@@ -45,7 +45,7 @@ local conf_name="/hive/miners/$MINER_NAME/$ver/$MINER_NAME.conf"
 local temp=$(jq '.temp' <<< $gpu_stats)
 local fan=$(jq '.fan' <<< $gpu_stats)
 cat $conf_name | grep -q "\-\-enable-cpu"
-if [[ $? -eq 0 ]]; then
+if [[ ! $? -eq 0 ]]; then
   [[ $cpu_indexes_array != '[]' ]] && #remove Internal Gpus
     temp=$(jq -c "del(.$cpu_indexes_array)" <<< $temp) &&
     fan=$(jq -c "del(.$cpu_indexes_array)" <<< $fan)
