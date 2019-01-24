@@ -45,7 +45,7 @@ else
 	stats=$(jq -n \
 		--arg uptime "$uptime" \
 		--argjson hs "$hs" --argjson temp "$temp" --argjson fan "$fan" \
-		--arg ac "$ac" --arg rj "$rj" --arg ir "$ir" --arg ir_gpu "$ir_gpu" \
+		--arg ac "$ac" --arg rj "$rj" --arg ir "$ir" --argjson ir_gpu "$ir_gpu" \
 		--arg algo "$algo" \
 		--arg ver "$ver" \
 		--argjson bus_numbers "`echo ${bus_ids[@]} | tr " " "\n" | jq -cs '.'`" \
