@@ -21,7 +21,7 @@ function miner_config_gen() {
 
 	for url in $BMINER_URL; do
 		tpl=$BMINER_TEMPLATE
-		tpl=$(sed 's/\//%%2F/g; s/ /%%20/g; s/@/%%40/g' <<< $tpl)
+		tpl=$(sed 's/\//%2F/g; s/ /%20/g; s/@/%40/g' <<< $tpl)
 		[[ ! -z $BMINER_PASS ]] && tpl+=":$BMINER_PASS"
 
 		grep -q "://" <<< $url
@@ -43,7 +43,7 @@ function miner_config_gen() {
 		pool=
 		for url in $BMINER_URL2; do
 		  tpl=$BMINER_TEMPLATE2
-		  tpl=$(sed 's/\//%%2F/g; s/ /%%20/g; s/@/%%40/g' <<< $tpl)
+		  tpl=$(sed 's/\//%2F/g; s/ /%20/g; s/@/%40/g' <<< $tpl)
 		  [[ ! -z $BMINER_PASS2 ]] && tpl+=":$BMINER_PASS2"
 
 			grep -q "://" <<< $url
