@@ -34,7 +34,7 @@ function miner_config_gen() {
 		"cryptonight-saber" )
 			algo=" --algo=5"
 		;;
-	        "cryptonight-xtl" )
+	  "cryptonight-fast-v8" )
 			algo=" --algo=6"
 		;;
 		"cryptonight-xhv" )
@@ -43,7 +43,7 @@ function miner_config_gen() {
 		"cryptonight-fast" )
 			algo=" --algo=8"
 		;;
-		"сryptonight-fest" )
+		"сryptonight-trtl" )
 			algo=" --algo=9"
 		;;
 		"cryptonight-v8" )
