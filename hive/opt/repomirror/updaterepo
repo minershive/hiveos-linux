@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 date
 
-#for all the programs running from within the script, make sure they run in the "UTC" time zone
+#for all the programs running from within the script, make sure they run in the "UTC" time zone 
+# (or whatever is set on the remote repo server as the timezone for timestamps of the files in the repo)
 export TZ=UTC
 
 [[ -e /hive-config/repo-sync.url ]] &&
 	repourl=`cat /hive-config/repo-sync.url | head -n 1`
 
-# Default URL
+# Default URL, should end in a / for successful sync
 [[ -z $repourl ]] &&
-	repourl=http://download.hiveos.farm/repo/binary
+	repourl=http://download.hiveos.farm/repo/binary/
 
 #This does not work as rig will fetch from itself
 #repourl=`cat /etc/apt/sources.list.d/hiverepo.list | grep '^deb http' | tail -n 1 | awk '{print $2}'`
@@ -25,24 +26,26 @@ echo
 
 
 
-
 cd /var/www/html
 
 
-# wget will download to domain directory
+# wget will download to domain directory, so link it appropriately
 [[ ! -e /var/www/html/$domain ]] &&
 	ln -sf /var/www/html/repomirror /var/www/html/$domain
 
-
+#remove files like RepoVer and other files which are not actual packages
 for file in `ls /var/www/html/repomirror/repo/binary/* | grep -v deb`
 do
 	rm -f $file
 done
 
-
-/usr/bin/wget -nv -l1 -N -c -r $repourl
-
+#Request re-sync of everything with conditional if-modified-since requests from the remote repo server, overwriting local files with 
+# ones from the remote server.
+#Because -c and -N do not seem to work too nicely in GNU wget (only larger-than-original new files get synced upon update), just use -N
+# instead of  trying to save bandwidth upon incomplete downloads
+/usr/bin/wget -nv -r -l1 -N "$repourl"
 
 #Remove index files so directory contents will be generated via nginx
+#this may cause a certain amount of trash-talk from wget complaining about unavailable last-modified timestamps. 
 rm repomirror/repo/index.html
 rm repomirror/repo/binary/index.html
