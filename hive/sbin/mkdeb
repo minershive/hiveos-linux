@@ -49,11 +49,15 @@ for control in $controls; do
 		cp -Lf hive/etc/apt/postinst $pkgdir/DEBIAN
 		cp -Lf hive/etc/apt/preinst $pkgdir/DEBIAN
 	fi
+	[[ -e $sourcedir/postinst ]] &&
+		cp -Lf $sourcedir/postinst $pkgdir/DEBIAN
+	[[ -e $sourcedir/preinst ]] &&
+		cp -Lf $sourcedir/preinst $pkgdir/DEBIAN
 
 	rsynctargetdir=$pkgdir/${sourcedir/.\//}
 	mkdir -p $rsynctargetdir
 
-	#find and exlude subdirs containting control file, these folders are subpackages
+	#find and exclude subdirs containing control file, these folders are subpackages
 	d=${sourcedir//\//\\\/}'\/' #escape replacement
 	echo ".DS_Store" > $buildroot/tmp-exclude-from
 	find $sourcedir -mindepth 2 -name "control" -exec dirname {} \; | sed "s/$d//g" >> $buildroot/tmp-exclude-from

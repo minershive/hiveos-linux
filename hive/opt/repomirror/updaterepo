@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+date
+
+#for all the programs running from within the script, make sure they run in the "UTC" time zone
+export TZ=UTC
+
+[[ -e /hive-config/repo-sync.url ]] &&
+	repourl=`cat /hive-config/repo-sync.url | head -n 1`
+
+# Default URL
+[[ -z $repourl ]] &&
+	repourl=http://download.hiveos.farm/repo/binary
+
+#This does not work as rig will fetch from itself
+#repourl=`cat /etc/apt/sources.list.d/hiverepo.list | grep '^deb http' | tail -n 1 | awk '{print $2}'`
+
+
+
+echo "Repo URL: $repourl"
+
+domain=`echo "$repourl" | sed -e 's|^[^/]*//||' -e 's|/.*$||'`
+echo "Domain: $domain"
+
+echo
+
+
+
+
+cd /var/www/html
+
+
+# wget will download to domain directory
+[[ ! -e /var/www/html/$domain ]] &&
+	ln -sf /var/www/html/repomirror /var/www/html/$domain
+
+
+for file in `ls /var/www/html/repomirror/repo/binary/* | grep -v deb`
+do
+	rm -f $file
+done
+
+
+/usr/bin/wget -nv -l1 -N -c -r $repourl
+
+
+#Remove index files so directory contents will be generated via nginx
+rm repomirror/repo/index.html
+rm repomirror/repo/binary/index.html
