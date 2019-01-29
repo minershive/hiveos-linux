@@ -8,9 +8,12 @@ export TZ=UTC
 [[ -e /hive-config/repo-sync.url ]] &&
 	repourl=`cat /hive-config/repo-sync.url | head -n 1`
 
-# Default URL, should end in a / for successful sync
 [[ -z $repourl ]] &&
-	repourl=http://download.hiveos.farm/repo/binary/
+	repourl=http://download.hiveos.farm/repo/binary
+
+
+# should end in a / for successful sync, add trailing slash if missing
+[[ "${repourl}" != */ ]] && STR="${repourl}/"
 
 #This does not work as rig will fetch from itself
 #repourl=`cat /etc/apt/sources.list.d/hiverepo.list | grep '^deb http' | tail -n 1 | awk '{print $2}'`
