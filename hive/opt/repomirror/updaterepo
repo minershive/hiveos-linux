@@ -4,6 +4,7 @@ date
 #for all the programs running from within the script, make sure they run in the "UTC" time zone 
 # (or whatever is set on the remote repo server as the timezone for timestamps of the files in the repo)
 export TZ=UTC
+WGET="/usr/bin/wget"
 
 [[ -e /hive-config/repo-sync.url ]] &&
 	repourl=`cat /hive-config/repo-sync.url | grep -v "^$" | grep -v "^#" |head -n 1`
@@ -46,9 +47,33 @@ done
 # ones from the remote server.
 #Because -c and -N do not seem to work too nicely in GNU wget (only larger-than-original new files get synced upon update), just use -N
 # instead of  trying to save bandwidth upon incomplete downloads
-/usr/bin/wget -nv -r -l1 -N "$repourl"
+echo "Working under `pwd`"
+
+${WGET} -nv -r -l1 -N "$repourl"
 
 #Remove index files so directory contents will be generated via nginx
 #this may cause a certain amount of trash-talk from wget complaining about unavailable last-modified timestamps. 
 rm repomirror/repo/index.html
 rm repomirror/repo/binary/index.html
+
+cd /var/www/html/repomirror/repo/binary
+#Check for md5 mismatches vs Packages file, if we have one from a successful download. 
+#Insane Packages file will cause massive deletion of .deb files, but c'est la vie
+
+if [ -f Packages ]; then
+#do a file with a list of bad downloads 
+TFN=`mktemp /tmp/pkgdnldXXXXXX`
+echo "`date` $0 : Checking and removing damaged or misdownloaded files using md5 sums from the fresh Packages file"
+#this is ugly and needs some prettying in a more human-readable language 
+(cat Packages | tr '\n' '|' | sed  's/||/\\/g' | tr '\\' '\n') | perl -ne 'next unless (m/Filename.*.deb/); m/Filename: (.+?)\|.*MD5sum: ([0-9A-Fa-f]+)/; $fn = $1; $md = $2; $emd=`md5sum $fn`; $emd=~m/^([0-9A-Fa-f]+)/; $emd = $1;  if ($md ne $emd){print "$fn\n"; unlink ($fn);};' | tee $TFN
+echo "`date` $0 : Re-downloading any removed file(s) from $repourl (if any)...."
+for file in `cat $TFN | sed 's/.\///g'`
+do
+ echo downloading ${repourl}/$file
+ ${WGET} -nv ${repourl}/$file
+done
+echo "`date` $0 : Removing temproray files (${TFN})...."
+rm -f $TFN
+fi
+
+echo "`date` $0 : Done."
