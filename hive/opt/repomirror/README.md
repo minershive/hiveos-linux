@@ -21,5 +21,10 @@ Sync is done once per hour.
 You can run it manually `/hive/opt/repomirror/updaterepo`, 
 also there is log file of cron job here `/var/log/hive-repo-sync.log`.
 
-In your browser you can check mirror by opening `http://your.rig.ip/repo/binary`,
+If you want to use alternate reference server to download from,
+you can create `/hive-config/repo-sync.url` with URL of that server, 
+like `http://your.another.mirror/repo/binary/`
+
+
+In your browser you can check mirror by opening `http://your.rig.ip/repo/binary/`,
 if it's ok set this URL in farm settings.

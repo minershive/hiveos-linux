@@ -6,10 +6,10 @@ date
 export TZ=UTC
 
 [[ -e /hive-config/repo-sync.url ]] &&
-	repourl=`cat /hive-config/repo-sync.url | head -n 1`
+	repourl=`cat /hive-config/repo-sync.url | grep -v "^$" | grep -v "^#" |head -n 1`
 
 [[ -z $repourl ]] &&
-	repourl=http://download.hiveos.farm/repo/binary
+	repourl=http://download.hiveos.farm/repo/binary/
 
 
 # should end in a / for successful sync, add trailing slash if missing
