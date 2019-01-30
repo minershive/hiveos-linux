@@ -43,16 +43,19 @@
 						--arg hs_units2 "$hs_units2" \
 						--arg ac2 "$ac2" --arg rj2 "$rj2" \
 						--argjson hs2 "`echo ${hs2[@]} | tr " " "\n" | jq -cs '.'`" \
-						'{hs: [.miners[].solver.solution_rate], $hs_units,
+            --arg total_khs "$khs" \
+            --arg total_khs2 "$khs2" \
+            '{$total_khs, hs: [.miners[].solver.solution_rate], $hs_units,
 							temp: [.miners[].device.temperature], fan: [.miners[].device.fan_speed], $uptime, $algo,
-							ar: [.stratum.accepted_shares, .stratum.rejected_shares],
+							ar: [.stratum.accepted_shares, .stratum.rejected_shares], $total_khs2,
 							$hs2, $hs_units2, $algo2, ar2: [$ac2, $rj2], ver: .version}' <<< "$stats_raw")
 		else
 			#single mode
 			stats=$(jq -c --arg uptime "$uptime" \
 						--arg algo "$BMINER_ALGO" \
 						--arg hs_units "$hs_units" \
-						'{hs: [.miners[].solver.solution_rate], $hs_units,
+            --arg total_khs "$khs" \
+						'{$total_khs, hs: [.miners[].solver.solution_rate], $hs_units,
 							temp: [.miners[].device.temperature], fan: [.miners[].device.fan_speed], $uptime, $algo,
 							ar: [.stratum.accepted_shares, .stratum.rejected_shares], ver: .version}' <<< "$stats_raw")
 		fi

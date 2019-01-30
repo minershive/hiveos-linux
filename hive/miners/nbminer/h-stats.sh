@@ -16,7 +16,7 @@
     #not working at the moment, just gives numbers from 0 to n, not bus numbers
     #local bus_numbers=$(echo $stats_raw | jq .miner | jq -r '[ .miners | to_entries[] | select(.value) | .key|tonumber ]') #'
 
-    if [[ khs2 > 0 ]]; then
+    if [[ ! -z $NBMINER_URL2 ]]; then
       #dual mode
       stats=$(jq -c --arg uptime "$uptime" \
                     --arg algo "$algo" \
