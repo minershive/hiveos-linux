@@ -32,11 +32,12 @@ fi
 
 
 #should be ping here, but will work with any
+#if port 22 (ssh) responds then
+#send ping signal to WD, if WD does not receive it for a while, then WD RESET the MB.
+
 while true
 do
 	echo "Pinging watchdog"
-	echo -n "~U" > $PORT
-	sleep 2
+	[[ `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]] && echo -n "~U" > $PORT
+	sleep 5
 done
-
-
