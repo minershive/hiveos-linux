@@ -46,6 +46,12 @@ function miner_config_gen() {
 		"cryptonight-xtl" )
 			algo="stellite"
 		;;
+    "cryptonight-fast-v8" )
+			algo="cnfast2"
+		;;
+    "cryptonight-superfast" )
+      algo="cnsuperfast"
+    ;;
 	esac
 	[[ ! -z ${algo} ]] && algo="-a ${algo}"
 
