@@ -24,7 +24,7 @@ else
   local ver=`echo $stats_raw | jq -r .summary.STATUS[0].Description | awk '{ printf $2 }'`
 
   dpkg --compare-versions "$ver" "lt" "0.3.8"
-  if [ $? -eq "0" ]; then.
+  if [ $? -eq "0" ]; then
     local bus_no=$(jq .devs.DEVS[]."GPU" <<< "$stats_raw")
     local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
     for ((i = 0; i < `echo $bus_no | awk "{ print NF }"`; i++)); do
