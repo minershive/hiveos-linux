@@ -1,8 +1,8 @@
 Package: hive-miners-t-rex
-Version: 0.6-12
+Version: 0.6-13
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-t-rex-0.9.1-cuda92
+Depends: hive-miners-t-rex-0.9.2-cuda92
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner
+Description: Hive miner - T-Rex miner
