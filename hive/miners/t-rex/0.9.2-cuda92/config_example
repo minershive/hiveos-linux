@@ -1,0 +1,117 @@
+{
+  // List of main and failover pools
+  "pools": [
+    {
+      "user": "1MKrTujwHxda6knL8hHrPMi7Git4upX56E", // wallet address
+      "url": "stratum+tcp://pool.minermore.com:4501", // pool stratum (US)
+      "pass": "x" // password
+    },
+    {
+      "user": "CHANGETHIS.worker",
+      "url": "stratum+tcp://ca.minermore.com:4501", // <-- Montreal Canada
+      "pass": "x"
+    },
+    {
+      "user": "CHANGETHIS.worker",
+      "url": "stratum+tcp://pool.minermore.com:5501", // <-- US
+      "pass": "x"
+    },
+    {
+      "user": "CHANGETHIS.worker",
+      "url": "stratum+tcp://eu.minermore.com:4501", // <-- Frankfurt, Germany
+      "pass": "x"
+    },
+    {
+      "user": "CHANGETHIS.worker",
+      "url": "stratum+tcp://eu.minermore.com:5501", // <-- Frankfurt, Germany
+      "pass": "x"
+    },
+    {
+      "user": "CHANGETHIS.worker",
+      "url": "stratum+tcp://hk.minermore.com:4501", // <-- Hong Kong
+      "pass": "x"
+    }
+  ],
+
+  // Telnet API bind address.
+  "api-bind-telnet": "0.0.0.0:4068", // Set to "0" to disable Telnet API
+
+  // HTTP API bind address.
+  "api-bind-http": "0.0.0.0:4067", // Set to "0" to disable HTTP API
+
+  // If set to true enables json response for Telnet API.
+  "json-response": false,
+
+  // Connection retries count. After this number of attempts failover pool will be switched.
+  "retries": 3,
+
+  // Pause in seconds between retries.
+  "retry-pause": 10,
+
+  // Maximum time in seconds your pool connection may have no ping. After that reconnect will happen.
+  "timeout": 180,
+
+  // Name of mining algorithm. You can see available names at the top of the help file.
+  "algo": "x16r",
+  
+  // This is GPU index in the system. You can select multiple GPUs sequentially: "devices": "0,2,3"
+  "devices": 0, // Use only the first GPU in your rig. Remove this parameter to use all GPUs
+
+  // Intensity used with your GPUs. It can be different for each GPU, e.g. "intensity": "20,21.4,23"
+  "intensity": 20,
+  
+  // Sliding window length in sec used to compute average hashrate.
+  "hashrate-avr": 60, // Set to 3600 to get average over an hour
+
+  // Sliding window length in sec used to compute sharerate.
+  "sharerate-avr": 600,
+
+  // Path to the log file. If only file name set log will be saved into directory with the miner.
+  "log-path": "t-rex.log",
+  // "log-path": "/home/x/t-rex.log", // Absolute path
+
+  // Set process priority (default: 2) 1 below normal, 2 normal to 5 highest.
+  "cpu-priority": 2,
+
+  // Perform auto update whenever a newer version of the miner is available.
+  "autoupdate": false,
+  
+  // Shutdown miner immediately if has any CUDA error.
+  "exit-on-cuda-error": true,
+
+  // Shutdown miner immediately if pool connection lost.
+  "exit-on-connection-lost": false,
+
+  // Forces miner to immediately reconnect to pool on N successively failed shares (default: 10).
+  "reconnect-on-fail-shares": 10,
+
+  // User protocol logging.
+  "protocol-dump": false, // Set to true to turn it on.
+
+  // Configurable GPUs report frequency. By default every 5 shares.
+  "gpu-report-interval": 5,
+
+  // Disable color output for console
+  "no-color": false,
+
+  // Disable NVML GPU stats. If set, temperature limit and temperature start won't affect miner work.
+  "no-nvml": false,
+
+  // Quiet mode. No GPU stats at all.
+  "quiet": false,
+
+  // Shutdown miner after timeout in sec. By default disabled. (set to 0)
+  "time-limit": 0,
+
+  // Set temperature color for GPUs stat. To disable set the same values.
+  "temperature-color": "67,77",
+
+  // Disables device till miner shutdown in case of overheat. Limit in Celsius. (set to 0)
+  "temperature-limit": 0,
+
+  // GPU temperature to enable card after it's been disabled. (default: 0 - disabled)
+  "temperature-start": 0,
+  
+  // Forces miner to switch back to main pool in case working with failover pool. Parameter is set in seconds. (default: 600)
+  "back-to-main-pool-sec": 600
+}
