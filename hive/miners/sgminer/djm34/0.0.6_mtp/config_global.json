@@ -1,0 +1,17 @@
+{
+	"temp-target": "68",
+	"temp-cutoff": "80",
+	"temp-overheat": "82",
+	"auto-fan": true,
+
+	"log-file": "/var/log/miner/sgminer/sgminer.log",
+	"log-show-date": true,
+	"text-only": false,
+	"verbose": true,
+	"debug": false,
+	"per-device-stats": true,
+	"log": "15",
+
+	"api-listen": true,
+	"api-port": 4028
+}

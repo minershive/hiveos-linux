@@ -1,0 +1,7 @@
+Package: hive-miners-sgminer-djm34-0.0.6-mtp
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - SGminer by djm34 ZXCoin Official OpenCL miner
