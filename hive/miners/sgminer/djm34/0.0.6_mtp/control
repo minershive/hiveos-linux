@@ -4,4 +4,4 @@ Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - SGminer by djm34 ZXCoin Official OpenCL miner
+Description: Hive miner - SGminer by djm34 Zcoin Official OpenCL miner
