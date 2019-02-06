@@ -91,6 +91,16 @@ function reset_miner_vars() {
 
 # Waits for new stats to appear in file
 function wait-for-gpu-stats() {
+	[[ $PUSH_INTERVAL -gt 50 ]] && PUSH_INTERVAL=50
+	local tosleep=$(( $PUSH_INTERVAL - $INTERVAL ))
+	if [[ $tosleep -ge 0 ]]; then
+		max_tries=$(($tosleep*2))
+		for (( i=1; i<=$max_tries; i++)); do
+			echo -n '.'
+			sleep 0.5
+		done
+	fi
+
 	local i=
 	local max_tries=$(($INTERVAL*2*2))
 	for (( i=1; i<=$max_tries; i++)); do
