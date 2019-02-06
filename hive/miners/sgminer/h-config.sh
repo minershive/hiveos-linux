@@ -30,6 +30,8 @@ function miner_config_gen() {
 
 	pools='[]'
 	for url in $SGMINER_URL; do
+		grep -q "://" <<< $url
+		[[ $? -ne 0 ]] && url="stratum+tcp://${url}"
 		pool='{}'
 		pool=`jq --null-input --argjson pool "$pool" --arg user "$SGMINER_TEMPLATE" '$pool + {$user}'`
 		pool=`jq --null-input --argjson pool "$pool" --arg url "$url" '$pool + {$url}'`
