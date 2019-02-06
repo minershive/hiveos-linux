@@ -7,6 +7,11 @@ LOG="/var/log/hive-agent.log"
 
 API_TIMEOUT=15 #timeout to wait for miner API response, can take very long time on 13+ gpus
 
+
+LAST_OK=$(( $(date +%s) - 86100 ))
+force_stop=0
+
+
 [ -t 1 ] && . colors
 
 #$PPID - might be parent screen pid
@@ -124,6 +129,19 @@ function wait-for-gpu-stats() {
 # Main loop cycle
 function loop {
 	#In some rare cases he have empty stats array
+	DT=86400
+	
+	no_link=$(( $(date +%s) - $LAST_OK ))
+	if [[ $no_link -gt $DT ]]; then
+		if [[ $force_stop -eq 0 ]]; then
+			miner stop
+			wd stop
+			force_stop=1
+			echo "[`date`] No connection with API server. Stop the miner" >> $LOG
+		fi
+	fi
+	
+	
 	[[ -z $gpu_detect_json ]] && process_gpu_detect_json redetect
 
 	[ ! -f $RIG_CONF ] && echo -e "No config $RIG_CONF" && return
@@ -262,6 +280,14 @@ function loop {
 	[[ $? != 0 ]] && echo -e "${RED}Invalid response${NOCOLOR}: $HIVE_HOST_URL\n$response" && return 1
 	[[ ! -z $error && $error != "null" ]] && echo -e "${RED}Error response${NOCOLOR}: $error" && return 1
 
+	LAST_OK=$(date +%s)
+	if [[ $force_stop -eq 1 ]]; then
+		miner start
+		wd start
+		force_stop=0
+		echo "[`date`] Сonnection with API server is OK. Start miner" >> $LOG
+	fi
+	
 	command=$(echo $response | jq '.result.command' --raw-output)
 
 	[[ $command != "OK" ]] && echo "$response" | jq '.result'
