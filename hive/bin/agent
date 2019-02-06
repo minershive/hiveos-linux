@@ -133,9 +133,9 @@ function loop {
 	
 	no_link=$(( $(date +%s) - $LAST_OK ))
 	if [[ $no_link -gt $DT ]]; then
+		miner stop
+		wd stop
 		if [[ $force_stop -eq 0 ]]; then
-			miner stop
-			wd stop
 			force_stop=1
 			echo "[`date`] No connection with API server. Stop the miner" >> $LOG
 		fi
