@@ -21,7 +21,10 @@ function miner_config_gen() {
   grep -q "://" <<< $pool
   [[ $? -ne 0 ]] && pool="stratum+tcp://${pool}"
 
-  conf="-a ${TEAMREDMINER_ALGO} -o $pool -u ${TEAMREDMINER_TEMPLATE} -p ${TEAMREDMINER_PASS} ${TEAMREDMINER_USER_CONFIG}"
+  local pass=
+  [[ ! -z ${TEAMREDMINER_PASS} ]] && pass=" -p ${TEAMREDMINER_PASS}"
+
+  conf="-a ${TEAMREDMINER_ALGO} -o $pool -u ${TEAMREDMINER_TEMPLATE}${pass} ${TEAMREDMINER_USER_CONFIG}"
 
   echo "$conf" > $MINER_CONFIG
 }
