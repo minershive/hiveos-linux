@@ -96,8 +96,19 @@ function reset_miner_vars() {
 
 # Waits for new stats to appear in file
 function wait-for-gpu-stats() {
+  local max_tries=0
+  [[ $PUSH_INTERVAL -gt 50 ]] && PUSH_INTERVAL=50
+	local tosleep=$(( $PUSH_INTERVAL - $INTERVAL ))
+	if [[ $tosleep -ge 0 ]]; then
+		max_tries=$(($tosleep*2))
+		for (( i=1; i<=$max_tries; i++)); do
+			echo -n '.'
+			sleep 0.5
+		done
+	fi
+
 	local i=
-	local max_tries=$(($INTERVAL*2*2))
+	max_tries=$(($INTERVAL*2*2))
 	for (( i=1; i<=$max_tries; i++)); do
 		local mtime=`stat -c %Y /run/hive/gpu-stats.json`
 		[[ -z $mtime ]] && mtime=0
@@ -130,7 +141,7 @@ function wait-for-gpu-stats() {
 function loop {
 	#In some rare cases he have empty stats array
 	DT=86400
-	
+
 	no_link=$(( $(date +%s) - $LAST_OK ))
 	if [[ $no_link -gt $DT ]]; then
 		miner stop
@@ -140,8 +151,8 @@ function loop {
 			echo "[`date`] No connection with API server. Stop the miner" >> $LOG
 		fi
 	fi
-	
-	
+
+
 	[[ -z $gpu_detect_json ]] && process_gpu_detect_json redetect
 
 	[ ! -f $RIG_CONF ] && echo -e "No config $RIG_CONF" && return
@@ -287,7 +298,7 @@ function loop {
 		force_stop=0
 		echo "[`date`] Сonnection with API server is OK. Start miner" >> $LOG
 	fi
-	
+
 	command=$(echo $response | jq '.result.command' --raw-output)
 
 	[[ $command != "OK" ]] && echo "$response" | jq '.result'

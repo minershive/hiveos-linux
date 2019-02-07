@@ -268,17 +268,19 @@ if [[ $X_DISABLED != 1 ]]; then
 fi
 
 
+if [[ $MAINTENANCE -eq 1 ]]; then
+	echo2 "> Maintenance mode. Miner and software watchdog are disabled"
+else
+	echo2 "> Starting miner"
+	miner start
 
-echo2 "> Starting miner"
-miner start
 
 
-
-#Start Watchdog. It will exit if its 0
-[[ $WD_ENABLED == 1 ]] &&
-	echo2 "> Hashrate Watchdog enabled" &&
-	wd start
-
+	#Start Watchdog. It will exit if its 0
+	[[ $WD_ENABLED == 1 ]] &&
+		echo2 "> Hashrate Watchdog enabled" &&
+		wd start
+fi
 
 
 
