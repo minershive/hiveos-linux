@@ -1,0 +1,35 @@
+{
+    "algo": "cryptonight",
+    "api": {
+        "port": 0,
+        "access-token": null,
+        "worker-id": null,
+        "ipv6": false,
+        "restricted": true
+    },
+    "background": false,
+    "colors": true,
+    "cuda-bfactor": null,
+    "cuda-bsleep": null,
+    "cuda-max-threads": 64,
+    "donate-level": 1,
+    "log-file": null,
+    "pools": [
+        {
+            "url": "stratum+tcp://eu.turtlepool.space:5555",
+            "user": "TRTLuzmVzrpPBfvk3q8ZaSjbd9FQiP1nVBVuv23GphTGSSci9c5ZU6xBTqsjzN4WmXEB9Xg8G9hFYFb4y8ro6AYCJeYYmoxu5Gw",
+            "pass": "x",
+            "rig-id": null,
+            "nicehash": false,
+            "keepalive": true,
+            "variant": 1
+        }
+    ],
+    "print-time": 60,
+    "retries": 5,
+    "retry-pause": 5,
+    "threads": null,
+    "user-agent": null,
+    "syslog": false,
+    "watch": false
+}
