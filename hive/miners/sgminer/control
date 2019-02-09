@@ -1,5 +1,5 @@
 Package: hive-miners-sgminer
-Version: 0.6-16
+Version: 0.6-17
 Section: base
 Priority: optional
 Architecture: all
