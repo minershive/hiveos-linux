@@ -30,6 +30,8 @@ function miner_config_gen() {
     [[ ! -z $GMINER_PASS ]] && conf+=" --pass $GMINER_PASS"
   done
 
+  [[ $GMINER_TLS -eq 1 ]] && conf+=" --ssl 1"
+
   conf+=" $GMINER_USER_CONFIG"
 
   echo "$conf" > $MINER_CONFIG
