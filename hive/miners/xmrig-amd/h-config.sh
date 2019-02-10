@@ -20,21 +20,6 @@ function miner_config_gen() {
 
 	conf=`cat $MINER_DIR/$MINER_VER/config_global.json | envsubst`
 
-		if [[ ! -z ${XMRIG_AMD_ALGO} ]]; then
-	algo=${XMRIG_AMD_ALGO}
-	#translate CUSTOM_ALGO to a view clear for miner
-	# 	case ${XMRIG_AMD_ALGO} in
-	# 		"cryptonight-lite-v7" )
-	# 			algo="cryptonight-lite"
-	# 		;;
-	# 		* )
-	# 		algo=${XMRIG_AMD_ALGO}
-	# 		;;
-	# 	esac
-		algo=`jq --null-input --arg algo "$algo" '{$algo}'`
-		conf=$(jq -s '.[0] * .[1]' <<< "$conf $algo")
-	fi
-
 	#merge user config options into main config
 	if [[ ! -z $XMRIG_AMD_USER_CONFIG ]]; then
 		while read -r line; do
