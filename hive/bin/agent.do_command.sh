@@ -34,13 +34,15 @@ function do_command () {
 		;;
 		exec)
 			local exec=$(echo "$body" | jq '.exec' --raw-output)
-			timeout -s9 600 bash -c "$exec" 2>&1 | tee /tmp/exec.log
+			nohup bash -c '
+			log_name=$(echo '"$exec"' | tr " " "_")"_"'$cmd_id'".log"
+			'"$exec"' > /tmp/$log_name 2>&1
 			exitcode=$?
-			payload=`cat /tmp/exec.log`
-			echo "$payload"
+			payload=`cat /tmp/$log_name`
 			[[ $exitcode -eq 0 ]] &&
-				echo "$payload" | message info "$exec" payload --id=$cmd_id ||
-				echo "$payload" | message error "$exec (failed, exitcode=$exitcode)" payload --id=$cmd_id
+				echo "$payload" | message info "'"$exec"'" payload --id='$cmd_id' ||
+				echo "$payload" | message error "'"$exec"' (failed, exitcode=$exitcode)" payload --id='$cmd_id'
+			' > /tmp/nohup.log 2>&1 &
 		;;
 		config)
 			config=$(echo $body | jq '.config' --raw-output)
