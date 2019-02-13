@@ -3,6 +3,6 @@ Version: 0.6-08
 Section: base
 Priority: optional
 Architecture: all
-Depends: libuv1, hive-miners-xmrig-nvidia-2.11.0
+Depends: libuv1, hive-miners-xmrig-nvidia-2.12.0-beta
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
