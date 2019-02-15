@@ -279,9 +279,9 @@ function prepare {
 	
 	pid="1"
 	while [[ ! -z $pid ]]; do
-		pid=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | sed '2!d' | awk '{print $2}')
+		pid=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | grep -v -e hssh | sed '2!d' | awk '{print $2}')
 		[[ -z $pid ]] && continue
-		process=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | sed '2!d' | awk '{print $1}')
+		process=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | grep -v -e hssh | sed '2!d' | awk '{print $1}')
 		echo -e "> kill $process"
 		kill $pid
 		sleep 1
