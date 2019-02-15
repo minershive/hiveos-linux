@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+
+. colors
+
+
+list=`nvidia-smi --query-gpu=index,name,vbios_version,serial,gpu_bus_id,clocks.sm,clocks.mem,clocks.gr,pcie.link.gen.current,temperature.gpu,utilization.gpu,utilization.memory,memory.total,memory.free,memory.used,power.draw,fan.speed,pstate --format=csv,noheader` # > $NVIDIASMI_FILE
+
+while read -r s; do
+	index=`awk -F', ' '{print $1}' <<< $s`
+	name=`awk -F', ' '{print $2}' <<< $s`
+	bios=`awk -F', ' '{print $3}' <<< $s`
+	serial=`awk -F', ' '{print $4}' <<< $s`
+	busid=`awk -F', ' '{print $5}'  <<< $s`
+	smclk=`awk -F', ' '{print $6}' <<< $s`
+	mclk=`awk -F', ' '{print $7}' <<< $s`
+	gclk=`awk -F', ' '{print $8}' <<< $s`
+	pcie=`awk -F', ' '{print $9}' <<< $s`
+	temp=`awk -F', ' '{print $10}' <<< $s`
+	gpu_util=`awk -F', ' '{print $11}' <<< $s`
+	memutil=`awk -F', ' '{print $12}' <<< $s`
+	memtotal=`awk -F', ' '{print $13}' <<< $s`
+	memfree=`awk -F', ' '{print $14}' <<< $s`
+	memused=`awk -F', ' '{print $15}' <<< $s`
+	pwr=`awk -F', ' '{print $16}' <<< $s`
+	fan=`awk -F', ' '{print $17}' <<< $s`
+	pstate=`awk -F', ' '{print $18}' <<< $s`
+	busid=${busid#00000000:} #trim prefix
+	##Start out
+		echo -e "${YELLOW}======${NOCOLOR} GPU ${CYAN}$index${NOCOLOR}, PCIE_bus ${PURPLE}$busid${NOCOLOR}  ${YELLOW}======${NOCOLOR}"
+		echo -e "Adapter: $index, ${GREEN}$name${NOCOLOR}"
+		echo -e "Bios version: $bios, Serial: $serial, PCIE Link Speed: $pcie"
+		echo -e "  Core   :  SMCore $smclk, GFXCore $gclk , MEMCore $mclk" 
+		echo -e "  Memory :  Total $memtotal, Used $memused , Free $memfree" 
+		echo -e "Utilization:  GPU $gpu_util, MEM: $memutil"
+		echo -e "${PURPLE}Current PSTATE  $pstate , PWR $pwr, FAN $fan${NOCOLOR}"
+		echo -e ""
+	##End out
+done <<<"$list"
+

@@ -101,7 +101,7 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 			fi
 		elif [[ $gputype == "NVIDIA" ]]; then
 			[[ ! -f $NVIDIASMI_FILE ]] &&
-				nvidia-smi --query-gpu=gpu_bus_id,gpu_name,memory.total,power.min_limit,power.default_limit,power.max_limit --format=csv,noheader > $NVIDIASMI_FILE
+				nvidia-smi --query-gpu=gpu_bus_id,gpu_name,memory.total,power.min_limit,power.default_limit,power.max_limit,vbios_version --format=csv,noheader > $NVIDIASMI_FILE
 			#00000000:05:00.0, GeForce GTX 1080 Ti, 11172 MiB, 300.00 W
 			#00000000:06:00.0, GeForce GTX 1060 6GB, 6072 MiB, 140.00 W			nvidiainfo=`cat $NVIDIASMI_FILE | grep "00000000:$busid, "`
 			#00000000:0C:00.0, GeForce GTX 1080, 8114 MiB, 326.00 W
@@ -119,10 +119,11 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 				plim_min=`awk -F', ' '{print $4}' <<< $nvidiainfo`
 				plim_def=`awk -F', ' '{print $5}' <<< $nvidiainfo`
 				plim_max=`awk -F', ' '{print $6}' <<< $nvidiainfo`
-
-				vbios=""
-				[[ -e /proc/driver/nvidia/gpus/0000:$busid/information ]] &&
-					vbios=`cat /proc/driver/nvidia/gpus/0000:$busid/information | grep "Video BIOS" | awk '{print $3}'`
+				vbios=`awk -F', ' '{print $7}' <<< $nvidiainfo`
+					    
+				#vbios=""
+				#[[ -e /proc/driver/nvidia/gpus/0000:$busid/information ]] &&
+				#	vbios=`cat /proc/driver/nvidia/gpus/0000:$busid/information | grep "Video BIOS" | awk '{print $3}'`
 
 				additional=" ($mem, $plim_def)"
 				if [[ $1 == "listjson" ]]; then
