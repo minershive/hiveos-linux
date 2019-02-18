@@ -1,8 +1,8 @@
 Package: hive-miners-sgminer-djm34
-Version: 0.6-04
+Version: 0.6-05
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-sgminer-djm34-0.1.0
+Depends: hive-miners-sgminer-djm34-0.1.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - SGminer fork by djm34
