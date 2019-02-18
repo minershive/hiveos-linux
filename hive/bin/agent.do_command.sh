@@ -35,10 +35,10 @@ function do_command () {
 		exec)
 			local exec=$(echo "$body" | jq '.exec' --raw-output)
 			nohup bash -c '
-			log_name=$(echo '"$exec"' | tr " " "_" | head -c10)"_"'$cmd_id'".log"
-			'"$exec"' > /tmp/$log_name 2>&1
+			log_name="/tmp/exec_"'$cmd_id'".log"
+			'"$exec"' > $log_name 2>&1
 			exitcode=$?
-			payload=`cat /tmp/$log_name`
+			payload=`cat $log_name`
 			[[ $exitcode -eq 0 ]] &&
 				echo "$payload" | message info "'"$exec"'" payload --id='$cmd_id' ||
 				echo "$payload" | message error "'"$exec"' (failed, exitcode=$exitcode)" payload --id='$cmd_id'
