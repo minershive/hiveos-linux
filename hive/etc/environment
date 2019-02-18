@@ -23,3 +23,5 @@ GPU_STATS_JSON=/run/hive/gpu-stats.json
 HASHRATE_KHS=/run/hive/khs
 
 VNC_PASSWD=/hive-config/vnc-password.txt
+
+REF_ID=/hive-config/ref_id.txt

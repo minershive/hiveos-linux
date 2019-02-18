@@ -66,6 +66,7 @@ mkdir -p /run/hive
 
 #ensure we have unix config
 dos2unix-safe /hive-config/rig.conf
+[[ -e /hive-config/ref_id.txt ]] && dos2unix-safe /hive-config/ref_id.txt
 
 
 export GPU_COUNT_AMD=`gpu-detect AMD`

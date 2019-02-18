@@ -93,6 +93,10 @@ version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 	repover=0
 version="$version@$repover"
 
+#read and trim ref_id
+ref_id=
+[[ -e $REF_ID ]] && ref_id=`cat $REF_ID`
+[[ "$ref_id" =~ ^[[:space:]]*([^[:space:]].*[^[:space:]])[[:space:]]*$ ]] && ref_id=${BASH_REMATCH[1]}
 
 request=$(
 jq -n \
@@ -116,8 +120,9 @@ jq -n \
 --arg kernel "$kernel" \
 --arg server_url "$HIVE_HOST_URL" \
 --arg version "$version" \
+--arg ref_id "$ref_id" \
 '{
-	"method": "hello", "jsonrpc": "2.0", "id": 0,
+	"method": "hello", "jsonrpc": "2.0", "id": 0, $ref_id,
 	"params": {
 		$rig_id, $passwd, $server_url, $uid,
 		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn, $lan_config,
@@ -229,6 +234,9 @@ if [[ $existing_repository_list != $repository_list ]]; then
 	echo "Saving repository URLs"
 	echo "$repository_list" > $HIVEREPO_LIST
 fi
+
+#remove ref_id
+[[ -e $REF_ID ]] && rm $REF_ID
 
 # Post actions =================================================================
 #restartminer - restart miner on success
