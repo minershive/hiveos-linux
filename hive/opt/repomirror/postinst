@@ -24,8 +24,9 @@ fi
 [[ -e /etc/nginx/sites-enabled/default ]] &&
 	rm -f /etc/nginx/sites-enabled/default
 
-/usr/sbin/nginx -s reload
+[ -d /var/log/nginx ] || mkdir -p /var/log/nginx || echo "please create the nginx log folder"
 
+service nginx restart
 
 echo ""
 echo "Mirror is synced every hour."
