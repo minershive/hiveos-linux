@@ -1,4 +1,4 @@
-Package: hive-ipmi
+Package: hive-opt-ipmi
 Version: 0.6-17
 Section: base
 Priority: optional
