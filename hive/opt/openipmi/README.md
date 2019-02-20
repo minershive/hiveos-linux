@@ -16,6 +16,11 @@ apt install hive-opt-ipmi
 
 Settings can be changed in */hive/opt/openipmi/etc/ipmi/lan.conf*
 
+After changing the settings, you must restart the service.
+```
+service hive-ipmi restart
+```
+
 ## Available signals:
 
 * *power status* - If the service is working, the answer will always be *"Chassis Power is on"*
