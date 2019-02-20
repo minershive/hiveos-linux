@@ -5,7 +5,7 @@ IPMI-sim makes it possible to control the power of the rig as BMC-compatible dev
 
 Then manually install.
 ```bash
-apt install hive-ipmi
+apt install hive-opt-ipmi
 ```
 
 ## Default setting:
