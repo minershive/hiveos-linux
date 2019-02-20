@@ -1,0 +1,56 @@
+# This is an example simulation setup for ipmi_sim.  It creates a single
+# management controller as a BMC.  That will have the standard watchdog
+# sensor and we add a temperature sensor.
+
+# The BMC is the MC at address 20
+mc_setbmc 0x20
+
+# Now add the BMC
+mc_add 0x20 0 no-device-sdrs 0x23 9 8 0x9f 0x1291 0xf02 persist_sdr
+sel_enable 0x20 1000 0x0a
+
+# Watchdog sensor.  This must be sensor zero.
+sensor_add 0x20 0 0 35 0x6f event-only
+sensor_set_event_support 0x20 0 0 enable scanning per-state \
+	000000000001111 000000000000000 \
+	000000000001111 000000000000000
+
+# Add a temperature sensor and its SDR.  Note that sensor 0 is already
+# taken as the watchdog sensor.
+sensor_add 0x20 0 1 0x01 0x01
+# Start with the value set to 0x60
+sensor_set_value 0x20 0 1 0x60 0
+# Set just the upper thresholds with the values 0x70, 0x90, and 0xa0
+sensor_set_threshold 0x20 0 1 settable 111000 0xa0 0x90 0x70 00 00 00
+# Enable all upper threshold events events
+sensor_set_event_support 0x20 0 1 enable scanning per-state \
+	000111111000000 000111111000000 \
+	000111111000000 000111111000000
+
+# Add a memory module presence sensor.
+sensor_add 0x20 0 2 37 0x6f
+sensor_set_bit_clr_rest 0x20 0 2 1 1
+#sensor_set_bit_clr_rest 0x20 0 2 0 1
+sensor_set_event_support 0x20 0 2 enable scanning per-state \
+	000000000000011 000000000000011 \
+	000000000000011 000000000000011
+
+# FRU data for entity 8.2
+mc_add_fru_data 0x30 3 128 data 0
+
+# Add a satellite MC
+mc_add 0x30 2 no-device-sdrs 0x98 0x10 1 0xa0 0x1291 0xf03
+
+sensor_add 0x30 0 1 0x01 0x01
+# Uncomment the following and comment the proceding to read the value
+# from the given file.  You can modify the file contents.
+#sensor_add 0x30 0 1 0x01 0x01 poll 1000 file "/tmp/file1.ipm"
+sensor_set_threshold 0x30 0 1 settable 111000 0xa0 0x90 0x70 00 00 00
+sensor_set_event_support 0x30 0 1 enable scanning per-state \
+	000111111000000 000111111000000 \
+	000111111000000 000111111000000
+
+mc_enable 0x30
+
+# Turn on the BMC
+mc_enable 0x20

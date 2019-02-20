@@ -1,0 +1,11 @@
+prefix=/hive/opt/openipmi
+exec_prefix=/hive/opt/openipmi
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+ 
+Name: OpenIPMIpthread
+Description: Pthread OS handler for OpenIPMI
+Version: 2.0.26
+Requires: OpenIPMI
+Libs: -L${libdir} -lOpenIPMIutils -lOpenIPMIpthread
+Cflags: -I${includedir} -pthread

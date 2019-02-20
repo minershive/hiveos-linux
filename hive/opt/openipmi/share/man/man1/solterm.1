@@ -1,0 +1,120 @@
+.TH solterm 1 05/13/03 OpenIPMI "IPMI Serial over LAN program"
+
+.SH NAME
+solterm \- An IPMI Serial over LAN program
+
+.SH SYNOPSIS
+.B solterm
+
+.BI "<connection parms>"
+.RB [ \-e
+.IR "escape_char" ]
+.RB [ \-notencrypted ]
+.RB [ \-notauthenticated ]
+.RB [ \-bitrate
+.IR (9600|19200|38400|57600|115200) ]
+.RB [ -alerts
+.IR (succeed|defer|fail) ]
+.RB [ \-holdoff ]
+.RB [ \-ack-retries
+.IR "n" ]
+.RB [ \-ack-timeout
+.IR "microseconds"]
+.RB [ \-v ]
+.RB [ \-q ]
+.SH DESCRIPTION
+The
+.BR solterm
+program allows a user to make a remote serial connection over IPMI.
+The requires that the remote system support IPMI 2.0 Serial Over LAN.
+
+.SH OPTIONS
+.TP
+.BI <connection\ parms>
+The parameters for the connection depend on the connection type.
+These are all described in openipmi_conparms (7)
+
+.TP
+.BI \-e\  escape_char
+The character to use to escape, or exit, the program.  Entering this
+chatacter right after a newline is entered causes the program to go
+into command mode.  A single character after this performs a command.
+The default escape character is "~" as shown below.  Suppported
+commands are:
+.RS
+.IP ~.
+Terminate the program
+.IP ~B
+Send a serial BREAK over the connection
+.IP ~F
+Flush all buffers
+.IP ~R
+Assert the Ring Indicator (RI) line
+.IP ~r
+Deassert the Ring Indicator (RI) line
+.IP ~D
+Assert DCD and DSR lines
+.IP ~d
+Deassert DCD and DSR lines
+.IP ~C
+Pause the output using CTS
+.IP ~c
+Put CTS under BMC control
+.IP ~?
+Help on escape commands
+.IP ~~
+Enter the escape character twice to send it.
+.RE
+
+.TP
+.BI \-notencrypted
+Do not encrypt the SOL data going over the connection.
+
+.TP
+.BI \-notauthenticated
+Do not do integrity checks on the SOL data going over the connection.
+
+.TP
+.BI \-bitrate
+Set the bitrate to the given value.  The default is whatever the BMC
+has set it to.
+
+.TP
+.BI \-alerts
+This specifies what to do if a alert that requires a callout occurs on
+the line. 
+.RS
+.IP succeed
+specifies that serial/modem alerts are to succeed while
+SoL is active.
+.IP deferred
+specifies that serial/modem alerts are to be deferred for
+the duration of the SoL session.
+.IP fail
+specifies that serial/modem alerts automatically fail during
+the SoL session. This is the default.
+.RE
+
+.TP
+.BI \-holdoff
+Specifies that CTS, DTR, and DSR are to be deasserted at the start of
+the SoL session so that the configuration may be modifeid before the
+handshake is released.
+
+.TP
+.BI \-v
+Be more verbose.  Maybe specified multiple time for more output.
+
+.TP
+.BI \-q
+Be less verbose.  Maybe specified multiple time for less output.
+
+.SH "SEE ALSO"
+.BR openipmi_conparms (7)
+
+.SH "KNOWN PROBLEMS"
+None
+
+.SH AUTHOR
+.PP
+Darius Davis <dariusd@users.sourceforge.net>

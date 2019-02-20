@@ -1,0 +1,175 @@
+.TH openipmi_conparms 7 05/13/03 OpenIPMI "Connection Parameters for OpenIPMI"
+
+.SH NAME
+openipmi_cmdparms \- Connection parmeters for OpenIPMI
+
+.SH SYNOPSIS
+
+.B smi
+.IR "smi-num"
+
+.B lan
+.RB [ \-U
+.IR "username" ]
+.RB [ \-P 
+.IR "password" ]
+.RB [ \-p[2]
+.IR "port" ]
+.RB [ \-A
+.IR "authtype" ]
+.RB [ \-L
+.IR "privilege" ]
+.RB [ \-s ]
+.RB [ \-Ra
+.IR "auth alg" ]
+.RB [ \-Ri
+.IR "integ alg" ]
+.RB [ \-Rc
+.IR "conf algo" ]
+.RB  [ \-Rl ]
+.RB  [ \-Rk
+.IR "bmc key" ]
+.RB [ \-H
+.IR "hackname" ]
+.IR "host"
+[
+.IR "host" ]
+
+.SH DESCRIPTION
+The connection parameters for OpenIPMI vary depending on the
+connection type.  This document describes the standard connection
+types; others may be available from OEMs.
+
+.SH OPTIONS
+.TP
+.I smi-num
+The SMI interface for the local connection.  There may be more than
+one BMC connection on a system and they are generally numbered, like
+\fB/dev/ipmi0\fP, \fB/dev/ipmi1\fP, etc.
+
+.TP
+.BI \-U\  username
+Use the given \fIusername\fP for the LAN connection.  If none is given, then
+no username is used.
+
+.TP
+.BI \-P\  password
+The \fIpassword\fP to use for the connection.  If none is given, the user is
+assumed to have an empty password
+
+.TP
+\fB\-p\fP[\fB2\fP] \fIport\fP
+The UCP \fIport\fP to connect to.  This defaults to the standard 623 port,
+so it is not necessary unless a special port is required.  Note that
+since you can have two connections (hosts),
+.B \-p
+is for the first host and
+.B \-p2
+is for the second host.
+
+.TP
+.BI \-A\  authtype
+The \fIauthentication type\fP to use, one of \fBrmcp+\fP, \fBmd5\fP, \fBmd2\fP, \fBstraight\fP, or
+\fBnone\fP.  If you don't supply this, the most secure one available is
+chosen, in the order given in the previous list.
+
+.TP
+.BI \-L\  privilege
+The \fIprivilege\fP to use for the connection.  Lower privileges cannot
+execute some commands.  Privileges are: \fBcallback\fP, \fBuser\fP, \fBoperator\fP,
+\fBadmin\fP, and \fBoem\fP.  The default is \fBadmin\fP.
+
+.TP
+.BI \-Ra\  authentication\ algorithm
+Set the \fIRMCP+ authentication algorithm\fP to use.  Options are: \fBbmcpick\fP,
+\fBrakp_none\fP, \fBrakp_hmac_sha1\fP, and \fBrakp_hmac_md5\fP.  The \fBbmcpick\fP option is
+used by default, which means the BMC picks the algorithm it wants to
+use.
+
+.TP
+.BI \-Ri\  integrity\ algorithm
+The \fIRMCP+ integrity algorithm\fP to use.  This ensures that the data has
+not be altered between the sender and receiver.  Valid options are:
+\fBbmcpick\fP, \fBnone\fP, \fBhmac_sha1\fP, \fBhmac_md5\fP, and \fBmd5\fP.  The \fBbmcpick\fP option is
+used by default, which means the BMC picks the algorithm it wants to
+use.
+
+.TP
+.BI \-Rc\  confidentiality\ algorithm
+The \fIRMCP+ confidentiality (encryption) algorithm\fP to use.  This keeps
+evesdroppers from seeing the data.  Valid values are: \fBbmcpick\fP,
+\fBaes_cbc_128\fP, \fBxrc4_128\fP, and \fBxrc_40\fP.  The \fBbmcpick\fP option is used by
+default, which means the BMC picks the algorithm it wants to use.
+
+.TP
+.B \-Rl
+If this is specified, the username is looked up using the privilege
+level along with the username.  This allows the same name to have
+different passwords with different privilege levels.
+
+.TP
+.BI \-Rk\  BMC\ Key
+If the system requires two-key lookups, this specifies the \fIsecond key\fP
+(the BMC key) to use.  This is ignored if two-key lookups are not
+enabled by the BMC.
+
+.TP
+.BI \-H\  hackname
+Well, it always happens.  Things in the field don't work quite like
+they are supposed to.  There was some vagueness in the first IPMI
+specs and different vendors interpreted RMCP+ in different ways.  This
+allows different options to be supported.  Try different hacks if your
+RMCP+ systems don't authenticate properly.  These are:
+
+.RS
+.TP
+.B rakp3_wrong_rolem
+Some systems use the incorrect Role(m) field
+in a specific authentication message (the RAKP3 message).  This is a
+common problem.
+
+.TP
+.B rmcpp_integ_sik
+The original IPMI 2.0 spec specified the
+incorrect key to use for the integrity key.  This forces use of the
+Session Initiation Key.  The default is to use K(1)
+.RE
+
+.TP
+.B \-s
+Make two connections to the BMC.  This means the BMC has two different
+IP addresses/ports that are equivalent.  If this is specified, a
+second host must be supplied.  This is not the same as two connections
+to two different BMCs.  This must be a connection to the same BMC.
+
+.TP
+.I host
+The IP address (either by name lookup or specified directly) to
+connect to.  If the
+.B \-s
+is specified, two hosts must be supplied.
+
+.P
+The
+.BR \-Ra ,
+.BR \-Ri ,
+.BR \-Rc ,
+.BR \-Rk
+and
+.B \-Rl
+options only apply to RMCP+ connections and will be ignored if the
+connection does not support RMCP+ or if a non-RMCP+ authentication
+type is specified.
+
+
+.SH "SEE ALSO"
+.BR ipmish (8),
+.BR openipmicmd (8),
+.BR solterm (1)
+
+.SH "KNOWN PROBLEMS"
+This is excessively complicated, but the defaults should be good.
+
+.SH AUTHOR
+.PP
+Corey Minyard <cminyard@mvista.com>

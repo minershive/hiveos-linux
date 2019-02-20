@@ -1,0 +1,162 @@
+.TH ipmi_sim 1 06/26/12 OpenIPMI "IPMI LAN BMC Simulator"
+
+.SH "NAME"
+ipmi_sim \- IPMI LAN BMC Simulator
+
+.SH SYNOPSIS
+.B ipmi_sim
+.RB [ \-c
+.IR config-file ]
+.RB [ \-f
+.IR command-file ]
+.RB [ \-x
+.IR command ]
+.RB [ \-s
+.IR state-dir ]
+.RB [ \-d ]
+.RB [ \-n ]
+
+.SH "DESCRIPTION"
+The
+.B ipmi_sim
+daemon emulates an IPMI BMC simulator that may be accessed using the
+IPMI 1.5 or 2.0 LAN protocol, or via various serial protocols.  It is
+useful stand-along for prototyping, it may be used with a virtual
+machine such as QEMU to provide an IPMI BMC emulator, and it may be
+used to implement an actual BMC (where it's not such a simulator any
+more)
+
+.B ipmi_sim
+supports the full authentication capabilities of the IPMI LAN
+protocol.
+
+.B ipmi_sim
+supports multiple IP addresses for fault-tolerance.  Note that
+messages coming in on an address are always sent back out on the same
+address they came in.
+
+.SH "OPTIONS"
+.TP
+.BI \-c\  config-file
+Set the configuration file to one other than the default of
+.I "/etc/ipmi/lan.conf".  See ipmi_lan(5) for details.
+.TP
+.BI \-f\  command-file
+Specify a command file to execute when
+.B ipmi_sim
+is starting.  This is generally used to set up the IPMI environment.
+See ipmi_sim_cmd(5) for details.
+.TP
+.B \-x\  command
+Execute a single command.
+.TP
+.BI \-s\  state-dir
+Specify a state directory for
+.B ipmi_sim
+to use instead of the default.  The state directory must exist, and
+.B ipmi_sim
+will store information there for when it restarts.  For instance, if
+someone changes user information, then it will store the new user
+information there and what is in the config file will no longer be
+used.
+.TP
+.TP
+.B \-d
+Turns on debugging to standard output (if -n is not specified) and
+the debug output of syslog.
+.TP
+.B \-n
+Disables console and I/O on standard input and output.
+
+
+.SH "CONFIGURATION"
+Configuration is accomplished through the file
+.IR /etc/ipmi/lan.conf .
+A file with another name or path may be specified using the
+.B \-c
+option.  See the ipmi_lan(5) config file man page for more details.
+
+.SH "COMMANDS"
+When
+.B ipmi_sim
+starts up, it has an empty environment with no BMC or management
+controllers.  You have to execute commands to set things up.  The
+commands can also be used to set sensor states, inject events, and
+other things you might want to do when simulating a BMC.  See the
+ipmi_sim_cmd(5) man page for details.
+
+.SH "SECURITY"
+.B ipmi_sim
+implements normal IPMI security.  The default is no access for anyone,
+so the default is pretty safe, but be careful what you add, because
+this is access to control your box.  \fBstraight\fP and \fBnone\fP
+authorizations are not recommended, you should probably stick with \fBmd2\fP
+or \fBmd5\fP if you are not using \fBRMCP+\fP.
+
+.SH "PERSISTENCE"
+Things that are supposed to be persistent in a BMC are kept in files,
+generall in /var/ipmi_sim/<name>, where <name> is the name of the BMC
+specified in the configuration file.  The following things are persistent:
+
+.TP
+.BI SDRs
+- This is named sdr.<mcnum>.main and is the main SDR repository.
+.TP
+.BI SEL
+- This is named sel.<mcnum>.
+.TP
+.BI Users
+- This is named users.mc<mcnum>.
+.TP
+.BI LAN\ parameters
+- This is named lanparm.mc<mcnum>.<channel>.
+.TP
+.BI SOL\ parameters
+- This is named sol.mc<mcnum>.
+
+.P
+The <mcnum> is the hexadecimal number of the MC.
+
+.SH "Serial Over LAN (SOL)"
+.B ipmi_sim
+implements Serial Over LAN for hooking an RMCP+ connection to a
+standard Unix serial port.  This is configured in the ipmi_lan(5)
+configuration file.
+
+A SOL interface is done on a per-MC basis.  So if the MC is set to a
+non-BMC, you can define a SOL interface on it and it will work if you
+reroute the commands to that MC.  It's a little weird, but it works.
+Only interface 1 is supported at the moment.
+
+A SOL interface can also hold history that is kept even if nothing is
+connected to the SOL interface from the LAN.  So if you want to see
+what has happened on the serial port, you can connect to interface 2
+and it will dump the history.  The history is optionally persistent,
+if the program terminates normally and is restarted, the history is
+restored if it is configured to do so.
+
+A SOL interface can create a FRU on the MC to let you fetch the
+history via the FRU interface.
+
+.SH "SIGNALS"
+.TP 0.5i
+.B SIGHUP
+.B ipmi_sim
+should handle SIGHUP and reread it's configuration files.  However, it
+doesn't right now.  It might in the future, for now you will have to
+kill it and restart it.  Clients should handle reconnecting in this
+case.  If they don't, they are broken.
+
+.SH "ERROR OUTPUT"
+At startup, all error output goes to stderr.  After that, all error
+output goes to syslog.
+
+.SH "FILES"
+/etc/ipmi_lan.conf
+
+.SH "SEE ALSO"
+.BR ipmi_lan (5), ipmi_sim_cmd (5), ipmi_ui (1), openipmish (1)
+
+.SH AUTHOR
+.PP
+Corey Minyard <cminyard@mvista.com>

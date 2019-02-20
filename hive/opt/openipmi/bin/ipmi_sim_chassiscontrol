@@ -1,0 +1,88 @@
+#!/bin/sh
+
+prog=$0
+
+device=$1
+if [ "x$device" = "x" ]; then
+    echo "No device given"
+    exit 1;
+fi
+shift
+
+op=$1
+if [ "x$op" = "x" ]; then
+    echo "No operation given"
+    exit 1
+fi
+shift
+
+do_get() {
+    while [ "x$1" != "x" ]; do
+	case $1 in
+	    power)
+			val=1
+		;;
+	    *)
+			echo "Invalid parameter: $1"
+			exit 1
+		;;
+	esac
+
+	echo "$1:$val"
+	shift
+    done
+}
+
+do_set() {
+	parm="$1"
+	val="$2"
+	case $parm in
+		power)
+			case $val in
+				1)
+				;;
+				0)
+					echo 1 > /proc/sys/kernel/sysrq
+					echo o > /proc/sysrq-trigger
+				;;
+				*)
+					echo "Invalid power parameter: $val"
+					exit 1
+				;;
+			esac
+		;;
+		reset)
+			echo 1 > /proc/sys/kernel/sysrq
+			echo b > /proc/sysrq-trigger
+		;;
+		*)
+			echo "Invalid parameter: $parm"
+			exit 1
+		;;
+	esac
+}
+
+do_check() {
+    # Check is not supported for chassis control
+    exit 1
+}
+
+#echo $all >> /tmp/ipmp.log
+#exit 0
+
+case $op in
+    get)
+	do_get $@
+	;;
+    set)
+	do_set $@
+	;;
+    
+    check)
+	do_check $@
+	;;
+
+*)
+	echo "Unknown operation: $op"
+	exit 1
+esac

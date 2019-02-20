@@ -1,0 +1,89 @@
+.TH openipmicmd 1 05/13/03 OpenIPMI "An IPMI Command Interface"
+
+.SH NAME
+openipmicmd \- An IPMI Command Interface
+
+.SH SYNOPSIS
+.B openipmicmd
+.RB [ \-k
+.IR "entry-to-execute" ]
+.BI "<connection parms>"
+
+.SH DESCRIPTION
+The
+.BR openipmicmd
+program allows a user to execute direct IPMI commands.  It can work
+with direct interface with the OpenIPMI driver or with IPMI LAN
+interfaces.
+
+.SH OPTIONS
+.TP
+.BI \-k\  entry-to-execute
+Execute a single command an exit.
+
+.TP
+.BI <connection parms>
+The parameters for the connection depend on the connection type.
+These are all described in openipmi_conparms (7)
+
+.SH COMMANDS
+
+Once up, you can execute commands in the user interface.  Note that
+commands and responses are asynchronous, you issue a command and the
+interface returns immediately.  When the response comes back, it will
+be dumped on your console.  That's a little strange looking, but IPMI
+is ansychronous underneath.  Note that the \fB\-k\fP option is synchronous,
+it will wait for the response or a timeout before returning.
+
+.TP
+\fB0f\fP \fIlun\fP \fInetfn\fP \fIcmd\fP [\fIdata1\fP [\fIdata2\fP ...]]
+Send a command to the BMC you are connected to.
+
+.TP
+\fIchannel\fP [\fBipmb\fP] \fIIPMB-addr\fP \fIlun\fP \fInetfn\fP [\fBseq\fP] \fIcmd\fP [\fIdata1\fP [\fIdata2\fP ...]]
+Send a command to a device on the IPMB bus.  The "\fBipmb\fP" string is
+optional.  The \fBseq\fP must be provided if the netfn is a response (an
+odd number).  It must be the same sequence number that came in on the command
+in the "Command Sequence = seq" part of the command.
+
+.TP
+\fIchannel\fP \fB00\fP \fIIPMB-addr\fP \fIlun\fP \fInetfn\fP \fIcmd\fP [\fIdata1\fP [\fIdata2\fP ...]]
+Send a broadcast command to a device on the IPMB bus.
+
+.TP
+\fIchannel\fP \fBlan\fP \fIhandle\fP \fIremote-swid\fP \fIlocal-swid\fP \fIlun\fP \fInetfn\fP \fIcmd\fP [\fIdata1\fP [\fIdata\fP ...]]
+Send a command to a device over a LAN channel.  Note that this not the
+same as a LAN connection.  This sends a message through a local BMC to
+a remote system that is hooked up with a LAN connection.
+
+.TP
+\fBtest_lat\fP \fIcount\fP \fIcommand\fP
+Executes the given \fIcommands\fP (one of the previous commands) \fIcount\fP times
+and gives the average time per command to execute.  Note that "\fIcount\fP"
+is hexadecimal.
+
+.TP
+.B help
+Display some help.
+
+.TP
+\fBregcmd\fP \fInetfn\fP \fIcmd\fP
+Register to receive the given command.  If the driver receives an
+external command, it will print it out.  This only works with system
+interface connections, it will not work on LAN connections.
+
+.TP
+\fBunregcmd\fP \fInetfn\fP \fIcmd\fP
+Remove a command registration.
+
+.SH "SEE ALSO"
+.BR ipmi_ui (1),
+.BR ipmilan (8),
+.BR openipmi_conparms (7)
+
+.SH "KNOWN PROBLEMS"
+The asychronous nature of the program can be annoying.
+
+.SH AUTHOR
+.PP
+Corey Minyard <cminyard@mvista.com>

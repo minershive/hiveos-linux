@@ -1,0 +1,9 @@
+[Unit]
+Description=Hive IPMI-sim Hypervisor
+[Service]
+WorkingDirectory=/root
+Type=simple
+ExecStart=/hive/opt/openipmi/bin/ipmi_sim -n -c /hive/opt/openipmi/etc/ipmi/lan.conf
+KillMode=process
+[Install]
+WantedBy=multi-user.target

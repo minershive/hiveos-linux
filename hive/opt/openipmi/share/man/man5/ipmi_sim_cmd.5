@@ -1,0 +1,358 @@
+.TH ipmi_sim_cmd 5 06/26/12 OpenIPMI "IPMI LAN Simulator commands"
+
+.SH DESCRIPTION
+The
+.B ipmi_sim
+emulation is set up using these commands.  They can be read from a
+command file, run from the command line, or executed inside the
+simulator after it is started.
+
+This may be a little confusing, but the network interfaces are
+configured by the ipmi_lan configuration file, and the various
+management controllers, sensors, etc. are specified using this
+file.  Plus, this can be used to configure the simulator after
+it is up, set sensor values, inject events, and things of that
+nature.
+
+.SH GENERAL COMMANDS
+
+Blank lines and lines starting with `#' are ignored.  Long lines may be
+broken up by putting a '\' at the end of the line to be continued.
+
+.TP
+\fBquit\fP
+Exit the simulator
+
+.TP
+\fBinclude\fP \fI"file"\fP
+Include the given file.
+
+.TP
+\fBdefine\fP \fIname\fP \fI"value"\fP
+
+Define the given name as a variable with the given value.  This
+variable may be used later by doing \fI$name\fP.  This cannot be used
+in quotes, but quotes may be broken up and the variable put between
+them.  For instance, if you say:
+
+define MCNUM "40"
+
+you can use it later as in
+
+mc_add $MCNUM 1 no-device-sdrs 00  00  00  0xc9  0x009000 0x0002
+
+or
+
+sensor_add $MCNUM 0 21 12 0x6f poll 1000 file "/sys/dev/sens1-"$MCNUM"-1"
+
+.TP
+\fBsleep\fP \fItime\fP
+Pause the command interface for the given number of seconds.  This does
+not affect the execution of the simulator.
+
+.TP
+\fBdebug\fP \fIoptions\fP
+Set the debugging output.  Valid options are:
+
+.I msg
+Dump messages.
+
+.I raw
+Dump raw I/O
+
+Entering nothing turns of debugging.
+
+.TP
+\fBread_cmds\fP \fIfilename\fP
+Execute the commands in the given file.
+
+.SH MC COMMANDS
+
+.TP
+\fBmc_add\fP \fIIPMBAddress\fP \fIDeviceID\fP \fIHasDeviceSDRs\fP \fIDeviceRevision\fP \fIMajorFWRev\fP \fIMinorFWRev\fP \fIDeviceSupport\fP \fIManufacturerID\fP \fIProductID\fP
+Add an MC to the simulator.  All values are hexadecimal.  These are mostly
+values for the ``Get Device ID'' command, see the spec for details.  Note
+that the MC is not enabled after being added, you must add it.
+
+Note that some of these values control the capabilities of the MC.  For
+instance, HasDeviceSDRs sets whether device SDR repository commands will
+work.
+
+You may use has-device-sdrs or no-device-sdrs in the HasDeviceSDRs field.
+
+.TP
+\fBmc_add_fru_data\fP \fImc-addr\fP \fIDeviceID\fP \fIFRUSize\fP (data [\fIbyte1\fP [\fIbyte2\fP [...]]] | \fIfile\fP \fIoffset\fP \fIfilename\f{)
+Set the FRU data for a given MC and device id.  Data may be supplied
+directly here, or it may be given as a file.  The offset is the start
+from the beginning of the file where the data is kept.
+
+.TP
+\fBmc_dump_fru_data\fP \fImc-addr\fP \fIDeviceID\fP
+Dump the FRU data for a given MC and device id.
+
+.TP
+\fBmc_delete\fP \fImc-addr\fP
+Remove the MC from the system.
+
+.TP
+\fBmc_disable\fP \fImc-addr\fP
+Disable the MC, but don't remove it.
+
+.TP
+\fBmc_enable\fP \fImc-addr\fP
+Enable the given MC.
+
+.TP
+\fBmc_setbmc\fP \fImc-addr\fP
+Set the BMC's address.
+
+.TP
+\fBmc_set_guid\fP \fImc-addr\fP \fIguid\fP
+Set the GUID value.  The guid may be a string (in quotes) or a hexadecimal
+string.
+
+.TP
+\fBsel_enable\fP \fImc-addr\fP \fImax-entries\fP \fIflags\fP
+Enable the System Event Log on the given MC.  The flags is a byte
+this is returned from the ``Get SEL Info'' command; it controls various
+aspects of the SEL.  See the spec for details.
+
+.TP
+\fBsel_add\fP \fImc-addr\fP \fIRecordType\fP \fIbyte1\fP \fIbyte2\fP ... \fIbyte13\fP
+Add an entry to the MC's SEL.
+
+.TP
+\fBmain_sdr_add\fP \fImc-addr\fP \fIbyte1\fP [\fIbyte2\fP [...]]
+Add an entry to the main SDR of the MC.
+
+.TP
+\fBdevice_sdr_add\fP \fImc-addr\fP \fILUN\fP \fIbyte1\fP [\fIbyte2\fP [...]]
+Add an entry to the device SDR of the MC.
+
+.SH SENSOR COMMANDS
+
+.TP
+\fBsensor_add\fP \fImc-addr\fP \fILUN\fP \fIsensor-num\fP \fIsensor-type\fP \fIevent-reading-code\fP [\fIpoll\fP \fIpoll_rate\fP \fIpoll_type\fP \fIpoll_type_options\fP] [event-only]
+
+Add a sensor to the given MC and LUN.  The type of sensor is set by the
+event reading code.
+
+If \fIpoll\fP is specified, then the sensor will be polled for data.
+Only the \fIfile\fP poll type is currently supported.  The value is a
+number read from a file.  It has the following options, all optional:
+
+.I div=val
+will divide the read value by the given number.  This is done after the
+multiply operation.
+
+.I mult=val
+will multiply the read value by the given number.  This is done after
+the subtraction.
+
+.I sub=val
+will subtract the value by the given number.  This is done after the mask.
+
+.I mask=val
+will mask (bitwise and) the value by the given number.
+
+.I base=value
+Specify the base of the value read from the file.  By default this is zero,
+meaning "C" conventions are used.
+
+.I initstate=value
+sets what the event state is initially set to.  This is useful
+for discrete sensors with bits that should normally be set to "1",
+like a presence bit, to keep the program from issuing an event every
+time the program starts.
+
+.I raw
+specifies that the data from the file is a raw value.  Only
+\fIlength\fP bytes are read from \fIoffset\fP.
+
+.I ascii
+specifies that the data from the file is in ASCII.  This is the default.
+The \fIoffset\fP value is used, but no the \fIlength\fP.
+
+.I length=val
+specifies the length of the data to read from the file.  The maximum
+value is 4,and this is only used for raw data.
+
+.I depends=<mc_addr>,<lun>,<sensor_number>,<bit>
+specifies a discrete sensor bit that must be set to 1 for the sensor
+to be active.  Generally, you use the presence bit of a sensor to mark
+whether other sensors on the device are actually present.  Each of the
+other sensors would have one of these pointing to the presence bit.
+
+.I event-only
+specifies that the sensor will not be readable, it will only generate
+events (specified with a type 3 SDR).
+
+.TP
+\fBsensor_set_bit\fP \fImc-addr\fP \fILUN\fP \fIsensor-num\fP \fIbit-to-set\fP \fIbit-value\fP \fIgenerate-event\fP
+Set the given bit to bit-value (0 or 1) for the sensor by bit number,
+either the threshold for analog or the discrete sensor bit.  If
+generate-event is non-zero and the sensor has events enabled for that
+bit, then generate an event.
+
+.TP
+\fBsensor_set_bit_clr_rest\fP \fImc-addr\fP \fILUN\fP \fIsensor-num\fP \fIbit-to-set\fP \fIbit-value\fP \fIgenerate-event\fP
+Like sensor_set_bit, but automatically clears all other bits.
+
+.TP
+\fBsensor_set_value\fP \fImc-addr\fP \fILUN\fP \fIsensor-num\fP \fIvalue\fP \fIgenerate-event\fP
+Set the byte value for an analog sensor.  If the sensor exceeds a
+threshold, the sensor has events enabled, and generate-event is non-zero,
+then generate an event for the condition.
+
+.TP
+\fBsensor_set_hysteresis\fP \fImc-addr\fP \fILUN\fP \fIsensor-num\fP \fIsupport\fP \fIpositive\fP \fInegative\fP
+Set the hysteresis capabilities of the sensor.  It must be an analog
+sensor.  The support value is the hysteresis capability, the same as
+the hysteresis support value in the sensor SDR.  The positive and
+negative hysteresis values are also set by this command.
+
+The support value may also be none, readable, settable, or fixed instead
+of the numbers.
+
+.TP
+\fBsensor_set_threshold\fP \fImc-addr\fP \fILUN\fP \fIsensor-num\fP \fIthreshold-support\fP \fIthreshold-enabled\fP [\fIvalue5\fP [\fIvalue4\fP [... [\fIvalue0\fP]]]]
+
+Set the threshold support for a sensor.  It must be an analog sensor.
+The threshold-support value is the same as the threshold access
+support value in the sensor SDR.  The threshold-enabled values is a
+string of ``0'' and ``1'' characters that enable the 6 corresponding
+thresholds; the rightmost value is value 0, the leftmost is value 5.
+Optionally, the threshold values may be specified as their byte
+values.
+
+The threshold-support value may also be none, readable, settable, or fixed
+to make it a bit more readable.  The thresholds are:
+
+.I 0
+- lower non critical
+
+.I 1
+- lower critical
+
+.I 2
+- lower non recoverable
+
+.I 3
+- upper non critical
+
+.I 4
+- upper critical
+
+.I 5
+- upper non recoverable
+
+.TP
+\fBsensor_set_event_support\fP \fImc-addr\fP \fILUN\fP \fIsensor-num\fP \fIevents-enable\fP \fIscanning\fP \fIevent-support\fP \fIassert-support\fP \fIdeassert-support\fP \fIassert-enabled\fP \fIdeassert-enabled\fP 
+
+Set the event support of a sensor.  The events-enable will enable
+global events on the sensor if non-zero, otherwise they are disabled.
+The scanning values set the scanning value for the sensor.  The
+event-support value sets the event capabilities in the sensor, this is
+the same as the ``sensor event message control support'' value in the
+sensor SDR.  The assert-support, deassert-support, assert-enabled, and
+deassert-enabled are all bitmasks (a string of ``0'' and ``1''
+characters) that set their corresponding sensor bit's capability to
+generate events (support) and whether it will generate events now
+(enabled).
+
+Note that all bitmasks have the rightmost digit as the zeroth bit, and
+the leftmost digit as the highest order bit.  Note that you must
+specify 15 bits here, even if you don't use all of them.
+
+Note that you may use enable or disable in the events-enable field, 
+and you may use scanning or no-scanning in the scanning field.
+
+For event-support, you may use per-state, entire-sensor, global or none
+instead of a number.
+
+For a threshold sensor, the values are:
+
+.I 0
+ - lower non-critical going low
+
+.I 1
+ - lower non-critical going high
+
+.I 2
+ - lower critical going low
+
+.I 3
+ - lower critical going high
+
+.I 4
+ - lower non-recoverable going low
+
+.I 5
+ - lower non-recoverable going high
+
+.I 6
+ - upper non-critical going low
+
+.I 7
+ - upper non-critical going high
+
+.I 8
+ - upper critical going low
+
+.I 9
+ - upper critical going high
+
+.I 1
+ - upper non-recoverable going low
+
+.I 1
+ - upper non-recoverable going high
+
+Note that the "lower going high" and "upper going low" values are
+not supported, since they are simply stupid.
+
+
+.SH ATCA OEM COMMANDS
+These are for emulation of special ATCA capabilities.
+
+.TP
+\fBatca_enable\fP
+The system is an ATCA system, enables the other ATCA capabilities.
+
+Note that you should do this *before* creating any MCs (this should
+really be first) because the MCs are set up a little differently for
+ATCA mode.  This causes the MCs to be able to handle PICMG commands
+properly, sets up 2 LEDs by default, and enables proper hot-swap
+handling, including the blue LED.  By default the blue LED supports
+local control and the other LEDs do not and are red.
+
+In ATCA mode, to drive the hot-swap state machine, you should use
+sensor_set_bit_clr_rest to set the hot-swap state.
+
+.TP
+\fBatca_set_site\fP \fIhardware-address\fP \fIsite-type\fP \fIsite-number\fP 
+Sets the given values for an ATCA system, the values returned by the
+get address commands.
+
+.TP
+\fBmc_set_num_leds\fP \fImc-addr\fP \fIcount\fP
+Set the number of ATCA LEDs the MC has.
+
+.TP
+\fBmc_set_power\fP \fImc-addr\fP \fIpower\fP \fIgen-event\fP
+Set the ATCA power setting for the MC as its numeric value.  If gen-event
+is non-zero, generate an event for the change.
+
+.SH "FILES"
+/etc/ipmi/lan.conf
+
+.SH "SEE ALSO"
+.BR ipmi_sim (1)
+
+.SH "KNOWN PROBLEMS"
+IPMI is unnecessarily complicated.  Hords of capabilities are not yet
+implemented.
+
+.SH AUTHOR
+.PP
+Corey Minyard <cminyard@mvista.com>

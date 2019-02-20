@@ -1,0 +1,45 @@
+.TH rmcp_ping 1 02/24/06 OpenIPMI "IPMI RMCP Ping program"
+
+.SH NAME
+rmcp_ping \- IPMI RMCP Ping program
+
+.SH SYNOPSIS
+.B rmcp_ping
+.RB [ \-p
+.IR port ]
+.RB [ \-t
+.IR waittime ]
+.RB [ \-s
+.IR starttag ]
+.RB [ \-d ]
+.I destination
+
+.SH DESCRIPTION
+The
+.B rmcp_ping
+program sends an RMCP ping packet onces a second to the destination,
+printing unique responses it receives.
+
+.SH OPTIONS
+.TP
+.BI \-p\  port
+Set the destination \fIport\fP.  This is the standard RMCP port by default,
+623.
+.TP
+.BI \-t\  waittime
+Sets the number of seconds to wait for a response.  Ten by default.
+.TP
+.BI \-s\  starttag
+There is an 8-bit tag value in every ping packet (0-254, 255 is
+reserved), this program will cycle through the values starting at
+starttag.  This is zero by default
+.TP
+.B \-d
+Turns on debugging to standard output.
+.TP
+.I destination
+The target address, default is the boradcast address (default 255.255.255.255)
+
+.SH AUTHOR
+.PP
+Corey Minyard <cminyard@mvista.com>

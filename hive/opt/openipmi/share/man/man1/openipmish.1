@@ -1,0 +1,85 @@
+.TH openipmish 1 05/13/03 OpenIPMI "Shell interface to an IPMI system"
+
+.SH NAME
+openipmish \- Shell interface to an IPMI system
+
+.SH SYNOPSIS
+.B openipmish
+.RI [ option ]
+
+.SH DESCRIPTION
+The
+.B openipmish
+is a command interpreter that gives the full power of the OpenIPMI
+library to a user-level command language.  It is designed so it can
+easily be driven with a scripting language like TCL, it has
+well-formed output.
+
+.B openipmish
+starts up with no connections or anything of that nature.  You must
+enter commands to make connections to domains.
+
+.SH OPTIONS
+.TP
+.B \-\-dmsg
+Turn on message debugging, this will dump all messages to debug log output.
+.TP
+.B \-\-drawmsg
+Turn on raw message debugging, this will dump all low-level messages to
+debug log output.  This differes from normal message debugging in that all
+protocol messages are also dumped, not just IPMI messages.
+.TP
+.B \-\-dmem
+Turn on memory debugging, this will cause memory allocation and
+deallocations to be checked.  When the program terminates, it will
+dump all memory that was not properly freed (leaked).
+.TP
+.B \-\-dlock
+Turn on lock debugging, this will check lock operations to make sure
+that locks are help in all the proper places and make sure that locks
+are properly nested.
+.TP
+.B \-\-snmp
+Enable the SNMP trap handler.
+.B openipmish
+must be compiled with SNMP code enabled for this option to be available.
+.TP
+.B \-\-help
+Help output
+
+.SH COMMANDS
+
+.B openipmish
+follows the standard command syntax defined in
+.BR ipmi_cmdlang (7).
+See that for the details on most commands.  The IPMI manual that comes
+with OpenIPMI will also be quite handy.
+
+.B openipmish
+defines some commands that are not in the standard command language.
+These are:
+
+.TP
+.B read
+Read and execute commands from the given file.
+
+.TP
+.B exit
+Quit
+
+.TP
+.BR redisp_cmd\ on | off
+Normally, openipmish redisplays the command line when an event comes in.  This
+is nice for interactive use, but bad for scripting.  This lets you turn
+that function on and off.
+
+.SH "SEE ALSO"
+.BR ipmi_cmdlang (7),
+.BR ipmi_ui (1)
+
+.SH "KNOWN PROBLEMS"
+None
+
+.SH AUTHOR
+.PP
+Corey Minyard <cminyard@mvista.com>

@@ -1,0 +1,11 @@
+prefix=/hive/opt/openipmi
+exec_prefix=/hive/opt/openipmi
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+ 
+Name: OpenIPMItcl
+Description: TCL threaded OS handler for OpenIPMI
+Version: 2.0.26
+Requires: 
+Libs: -L${libdir} -lOpenIPMIutils -lOpenIPMItcl
+Cflags: -I${includedir}

@@ -1,0 +1,168 @@
+.TH openipmi_eventd 1 03/4/15 OpenIPMI "IPMI event handler"
+
+.SH NAME
+openipmi_eventd \- An IPMI event handler
+
+.SH SYNOPSIS
+.B openipmi_eventd
+.BI "<domain\ name>"
+.BI "<connection\ parms>"
+.BI "<options>"
+.BI "<program> [<parm1> [<parm2> [...]]]"
+.SH DESCRIPTION
+The
+.BR openipmi_eventd
+program listens for IPMI events for the given connection and sends them
+to another program to process, or to a file.
+
+.SH PARAMETERS
+.TP
+.BI <domain\ name>
+The name to use for the OpenIPMI domain.  This will appear in logs and
+some names.
+
+.TP
+.BI <connection\ parms>
+The parameters for the connection depend on the connection type.
+These are all described in openipmi_conparms (7)
+
+.TP
+.BI <options>
+Zero or more of the options defined in OPTIONS below.
+
+.TP
+.BI <program>\ [<parm1>\ [<parm2>\ [...]]]
+The program to run.  This must be the full path to the program.  Any
+given parameters are passed to the program before any IPMI parameters.
+
+.SH OPTIONS
+.TP
+\fB\-f\fR filename, \fB\-\-outfile\fR filename
+Send all events to the given file
+
+.TP
+\fB\-k\fR, \fB\-\-exec\-now\fR
+Immediately spawn the given program and send the event information to that
+program's standard input.  The program should not quit, if it does then
+this program will exit with an error.
+
+.TP
+\fB\-i\fR, \fB\-\-event\-stdin\fR
+Send the event information to the program's standard input instead of
+the commandline.
+
+.TP
+\fB\-e\fR, \fB\-\-delete\-events\fR
+Delete events from the SEL (System Event Log) once they have been
+processed.  Note that the program has to have handled the event
+without error for the event to be deleted.  Otherwise the events are
+not deleted from the SEL.
+
+.TP
+\fB\-b\fR, \fB\-\-dont\-daemonize\fR
+Do not daemonize the program, run it as a foreground process.
+
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+Debug the program, turn on output, send all logs to stderr, and do not
+run the process as a daemon.
+
+.SH "USAGE"
+When started, this program will connect to the given IPMI domain,
+ignore all existing logs, and set up to listen from logs from all
+sources.  When an event comes in, it will handle the event depending
+on how it is configured.
+
+By default the program will be called on each log and the event information
+passed on the program's command line. The first parameter (after the ones
+given on the
+.BR openipmi_eventd
+command line) will be the event type, the rest are key-value pairs as
+defined below.
+
+If
+.BI \-i
+is given on the commandline, instead of passing in the event information
+on the command line, it will be passed into the program's standard input.
+The first line will be the event type, and each line will have a key-value
+pair up until the last line, which will be
+.BI endevent.
+
+If
+.BI \-k
+is given on the command line, the program will be started immediately and
+expected to take events on its standard input as they come in.  Each
+event will start with an event type, contain key-value pairs, and end
+in 
+.BI endevent.
+
+.SH "EVENT KEY-VALUE PAIRS"
+
+The first line and parameter of an event is always the event type
+(either
+.BI threshold
+,
+.BI discrete
+, or
+.BI unknown
+).  Then the following
+then the following, in no particular order.  When sending to a file,
+or another program via standard input,
+.BI endevent
+will mark the end of an event.
+
+.RS
+.IP assert\ true|false
+If true, the event is being asserted (the alarm
+present).  If false, the alarm was present but has now gone
+away.
+.IP eventtype\ <num>
+The event type, per the IPMI specification.
+.IP eventtime\ <num>
+The time (in seconds) for the IPMI event.  It is 64 bits.
+.IP eventdata\ <vals>
+The raw event data, vals is a list of hex numbers.
+.IP id\ <name>
+The OpenIPMI id of the sensor.  This is in the format:
+.BI <entity_id>.<entity_instance>.<sensor_name>
+where the entity id and instance identify the object being
+monitored and the sensor names comes from the sensor.  Only
+for discrete and threshold events.
+.IP val\ <floatnum>
+The sensor value that cause the event, in floating point format.
+Optional and only present for threshold sensors.
+.IP raw\ <hexnum>
+The sensor value that cause the event, in raw (hex) format.  Optional
+and only present for threshold sensors.
+.IP off\ <num>
+The bit in the sensor that caused the event, only present for discrete sensors.
+.IP severity
+The severity of the event.  For discrete sensors this optional and is a
+number between 0 and 14.  Them meaning depends on the specific sensor type.
+For threshold sensors this is one of:
+.RS
+.IP lower_non_critical
+.IP lower_critical
+.IP lower_non_recoverable
+.IP upper_non_critical
+.IP upper_critical
+.IP upper_non_recoverable
+.RE
+.IP prevseverity - The severity before the event, optional and only present
+for discrete sensors.
+.IP direction going_low|going_high
+The direction of the event, only for threshold sensors.  This can be
+difficult to understand and is not consistent on IPMI systems.  The
+IPMI specifiation does define what this means.  For instance, what
+does an assertion of an upper critcal event going low mean?
+.RE
+
+.SH "SEE ALSO"
+.BR openipmi_conparms (7)
+
+.SH "KNOWN PROBLEMS"
+None
+
+.SH AUTHOR
+.PP
+Corey Minyard <cminyard@mvista.com>

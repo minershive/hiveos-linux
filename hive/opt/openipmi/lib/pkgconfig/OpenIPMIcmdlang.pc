@@ -1,0 +1,11 @@
+prefix=/hive/opt/openipmi
+exec_prefix=/hive/opt/openipmi
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+ 
+Name: OpenIPMIcmdlang
+Description: Command language for OpenIPMI
+Version: 2.0.26
+Requires: OpenIPMIutils OpenIPMI
+Libs: -L${libdir} -lOpenIPMIutils -lOpenIPMI -lOpenIPMIcmdlang
+Cflags: -I${includedir}

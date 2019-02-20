@@ -1,0 +1,11 @@
+prefix=/hive/opt/openipmi
+exec_prefix=/hive/opt/openipmi
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+ 
+Name: OpenIPMI
+Description: Library to make using IPMI easier
+Version: 2.0.26
+Requires: 
+Libs: -L${libdir} -lOpenIPMIutils -lOpenIPMI
+Cflags: -I${includedir}

@@ -1,0 +1,7 @@
+Package: hive-ipmi
+Version: 0.6-17
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive IPMI-sim Hypervisor

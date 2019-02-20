@@ -1,0 +1,11 @@
+prefix=/hive/opt/openipmi
+exec_prefix=/hive/opt/openipmi
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+ 
+Name: OpenIPMIposix
+Description: POSIX unthreaded OS handler for OpenIPMI
+Version: 2.0.26
+Requires: OpenIPMIutils
+Libs: -L${libdir} -lOpenIPMIutils -lOpenIPMIposix
+Cflags: -I${includedir}

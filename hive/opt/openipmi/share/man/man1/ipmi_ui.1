@@ -1,0 +1,436 @@
+.TH ipmi_ui 1 05/13/03 OpenIPMI "Crude interface to an IPMI system"
+
+.SH NAME
+ipmi_ui \- Crude interface to an IPMI system
+
+.SH SYNOPSIS
+.B ipmiui
+.RB [\| \-dmsg \|]
+.RB [\| \-dmem \|]
+.RB [\| \-c \|]
+.IR connection-1 [\| connection-2 \|]
+
+The connections are specified as either:
+
+.BI smi\  smi-num
+
+or
+
+.BI lan\  IP-addr
+.IR port\  [\| IP-addr-2
+.IR port-2 \|] 
+.I auth privilege username password
+
+.SH DESCRIPTION
+The
+.B ipmi_ui
+program connects to an IPMI system, and allows access to IPMI entities
+and sensors and OpenIPMI controls.  It's rather crude, and primarily
+for testing OpenIPMI, but it has some use beyond that so it is
+provided.
+
+Normally,
+.B ipmi_ui
+starts up in a full-screen format.  The left window shows the output
+of commands, the right window shows the logs from OpenIPMI.  Both
+windows are scrollable with page up and page down keys, press the "\fBF1\fP"
+key to choose the the left window to scroll, the "\fBF2\fP" key to choose
+the right window to scroll.
+
+Note that you must set your environment \fBTERM\fP variable properly for
+your terminal, or
+.B ipmi_ui
+will display garbage on the screen.
+
+Note that you can put two connection specifications on the command
+line, and ipmi_ui will make two connection.  You can only do this if
+the connections are to the same IPMI domain through different
+management controllers.  Also, each LAN connection may have two IP
+addresses.  These are two different addresses to the same management
+controller.  So you may have a total of 4 IP addresses to an IPMI
+domain, two management controllers and two IP adresses to each
+management controller.
+
+.SH OPTIONS
+.TP
+.B "\-dmsg"
+Turn on message debugging, this will dump all messages to the log window.
+.TP
+.B "\-dmem"
+Turn on memory debugging, this will cause memory allocation and
+deallocations to be checked.  When the program terminates, it will
+dump all memory that was not properly freed (leaked).
+.TP
+.B "\-snmp"
+Enable the SNMP trap handler.
+.B ipmi_ui
+must be compiled with SNMP code enabled for this option to be available.
+.TP
+.B \-c
+Run the program in command-line mode.  This is useful for scripting.
+All output goes to standard output, there is no windowing.
+
+.TP
+.I "smi-num"
+The SMI number to connect to, for systems with more than on system
+interface.  Generally, this is '\fB0\fP'.
+
+.TP
+.I "IP-addr"
+The IP address of the LAN interface.
+
+.TP
+.I "port"
+The UDP port of the LAN interface, general \fB623\fP.
+
+.TP
+.I "IP-addr-2"
+Some systems support multiple IP connections, this specified the
+second address and is optional.  If specified, OpenIPMI will use both
+IP addresses and fail over to the working one if one of them fails.
+
+.TP
+.I "port-2"
+The port for the second IP connection, generally \fB623\fP.
+
+.TP
+.I "auth"
+The authorization to use for the connection, either "\fBnone\fP",
+"\fBstraight\fP", "\fBmd5\fP", or "\fBmd2\fP".
+
+.TP
+.I "privilege"
+The privilege to use for the connection, either "\fBcallback\fP", "\fBuser\fP",
+"\fBoperator\fP", or "\fBadmin\fP".  Note that some IPMI operations will fail
+without the correct privilege.
+
+.TP
+.I "username"
+The user name to use for the connection.  If using this anonymous
+user, this should be the empty string "".
+
+.TP
+.I "password"
+The password to use for the connection.
+
+.SH ENTITIES
+
+Entities are listed by their entity id (the type of entity they are)
+and their entity instance.  Entities may be active or inactive in the
+system, the standard IPMI algorithm for determining this is used.
+Commands on entities are:
+
+.TP
+.B entities
+List all the entities in the system.  The output is the entity
+specifier, followed by an optional entity name in parenthesis,
+followed by "present" or "not present".
+
+.TP
+.B check_presence
+For the check of presence for all entities.
+
+.TP
+.BI fru\  entity
+List the FRU information associated with the entity.
+
+.TP
+.BI dump_fru\  is_logical\ device_address\ device_id\ lun\ private_bus\ channel
+Dump raw information from the specified FRU device.
+
+.SH SENSORS
+
+Sensors define input devices that OpenIPMI can monitor.
+
+.TP
+.BI sensors\  entity
+List all the sensors that monitor the given entity.  The output is the
+sensor specifier (the entity specifier followed by the sensor name,
+with spaces converted to ~). followed by the sensor name.
+
+.TP
+.BI sensor\  sensor
+Pull up the given sensor and display all its information.  In
+full-screen mode, the sensor will be re-queried every second.
+
+.TP
+\fBrearm\fP \fIglobal\fP [\fIassertion-mask\fP \fIdeassertion-mask\fP]
+Rearm the given sensor.  If
+.I "global"
+is \fB1\fP, then the whole sensor is rearmed.  If
+.I "global"
+is \fB0\fP, then the
+.I "assertion-mask"
+and
+.I "deassertion-mask"
+must be specified telling which thresholds or states to rearm.
+
+.TP
+\fBevents_enable\fP \fIevents\fP \fIscanning\fP \fIassertion-bitmask\fP \fIdeassertion-bitmask\fP
+Enable or disable events for the given sensor.
+.I "events"
+turns events on or off from the sensor (\fB0\fP or \fB1\fP).
+.I "scanning"
+turns scanning on or off for the sensor (\fB0\fP or \fB1\fP).
+.I "assertion-bitmask"
+specifies the bitmask of thresholds or states
+that should be enabled or disabled when a thrshold or state is
+asserted.  It is a bunch of 0's and 1's, where the first one is for
+threshold/state 0, the second for threshold/state 1, etc.
+.I "deassertion-bitmask"
+specifies the bitmask of thresholds or states
+that should be enabled or disabled when a thrshold or state is
+deasserted.
+
+.SH CONTROLS
+
+Controls are output devices that can control things like LEDs, power,
+reset lines and such.
+
+.TP
+.BI controls\  entity
+List all the controls that control the given entity.  The output is
+the control specifier (the entity specifier followed by the control
+name, with spaces converted to ~). followed by the control name.
+
+.TP
+.BI control\  control
+Pull up the given control and display it's current state.
+
+.TP
+\fBset_control\fP \fIval1\fP [\fIval2\fP ...]
+Change the value of a control.  Note that for controls with multiple
+values,
+.B every
+value must be specified.
+
+
+.SH EVENTS
+
+Events are asynchronous messages from sensors that tell the user that
+a sensor has done something.  Events are generally stored in a system
+event log (SEL); OpenIPMI will fetch the events from the SELs in the
+system.
+
+Since multiple SELs may exist, an event is specified by the MC it came
+from in the format "(channel addr)" and a log number.  The same log
+number may exist in multiple MCs.
+
+Events are displayed in the log window as they come in.  If they can
+be correlated with a sensor, they will be display with as much
+information as possible.
+
+.TP
+.BI delevent\  channel\ mc-addr\ log-num
+Delete the given event.  Note that many SELs do not support individual
+deletes, so this may only delete the local copy of the event, not the
+one in the SEL.  In this case, to delete events in the SEL, you must
+delete
+.B all
+the events in the SEL and wait about 10 seconds for OpenIPMI to do a
+full SEL clear.
+
+.TP
+.B clear_sel
+Delete all events in the SEL.  This process may take some time, so
+if you do this and quit immediately it may not be complete.
+
+.TP
+.B list_sel
+List all events in the local copy of the SELs.  This is only the local
+copy, if the copies in the actual have change, this won't be reflected.
+
+.TP
+.BI get_sel_time\  channel\ mc-num
+Get the time in the SEL for the given MC.
+
+
+.SH MANAGMENT CONTROLLERS (MCs)
+
+In OpenIPMI, you normally don't deal with management controllers.
+They are considered internal to the system.  However, for debugging,
+information about them is provided.
+
+.TP
+.B mcs
+List all the MCs in the system and whether they are active.  MCs are
+displayed in the format "(channel address)".
+
+.TP
+.BI mc\  channel\ mc-addr
+Display a boatload of information about the MC, mostly coming from the
+get device id command.
+
+.TP
+\fBmccmd\fP \fIchannel\fP \fImc-addr\fP \fILUN\fP \fINetFN\fP \fICmd\fP [\fIdata\fP ...]
+Send an IPMI command to the given MC.  The MC must exist and be active
+to do this.
+
+.TP
+\fBmc_reset\fP \fIchannel\fP \fImc-addr\fP [\fBwarm\fP | \fBcold\fP]
+Send a warm or cold reset command to the given MC.  The action the MC
+takes is system-specific.
+
+.TP
+.BI scan\  channel\ mc-addr
+Scan for an MC at the given address.  If the MC exists but OpenIPMI
+didn't know about it, it will be added.  If the MC no longer exists,
+then it will be removed.
+
+.TP
+.BI mc_events_enable\  channel\ mc-num\ enabled
+Enable or disable event generation for the given MC.
+
+.TP
+.BI mc_events_enabled\  channel\ mc-num
+Prints out if the events are enabled for the given MC.
+
+
+.SH LAN Parameter Configuration
+
+OpenIPMI has functions that make it easier to configure the LAN
+parameters of a LAN connection.  Note that the LAN parameters have a
+lock that OpenIPMI attempts to use.  If you read the LAN parameters,
+they will be locked until you either write them or clear the lock.
+
+.TP
+.BI readlanparm\  channel\ mc-num\ channel
+Read lanparm information from an MC and display it in the display window.
+
+.TP
+.B viewlanparm
+Show current lanparm information in the display window.
+
+.TP
+.BI writelanparm\  channel\ mc-num\ channel
+Write the current LANPARM information to an MC.  Note that this must be
+the MC that the parameters were read from.
+
+.TP
+\fBclearlanparmlock\fP [\fIchannel\fP \fImc-num\fP \fIchannel\fP]
+Clear a LANPARM lock.  If the MC is given, then the LANPARM lock is
+directly cleared.  If not given, then the LANPARM lock for the current
+parms is cleared.
+
+.TP
+\fBsetlanparm\fP \fIconfig\fP [\fIselector\fP] \fIvalue\fP
+Set the given config item to the value.  The optional selector is used
+for items that take a selector, like "auth" or any of the items in
+"destination".
+
+.SH Platform Event Filter (PEF)
+
+OpenIPMI contains function to help manage the PEF settings on a BMC.
+Note that the PEF parameters have a lock that OpenIPMI attempts to
+use.  If you read the PEF parameters, they will be locked until you
+either write them or clear the lock.
+
+.TP
+.BI readpef\  channel\ mc-num
+Read the PEF information from an MC.
+
+.TP
+\fBclearpeflock\fP [\fIchannel\fP \fImc-num\fP]
+Clear a PEF lock.  If the MC is given, then the PEF lock on that MC is
+directly cleared.  If no MC is given, then the current PEF's lock is
+cleared.
+
+.TP
+.B viewpef
+Show current pef information in the display window.
+
+.TP
+.BI writepef\  channel\ mc-num
+Write the current PEF information to an MC.
+
+.TP
+\fBsetpef\fP \fIconfig\fP [\fIselector\fP] \fIvalue\fP
+Set the given config item to the value.  The optional selector is used
+for items that take a selector, like anything in the event filters,
+alert policies, or alert strings.
+
+.TP
+\fBpet\fP \fIconnection\fP \fIchannel\fP \fIip-addr\fP \fImac_addr\fP \fIeft-selector\fP \fIpolicy-num\fP \fIapt-selector\fP \fIlan-dest-selector\fP
+Set up the connection for the domain to send PET traps from the given
+connection to the given IP/MAC address over the given channel.  This
+does all the LAN and PEF configuration required to configure a system
+to send event traps.
+
+
+.SH CONNECTIONS
+
+OpenIPMI can maintain multiple connections to a single domain.  It
+will generally only use one of these at a time (although the other
+will constantly be under test).  This is the "active" connection.  You
+can query and set which connection is active.
+
+The connection number is the connection from the command line.  You
+can specify two connections on the command line (the part beginning
+with "\fBlan\fI", "\fBsmi\fI", etc.).  The first connection you specify is
+connection zero, the second is connection 1.
+
+.TP
+.BI is_con_active\  connection
+Print out if the given connection is active or not.
+
+.TP
+.BI activate_con\  connection
+Activate the given connection.
+
+
+.SH OTHER COMMANDS
+
+.TP
+\fBmsg\fP \fIchannel\fP \fIIPMB-addr\fP \fILUN\fP \fINetFN\fP \fICmd\fP [\fIdata\fP ...]
+Send an IPMI command to the given IPMB address.  This is available in
+case the given MC cannot be found or enabled.
+
+.TP
+.BI sdrs\  channel\ mc-addr\ do-sensors
+Dump all the sdrs from the given MC.  If
+.I "do-sensors"
+is \fBtrue\fP, then dump the device SDR.  If it is \fBfalse\fP, dump the main SDR
+repository on the MC.
+
+.TP
+.BI scan\  channel\ IPMB-addr
+Perform an IPMB bus scan for the given IPMB, to try to detect an MC at
+the given address.  IPMB bus scanning can be slow, this can help speed
+things up if you already know the address.
+
+.TP
+.B quit
+Leave the program.
+
+.TP
+.B reconnect
+Attempt to disconnect and reconnect to the IPMI controller.  This is
+primarily for testing.
+
+.TP
+.B display_win
+Set the display window (left window) for scrolling, just in case the
+"\fBF1\fP" key doesn't work.
+
+.TP
+.B log_win
+Set the log window (right window) for scrolling, just in case the "\fBF2\fP"
+key doesn't work.
+
+.TP
+.B help
+Dump some terse help output about all the commands.
+
+
+.SH "ERROR OUTPUT"
+All error output goes to the log window.
+
+.SH "SEE ALSO"
+.BR ipmilan (8)
+
+.SH "KNOWN PROBLEMS"
+Our name is legion.
+
+.SH AUTHOR
+.PP
+Corey Minyard <cminyard@mvista.com>

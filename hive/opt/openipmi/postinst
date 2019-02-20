@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Post installation script for deb package
+
+# Service
+
+[[ ! -f /lib/systemd/system/hive-ipmi.service ]] &&
+	echo "Linking and enabling hive-ipmi service" &&
+	ln -s /hive/opt/openipmi/etc/hive-ipmi.service /lib/systemd/system/hive-ipmi.service &&
+	systemctl daemon-reload
+	systemctl enable hive-ipmi
+	systemctl start hive-ipmi
+	
+exit 0

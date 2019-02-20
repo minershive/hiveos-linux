@@ -1,0 +1,89 @@
+.TH ipmilan 8 06/26/12 OpenIPMI "IPMI LAN to System Interface Converter"
+
+.SH NAME
+ipmilan \- IPMI LAN to System Interface Converter
+
+.SH SYNOPSIS
+.B ipmilan
+.RB [ \-c
+.IR configfile ]
+.RB [ \-i
+.IR ipmidevice ]
+.RB [ \-d ]
+.RB [ \-n ]
+
+.SH DESCRIPTION
+The
+.B ipmilan
+daemon allows an IPMI system interface using the OpenIPMI device
+driver to be accessed using the IPMI 1.5 or 2.0 LAN protocol.
+
+.B ipmilan
+supports the full authentication capabilities of the IPMI LAN
+protocol.
+
+.B ipmilan
+supports multiple IP addresses for fault-tolerance.  Note that
+messages coming in on an address are always sent back out on the same
+address they came in.
+
+.SH OPTIONS
+.TP
+.BI \-c\  config-file
+Set the configuration file to one other than the default of
+.I "/etc/ipmi_lan.conf"
+.TP
+.B \-n
+Stops  the  daemon  from  forking  and  detaching  from the controlling
+terminal. This is useful for running from init.
+.TP
+.B \-d
+Turns on debugging to standard output.  You generally have to use
+.B \-n
+with this.
+
+
+.SH CONFIGURATION
+Configuration is accomplished through the file
+.IR /etc/ipmi_lan.conf .
+A file with another name or path may be specified using the
+.B \-c
+option.  See the ipmi_lan config file man page for more details.
+
+.SH SECURITY
+.B ipmilan
+implements normal IPMI security.  The default is no access for anyone,
+so the default is pretty safe, but be careful what you add, because
+this is access to control your box.  \fBstraight\fP and \fBnone\fP
+authorizations are not recommended, you should probably stick with \fBmd2\fP
+or \fBmd5\fP.
+
+.SH "SIGNALS"
+.TP 0.5i
+.B SIGHUP
+.B ipmilan
+should handle SIGHUP and reread it's configuration files.  However, it
+doesn't right now.  It might in the future, for now you will have to
+kill it and restart it.  Clients should handle reconnecting in this
+case.  If they don't, they are broken.
+
+.SH "ERROR OUTPUT"
+At startup, all error output goes to stderr.  After that, all error
+output goes to syslog.
+
+.SH "FILES"
+/etc/ipmi_lan.conf
+
+.SH "SEE ALSO"
+.BR ipmi_lan (5), ipmi_ui (1), openipmish (1)
+
+.SH "KNOWN PROBLEMS"
+Currently,
+.B ipmilan
+does not implement writing the config file.  IPMI commands to change
+configuration options are accepted, but the permanent writing of the
+changes does not currently work.
+
+.SH AUTHOR
+.PP
+Corey Minyard <cminyard@mvista.com>
