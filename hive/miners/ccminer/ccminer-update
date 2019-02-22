@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-#Checks ccminer for newer versions
 
-echo "Depreacted"
+[ -t 1 ] && . colors
+echo -e "${RED}This tool is deprecated. Don't use is it anymore. Exiting ...${NOCOLOR}"
 exit 0
 
+###########################################################################################
+
+#Checks ccminer for newer versions
 cd /hive/ccminer
-[ -t 1 ] && . colors
+
 
 md5url=http://download.hiveos.farm/ccminer/cuda9/md5sum.txt
 
