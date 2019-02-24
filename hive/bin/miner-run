@@ -31,7 +31,6 @@ function hive-package-install-do () {
 }
 
 function hive-package-install () {
-return 0
 	local package_name=$1
 	dpkg -s $package_name > /dev/null 2>&1
 	if [[ $? -ne 0 ]]; then
