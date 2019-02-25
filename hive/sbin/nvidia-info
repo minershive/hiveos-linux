@@ -4,7 +4,7 @@
 . colors
 
 
-list=`nvidia-smi --query-gpu=index,name,vbios_version,serial,gpu_bus_id,clocks.sm,clocks.mem,clocks.gr,pcie.link.gen.current,temperature.gpu,utilization.gpu,utilization.memory,memory.total,memory.free,memory.used,power.draw,fan.speed,pstate --format=csv,noheader` # > $NVIDIASMI_FILE
+list=`nvidia-smi --query-gpu=index,name,vbios_version,serial,gpu_bus_id,clocks.sm,clocks.mem,clocks.gr,pcie.link.gen.current,temperature.gpu,utilization.gpu,utilization.memory,memory.total,memory.free,memory.used,power.draw,fan.speed,pstate,power.min_limit,power.limit,power.max_limit --format=csv,noheader` # > $NVIDIASMI_FILE
 
 while read -r s; do
 	index=`awk -F', ' '{print $1}' <<< $s`
@@ -25,11 +25,16 @@ while read -r s; do
 	pwr=`awk -F', ' '{print $16}' <<< $s`
 	fan=`awk -F', ' '{print $17}' <<< $s`
 	pstate=`awk -F', ' '{print $18}' <<< $s`
+	plmin=`awk -F', ' '{print $19}' <<< $s`
+	pldef=`awk -F', ' '{print $20}' <<< $s`
+	plmax=`awk -F', ' '{print $21}' <<< $s`
+	
 	busid=${busid#00000000:} #trim prefix
 	##Start out
 		echo -e "${YELLOW}======${NOCOLOR} GPU ${CYAN}$index${NOCOLOR}, PCIE_bus ${PURPLE}$busid${NOCOLOR}  ${YELLOW}======${NOCOLOR}"
 		echo -e "Adapter: $index, ${GREEN}$name${NOCOLOR}"
 		echo -e "Bios version: $bios, Serial: $serial, PCIE Link Speed: $pcie"
+		echo -e "Power Limit:  Min: $plmin, Default: $pl, Max: $plmax"
 		echo -e "  Core   :  SMCore $smclk, GFXCore $gclk , MEMCore $mclk" 
 		echo -e "  Memory :  Total $memtotal, Used $memused , Free $memfree" 
 		echo -e "Utilization:  GPU $gpu_util, MEM: $memutil"
