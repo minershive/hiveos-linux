@@ -23,7 +23,7 @@ get_cpu_temps(){
 
   if [[ ! -z tcore ]]; then
     for (( i=0; i < ${l_num_cores}; i++ )); do
-      l_temp[$i]=$tcore
+      l_temp+="$tcore "
     done
     echo $l_temp
   fi
