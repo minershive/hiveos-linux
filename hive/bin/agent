@@ -177,6 +177,8 @@ function loop {
 	local temp=$(jq '.temp' <<< $gpu_stats)
 	local fan=$(jq '.fan' <<< $gpu_stats)
 	local power=$(jq '.power' <<< $gpu_stats)
+	local coreclk=$(jq '.coreclk' <<< $gpu_stats)
+	local memclk=$(jq '.memclk' <<< $gpu_stats)
 
 #	miner2_json=
 #	if [[ ! -z $MINER2 ]]; then
@@ -237,6 +239,8 @@ function loop {
 	--arg total_khs "$khs" \
 	--argjson temp "$temp" \
 	--argjson fan "$fan" \
+	--argjson coreclk "$coreclk" \
+	--argjson memclk "$memclk" \
 	--argjson power "$power" \
 	--arg df "`df -h / | awk '{ print $4 }' | tail -n 1 | sed 's/%//'`" \
 	--argjson mem "`free -m | grep 'Mem' | awk '{print "["$2","$4"]"}'`" \
@@ -245,7 +249,7 @@ function loop {
 		"method": "stats", "jsonrpc": "2.0", "id": 0,
 		"params": {
 			$rig_id, $passwd, $miner, $meta, $miner_stats, $total_khs,
-			$temp, $fan, $power, $df, $mem, $cpuavg
+			$temp, $fan, $coreclk, $memclk, $power, $df, $mem, $cpuavg
 		}
 	}'
 	)

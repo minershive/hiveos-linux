@@ -12,7 +12,9 @@ temps=()
 fans=()
 load=()
 power=()
-powerlimit=()
+#powerlimit=()
+core_clk=()
+mem_clk=()
 
 bus_temp_fan=()
 
@@ -22,7 +24,7 @@ function putstats {
 	#echo $2
 	#temps+=($1)
 	#fans+=($2)
-	bus_temp_fan+=("$1;$2;$3;$4;$5;$6")
+	bus_temp_fan+=("$1;$2;$3;$4;$5;$6;$7;$8")
 	#echo "$1 $2 $3 $4 $5 $6"
 }
 
@@ -86,9 +88,12 @@ function amd_stats {
 		[[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]] &&
 			power=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(average GPU)' | awk '{printf("%d", $1)}'`
 		[[ -z power ]] && power='0'
+		
+		local core_clk=`cat /sys/class/drm/card$cardno/device/pp_dpm_sclk | grep -m1 '*' | awk '{print $2}' | tr -d "Mhz"`
+		local mem_clk=`cat /sys/class/drm/card$cardno/device/pp_dpm_mclk | grep -m1 '*' | awk '{print $2}' | tr -d "Mhz"`
+		
 
-
-		putstats $busid "amd" $temp $speed "0" "$power"
+		putstats $busid "amd" $temp $speed "0" "$power" "$core_clk" "$mem_clk"
 
 
 		#cardcount=$(( cardcount + 1 ))
@@ -101,7 +106,7 @@ function nvidia_stats {
 	#68, 46, 00000000:06:00.0
 	#68, 83, 00000000:07:00.0
 	#timeout should be high enough on systems with load
-	stats=`timeout -s9 30 nvidia-smi --format=csv,noheader,nounits --query-gpu=temperature.gpu,fan.speed,gpu_bus_id,utilization.gpu,power.draw,power.limit`
+	stats=`timeout -s9 30 nvidia-smi --format=csv,noheader,nounits --query-gpu=temperature.gpu,fan.speed,gpu_bus_id,utilization.gpu,power.draw,power.limit,clocks.gr,clocks.mem`
 
 	[[ $? > 0 ]] && return
 
@@ -122,7 +127,9 @@ function nvidia_stats {
 		local powerlimit=`awk -F', ' '{printf("%d", $6)}' <<< $s`
 		[[ $power == "[Not Supported]" || $power == "0" ]] && power=$powerlimit
 		# remark: $power always != "[Not Supported]" because use "%d" in printf function, when power == "0" can use current PL for GTX1050ti
-		putstats "$busid" "nvidia" "$temp" "$fan" "$load" "$power"
+		local core_clk=`awk -F', ' '{print $7}' <<< $s`
+		local mem_clk=`awk -F', ' '{print $8}' <<< $s`
+		putstats "$busid" "nvidia" "$temp" "$fan" "$load" "$power" "$core_clk" "$mem_clk"
 		#echo "$busid" "nvidia" "$temp" "$fan" "$load" "$power"
 	done <<<"$stats"
 }
@@ -164,6 +171,8 @@ while read -r s; do
 	fans+=("${params[3]}")
 	load+=("${params[4]}")
 	power+=("${params[5]}")
+	core_clk+=("${params[6]}")
+	mem_clk+=("${params[7]}")
 done <<< "$sorted"
 
 #echo "Temp: ${temps[@]}"
@@ -176,16 +185,19 @@ jsonload=`printf '%s\n' "${load[@]}" | jq --raw-input . | jq --slurp -c .`
 jsonpower=`printf '%s\n' "${power[@]}" | jq --raw-input . | jq --slurp -c .`
 jsonbusids=`printf '%s\n' "${busids[@]}" | jq --raw-input . | jq --slurp -c .`
 jsonbrand=`printf '%s\n' "${brand[@]}" | jq --raw-input . | jq --slurp -c .`
-
+jsoncoreclk=`printf '%s\n' "${core_clk[@]}" | jq --raw-input . | jq --slurp -c .`
+jsonmemclk=`printf '%s\n' "${mem_clk[@]}" | jq --raw-input . | jq --slurp -c .`
 
 jq -c -n \
 --argjson temp "$jsontemps" \
 --argjson fan "$jsonfans" \
 --argjson load "$jsonload" \
 --argjson power "$jsonpower" \
+--argjson coreclk "$jsoncoreclk" \
+--argjson memclk "$jsonmemclk" \
 --argjson busids "$jsonbusids" \
 --argjson brand "$jsonbrand" \
-'{$temp, $fan, $load, $power, $busids, $brand}'
+'{$temp, $fan, $load, $power, $coreclk, $memclk,  $busids, $brand}'
 
 
 
