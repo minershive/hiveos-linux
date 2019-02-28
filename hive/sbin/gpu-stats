@@ -12,6 +12,7 @@ temps=()
 fans=()
 load=()
 power=()
+powerlimit=()
 
 bus_temp_fan=()
 
@@ -100,7 +101,7 @@ function nvidia_stats {
 	#68, 46, 00000000:06:00.0
 	#68, 83, 00000000:07:00.0
 	#timeout should be high enough on systems with load
-	stats=`timeout -s9 30 nvidia-smi --format=csv,noheader,nounits --query-gpu=temperature.gpu,fan.speed,gpu_bus_id,utilization.gpu,power.draw`
+	stats=`timeout -s9 30 nvidia-smi --format=csv,noheader,nounits --query-gpu=temperature.gpu,fan.speed,gpu_bus_id,utilization.gpu,power.draw,power.limit`
 
 	[[ $? > 0 ]] && return
 
@@ -118,7 +119,9 @@ function nvidia_stats {
 		local fan=`awk -F', ' '{print $2}' <<< $s`
 		local load=`awk -F', ' '{print $4}' <<< $s`
 		local power=`awk -F', ' '{printf("%d", $5)}' <<< $s`
-		[[ $power == "[Not Supported]" ]] && power="0"
+		local powerlimit=`awk -F', ' '{printf("%d", $6)}' <<< $s`
+		[[ $power == "[Not Supported]" || $power == "0" ]] && power=$powerlimit
+		# remark: $power always != "[Not Supported]" because use "%d" in printf function, when power == "0" can use current PL for GTX1050ti
 		putstats "$busid" "nvidia" "$temp" "$fan" "$load" "$power"
 		#echo "$busid" "nvidia" "$temp" "$fan" "$load" "$power"
 	done <<<"$stats"

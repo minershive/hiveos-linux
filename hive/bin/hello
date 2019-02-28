@@ -235,8 +235,8 @@ if [[ $existing_repository_list != $repository_list ]]; then
 	echo "$repository_list" > $HIVEREPO_LIST
 fi
 
-#remove ref_id
-[[ -e $REF_ID ]] && rm $REF_ID
+# #remove ref_id
+# [[ -e $REF_ID ]] && rm $REF_ID
 
 # Post actions =================================================================
 #restartminer - restart miner on success
