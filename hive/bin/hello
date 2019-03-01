@@ -125,9 +125,9 @@ jq -n \
 --arg version "$version" \
 --arg ref_id "$ref_id" \
 '{
-	"method": "hello", "jsonrpc": "2.0", "id": 0, $ref_id,
+	"method": "hello", "jsonrpc": "2.0", "id": 0,
 	"params": {
-		$rig_id, $passwd, $server_url, $uid,
+		$rig_id, $passwd, $server_url, $uid, $ref_id,
 		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn, $lan_config,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
 		"mb": {$manufacturer, $product, $system_uuid}, "cpu": {$model, $cores, $aes, $cpu_id}, $disk_model,
