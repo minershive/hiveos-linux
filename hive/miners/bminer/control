@@ -1,8 +1,8 @@
 Package: hive-miners-bminer
-Version: 0.6-24
+Version: 0.6-25
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-bminer-15.0.0
+Depends: hive-miners-bminer-15.0.2
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - Bminer

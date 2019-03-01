@@ -23,7 +23,7 @@ get_cpu_temps(){
 
   if [[ ! -z tcore ]]; then
     for (( i=0; i < ${l_num_cores}; i++ )); do
-      l_temp[$i]=$tcore
+      l_temp+="$tcore "
     done
     echo $l_temp
   fi
@@ -107,7 +107,9 @@ else
      uptime=`echo $stats_raw | jq -rc '."WorkTime"'`
 
      eval "t_stats=\$(jq -n \
-     --arg uptime \"\$uptime\" --arg ver \`miner_ver\` --arg hs_units$nom \"hs\" \
+     --arg uptime \"\$uptime\" --arg ver \`miner_ver\` \
+     --arg total_khs$nom \"\$t_khs\" \
+     --arg hs_units$nom \"hs\" \
      --argjson hs$nom \"\$hs\" --argjson temp$nom \"\$temp\" --argjson fan$nom \"\$fan\" \
      --arg ac \"\$ac\" --arg rj \"\$rj\" \
      --arg algo$nom \${algo,,} \

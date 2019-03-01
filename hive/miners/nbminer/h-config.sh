@@ -66,7 +66,8 @@ function miner_config_gen() {
       [[ i -eq 3 ]] && break
     done
 
-    #"secondary-intensity": 14,
+    #"secondary-intensity": 16,
+    [[ -z $NBMINER_INTENSITY ]] && NBMINER_INTENSITY=16
     add_param='{ "secondary-intensity": '${NBMINER_INTENSITY}' }'
     conf=`jq --null-input --argjson conf "$conf" --argjson add_param "$add_param" '$conf + $add_param'`
   fi

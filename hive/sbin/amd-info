@@ -61,12 +61,14 @@ for bdir in $busids_dirs; do
 
 	sclk=`cat /sys/class/drm/card$cardno/device/pp_dpm_sclk | grep -m1 '*'` #3: 1100Mhz *
 	mclk=`cat /sys/class/drm/card$cardno/device/pp_dpm_mclk | grep -m1 '*'` #2: 1900Mhz *
+	fanrpm=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/fan1_input` #rpm from fan
 
 	core_dpm=`echo $sclk | awk '{print $1}' | sed -e 's/://'`
 	core_mhz=`echo $sclk | awk '{print $2}'`
 	mem_dpm=`echo $mclk | awk '{print $1}' | sed -e 's/://'`
 	mem_mhz=`echo $mclk | awk '{print $2}'`
 	corev=`wolfamdctrl -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
+	[[ -z $corev ]] && corev=`vegatool -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
 
 
 	pwr='n/a'
@@ -74,7 +76,7 @@ for bdir in $busids_dirs; do
 		pwr=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(average GPU)' | awk '{print $1}'`
 
 
-	echo -e "$plevelStr \t${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${PURPLE}V${NOCOLOR} $corev\t${PURPLE}MEMSTATE${NOCOLOR} $mem_dpm ${PURPLE}MEM${NOCOLOR} $mem_mhz \t\t${PURPLE}PWR${NOCOLOR} $pwr W"
+	echo -e "$plevelStr \t${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${PURPLE}V${NOCOLOR} $corev\t${PURPLE}MEMSTATE${NOCOLOR} $mem_dpm ${PURPLE}MEM${NOCOLOR} $mem_mhz \t\t${PURPLE}PWR${NOCOLOR} $pwr W ${PURPLE}RPM${NOCOLOR} $fanrpm"
 
 
 done
