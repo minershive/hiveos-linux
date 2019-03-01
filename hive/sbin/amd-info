@@ -68,6 +68,7 @@ for bdir in $busids_dirs; do
 	mem_dpm=`echo $mclk | awk '{print $1}' | sed -e 's/://'`
 	mem_mhz=`echo $mclk | awk '{print $2}'`
 	corev=`wolfamdctrl -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
+	[[ -z $corev ]] && corev=`vegatool -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
 
 
 	pwr='n/a'
