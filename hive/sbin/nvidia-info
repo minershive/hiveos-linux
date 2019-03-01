@@ -34,7 +34,7 @@ while read -r s; do
 		echo -e "${YELLOW}======${NOCOLOR} GPU ${CYAN}$index${NOCOLOR}, PCIE_bus ${PURPLE}$busid${NOCOLOR}  ${YELLOW}======${NOCOLOR}"
 		echo -e "Adapter: $index, ${GREEN}$name${NOCOLOR}"
 		echo -e "Bios version: $bios, Serial: $serial, PCIE Link Speed: $pcie"
-		echo -e "Power Limit:  Min: $plmin, Default: $pl, Max: $plmax"
+		echo -e "Power Limit:  Min: $plmin, Default: $pldef, Max: $plmax"
 		echo -e "  Core   :  SMCore $smclk, GFXCore $gclk , MEMCore $mclk" 
 		echo -e "  Memory :  Total $memtotal, Used $memused , Free $memfree" 
 		echo -e "Utilization:  GPU $gpu_util, MEM: $memutil"
