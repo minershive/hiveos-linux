@@ -53,7 +53,7 @@ gpu_count_amd=`gpu-detect AMD`
 gpu_count_nvidia=`gpu-detect NVIDIA`
 ips=`hostname -I | sed 's/ /\n/g'`
 ips_json=`echo "${ips[@]}" | jq -R . | jq -s -c .`
-net_interfaces=`ip -o link | grep -vE 'LOOPBACK|POINTOPOINT' | awk '{  printf "{\"iface\": \"%s\", \"mac\": \"%s\"}\n", substr($2, 1, length($2)-1), $(NF-2)  }' | jq -sc .`
+net_interfaces=`ip -o link | grep -vE 'LOOPBACK|POINTOPOINT|sit0|can0' | awk '{  printf "{\"iface\": \"%s\", \"mac\": \"%s\"}\n", substr($2, 1, length($2)-1), $(NF-2)  }' | jq -sc .`
 [ -f $VPN_INSTALLED ] && openvpn=1 || openvpn=0
 #taken from netconf
 lan_address=`ip -o -f inet addr show | grep eth0 | awk '/scope global/ {print $4}'`
@@ -64,11 +64,14 @@ lan_config="{\"dhcp\": $lan_dhcp, \"address\": \"$lan_address\", \"gateway\": \"
 
 mb_manufacturer=`dmidecode | grep -A4 '^Base Board Information' | grep "Manufacturer:" | sed -E 's/\sManufacturer:\s+(.*)/\1/'`
 mb_product=`dmidecode | grep -A4 '^Base Board Information' | grep "Product Name:" | sed -E 's/\sProduct Name:\s+(.*)/\1/'`
+system_uuid=$(dmidecode -s system-uuid) #same as /sys/class/dmi/id/product_uuid
 cpu_model=`lscpu | grep "Model name:" | sed 's/Model name:[ \t]*//g'`
 cpu_cores=`lscpu | grep "^CPU(s):" | sed 's/CPU(s):[ \t]*//g'`
 aes=`lscpu | grep "^Flags:.*aes" | wc -l`
 cpu_id=$(sudo dmidecode -t 4 | grep ID | sed 's/.*ID://;s/ //g')
-
+[[ -e /sys/class/net/eth0/address ]] &&
+	first_mac=$(cat /sys/class/net/eth0/address | sed 's/://g') || #on some motherboards eth0 is disabled
+	first_mac=$(echo $net_interfaces | jq -r .[0].mac | sed 's/://g') #just grab the first in list
 
 bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
 bootdisk=${bootpart::-1} #cutoff partnumber
@@ -80,7 +83,7 @@ amd_version=`dpkg -s amdgpu-pro 2>&1 | grep '^Version: ' | sed 's/Version: //' |
 [[ -z $amd_version ]] && amd_version="OpenCL `dpkg -s opencl-amdgpu-pro-icd 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`"
 
 #System pseudo unique number
-uid=$(echo ${cpu_id}-$(cat /sys/class/net/eth0/address | sed 's/://g') | tr '[:upper:]' '[:lower:]' | sha1sum | awk '{print $1}')
+uid=$(echo ${system_uuid}-${cpu_id}-${first_mac} | tr '[:upper:]' '[:lower:]' | sha1sum | awk '{print $1}')
 
 
 version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
@@ -114,7 +117,7 @@ jq -n \
 --arg gpu_count_nvidia "$gpu_count_nvidia" \
 --arg nvidia_version "`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//'`" \
 --arg amd_version "$amd_version" \
---arg manufacturer "$mb_manufacturer" --arg product "$mb_product" \
+--arg manufacturer "$mb_manufacturer" --arg product "$mb_product" --arg system_uuid "$system_uuid" \
 --arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" --arg cpu_id "$cpu_id" \
 --arg disk_model "$disk_model" \
 --arg kernel "$kernel" \
@@ -127,7 +130,7 @@ jq -n \
 		$rig_id, $passwd, $server_url, $uid,
 		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn, $lan_config,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
-		"mb": {$manufacturer, $product}, "cpu": {$model, $cores, $aes, $cpu_id}, $disk_model,
+		"mb": {$manufacturer, $product, $system_uuid}, "cpu": {$model, $cores, $aes, $cpu_id}, $disk_model,
 		$kernel, $amd_version, $nvidia_version,
 		$version
 	}
