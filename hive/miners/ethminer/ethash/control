@@ -1,8 +1,8 @@
 Package: hive-miners-ethminer-ethash
-Version: 0.6-03
+Version: 0.6-04
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-ethminer-ethash-0.17.0
+Depends: hive-miners-ethminer-ethash-0.17.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - ETHminer
