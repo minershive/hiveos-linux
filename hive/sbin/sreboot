@@ -19,9 +19,9 @@ if [[ $1 == "wakealarm" && ! -e /sys/class/rtc/rtc0/wakealarm ]]; then
 	exit 1
 fi
 
-
+#Do not try to stop miner here. Sometimes it hangs and prevents rig from rebooting  
 #screen -S agent -X quit
-miner stop
+#miner stop
 
 #unRaw      (take control of keyboard back from X),
 # tErminate (send SIGTERM to all processes),
