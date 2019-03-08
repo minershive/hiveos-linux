@@ -36,11 +36,16 @@ function miner_config_gen() {
   local n_algo
   local n_url=''
   local n_config=''
+  
+  [[ -z $NANOMINER_ALGO2 ]] && NANOMINER_ALGO2="randomhash"
 
 #algos
   for (( i = 1; i <= 6; i++ )); do
 
     [[ i -eq 1 ]] && nom='' || nom=$i
+
+    eval "n_url=\$NANOMINER_URL$nom"
+    [[ -z $n_url && $i -gt 1 ]] && break
 
     eval "n_algo=\$NANOMINER_ALGO$nom"
     [[ -z $n_algo && $i -gt 1 ]] && break
@@ -50,7 +55,6 @@ function miner_config_gen() {
 
     eval "[[ ! -z \$NANOMINER_PASS$nom ]] && echo \"rigPassword = \$NANOMINER_PASS$nom\" >> \$MINER_CONFIG"
 
-    eval "n_url=\$NANOMINER_URL$nom"
     if [[ ! -z $n_url ]]; then
       if [[ $n_url = *"pool"* ]]; then
         echo $n_url >> $MINER_CONFIG

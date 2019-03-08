@@ -5,9 +5,9 @@ get_cores_hs(){
   local l_khs=$1
   local l_num_cores=$2
   local l_hs=()
-	for (( i=0; i < ${l_num_cores}; i++ )); do
-		l_hs+=`echo $l_khs | awk '{ printf($1/'$l_num_cores') }'`" "
-	done
+  for (( i=0; i < ${l_num_cores}; i++ )); do
+    l_hs+=`echo $l_khs | awk '{ printf($1/'$l_num_cores') }'`" "
+  done
   echo $l_hs
 }
 
@@ -106,6 +106,8 @@ else
 
      uptime=`echo $stats_raw | jq -rc '."WorkTime"'`
 
+     algo=${algo#\"}; algo=${algo%\"};      
+
      eval "t_stats=\$(jq -n \
      --arg uptime \"\$uptime\" --arg ver \`miner_ver\` \
      --arg total_khs$nom \"\$t_khs\" \
@@ -113,7 +115,7 @@ else
      --argjson hs$nom \"\$hs\" --argjson temp$nom \"\$temp\" --argjson fan$nom \"\$fan\" \
      --arg ac \"\$ac\" --arg rj \"\$rj\" \
      --arg algo$nom \${algo,,} \
-     '{\$hs$nom, \$hs_units$nom, \$temp$nom, \$fan$nom, \$uptime, \$algo$nom, ar$nom: [\$ac, \$rj], \$ver}')"
+     '{\$total_khs$nom, \$hs$nom, \$hs_units$nom, \$temp$nom, \$fan$nom, \$uptime, \$algo$nom, ar$nom: [\$ac, \$rj], \$ver}')"
 
      stats=$(jq -s '.[0] * .[1]' <<< "$stats $t_stats")
    done
