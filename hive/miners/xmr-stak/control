@@ -1,8 +1,8 @@
 Package: hive-miners-xmr-stak
-Version: 0.6-13
+Version: 0.6-14
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-xmr-stak-fireice-uk-2.9.0
+Depends: hive-miners-xmr-stak-fireice-uk-2.10.0
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - xmr-stak
