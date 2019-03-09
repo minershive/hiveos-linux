@@ -41,7 +41,7 @@ function miner_config_gen() {
 	conf+="$pools\n"
 
 	# Add general options
-	conf+="--api-port ${MINER_API_PORT} --print-full --print-time=60 --print-level=2 --donate-level=1\n"
+	conf+="--api-port ${MINER_API_PORT} --print-full --print-time=60 --donate-level=1\n"
 
 	# Add user config options
 	[[ ! -z $WILDRIG_MULTI_USER_CONFIG ]] && conf+="${WILDRIG_MULTI_USER_CONFIG}"
