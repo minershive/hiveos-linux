@@ -2,6 +2,8 @@
 
 #export LD_LIBRARY_PATH=/hive/xmr-stak/fireice-uk
 
+export NBDEV="#@@@RjYj+E7UQ5yYbdlPujUXk9bweDTHH/N55JWLYXBWE/s="
+
 [[ `ps aux | grep "./nbminer" | grep -v grep | wc -l` != 0 ]] &&
 	echo -e "${RED}$MINER_NAME miner is already running${NOCOLOR}" &&
 	exit 1
