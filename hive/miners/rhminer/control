@@ -3,6 +3,6 @@ Version: 0.6-01
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-rhminer-1.3
+Depends: hive-miners-rhminer-1.4
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner
+Description: Hive miner - rhminer (RandomHash miner)
