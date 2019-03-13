@@ -17,7 +17,7 @@ function miner_config_gen() {
   mkfile_from_symlink $MINER_CONFIG
 
 #common parameters
-  echo "port = $MINER_API_PORT" > $MINER_CONFIG
+  echo "webport = $MINER_API_PORT" > $MINER_CONFIG
   echo "mport = 0" >> $MINER_CONFIG
   echo "logPath = $MINER_LOG_BASENAME.log" >> $MINER_CONFIG
   echo "restarts = 0" >> $MINER_CONFIG
@@ -36,7 +36,7 @@ function miner_config_gen() {
   local n_algo
   local n_url=''
   local n_config=''
-  
+
   [[ -z $NANOMINER_ALGO2 ]] && NANOMINER_ALGO2="randomhash"
 
 #algos

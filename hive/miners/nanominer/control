@@ -1,8 +1,8 @@
 Package: hive-miners-nanominer
-Version: 0.6-02
+Version: 0.6-03
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-nanominer-1.1.0
+Depends: hive-miners-nanominer-1.1.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
