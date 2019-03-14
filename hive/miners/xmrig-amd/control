@@ -1,8 +1,8 @@
 Package: hive-miners-xmrig-amd
-Version: 0.6-12
+Version: 0.6-13
 Section: base
 Priority: optional
 Architecture: all
-Depends: libuv1, hive-miners-xmrig-amd-2.14.0
+Depends: libuv1, hive-miners-xmrig-amd-2.14.1
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner
+Description: Hive miner - XMRig-AMD
