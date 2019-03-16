@@ -1,8 +1,8 @@
 Package: hive-miners-xmr-stak-indeedminers
-Version: 0.6-01
+Version: 0.6-02
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-xmr-stak-indeedminers-2.7.1
+Depends: hive-miners-xmr-stak-indeedminers-2.10.2.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - xmr-stak indeedminers build
