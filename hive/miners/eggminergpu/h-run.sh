@@ -6,7 +6,7 @@
 
 
 
-if [[ $EGGMINER_TMPFS -eq 1 ]]; then
+if [[ $EGGMINERGPU_TMPFS -eq 1 ]]; then
   tmp_dir=$MINER_DIR/tmpfs
   [[ ! -d $tmp_dir ]] && mkdir -p $tmp_dir
   mount -t tmpfs -o size=1024M tmpfs $tmp_dir
@@ -19,4 +19,3 @@ fi
 
 cd $MINER_DIR/$MINER_VER
 ./eggminer 2>&1 | tee $MINER_LOG_BASENAME.log
-

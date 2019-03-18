@@ -29,7 +29,7 @@ function miner_config_gen() {
     done <<< "$EGGMINERGPU_USER_CONFIG"
   fi
 
-  if [[ $EGGMINER_TMPFS -eq 1 ]]; then
+  if [[ $EGGMINERGPU_TMPFS -eq 1 ]]; then
     #echo 'heavyFileName="'$MINER_DIR'/tmpfs/heavy3a.bin"' >> $MINER_CONFIG
     ln -sf $MINER_DIR/tmpfs/heavy3a.bin $MINER_DIR/$MINER_VER/heavy3a.bin
   else
