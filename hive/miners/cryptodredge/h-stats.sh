@@ -48,7 +48,7 @@
 		hs=''
 
 		stats=$(jq -n \
-				--arg uptime "$uptime", --arg algo "$CRYPTODREDGE_ALGO" \
+				--arg uptime "$uptime" --arg algo "$CRYPTODREDGE_ALGO" \
 				--argjson hs "`echo ${cckhs[@]} | tr " " "\n" | jq -cs '.'`" \
 				--argjson temp "`echo ${cctemps[@]} | tr " " "\n" | jq -cs '.'`" \
 				--argjson fan "`echo \"$striplines\" | grep 'FAN=' | sed -e 's/.*=//' | jq -cs '.'`" \
