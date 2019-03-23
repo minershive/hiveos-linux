@@ -19,7 +19,7 @@ else
 
   stats=$(jq -n \
     --arg total_khs "$khs" \
-    --arg uptime "$uptime", --arg algo "$algo" \
+    --arg uptime "$uptime" --arg algo "$algo" \
     --argjson hs "`echo ${cckhs[@]} | tr " " "\n" | jq -cs '.'`" \
     --arg hs_units "$hs_units" \
     --argjson temp "`jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats`" \
