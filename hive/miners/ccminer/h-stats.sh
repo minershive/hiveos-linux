@@ -49,7 +49,7 @@ else
 	khs=`echo $khs | sed -E 's/^( *[0-9]+\.[0-9]([0-9]*[1-9])?)0+$/\1/'` #1234.100 -> 1234.1
 
 	stats=$(jq -n \
-		--arg uptime "$uptime", --arg algo "$algo" \
+		--arg uptime "$uptime" --arg algo "$algo" \
 		--argjson khs "`echo ${cckhs[@]} | tr " " "\n" | jq -cs '.'`" \
 		--argjson temp "`echo ${cctemps[@]} | tr " " "\n" | jq -cs '.'`" \
 		--argjson fan "`echo \"$striplines\" | grep 'FAN=' | sed -e 's/.*=//' | jq -cs '.'`" \
