@@ -19,7 +19,8 @@ else
 	temp=`printf '%s\n' "${temp[@]}" | jq --raw-input . | jq --slurp -c .`
 	fan=`printf '%s\n' "${fan[@]}" | jq --raw-input . | jq --slurp -c .`
 
-	local hs=`echo "$stats_raw" | jq -r '.[3]' | tr ';' '\n' | jq -cs '.'`
+	#local hs=`echo "$stats_raw" | jq -r '.[3]' | tr ';' '\n' | jq -cs '.'`
+	local hs=`jq -rc '[ .[3]|split(";")|.[]|if .=="off" then 0 else .|tonumber end ]' <<< $stats_raw`
 
 	local ac=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $2}'`
 	local rj=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $3}'`
