@@ -1,0 +1,72 @@
+Team Red Miner CNv8 Tuning
+==========================
+
+Background
+----------
+This miner is more lean than other CN miners. This can translate into either increased hashrate, lower power draw, or both, or none of the above. Your mileage may vary and is highly dependent on mem straps and clocks. If running at the same hashrate as other CN miners, you can expect your power draw to decrease between -5-20W depending on gpu model and clocks. 
+
+To enable a higher hashrate, this miner generally requires a higher _core clk_ than normally used in CN mining. Unless you go nuts, your power draw will most probably be lower than that of other miners at lower clocks in the end anyway. This is the only way to achieve a > 2200 h/s read on a Vega 64. 
+
+There are fewer controls in this miner than the standard CN miner. It always runs with two threads, and you control the intensity per thread in the range 1-16. Moreover, you can choose between two modes, + and -. The mode will most often not have any effect on the end result, but it never hurts to try it.
+
+Tuning guide
+------------
+
+[Windows drivers]
+For some Polaris cards, the good ol' blockchain driver works fine. However, the one driver that seems to be a good fit across the board is 18.6.1, and that's the driver we have used in all our Windows tests.
+
+[Windows swap space]
+You should to set up your swap space to be at least the sum of all GPU memory you intend to use when mining. Typically, for a 4GB card this is 3.5GB and for an 8GB it's 7.5GB. Playing it safe is recommended, i.e. rather add the full memory size of all your GPUs and set the swap to the total sum or more.
+
+[Linux drivers]
+You need the amdgpu-pro 18.30 drivers for your Vegas under linux to reach the max possible hashrate. Also, please note that this release does not include ROCm support for CNv8, it will be included in an upcoming release instead.
+
+[Polaris cards (470-580)]
+The standard configuration is 8+8 for all of these cards. 8+6 or 7+7 might give the same optimal hashrate, and 9+9 can, especially under linux, give a better result for 480/580. For some cards, 16+14 is the best choice but also increases the probability of stale shares. You must have good mem straps to reach a good hashrate. Normally e.g. the Pimp My Straps function in SRB Polaris Bios Editor is sufficient. For mem clk, boosting it as much as possible while avoiding mem errors is a good thing. The core clk should generally end up between 1230-1270. For 580s, a boosted core clk to 1300 can push the hashrate to 1100 h/s while still staying at a reasonable power draw. We have seen few Polaris cards not being able to reach 1020-1030 h/s with this miner when the proper mem straps are in place.
+
+[Baffin and Lexa Pro cards (550-560)]
+From v0.3.8, this miner has now been better optimized for these smaller cards. The major additions are that the '+' mode has been optimized and a 'L' prefix mode designed for the smallest Lexa Pro cards has been added. Some rules of thumb when you optimize your rigs:
+
+o We'd expect 4+4 and 4+3 to be the only interesting configs for 4GB cards.
+o For Lexa Pro cards with 8 CUs, prefix your config with 'L', i.e. L4+3.
+o The 'L' prefix is designed for Lexa Pro, but can also work well for Baffin with 10 CUs.
+o Many 2GB Lexa Pro can't do L4+3 under Win, only L3+3. For max performance you should try Linux and L4+3.
+o For an overkill full range test, you should try all of 4+4,4+3,3+3,3+2,2+2 in four modes: X+Y,LX+Y,X-Y,LX-Y
+
+[Vega cards]
+The Vegas can end up anywhere from 1900-2270 depending on if it's a 56 or 64, a reference card or not and your choice of clocks. The interesting configurations to try for your Vega are 14+14, 14-14, 15+15, 16+14. You can also try 16+15, 15+14, etc. The mem clk is very important, and you should aim for as high as possible while keeping your rig stable. If you have a Vega 64, please don't be shy to try a higher core clk. The 16+14 configuration will often not show its true capability before hitting 1500 core clk. Your power draw should still stay reasonable (as in lower than other miners at more standard clocks). For a lower core clk around 1408, some cards do best with 16+14, others with 15+15, some with 14+14, YMMV.
+
+[Older cards]
+We're sorry, we only support 470-580, 550/560 and Vega cards.
+
+Benchmark results
+-----------------
+For most Polaris cards below, one-click Pimp My Straps in SRB Polaris Bios Editor has been used for mem straps.
+
+6 x Rx 470 8GB (Samsung mem) rig
+8+8, 1250/900 cclk, 2000/900 mclk, 6105 h/s, total rig 685W
+
+Rx 560 4GB (Samsung mem)
+4+4, 1230/900 cclk, 2050/900 mclk, 540 h/s, unknown power draw
+
+Rx 570 8GB (Samsung mem)
+8+8, 1270/900 cclk, 2100/900 mclk, 1030 h/s @ ~100W at wall
+
+Rx 580 8GB (Hynix mem)
+8+8, 1250/900 cclk, 2000/900 mclk, 1029 h/s @ ~105W at wall
+
+Vega 56 reference card (56 bios, ppt mod)
+16+14, 1413/880 cclk, 935/880 mclk, ~2000 h/s @ ~197W at wall
+
+Vega 64 liquid cooling
+15+15, 1408/880 cclk, 1100/880 mclk, ~2100 h/s @ ~190W(?) at wall
+16+14, 1560/925 cclk, 1100/880 mclk, ~2270 h/s @ ~210W(?) at wall
+
+Example command lines
+---------------------
+
+[Windows, one Vega 64 and one Rx580]
+teamredminer.exe -a cnv8 -o stratum+tcp://pool.somexmrpool.com:7777 -u <wallet> -p MyWorker -d 0,1 --cn_config 16+14,8+8
+
+[Linux, rig of 6 x Rx480 with different settings, not very realistic]
+./teamredminer -a cnv8 -o stratum+tcp://pool.somexmrpool.com:7777 -u <wallet> -p MyWorker -d 0,1,2,3,4,5 --cn_config 8+8,7+7,9+9,8+8,8+8,9+9
