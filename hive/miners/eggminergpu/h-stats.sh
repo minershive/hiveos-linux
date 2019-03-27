@@ -55,7 +55,8 @@ get_log_time_diff(){
 gpu_count=`expr $GPU_COUNT_NVIDIA + $GPU_COUNT_AMD`
 
 log_name="$MINER_LOG_BASENAME.log"
-conf_name="/hive/miners/$MINER_NAME/`miner_ver`/miner.cfg"
+conf_name="/run/hive/miners/eggminergpu/miner.cfg"
+echo $conf_name
 
 diffTime=$(get_log_time_diff)
 maxDelay=250
@@ -64,9 +65,20 @@ maxDelay=250
 # if [ "$diffTime" -lt "$maxDelay" ]; then
 if [ "$diffTime" -lt "$maxDelay" ]; then
   get_cards_hashes
-  hs_units='khs'
-  uptime=$(get_miner_uptime)
-  algo="sha224"
+  local hs_units='khs'
+
+  local uptime=$(get_miner_uptime)
+
+  local algo="sha224"
+
+  local temp=$(jq '.temp' <<< $gpu_stats)
+  local fan=$(jq '.fan' <<< $gpu_stats)
+  cat $conf_name | grep -q "\-\-enable-cpu"
+  if [[ ! $? -eq 0 ]]; then
+    [[ $cpu_indexes_array != '[]' ]] && #remove Internal Gpus
+      temp=$(jq -c "del(.$cpu_indexes_array)" <<< $temp) &&
+      fan=$(jq -c "del(.$cpu_indexes_array)" <<< $fan)
+  fi
 
   # A/R shares by pool
   ac=`cat $log_name | tail -n 50 | grep " Ok Shares " | tail -n 1 | cut -d " " -f12`
@@ -75,11 +87,13 @@ if [ "$diffTime" -lt "$maxDelay" ]; then
   stats=$(jq -nc \
             --argjson hs "`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`" \
             --arg hs_units "$hs_units" \
+            --argjson temp "$temp" \
+            --argjson fan "$fan" \
             --arg uptime "$uptime" \
             --arg ac "$ac" --arg rj "$rj" \
             --arg algo "$algo" \
             --arg ver `get_miner_ver` \
-            '{$hs, $hs_units, $uptime, ar: [$ac, $rj], $algo, $ver}')
+            '{$hs, $hs_units, $temp, $fan, $uptime, ar: [$ac, $rj], $algo, $ver}')
   #total hashrate in khs
   khs=$(get_total_hashes)
 else
