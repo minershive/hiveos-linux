@@ -55,6 +55,7 @@ systemctl stop hivex
 #	apt upgrade -y
 #	apt autoremove -y
 #fi
+echo 1 > /run/hive/NV_OFF
 count=`lsmod | grep -c nvidia`
 [[ $count -ne 0 ]] && echo -e "${CYAN}> Unload previous version${NOCOLOR}" || rmmod nvidia_uvm  2>/dev/null  || rmmod nvidia_drm 2>/dev/null  || rmmod nvidia_modeset  2>/dev/null || rmmod nvidia  2>/dev/null
 
@@ -81,6 +82,7 @@ if true; then
 		apt-get install --only-upgrade --reinstall -y nvidia-settings
 fi
 
+rm /run/hive/NV_OFF
 
 
 

@@ -96,6 +96,12 @@ function amd_stats {
 }
 
 function nvidia_stats {
+
+	#Preventing nvidia-smi from running if necessary
+	NV_OFF=0
+	[[ -f "/run/hive/NV_OFF" ]] && read NV_OFF < "/run/hive/NV_OFF"
+	[[ $NV_OFF -eq 1 ]] && return
+	
 	#72, 81, 00000000:01:00.0
 	#71, 54, 00000000:03:00.0
 	#68, 46, 00000000:06:00.0
