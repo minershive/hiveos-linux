@@ -121,9 +121,9 @@ function nvidia_stats {
 	while read -r s; do
 		local busid=`awk -F', ' '{print tolower($3)}' <<< $s`
 		busid=${busid#00000000:} #trim prefix
-		local temp=`awk -F', ' '{print $1}' <<< $s`
-		local fan=`awk -F', ' '{print $2}' <<< $s`
-		local load=`awk -F', ' '{print $4}' <<< $s`
+		local temp=`awk -F', ' '{printf ("%d", $1)}' <<< $s`
+		local fan=`awk -F', ' '{printf ("%d", $2)}' <<< $s`
+		local load=`awk -F', ' '{printf ("%d", $4)}' <<< $s`
 		local power=`awk -F', ' '{printf("%d", $5)}' <<< $s`
 		local powerlimit=`awk -F', ' '{printf("%d", $6)}' <<< $s`
 		[[ $power == "[Not Supported]" || $power == "0" ]] && power=$powerlimit
