@@ -1,5 +1,5 @@
-Package: hive-miners-xmrig
-Version: 0.6-15
+Package: hive-miners-xmrig-xmrig-2.15.0
+Version: 0.6-01
 Section: base
 Priority: optional
 Architecture: all
