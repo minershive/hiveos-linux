@@ -1,0 +1,7 @@
+Package: hive-miners-xmr-stak-arto-2.7.1
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - xmr-stak-arto v2.7.1 (based on code fireice-uk v2.7.1)
