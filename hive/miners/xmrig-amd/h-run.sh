@@ -14,6 +14,6 @@ while true; do
 		break
 done
 
-cd $MINER_DIR/$MINER_VER
+cd $MINER_DIR/$MINER_FORK/$MINER_VER
 
 ./xmrig-amd | tee $MINER_LOG_BASENAME.log

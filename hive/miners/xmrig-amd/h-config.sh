@@ -1,24 +1,31 @@
 #!/usr/bin/env bash
 
-function miner_ver() {
-	local MINER_VER=$XMRIG_AMD_VER
-	[[ -z $MINER_VER ]] && MINER_VER=$MINER_LATEST_VER
-	echo $MINER_VER
+function miner_fork() {
+	local MINER_FORK=$XMRIG_AMD_FORK
+	[[ -z $MINER_FORK ]] && MINER_FORK=$MINER_DEFAULT_FORK
+	echo $MINER_FORK
 }
 
+function miner_ver() {
+	local MINER_VER=$XMRIG_AMD_VER
+  local fork=${MINER_FORK^^} #uppercase MINER_FORK
+  [[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${fork//-/_}" #char replace
+  echo $MINER_VER
+}
 
 function miner_config_echo() {
+  export MINER_FORK=`miner_fork`
 	local MINER_VER=`miner_ver`
-	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/config.json"
+	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_FORK/$MINER_VER/config.json"
 }
 
 function miner_config_gen() {
 	[[ -z $XMRIG_AMD_PASS ]] && XMRIG_AMD_PASS="x"
 
-	local MINER_CONFIG="$MINER_DIR/$MINER_VER/config.json"
+	local MINER_CONFIG="$MINER_DIR/$MINER_FORK/$MINER_VER/config.json"
 	mkfile_from_symlink $MINER_CONFIG
 
-	conf=`cat $MINER_DIR/$MINER_VER/config_global.json | envsubst`
+	conf=`cat $MINER_DIR/$MINER_FORK/$MINER_VER/config_global.json | envsubst`
 
 	#merge user config options into main config
 	if [[ ! -z $XMRIG_AMD_USER_CONFIG ]]; then
