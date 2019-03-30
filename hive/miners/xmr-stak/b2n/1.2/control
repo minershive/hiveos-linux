@@ -4,4 +4,4 @@ Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - xmr-stak-b2n v1.2 (fork for mining Bitcoin2Network)
+Description: Hive miner - xmr-stak-b2n v1.2 (fork for mining B2N Bitcoin2Network)
