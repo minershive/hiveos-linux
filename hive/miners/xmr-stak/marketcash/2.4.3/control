@@ -1,0 +1,7 @@
+Package: hive-miners-xmr-stak-marketcash-2.4.3
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - xmr-stak v2.4.3 fork for mining [MKT] MarketCash coin
