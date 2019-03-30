@@ -1,8 +1,8 @@
 {
   "pools": [
     {
-      "user": "34um6A8dmT4JHWNuAvqigsERsD61toVAbY.worker",
-      "url": "stratum+tcp://x16r.usa.nicehash.com:3366",
+      "user": "wallet.worker",
+      "url": "stratum+tcp://url:port",
       "pass": "x"
     }
   ],
