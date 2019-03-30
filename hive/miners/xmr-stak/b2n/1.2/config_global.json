@@ -12,7 +12,7 @@
                 "rig_id": "worker"
             }
         ],
-        "currency" : "mox",
+        "currency" : "b2n",
         "call_timeout" : 10,
         "retry_time" : 30,
         "giveup_limit" : 0,
