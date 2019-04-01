@@ -171,7 +171,7 @@ function prepare {
 
 
 	echo -e "Current OS booted from ${GREEN}$DISK_NAME${NOCOLOR} and whole drive size is ${WHITE}$DISK_SIZE${NOCOLOR} Mb"
-	[[ $DISK_SIZE -lt 8192 ]] && echo -e "\n${YELLOW}The minimum disk size for Hive OS is 8 Gb${NOCOLOR}" && exit
+	[[ $DISK_SIZE -lt 7300 ]] && echo -e "\n${YELLOW}The minimum disk size for Hive OS is 8 Gb${NOCOLOR}" && exit
 
 	if [[ $no_confirm -ne 1 ]]; then
 		echo -e "${RED}Warning: After Hive OS installation, all your data on ${GREEN}$DISK_NAME${NOCOLOR} ${RED}will be lost!${NOCOLOR}"
@@ -217,6 +217,8 @@ function prepare {
 
 	#get farm_hash or old config
 	[[ $thishive -eq 1 && -f /hive-config/rig.conf ]] && cp /hive-config/rig.conf $TMPDIR/
+	[[ $thishive -eq 1 && -f /hive-config/rig.conf ]] && cp -R /hive-config/network $TMPDIR/
+	[[ $thishive -eq 1 && -f /hive-config/rig.conf ]] && cp -R /hive-config/openvpn $TMPDIR/
 	
 	
 	
@@ -256,14 +258,20 @@ function prepare {
 	echo 1 > /proc/sys/kernel/sysrq
 	echo 0 > /proc/sysrq-trigger
 
+	
 
 	#stop services and remount RO
 	swapoff -a
 	echo -e "\n${CYAN}> Stopping services${NOCOLOR}"
 
 	if [[ $thishive -eq 1 ]]; then
+		####################
+		#There must be a watchdog stop
+		##################
+		
 		miner stop > /dev/null 2>&1
 		wd stop > /dev/null 2>&1
+		autoswitch stop > /dev/null 2>&1
 		screen -S autofan -X quit > /dev/null 2>&1
 		systemctl stop hivex > /dev/null 2>&1
 		[[ ! -z `pidof xinit` ]] && kill -9 `pidof xinit` > /dev/null 2>&1
@@ -309,7 +317,11 @@ function prepare {
 		echo -e "HIVE_HOST_URL=\"http://api.hiveos.farm\"" > $TMPDIR/hive-config/rig.conf
 		echo -e "FARM_HASH=$farm\n" >> $TMPDIR/hive-config/rig.conf
 	fi
-
+	
+	[[ -d $TMPDIR/network ]] && cp -R $TMPDIR/network $TMPDIR/hive-config/
+	[[ -d $TMPDIR/openvpn ]] && cp -R $TMPDIR/openvpn $TMPDIR/hive-config/
+	
+	
 	#write image of configs partition
 	dd if=$conf_loop of=$TMPDIR/new_conf.img > /dev/null 2>&1
 
@@ -392,7 +404,7 @@ function write {
 
 function sel {
 	wr=0
-	[[ -f replace.conf ]] && source /replace.conf
+	[[ -f "/replace.conf" ]] && source "/replace.conf"
 
 	if [[ $wr -ne 1 ]]; then
 		[[ -z $url ]] && echo -e "${YELLOW}Filesystem path or URL to Hive OS image is required.${NOCOLOR}\n" && usage
