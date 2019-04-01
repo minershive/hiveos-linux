@@ -265,32 +265,9 @@ function prepare {
 	echo -e "\n${CYAN}> Stopping services${NOCOLOR}"
 
 	if [[ $thishive -eq 1 ]]; then
-		if [ `ps aux | grep "watchdoginua " | grep -v grep | wc -l` -ne 0 ]; then
-			echo "Killing Watchdog InUa existing process"
-			killall -9 watchdoginua
-		fi
-		WDPID=`ps aux | grep "watchdog-opendev" | grep -v 'watchdog-opendev.sh' | grep -v grep | awk '{print $2}'`
-		if [[ ! -z $WDPID ]]; then
-			echo "Killing Watchdog OpenDev existing process $WDPID"
-			kill -9 $WDPID
-		fi
-		WDPID=`ps aux | grep "WatchDogUtility/src/utility.py" | grep -v grep | awk '{print $2}'`
-		if [[ $WDPID > 0 ]]; then
-			echo "Killing Esonics Utility existing process PID=$WDPID"
-			kill -9 $WDPID
-		fi
-		
-		WDPID=`ps aux | grep "hl340" | grep -v 'hl340.sh' | grep -v grep | awk '{print $2}'`
-		if [[ ! -z $WDPID ]]; then
-			echo "Killing Watchdog QinHeng Electronics HL-340 existing process $WDPID"
-			kill -9 $WDPID
-		fi
-		WDPID=`ps aux | grep "srrv2" | grep -v 'srrv2.sh' | grep -v grep | awk '{print $2}'`
-		if [[ ! -z $WDPID ]]; then
-			echo "Killing Watchdog srrv2 existing process $WDPID"
-			kill -9 $WDPID
-		fi
-		
+		####################
+		#There must be a watchdog stop
+		##################
 		
 		miner stop > /dev/null 2>&1
 		wd stop > /dev/null 2>&1
