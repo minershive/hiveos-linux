@@ -16,7 +16,7 @@ else
   striplines=`echo "$threads" | tr '|' '\n' | tr ';' '\n' | tr -cd '\11\12\15\40-\176'`
 
   #if GPU has 0.0 temp it hanged. ccminer does not mine on this card but shows hashrate
-  cctemps=(`echo "$striplines" | grep 'TEMP=' | sed -e 's/.*=//'`) #echo ${cctemps[@]} | tr " " "\n" #print it in lines
+  #cctemps=(`echo "$striplines" | grep 'TEMP=' | sed -e 's/.*=//'`) #echo ${cctemps[@]} | tr " " "\n" #print it in lines
   cckhs=(`echo "$striplines" | grep 'KHS=' | sed -e 's/.*=//'`)
   ccbusids=(`echo "$striplines" | grep 'BUS=' | sed -e 's/.*=//'`)
   local bus_numbers=$(jq -sc . <<< "${ccbusids[*]}")
@@ -47,15 +47,20 @@ else
     khs=`echo $khs ${cckhs[$i]} | awk '{ printf("%.3f", $1 + $2) }'`
   done
 
+  local temp=$(jq '.temp' <<< $gpu_stats)
+  local fan=$(jq '.fan' <<< $gpu_stats)
+  [[ $cpu_indexes_array != '[]' ]] && #remove Internal Gpus
+    temp=$(jq -c "del(.$cpu_indexes_array)" <<< $temp) &&
+    fan=$(jq -c "del(.$cpu_indexes_array)" <<< $fan)
+
   khs=`echo $khs | sed -E 's/^( *[0-9]+\.[0-9]([0-9]*[1-9])?)0+$/\1/'` #1234.100 -> 1234.1
 
   stats=$(jq -n \
     --arg algo "$algo" \
     --argjson hs "`echo ${cckhs[@]} | tr " " "\n" | jq -cs '.'`" \
     --arg hs_units "khs" \
-    --argjson temp "`echo ${cctemps[@]} | tr " " "\n" | jq -cs '.'`" \
-    --argjson fan "`echo \"$striplines\" | grep 'FAN=' | sed -e 's/.*=//' | jq -cs '.'`" \
-    --argjson bus_numbers "$bus_numbers" \
+    --argjson temp "$temp" \
+    --argjson fan "$fan" \
     --arg ver "$ver" \
-    '{$hs, $hs_units, $temp, $fan, uptime:'$uptime', ar: ['$ac', '$rj'], $bus_numbers, $algo, $ver}')
+    '{$hs, $hs_units, $temp, $fan, uptime:'$uptime', ar: ['$ac', '$rj'], $algo, $ver}')
 fi
