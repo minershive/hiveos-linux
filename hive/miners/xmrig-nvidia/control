@@ -1,8 +1,8 @@
 Package: hive-miners-xmrig-nvidia
-Version: 0.6-12
+Version: 0.6-13
 Section: base
 Priority: optional
 Architecture: all
 Depends: libuv1
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner
+Description: Hive miner - XMRig-Nvidia cryptonight family algos miner for CUDA
