@@ -142,6 +142,10 @@ function Connections {
 		[[ $? -ne 0 ]] && echo -e "${ERROR_COLOR}HTTPS (SSL) on port 8443 connection failed. Please check Firewall rules or connection setup.${NOCOLOR}"
 		echo
 
+		echo -e "${WHITE}>>> msk.hiveos.farm${NOCOLOR}"
+		Connection "msk.hiveos.farm" api
+		echo
+		
 		echo -e "${WHITE}>>> paris.hiveos.farm${NOCOLOR}"
 		Connection "paris.hiveos.farm" api
 		echo
