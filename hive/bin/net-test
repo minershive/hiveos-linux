@@ -152,6 +152,9 @@ function Connections {
 
 		echo -e "${WHITE}>>> helsinki.hiveos.farm${NOCOLOR}"
 		Connection "helsinki.hiveos.farm" api
+
+		echo -e "${WHITE}>>> msk.hiveos.farm${NOCOLOR}"
+		Connection "msk.hiveos.farm" api
 	else
 		echo
 		echo -e "${WHITE}>>> $API_HOST${NOCOLOR}"
