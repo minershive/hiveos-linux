@@ -1,0 +1,7 @@
+Package: hive-miners-xmrig-nvidia-fruityminer-1.0
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - uPlexa miner for Nvidia from fruitypool v1.0
