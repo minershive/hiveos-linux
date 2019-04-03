@@ -1,0 +1,7 @@
+Package: hive-miners-xmrig-hycon-0.0.1
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - HYCon CPU miner v0.0.1

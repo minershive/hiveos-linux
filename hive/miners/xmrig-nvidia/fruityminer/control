@@ -5,4 +5,4 @@ Priority: optional
 Architecture: all
 Depends: hive-miners-xmrig-nvidia-fruityminer-1.0
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - uPlexa miner for Nvidia from fruitypool v1.0
+Description: Hive miner - uPlexa miner for Nvidia from fruitypool

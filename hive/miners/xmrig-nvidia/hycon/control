@@ -5,4 +5,4 @@ Priority: optional
 Architecture: all
 Depends: hive-miners-xmrig-nvidia-hycon-0.0.1
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - HYCon miner for Nvidia
+Description: Hive miner - HYCon Nvidia miner XMRig fork
