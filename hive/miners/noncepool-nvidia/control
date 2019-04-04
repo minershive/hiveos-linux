@@ -3,6 +3,6 @@ Version: 0.6-01
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-noncepool-nvidia-1.13
+Depends: hive-miners-noncepool-nvidia-1.24
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner
