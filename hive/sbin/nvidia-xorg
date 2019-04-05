@@ -17,11 +17,16 @@ if [[ ! -z $internal ]]; then
 	#sed -i -e 's/#Screen		0  "Screen0" 0 0/Screen		0  "Screen0" 0 0/' /etc/X11/xorg.conf
 	#sed -i -e "s/PCI:0:02:0/PCI:$busid/" /etc/X11/xorg.conf
 
+	#echo $internal
+	internal_driver="intel"
+	[[ $internal =~ "VMware" ]] && internal_driver="vmware" #00:02.0 VGA compatible controller: VMware SVGA II Adapter
+	[[ $internal =~ "Device 1234:1111" ]] && internal_driver="vesa"
+
 (cat <<EOF
 #--- Internal GPU -------------------------------------------------------------------
 Section "Device"
 	Identifier     "Device0"
-	Driver         "intel"
+	Driver         "$internal_driver"
 	BusID          "PCI:$busid"
 EndSection
 
@@ -44,7 +49,7 @@ nvidia_count=`echo "$nvidia_json" | jq '.|length'`
 
 for ((i=0; i < $nvidia_count; i++)) do
 	devi=$((i+1))
-	busid=`echo "$nvidia_json" | jq -r ".[$i].busid" | awk -F : '{printf("%d:%d:%d\n", "0x"$1, $2, $3)}'` #sed 's/\./:/'
+	busid=`echo "$nvidia_json" | jq -r ".[$i].busid" | awk -F : '{printf("%d:%d:%d\n", "0x"$1, "0x"$2, "0x"$3)}'` #sed 's/\./:/'
 	name=`echo "$nvidia_json" | jq -r ".[$i].name"`
 	busid_dec=$busid
 
