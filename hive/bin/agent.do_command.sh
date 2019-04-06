@@ -218,6 +218,7 @@ function do_command () {
 					fi
 					local force=$(echo $body | jq --arg queue $queue '.batch[$queue|tonumber].force' --raw-output)
 					local need_reboot=$(echo $body | jq '.reboot' --raw-output)
+					[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
 					[[ ! -z $force && $force == "1" ]] && extra_args="-f" || extra_args=""
 					# Save ROM
 					echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded.rom
@@ -243,19 +244,21 @@ function do_command () {
 				done
 				local meta=$(jq -n --arg good "`echo ${meta_good[@]} | tr " " ","`" --arg bad "`echo ${meta_bad[@]} | tr " " ","`" '{$good,$bad}')
 				local reboot_msg=""
-				[[ $need_reboot && $error == 0 ]] && reboot_msg=", now reboot"
+				[[ $need_reboot -eq 1 && $error == 0 ]] && reboot_msg=", now reboot"
 				if [ $errors == 0 ]; then
 					echo "$payload" | message ok "ROM flashing OK$reboot_msg" payload --id=$cmd_id --meta="$meta"
 				else
 					echo "$payload" | message warn "ROM flashing with errors$reboot_msg" payload --id=$cmd_id --meta="$meta"
 				fi
-				[[ $need_reboot && $error == 0 ]] && nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+				[[ $need_reboot -eq 1 && $error == 0 ]] && nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 			# Single mode
 			else
 			    local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
 			    local rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
+				local need_reboot=$(echo $body | jq '.reboot' --raw-output)
+				[[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
 			    if [[ -z $gpu_index || $gpu_index == "null" ]]; then
-				message error "No \"gpu_index\" given" --id=$cmd_id
+					message error "No \"gpu_index\" given" --id=$cmd_id
 				elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
 				    message error "No \"rom_base64\" given" --id=$cmd_id
 				else
@@ -263,27 +266,307 @@ function do_command () {
 				    [[ ! -z $force && $force == "1" ]] && extra_args="-f" || extra_args=""
 				    echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded.rom
 				    fsize=`cat /tmp/amd.uploaded.rom | wc -c`
-				    if [[ -z $fsize || $fsize < 250000 ]]; then #too short file
-					message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping" --id=$cmd_id
+					if [[ -z $fsize || $fsize < 250000 ]]; then #too short file
+						message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping" --id=$cmd_id
 				    else
-					if [[ $gpu_index == -1 ]]; then # -1 = all
-					    payload=`atiflashall $extra_args /tmp/amd.uploaded.rom`
-					else
-					    local gpu_index_hex=$gpu_index
-					    [[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
-					    payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index_hex $extra_args /tmp/amd.uploaded.rom`
-					fi
-					exitcode=$?
-					echo "$payload"
-					if [[ $exitcode == 0 ]]; then
-					    echo "$payload" | message ok "ROM flashing OK, now reboot" payload --id=$cmd_id
-					else
-					    echo "$payload" | message warn "ROM flashing failed" payload --id=$cmd_id
-					fi
+						if [[ $gpu_index == -1 ]]; then # -1 = all
+							payload=`atiflashall $extra_args /tmp/amd.uploaded.rom`
+						else
+							local gpu_index_hex=$gpu_index
+							[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
+							payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index_hex $extra_args /tmp/amd.uploaded.rom`
+						fi
+						exitcode=$?
+						echo "$payload"
+						if [[ $exitcode == 0 ]]; then
+							echo "$payload" | message ok "ROM flashing OK, now reboot" payload --id=$cmd_id
+							[[ $need_reboot -eq 1 ]] && nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+						else
+							echo "$payload" | message warn "ROM flashing failed" payload --id=$cmd_id
+						fi
 				    fi
+					
 				fi
 			fi
 		;;
+		
+		
+		nvidia_download)
+			local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
+			listjson=`gpu-detect listjson NVIDIA`
+			gpu_biosid=`echo "$listjson" | jq -r ".[$gpu_index].vbios" | sed -e 's/[\ ]/_/g'`
+			gpu_type=`echo "$listjson" | jq -r ".[$gpu_index].name" | sed -e 's/[\,\.\ ]//g'`
+			gpu_memsize=`echo "$listjson" | jq -r ".[$gpu_index].mem" | sed -e 's/^\(..\).*/\1/' | sed -e 's/.$/G/'`
+			rom_name="${WORKER_NAME}-$gpu_index-$gpu_type-$gpu_memsize-$gpu_biosid.rom"
+			#echo message info $rom_name
+			#return
+			screen -wipe > /dev/null 2>&1
+			sleep 1
+			local as=$(screen -ls | grep -c autoswitch)
+			local mn=$(screen -ls | grep -c miner)
+			local af=$(screen -ls | grep -c autofan)
+			nvstop
+			if [[ $? -ne 0 ]]; then
+				rm /run/hive/NV_OFF > /dev/null 2>&1
+				systemctl start hivex > /dev/null 2>&1
+				sleep 5
+				[[ $mn -ne 0 ]] && miner start
+				[[ $as -ne 0 ]] && autoswitch start
+				[[ $af -ne 0 ]] && autofan
+				systemctl start hive-watchdog > /dev/null 2>&1
+				message error "Unload Nvidia driver failed" --id=$cmd_id 
+				return 1
+			fi
+			
+			if [[ ! -z $gpu_index && $gpu_index != "null" ]]; then
+				#local gpu_index_hex=$gpu_index
+				[[ -f /tmp/nvidia.saved.rom ]] && rm /tmp/nvidia.saved.rom
+				payload=`nvflash_linux -i$gpu_index -b /tmp/nvidia.saved.rom`
+			    exitcode=$?
+			    echo "$payload"
+				if [[ $exitcode == 0 ]]; then
+					cat /tmp/nvidia.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "$rom_name" payload --id=$cmd_id
+				else
+					echo "$payload" | message warn "Nvidia VBIOS saving failed" payload --id=$cmd_id
+				fi
+			else
+				message error "No \"gpu_index\" given" --id=$cmd_id
+			fi
+			rm /run/hive/NV_OFF > /dev/null 2>&1
+			systemctl start hivex > /dev/null 2>&1
+			sleep 5
+			[[ $mn -ne 0 ]] && miner start
+			[[ $as -ne 0 ]] && autoswitch start
+			[[ $af -ne 0 ]] && autofan
+			systemctl start hive-watchdog > /dev/null 2>&1
+			
+		;;
+		
+		nvidia_upload)
+			# Batch mode
+			if [ $(echo $body | jq --raw-output '.batch != null') == 'true' ]; then
+				message info "Not finished yet" --id=$cmd_id
+				return 0
+				local gpu_groups=$(echo $body | jq --raw-output '.batch | length')
+				local need_reboot=$(echo $body | jq '.reboot' --raw-output)
+				[[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
+				local queue=0
+				local errors=0
+				local meta_good=()
+				local meta_bad=()
+				payload=""
+				
+				screen -wipe > /dev/null 2>&1
+				sleep 1
+				local as=$(screen -ls | grep -c autoswitch)
+				local mn=$(screen -ls | grep -c miner)
+				local af=$(screen -ls | grep -c autofan)
+				nvstop
+				if [[ $? -ne 0 ]]; then
+					rm /run/hive/NV_OFF > /dev/null 2>&1
+					systemctl start hivex > /dev/null 2>&1
+					sleep 5
+					[[ $mn -ne 0 ]] && miner start
+					[[ $af -ne 0 ]] && autofan
+					systemctl start hive-watchdog > /dev/null 2>&1
+					message error "Unload Nvidia driver failed" --id=$cmd_id 
+					[[ $as -ne 0 ]] && autoswitch start
+					return 1
+				fi
+				
+				for (( queue=0; queue<$gpu_groups; queue++ )); do
+					local gpu_list=`echo $body | jq --raw-output --arg queue $queue '.batch[$queue|tonumber].gpu_index' | tr ',' ' '`
+					local force=$(echo $body | jq --arg queue $queue '.batch[$queue|tonumber].force' --raw-output)
+					[[ ! -z $force && $force == "1" ]] && force=1 || force=0
+					local rom_base64=$(echo $body | jq --arg queue $queue '.batch[$queue|tonumber].rom_base64' --raw-output)
+					if [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
+						message error "No \"rom_base64\" given" --id=$cmd_id      # Cards list
+						errors=1
+						continue
+					fi
+					
+					
+					# Save ROM
+					echo "$rom_base64" | base64 -d | gzip -d > /tmp/nvidia.uploaded.rom
+					fsize=`cat /tmp/nvidia.uploaded.rom | wc -c`
+				    if [[ -z $fsize || $fsize < 200000 ]]; then #too short file
+						message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping" --id=$cmd_id
+						errors=1
+						continue
+					fi
+					
+					
+					
+					local gpu_index=""
+					for gpu_index in $gpu_list; do
+						payload+=`echo "=== Flashing card $gpu_index ==="`
+						
+						nvflash_linux -s -i$gpu_index -r
+						exitcode=$?
+						if [[ exitcode -ne 0 ]]; then
+							payload+=$(echo "Error remove write protect from card $y")
+							errors=1
+							continue
+						fi
+						if [[ $force -eq 1 ]]; then
+							payload+=`hive-force-nvflash $gpu_index "/tmp/nvidia.uploaded.rom"`
+						else
+							payload+=`nvflash_linux -s -A -i$gpu_index /tmp/nvidia.uploaded.rom`
+						fi
+						exitcode=$?
+						
+						if [[ $exitcode == 0 ]]; then
+							meta_good+=($gpu_index)
+						else
+							meta_bad+=($gpu_index)
+							errors=1
+						fi
+						payload+=`echo -e "\r\n"`
+					done
+				done
+				local meta=$(jq -n --arg good "`echo ${meta_good[@]} | tr " " ","`" --arg bad "`echo ${meta_bad[@]} | tr " " ","`" '{$good,$bad}')
+				local reboot_msg=""
+				[[ $need_reboot -eq 1 && $error == 0 ]] && reboot_msg=", now reboot"
+				if [ $errors == 0 ]; then
+					echo "$payload" | message ok "ROM flashing OK$reboot_msg" payload --id=$cmd_id --meta="$meta"
+				else
+					echo "$payload" | message warn "ROM flashing with errors$reboot_msg" payload --id=$cmd_id --meta="$meta"
+				fi
+				if [[ $need_reboot -eq 1 && $error == 0 ]]; then
+					if [[ $as -ne 0 ]]; then
+						sed -i '/autoswitch/d' /hive/bin/hive
+						sed -i '/echo2 "> Starting autofan"/i\autoswitch start' /hive/bin/hive
+						sed -i '/autoswitch/G' /hive/bin/hive
+						sed -i '/autoswitch/i\echo2 "> Starting autoswitch"' /hive/bin/hive
+						sed -i '/^$/N;/\n$/N;//D' /hive/bin/hive
+					fi
+					nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+					return 0
+				else
+					rm /run/hive/NV_OFF > /dev/null 2>&1
+					systemctl start hivex > /dev/null 2>&1
+					sleep 5
+					[[ $mn -ne 0 ]] && miner start
+					[[ $af -ne 0 ]] && autofan
+					systemctl start hive-watchdog > /dev/null 2>&1
+					[[ $as -ne 0 ]] && autoswitch start
+				fi
+				
+			# Single mode
+			else
+			    local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
+			    local rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
+				local need_reboot=$(echo $body | jq '.reboot' --raw-output)
+				[[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
+			    if [[ -z $gpu_index || $gpu_index == "null" ]]; then
+				message error "No \"gpu_index\" given" --id=$cmd_id
+				elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
+				    message error "No \"rom_base64\" given" --id=$cmd_id
+				else
+				    force=$(echo $body | jq '.force' --raw-output)
+				    [[ ! -z $force && $force == "1" ]] && force=1 || force=0
+					echo "$rom_base64" | base64 -d | gzip -d > /tmp/nvidia.uploaded.rom
+					fsize=`cat /tmp/nvidia.uploaded.rom | wc -c`
+				    if [[ -z $fsize || $fsize < 200000 ]]; then #too short file
+						message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping" --id=$cmd_id
+				    else
+						screen -wipe > /dev/null 2>&1
+						sleep 1
+						local as=$(screen -ls | grep -c autoswitch)
+						local mn=$(screen -ls | grep -c miner)
+						local af=$(screen -ls | grep -c autofan)
+						nvstop
+						if [[ $? -ne 0 ]]; then
+							rm /run/hive/NV_OFF > /dev/null 2>&1
+							systemctl start hivex > /dev/null 2>&1
+							sleep 5
+							[[ $mn -ne 0 ]] && miner start
+							[[ $af -ne 0 ]] && autofan
+							systemctl start hive-watchdog > /dev/null 2>&1
+							message error "Unload Nvidia driver failed" --id=$cmd_id 
+							[[ $as -ne 0 ]] && autoswitch start
+							return 1
+						fi
+					
+						if [[ $gpu_index == -1 ]]; then # -1 = all
+							#payload=`atiflashall $extra_args /tmp/amd.uploaded.rom`
+							local nv_list=$(cat /run/hive/gpu-detect.json | jq "[.[] | select ( .brand == \"nvidia\" )]")
+							local nv_count=$(echo $nv_list | jq ". | length")
+							payload=""
+							local err=0
+							for (( y=0; y < $nv_count; y++ ))
+							do
+								nvflash_linux -s -i$y -r
+								exitcode=$?
+								if [[ exitcode -ne 0 ]]; then
+									payload+=$(echo "Error remove write protect from card $y")
+									err=1
+									break
+								fi
+								
+								if [[ $force -eq 1 ]]; then
+									payload+=$(echo "=== Flashing card $y ===")
+									payload+=`hive-force-nvflash $y "/tmp/nvidia.uploaded.rom"`
+									exitcode=$?
+									[[ exitcode -ne 0 ]] && break
+									payload+=$(echo "========================")
+								fi
+							done
+							if [[ $force -eq 0 && err -eq 0 ]]; then
+								payload=$(echo "=== Flashing all cards ===")
+								payload+=`nvflash_linux -s -A "/tmp/nvidia.uploaded.rom"`
+								exitcode=$?
+							fi
+						else
+							#local gpu_index_hex=$gpu_index
+							#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
+							payload=`nvflash_linux -s -i$gpu_index -r`
+							exitcode=$?
+							if [[ exitcode -eq 0 ]]; then
+								payload=$(echo "=== Flashing card $gpu_index ===")
+								if [[ $force -eq 1 ]]; then
+									payload+=`hive-force-nvflash $gpu_index "/tmp/nvidia.uploaded.rom"`
+								else
+									payload+=`nvflash_linux -s -A -i$gpu_index /tmp/nvidia.uploaded.rom`
+								fi
+								exitcode=$?
+							fi
+									
+						fi
+						#exitcode=$?
+						echo "$payload"
+						if [[ $exitcode == 0 ]]; then
+							echo "$payload" | message ok "ROM flashing OK, now reboot" payload --id=$cmd_id
+							
+							if [[ $need_reboot -eq 1 ]]; then
+								if [[ $as -ne 0 ]]; then
+									sed -i '/autoswitch/d' /hive/bin/hive
+									sed -i '/echo2 "> Starting autofan"/i\autoswitch start' /hive/bin/hive
+									sed -i '/autoswitch/G' /hive/bin/hive
+									sed -i '/autoswitch/i\echo2 "> Starting autoswitch"' /hive/bin/hive
+									sed -i '/^$/N;/\n$/N;//D' /hive/bin/hive
+								fi
+								nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+								return 0
+							fi
+						else
+							echo "$payload" | message warn "ROM flashing failed" payload --id=$cmd_id
+						fi
+						
+						rm /run/hive/NV_OFF > /dev/null 2>&1
+						systemctl start hivex > /dev/null 2>&1
+						sleep 5
+						[[ $mn -ne 0 ]] && miner start
+						[[ $af -ne 0 ]] && autofan
+						systemctl start hive-watchdog > /dev/null 2>&1
+						[[ $as -ne 0 ]] && nohup bash -c 'sleep 20 && autoswitch start' > /tmp/nohup.log 2>&1 &
+						
+				    
+					fi
+				fi
+			fi
+		;;
+		
 		openvpn_set)
 			local clientconf=$(echo $body | jq '.clientconf' --raw-output)
 			local cacrt=$(echo $body | jq '.cacrt' --raw-output)
