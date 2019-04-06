@@ -1,0 +1,19 @@
+#!/bin/bash
+
+gpu_index=$1
+rom=$2
+expect -c '
+exp_internal 0
+set timeout -1
+log_user 0
+spawn nvflash_linux -s -A -i'$gpu_index' -6 '$rom'
+log_user 1
+expect {
+    "*confirm override*" { send -- "y" }
+	eof { catch wait result; exit [lindex $result 3] }
+    }
+expect eof
+catch wait result
+exit [lindex $result 3]
+'
+exit $?
