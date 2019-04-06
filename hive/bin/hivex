@@ -11,6 +11,7 @@ sleep 2
 
 
 export PATH="./:/hive/bin:/hive/sbin:$PATH"
+rm /run/hive/NV_OFF > /dev/null 2>&1
 sudo -i xinit /hive/etc/xinitrc
 exitcode=$?
 

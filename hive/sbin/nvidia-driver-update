@@ -34,58 +34,40 @@ else
 fi
 chmod +x ./$basename
 
-
-
-echo -e ""
-echo -e "${CYAN}> Stoping services${NOCOLOR}"
-miner stop
-wd stop
-screen -S autofan -X quit
-systemctl stop hivex
-[[ ! -z `pidof xinit` ]] && kill -9 `pidof xinit` #just double check
-
-
-
-
-
-#if (echo $basename | grep -q '\-396\.'); then
-#	echo -e ""
-#	echo -e "${CYAN}> Upgrading Ubuntu${NOCOLOR}"
-#	apt update
-#	apt upgrade -y
-#	apt autoremove -y
-#fi
-echo 1 > /run/hive/NV_OFF
-count=`lsmod | grep -c nvidia`
-[[ $count -ne 0 ]] && echo -e "${CYAN}> Unload previous version${NOCOLOR}" || rmmod nvidia_uvm  2>/dev/null  || rmmod nvidia_drm 2>/dev/null  || rmmod nvidia_modeset  2>/dev/null || rmmod nvidia  2>/dev/null
-
-
-echo -e ""
-echo -e "${CYAN}> Installing${NOCOLOR}"
-
-./$basename --accept-license --no-questions --ui=none --dkms --install-libglvnd #--tmpdir=/hive-drivers-pack
-
-[[ $? -ne 0 ]] && echo -e "${RED}Error installing driver${NOCOLOR}" && exit 1
-
-
-
-#it's a 396 driver and old 16.04 ubuntu
-#if (echo $basename | grep -q '\-396\.') && (lsb_release -a 2>&1 | grep '16\.04'); then
-#if (echo $basename | grep -q '\-396\.'); then
-if true; then
+screen -wipe > /dev/null 2>&1
+sleep 1
+local as=$(screen -ls | grep -c autoswitch)
+local mn=$(screen -ls | grep -c miner)
+local af=$(screen -ls | grep -c autofan)
+nvstop
+local exitcode=$?
+if [[ $exitcode -eq 0 ]]; then
 	echo -e ""
-	echo -e "${CYAN}> Updating nvidia-settings${NOCOLOR}"
-	apt update
-	nvidia_settings_version=`dpkg -s nvidia-settings 2>&1 | grep '^Version: ' | sed 's/Version: //'`
-	[[ -z $nvidia_settings_version ]] &&
-		apt-get install --reinstall -y nvidia-settings ||
-		apt-get install --only-upgrade --reinstall -y nvidia-settings
+	echo -e "${CYAN}> Installing${NOCOLOR}"
+	./$basename --accept-license --no-questions --ui=none --dkms --install-libglvnd #--tmpdir=/hive-drivers-pack
+	exitcode=$?
+	if [[ $exitcode -eq 0 ]]; then
+		echo -e ""
+		echo -e "${CYAN}> Updating nvidia-settings${NOCOLOR}"
+		apt update
+		nvidia_settings_version=`dpkg -s nvidia-settings 2>&1 | grep '^Version: ' | sed 's/Version: //'`
+		if [[ -z $nvidia_settings_version ]]; then
+			apt-get install --reinstall -y nvidia-settings
+		else
+			apt-get install --only-upgrade --reinstall -y nvidia-settings
+		fi
+	fi
 fi
 
-rm /run/hive/NV_OFF
 
+rm /run/hive/NV_OFF > /dev/null 2>&1
+systemctl start hivex > /dev/null 2>&1
+sleep 5
+[[ $mn -ne 0 ]] && miner start
+[[ $af -ne 0 ]] && autofan
+systemctl start hive-watchdog > /dev/null 2>&1
+[[ $as -ne 0 ]] && nohup bash -c 'sleep 12 && autoswitch start' > /tmp/nohup.log 2>&1 &
 
+[[ $exitcode -eq 0 ]] && echo -e "${RED}Error installing driver${NOCOLOR}" && exit 1
 
-
-echo -e "${GREEN}Driver installation successful. Reboot now.${NOCOLOR}"
-exit 0
+echo -e "${GREEN}Driver installation successful. Reboot now.${NOCOLOR}" && exit 0
