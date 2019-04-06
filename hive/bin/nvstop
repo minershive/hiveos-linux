@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+try_count=3
+[[ ! -z $1 ]] try_count=$1
+echo -e ""
+echo -e "${CYAN}> Stoping services${NOCOLOR}"
+echo 1 > /run/hive/NV_OFF
+
+for (( i=0; i < $try_count; i++ ))
+do
+	wd stop > /dev/null 2>&1
+	screen -S autofan -X quit > /dev/null 2>&1
+	autoswitch stop > /dev/null 2>&1
+	miner stop > /dev/null 2>&1
+	systemctl stop hivex > /dev/null 2>&1
+	killall -9 xinit > /dev/null 2>&1
+	rmmod -f nvidia_uvm > /dev/null 2>&1
+	rmmod -f nvidia_drm > /dev/null 2>&1
+	rmmod -f nvidia_modeset > /dev/null 2>&1
+	rmmod -f nvidia > /dev/null 2>&1
+	sleep 1
+	count_nvidia=`lsmod | grep -c nvidia`
+	if [[ $count_nvidia -eq 0 ]]; then
+		echo -e "${GREEN}> Unload modules successfull${NOCOLOR}"
+		exit 0
+	fi
+	
+done	
+	
+echo -e "${RED}> Unload modules failed${NOCOLOR}"
+exit 1
