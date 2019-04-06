@@ -6,8 +6,11 @@ if [[ $? -ne 0 || -z $stats_raw ]]; then
 	echo -e "${YELLOW}Failed to read $miner from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
 	khs=`echo $stats_raw | jq -r '.Session.Performance_Summary' | awk '{ print $1/1000 }'`
-	local fan=$(jq -c "[.fan$amd_indexes_array]" <<< $gpu_stats)
-	local temp=$(jq -c "[.temp$amd_indexes_array]" <<< $gpu_stats)
+	local temp=$(jq '.temp' <<< $gpu_stats)
+	local fan=$(jq '.fan' <<< $gpu_stats)
+	[[ $cpu_indexes_array != '[]' ]] && #remove Internal Gpus
+		temp=$(jq -c "del(.$cpu_indexes_array)" <<< $temp) &&
+		fan=$(jq -c "del(.$cpu_indexes_array)" <<< $fan)
 	local ver=`echo $stats_raw | jq -c -r ".Software" | sed 's/lolMiner //'`
 	local bus_numbers=$(echo $stats_raw | jq -r ".GPUs[].PCIE_Address" | cut -f 1 -d ':' | jq -sc .)
 	local algo=""
@@ -29,4 +32,3 @@ fi
 
 [[ -z $khs ]] && khs=0
 [[ -z $stats ]] && stats="null"
-
