@@ -183,9 +183,9 @@ function do_command () {
 			gpu_memsize=`echo "$listjson" | jq -r ".[$gpu_index].mem" | sed -e 's/^\(..\).*/\1/' | sed -e 's/.$/G/'`
 			gpu_memtype=`echo "$listjson" | jq -r ".[$gpu_index].mem_type" | sed -e 's/[\,\.\ ]/_/g'`
 			if [[ ! -z $gpu_index && $gpu_index != "null" ]]; then
-				local gpu_index_hex=$gpu_index
-				[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
-			    payload=`atiflash -s $gpu_index_hex /tmp/amd.saved.rom`
+				#local gpu_index_hex=$gpu_index
+				#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
+			    payload=`atiflash -s $gpu_index /tmp/amd.saved.rom`
 			    exitcode=$?
 			    echo "$payload"
 				if [[ $exitcode == 0 ]]; then
@@ -227,11 +227,11 @@ function do_command () {
 					#fsize=`cat /tmp/amd.uploaded${queue}.rom | wc -c`
 					local gpu_index=""
 					for gpu_index in $gpu_list; do
-						local gpu_index_hex=$gpu_index
-						[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
+						#local gpu_index_hex=$gpu_index
+						#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
 						# payload+=`echo "=== Flashing card $gpu_index ===" && `
-						#payload+=`echo "Flashing card by CMD: atiflash -p $gpu_index_hex $extra_args /tmp/amd.uploaded${queue}.rom"`
-						payload+=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index_hex $extra_args /tmp/amd.uploaded.rom`
+						#payload+=`echo "Flashing card by CMD: atiflash -p $gpu_index $extra_args /tmp/amd.uploaded${queue}.rom"`
+						payload+=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index $extra_args /tmp/amd.uploaded.rom`
 						exitcode=$?
 						if [[ $exitcode == 0 ]]; then
 							meta_good+=($gpu_index)
@@ -272,9 +272,9 @@ function do_command () {
 						if [[ $gpu_index == -1 ]]; then # -1 = all
 							payload=`atiflashall $extra_args /tmp/amd.uploaded.rom`
 						else
-							local gpu_index_hex=$gpu_index
-							[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
-							payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index_hex $extra_args /tmp/amd.uploaded.rom`
+							#local gpu_index_hex=$gpu_index
+							#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
+							payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index $extra_args /tmp/amd.uploaded.rom`
 						fi
 						exitcode=$?
 						echo "$payload"
