@@ -1,8 +1,8 @@
 Package: hive-miners-noncepool-amd
-Version: 0.6-04
+Version: 0.6-05
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-noncepool-amd-1.24
+Depends: hive-miners-noncepool-amd-1.26
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - BISmuth niner for AMD platform on noncepool
