@@ -36,11 +36,11 @@ chmod +x ./$basename
 
 screen -wipe > /dev/null 2>&1
 sleep 1
-local as=$(screen -ls | grep -c autoswitch)
-local mn=$(screen -ls | grep -c miner)
-local af=$(screen -ls | grep -c autofan)
+as=$(screen -ls | grep -c autoswitch)
+mn=$(screen -ls | grep -c miner)
+af=$(screen -ls | grep -c autofan)
 nvstop
-local exitcode=$?
+exitcode=$?
 if [[ $exitcode -eq 0 ]]; then
 	echo -e ""
 	echo -e "${CYAN}> Installing${NOCOLOR}"
@@ -68,6 +68,6 @@ sleep 5
 systemctl start hive-watchdog > /dev/null 2>&1
 [[ $as -ne 0 ]] && nohup bash -c 'sleep 12 && autoswitch start' > /tmp/nohup.log 2>&1 &
 
-[[ $exitcode -eq 0 ]] && echo -e "${RED}Error installing driver${NOCOLOR}" && exit 1
+[[ $exitcode -ne 0 ]] && echo -e "${RED}Error installing driver${NOCOLOR}" && exit 1
 
 echo -e "${GREEN}Driver installation successful. Reboot now.${NOCOLOR}" && exit 0
