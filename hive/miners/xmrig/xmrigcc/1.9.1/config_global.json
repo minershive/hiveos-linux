@@ -1,11 +1,16 @@
 {
     "algo": "cryptonight",
-    "av": 0,
+    "aesni": 0,
+    "multihash-factor": 0,
+    "multihash-thread-mask" : null,
+    "threads": 0,
+    "pow-variant" : "auto",
+    "asm-optimization" : "auto",
     "background": false,
     "colors": true,
     "cpu-affinity": null,
     "cpu-priority": null,
-    "donate-level": 0,
+    "donate-level": 1,
     "log-file": null,
     "max-cpu-usage": 75,
     "print-time": 60,
@@ -13,7 +18,8 @@
     "retry-pause": 5,
     "safe": false,
     "syslog": false,
-    "threads": null,
+    "force-pow-variant": false,
+    "skip-self-check": false,
     "pools": [
         {
             "url": "server.address",
