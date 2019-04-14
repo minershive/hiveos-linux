@@ -119,6 +119,9 @@ echo -e "${YELLOW}> Restarting autofan${NOCOLOR}"
 screen -S autofan -X quit
 autofan
 
+#Restart autoswitch if running
+[[ $(screen -ls | grep -c autoswitch) -ne 0 ]] && echo -e "${YELLOW}> Restarting autoswitch${NOCOLOR}" && autoswitch restart
+
 
 current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 [[ -e /hive-config/RepoVer ]] &&
