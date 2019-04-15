@@ -131,7 +131,7 @@ else
      --arg ac \"\$ac\" --arg rj \"\$rj\" \
      --arg algo$nom \${algo,,} \
      --argjson bus_numbers$nom  \"\$bus_ids\" \
-     '{\$total_khs$nom, \$hs$nom, \$hs_units$nom, \$temp$nom, \$fan$nom, \$uptime, \$algo$nom, ar$nom: [\$ac, \$rj], \$ver, \$bus_numbers}')"
+     '{\$total_khs$nom, \$hs$nom, \$hs_units$nom, \$temp$nom, \$fan$nom, \$uptime, \$algo$nom, ar$nom: [\$ac, \$rj], \$ver, \$bus_numbers$nom}')"
 
      stats=$(jq -s '.[0] * .[1]' <<< "$stats $t_stats")
    done
