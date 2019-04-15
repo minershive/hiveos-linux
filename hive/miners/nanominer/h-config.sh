@@ -17,10 +17,10 @@ function miner_config_gen() {
   mkfile_from_symlink $MINER_CONFIG
 
 #common parameters
-  echo "webport = $MINER_API_PORT" > $MINER_CONFIG
-  echo "mport = 0" >> $MINER_CONFIG
-  echo "logPath = $MINER_LOG_BASENAME.log" >> $MINER_CONFIG
-  echo "restarts = 0" >> $MINER_CONFIG
+  echo "webport=$MINER_API_PORT" > $MINER_CONFIG
+  echo "mport=0" >> $MINER_CONFIG
+  echo "logPath=$MINER_LOG_BASENAME.log" >> $MINER_CONFIG
+  echo "restarts=0" >> $MINER_CONFIG
 
 #merge common config options into main config
   if [[ ! -z $NANOMINER_COMMON_CONFIG ]]; then
@@ -34,8 +34,10 @@ function miner_config_gen() {
   local nom=0
   local n=1
   local n_algo
-  local n_url=''
-  local n_config=''
+  local n_url=
+  local n_config=
+  local t_url=
+  local n_wallet=
 
   [[ -z $NANOMINER_ALGO2 ]] && NANOMINER_ALGO2="randomhash"
 
@@ -44,23 +46,29 @@ function miner_config_gen() {
 
     [[ i -eq 1 ]] && nom='' || nom=$i
 
-    eval "n_url=\$NANOMINER_URL$nom"
-    [[ -z $n_url && $i -gt 1 ]] && break
+    eval "n_wallet=\$NANOMINER_TEMPLATE$nom"
+    [[ -z $n_wallet && $i -gt 1 ]] && break
 
+    eval "n_url=\$NANOMINER_URL$nom"
     eval "n_algo=\$NANOMINER_ALGO$nom"
     [[ -z $n_algo && $i -gt 1 ]] && break
     echo "[$n_algo]" >> $MINER_CONFIG
 
-    eval "echo \"wallet = \$NANOMINER_TEMPLATE$nom\" >> \$MINER_CONFIG"
+    echo "wallet=$n_wallet" >> $MINER_CONFIG
 
-    eval "[[ ! -z \$NANOMINER_PASS$nom ]] && echo \"rigPassword = \$NANOMINER_PASS$nom\" >> \$MINER_CONFIG"
+    eval "[[ ! -z \$NANOMINER_PASS$nom ]] && echo \"rigPassword=\$NANOMINER_PASS$nom\" >> \$MINER_CONFIG"
 
     if [[ ! -z $n_url ]]; then
-      if [[ $n_url = *"pool"* ]]; then
-        echo $n_url >> $MINER_CONFIG
+      n_url=${n_url,,} #lowercase
+      n_url=${n_url//" "/""}
+      local re='pool[0-9]{,1}='
+      if [[ $n_url =~ $re ]]; then
+        for t_url in $n_url; do
+          echo $t_url >> $MINER_CONFIG
+        done
       else
         for url in $n_url; do
-          echo "pool$n = $url" >> $MINER_CONFIG
+          echo "pool$n=$url" >> $MINER_CONFIG
           let "n = n + 1"
         done
       fi
