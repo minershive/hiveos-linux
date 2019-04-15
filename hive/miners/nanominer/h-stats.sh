@@ -53,6 +53,10 @@ if [[ $? -ne 0  || -z $stats_raw ]]; then
   echo -e "${YELLOW}Failed to read $miner stats_raw from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
   stats={}
+
+  local t_temp=$(jq '.temp' <<< $gpu_stats)
+  local t_fan=$(jq '.fan' <<< $gpu_stats)
+
   algo_count=`echo $stats_raw | jq '."Algorithms"[] | length'`
    for (( n = 1; n <= $algo_count; n++ )); do
      [[ n -eq 1 ]] && nom='' || nom=$n
@@ -67,6 +71,7 @@ else
      ver=
      uptime=0
      t_hs=0
+     bus_id=0
      bus_ids=()
      t_khs=0
      num_cores=0
@@ -90,9 +95,17 @@ else
          t_hs=`echo $stats_raw | jq -rc '."Algorithms"[].'$algo'."GPU '$j'"."Hashrate"'`
          t_hs=`printf "%f\n" $t_hs`
          hs+=$t_hs" "
-         fan+=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Fan"'`" "
-         temp+=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Temperature"'`" "
-         bus_ids+=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Pci"' | awk '{printf("%d\n", "0x"$1)}'`" "
+         #fan+=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Fan"'`" "
+         #temp+=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Temperature"'`" "
+         bus_id=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Pci"' | awk '{printf("%d\n", "0x"$1)}'`
+         bus_ids+=$bus_id" "
+         local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
+         for ((k = 0; k < ${#all_bus_ids_array[@]}; k++)); do
+           if [[ "$(( 0x${all_bus_ids_array[$k]} ))" -eq "$bus_id" ]]; then
+             fan+=$(jq -r .[$k] <<< $t_fan)" "
+             temp+=$(jq -r .[$k] <<< $t_temp)" "
+           fi
+         done
        done
      fi
 
@@ -112,10 +125,13 @@ else
      --arg uptime \"\$uptime\" --arg ver \`miner_ver\` \
      --arg total_khs$nom \"\$t_khs\" \
      --arg hs_units$nom \"hs\" \
-     --argjson hs$nom \"\$hs\" --argjson temp$nom \"\$temp\" --argjson fan$nom \"\$fan\" \
+     --argjson hs$nom \"\$hs\" \
+     --argjson temp$nom \"\$temp\" \
+     --argjson fan$nom \"\$fan\" \
      --arg ac \"\$ac\" --arg rj \"\$rj\" \
      --arg algo$nom \${algo,,} \
-     '{\$total_khs$nom, \$hs$nom, \$hs_units$nom, \$temp$nom, \$fan$nom, \$uptime, \$algo$nom, ar$nom: [\$ac, \$rj], \$ver}')"
+     --argjson bus_numbers$nom  \"\$bus_ids\" \
+     '{\$total_khs$nom, \$hs$nom, \$hs_units$nom, \$temp$nom, \$fan$nom, \$uptime, \$algo$nom, ar$nom: [\$ac, \$rj], \$ver, \$bus_numbers}')"
 
      stats=$(jq -s '.[0] * .[1]' <<< "$stats $t_stats")
    done
