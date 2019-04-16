@@ -6,7 +6,7 @@ get_cores_hs(){
   local l_num_cores=$2
   local l_hs=()
   for (( i=0; i < ${l_num_cores}; i++ )); do
-    l_hs+=`echo $l_khs | awk '{ printf($1/'$l_num_cores') }'`" "
+    l_hs+=`echo $l_khs | awk '{ printf($1*1000/'$l_num_cores') }'`" "
   done
   echo $l_hs
 }
