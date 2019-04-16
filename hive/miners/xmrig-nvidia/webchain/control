@@ -1,8 +1,0 @@
-Package: hive-miners-xmrig-nvidia-webchain
-Version: 0.6-01
-Section: base
-Priority: optional
-Architecture: all
-Depends: hive-miners-xmrig-nvidia-webchain-1.20
-Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - Webchain Nvidia miner XMRrig fork
