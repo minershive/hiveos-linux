@@ -1,0 +1,7 @@
+Package: hive-miners-nbminer-22.3
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - NBMiner v22.3
