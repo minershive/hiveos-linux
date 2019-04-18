@@ -1,8 +1,8 @@
 Package: hive-miners-noncepool-nvidia
-Version: 0.6-02
+Version: 0.6-03
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-noncepool-nvidia-1.26
+Depends: hive-miners-noncepool-nvidia-1.27
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - Nvidia Bismuth miner for/from noncepool
