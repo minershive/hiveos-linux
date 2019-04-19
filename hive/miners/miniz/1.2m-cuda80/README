@@ -1,0 +1,25 @@
+miniZ v1.0h is out! 
+Hi everyone,
+in the first place, we would like to thank you all for your support and feedback.
+There is a new miniZ version v1.0h @ https://miniz.ch
+In brief:
+* Speed improvement. Up to 5%, depending on GPU.
+* --nocolor option for cleaner logfile.
+* --pers auto, for automatic personalization string, compatible with some pools.
+* Improved stability at low power conditions.
+* The GPU order is now pci bus order by default.
+* Added cuda_error.log file output for cuda errors.
+* --latency to show pool ping latency.
+* Added api compatibility with Awesome miner.
+* Minor bug fixes.
+Like the previous version, we added support for RTX 20xx GPUs (alpha stage). If you happen to try miniZ on these GPUs, give us feedback so that we can keep improving the miner.
+Current Sol/s:
+GTX 1050 2GB ~17-19 Sol/s
+GTX 1050Ti 4GB ~19-21 Sol/s
+GTX 1060 3GB ~33-36 Sol/s
+GTX 1070Ti 8GB ~60-67 Sol/s
+GTX 1080 8GB ~61-67 Sol/s
+*Performance based on miniZ‘s tested GPUs. Hence, if your GPU model is not mentioned here we’d love to have your feedback! ￼
+Download miniZ miner v1.0h @ https://miniz.ch/download/
+*** It is advisable to always download from miniZ website, and always verify the checksum. ***
+Happy mining!
