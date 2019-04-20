@@ -21,7 +21,7 @@ fi
 
 
 #screen -S agent -X quit
-miner stop
+#miner stop
 
 #unRaw      (take control of keyboard back from X),
 # tErminate (send SIGTERM to all processes),
