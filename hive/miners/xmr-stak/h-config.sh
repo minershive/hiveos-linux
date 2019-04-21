@@ -93,7 +93,7 @@ function miner_config_gen() {
 			currency='"currency" : "karbo"'
 		;;
 		XMR )
-			currency='"currency" : "monero7"'
+			currency='"currency" : "monero"'
 		;;
 		XTL )
 			currency='"currency" : "stellite"'
