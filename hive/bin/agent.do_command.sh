@@ -312,7 +312,7 @@ function do_command () {
 				sleep 5
 				[[ $mn -ne 0 ]] && miner start
 				[[ $as -ne 0 ]] && autoswitch start
-				[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1
+				[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 				systemctl start hive-watchdog > /dev/null 2>&1
 				message error "Unload Nvidia driver failed" --id=$cmd_id 
 				return 1
@@ -336,7 +336,7 @@ function do_command () {
 			systemctl start hivex > /dev/null 2>&1
 			sleep 5
 			[[ $mn -ne 0 ]] && miner start
-			[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1
+			[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 			[[ $af -ne 0 ]] && autofan
 			systemctl start hive-watchdog > /dev/null 2>&1
 			
@@ -370,7 +370,7 @@ function do_command () {
 					[[ $af -ne 0 ]] && autofan
 					systemctl start hive-watchdog > /dev/null 2>&1
 					message error "Unload Nvidia driver failed" --id=$cmd_id 
-					[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1
+					[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 					return 1
 				fi
 				
@@ -449,7 +449,7 @@ function do_command () {
 					[[ $mn -ne 0 ]] && miner start
 					[[ $af -ne 0 ]] && autofan
 					systemctl start hive-watchdog > /dev/null 2>&1
-					[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1
+					[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 				fi
 				
 			# Single mode
@@ -484,7 +484,7 @@ function do_command () {
 							[[ $af -ne 0 ]] && autofan
 							systemctl start hive-watchdog > /dev/null 2>&1
 							message error "Unload Nvidia driver failed" --id=$cmd_id 
-							[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1
+							[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 							return 1
 						fi
 					

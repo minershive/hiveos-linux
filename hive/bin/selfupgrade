@@ -33,6 +33,7 @@ fi
 #Sometimes Ubuntu fails to update repos
 dpkg --configure -a
 
+apt update -y
 
 hpkg update || exit $?
 
@@ -122,7 +123,7 @@ screen -S autofan -X quit
 autofan
 
 #Restart autoswitch if running
-[[ $as -ne 0 ]] && echo -e "${YELLOW}> Restarting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1
+[[ $as -ne 0 ]] && echo -e "${YELLOW}> Restarting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 
 
 current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
