@@ -33,8 +33,6 @@ fi
 #Sometimes Ubuntu fails to update repos
 dpkg --configure -a
 
-apt update -y
-
 hpkg update || exit $?
 
 
