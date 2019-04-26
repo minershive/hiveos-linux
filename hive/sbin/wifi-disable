@@ -7,7 +7,7 @@ if [[ $wifidev == 1 ]]; then
 fi
 
 
-SERVICE_NAME=wpa_supplicant@$wifidev
+SERVICE_NAME=wpa_supplicant@$wlandev
 
 systemctl stop $SERVICE_NAME
 
