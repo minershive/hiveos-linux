@@ -79,6 +79,7 @@ disk_model=`parted -ml | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
 
 kernel=`uname --kernel-release`
 amd_version=`dpkg -s amdgpu-pro 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`
+[[ -z $amd_version ]] && amd_version=`dpkg -s amdgpu 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`
 #if there is no driver but only OpenCL
 [[ -z $amd_version ]] && amd_version="OpenCL `dpkg -s opencl-amdgpu-pro-icd 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`"
 
