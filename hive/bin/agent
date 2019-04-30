@@ -228,7 +228,7 @@ function loop {
 
 	[[ ! -z $META ]] && meta="$META" || meta='null'
 	request=$(
-	jq -n \
+	jq -c -n \
 	--arg rig_id "$RIG_ID" \
 	--arg passwd "$RIG_PASSWD" \
 	--arg miner "$MINER" \
@@ -257,7 +257,7 @@ function loop {
 		#	request=`echo "$request" "$miner2_json" | jq -s '.[0] * .[1]'`
 		eval miner_json="\$miner${mindex}_json"
 		[[ ! -z $miner_json ]] && #add miner2 stats to json
-			request=`echo "$request" "$miner_json" | jq -s '.[0] * .[1]'`
+			request=`echo "$request" "$miner_json" | jq -s -c '.[0] * .[1]'`
 	done
 
 
@@ -269,8 +269,8 @@ function loop {
 	fi
 
 	#log request
-	echo "[`date`] > `echo $request | jq '.' -c`" >> $LOG
-	#echo "[`date`] > $request" >> $LOG
+	#echo "[`date`] > `echo $request | jq '.'`" >> $LOG
+	echo "[`date`] > $request" >> $LOG
 
 	response=$(echo $request | curl --insecure -L --data @- \
 	--connect-timeout 7 --max-time 15 --silent \
