@@ -160,6 +160,7 @@ function loop {
 	reset_miner_vars
 
 	#each time read config again
+	AGENT_GZIP=0
 	. $RIG_CONF
 	. $WALLET_CONF
 
@@ -260,7 +261,7 @@ function loop {
 			request=`echo "$request" "$miner_json" | jq -s -c '.[0] * .[1]'`
 	done
 
-
+	[[ $AGENT_GZIP == 1 ]] && echo -n  "Z "
 	echo $request | jq '.' -c
 
 	if [[ -z $RIG_ID ]]; then
@@ -270,11 +271,21 @@ function loop {
 
 	#log request
 	#echo "[`date`] > `echo $request | jq '.'`" >> $LOG
-	echo "[`date`] > $request" >> $LOG
 
-	response=$(echo $request | curl --insecure -L --data @- \
-	--connect-timeout 7 --max-time 15 --silent \
-	-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=stats")
+	if [[ $AGENT_GZIP == 1 ]]; then
+		echo "[`date`] > Z $request" >> $LOG
+
+		response=$(echo $request | gzip -9 | curl --insecure -L --data @- \
+		--connect-timeout 7 --max-time 15 --silent \
+		-H "Content-Encoding: gzip" \
+		-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=stats")
+	else
+		echo "[`date`] > $request" >> $LOG
+
+		response=$(echo $request | curl --insecure -L --data @- \
+		--connect-timeout 7 --max-time 15 --silent \
+		-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=stats")
+	fi
 
 	exitcode=$?
 	if [[ $exitcode -ne 0 || -z $response ]]; then
