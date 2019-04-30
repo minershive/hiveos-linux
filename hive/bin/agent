@@ -274,7 +274,7 @@ function loop {
 
 	response=$(echo $request | curl --insecure -L --data @- \
 	--connect-timeout 7 --max-time 15 --silent \
-	-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=stats"  -H "Content-Type: application/json")
+	-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=stats")
 
 	exitcode=$?
 	if [[ $exitcode -ne 0 || -z $response ]]; then
