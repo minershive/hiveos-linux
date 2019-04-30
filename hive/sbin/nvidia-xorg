@@ -12,8 +12,6 @@ echo "Connected monitors: $connected_monitor"
 internal=`lspci | grep -E "VGA|3D controller" | head -n 1 | grep -vE "NVIDIA|AMD"`
 if [[ ! -z $internal ]]; then
 	busid=`echo $internal | awk '{print $1}' | awk -F : '{printf("%d:%d:%d\n", "0x"$1, $2, $3)}'` #sed 's/\./:/'
-	echo "Detected internal GPU $busid to be the first one"
-
 	#sed -i -e 's/#Screen		0  "Screen0" 0 0/Screen		0  "Screen0" 0 0/' /etc/X11/xorg.conf
 	#sed -i -e "s/PCI:0:02:0/PCI:$busid/" /etc/X11/xorg.conf
 
@@ -21,6 +19,9 @@ if [[ ! -z $internal ]]; then
 	internal_driver="intel"
 	[[ $internal =~ "VMware" ]] && internal_driver="vmware" #00:02.0 VGA compatible controller: VMware SVGA II Adapter
 	[[ $internal =~ "Device 1234:1111" ]] && internal_driver="vesa"
+	[[ $internal =~ "QXL" ]] && internal_driver="vga" #internal_driver="modesetting", with modesetting driver - OC will not work
+
+	echo "Detected internal GPU $busid to be the first one, choosing \"$internal_driver\" driver"
 
 (cat <<EOF
 #--- Internal GPU -------------------------------------------------------------------
