@@ -282,15 +282,21 @@ function loop {
 	if [[ $AGENT_GZIP == 1 ]]; then
 		echo "[`date`] > Z $request" >> $LOG
 
-		response=$(echo $request | gzip -9 | curl --insecure -L --data @- \
+		response=$(echo $request | gzip -9 -c -f | curl --insecure -L --data-binary @- \
 		--connect-timeout 7 --max-time 15 --silent \
 		-H "Content-Encoding: gzip" \
+		-H "Content-Type:" \
+		-H "User-Agent:" \
+		-H "Accept:" \
 		-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=stats")
 	else
 		echo "[`date`] > $request" >> $LOG
 
 		response=$(echo $request | curl --insecure -L --data @- \
 		--connect-timeout 7 --max-time 15 --silent \
+		-H "Content-Type:" \
+		-H "User-Agent:" \
+		-H "Accept:" \
 		-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=stats")
 	fi
 
