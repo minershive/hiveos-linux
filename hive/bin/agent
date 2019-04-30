@@ -242,7 +242,7 @@ function loop {
 	--argjson mem "`free -m | grep 'Mem' | awk '{print "["$2","$4"]"}'`" \
 	--argjson cpuavg "[`uptime | awk -F': ' '{print $2}'`]" \
 	'{
-		"method": "stats", "jsonrpc": "2.0", "id": 0,
+		"method": "stats",
 		"params": {
 			$rig_id, $passwd, $miner, $meta, $miner_stats, $total_khs,
 			$temp, $fan, $power, $df, $mem, $cpuavg
