@@ -12,6 +12,11 @@ LAST_OK=$(( $(date +%s) - 86100 ))
 force_stop=0
 
 
+LAST_COMMAND=$(( $(date +%s) - 86100 ))
+CUR_PUSH_INTERVAL=$PUSH_INTERVAL
+RESPONSE_TIME=300
+
+
 [ -t 1 ] && . colors
 
 #$PPID - might be parent screen pid
@@ -96,9 +101,9 @@ function reset_miner_vars() {
 
 # Waits for new stats to appear in file
 function wait-for-gpu-stats() {
-  local max_tries=0
-  [[ $PUSH_INTERVAL -gt 50 ]] && PUSH_INTERVAL=50
-	local tosleep=$(( $PUSH_INTERVAL - $INTERVAL ))
+	local max_tries=0
+	[[ $CUR_PUSH_INTERVAL -gt 50 ]] && CUR_PUSH_INTERVAL=50
+	local tosleep=$(( $CUR_PUSH_INTERVAL - $INTERVAL ))
 	if [[ $tosleep -ge 0 ]]; then
 		max_tries=$(($tosleep*2))
 		for (( i=1; i<=$max_tries; i++)); do
@@ -152,6 +157,8 @@ function loop {
 		fi
 	fi
 
+	no_command=$(( $(date +%s) - $LAST_COMMAND ))
+	[[ $no_command -gt $RESPONSE_TIME ]] && CUR_PUSH_INTERVAL=$PUSH_INTERVAL
 
 	[[ -z $gpu_detect_json ]] && process_gpu_detect_json redetect
 
@@ -312,8 +319,13 @@ function loop {
 
 	command=$(echo $response | jq '.result.command' --raw-output)
 
-	[[ $command != "OK" ]] && echo "$response" | jq '.result'
+	if [[ $command != "OK" ]]; then
+		echo "$response" | jq '.result'
 
+		#the command has been sent, reducing push interval to make the rig more responsive
+		CUR_PUSH_INTERVAL=0
+		LAST_COMMAND=$(date +%s)
+	fi
 
 	if [[ $command != "batch" ]]; then
 		body=`echo $response | jq -c '.result'`
