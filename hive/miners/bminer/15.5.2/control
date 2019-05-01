@@ -1,0 +1,7 @@
+Package: hive-miners-bminer-15.5.2
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - Bminer v15.5.2
