@@ -52,10 +52,10 @@ function setup_wifi {
 
 
 	wlanCount=`iwconfig 2>&1 | grep $wlandev | wc -l`
-	[[ -z $wlanCount || $wlanCount = 0 ]] &&
-		echo -e "No ${YELLOW}$wlandev${NOCOLOR} interface found" &&
-		wifi-disable && #or the service will wait for interface on boot
-		exit 0
+#	[[ -z $wlanCount || $wlanCount = 0 ]] &&
+#		echo -e "No ${YELLOW}$wlandev${NOCOLOR} interface found" &&
+#		wifi-disable && #or the service will wait for interface on boot
+#		exit 0
 
 
 
