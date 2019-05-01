@@ -12,9 +12,9 @@ LAST_OK=$(( $(date +%s) - 86100 ))
 force_stop=0
 
 
-LAST_COMMAND=$(( $(date +%s) - 86100 ))
-CUR_PUSH_INTERVAL=$PUSH_INTERVAL
-RESPONSE_TIME=300
+LAST_COMMAND=$(( $(date +%s) - 86100 )) #time when the last command from webface was received
+CUR_PUSH_INTERVAL=$PUSH_INTERVAL #current push interval
+RESPONSE_TIME=300 #timeout in seconds to reduce push interval
 
 
 [ -t 1 ] && . colors
@@ -101,6 +101,7 @@ function reset_miner_vars() {
 
 # Waits for new stats to appear in file
 function wait-for-gpu-stats() {
+	#additional timeout to increase push interval
 	local max_tries=0
 	[[ $CUR_PUSH_INTERVAL -gt 50 ]] && CUR_PUSH_INTERVAL=50
 	local tosleep=$(( $CUR_PUSH_INTERVAL - $INTERVAL ))
@@ -157,6 +158,7 @@ function loop {
 		fi
 	fi
 
+	#increase current push interval if last command was received more then $RESPONSE_TIME ago
 	no_command=$(( $(date +%s) - $LAST_COMMAND ))
 	[[ $no_command -gt $RESPONSE_TIME ]] && CUR_PUSH_INTERVAL=$PUSH_INTERVAL
 
@@ -328,7 +330,7 @@ function loop {
 	if [[ $command != "OK" ]]; then
 		echo "$response" | jq '.result'
 
-		#the command has been sent, reducing push interval to make the rig more responsive
+		#the command has been received, reducing push interval to make the rig more responsive
 		CUR_PUSH_INTERVAL=0
 		LAST_COMMAND=$(date +%s)
 	fi
