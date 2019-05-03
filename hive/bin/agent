@@ -281,10 +281,13 @@ function loop {
 	#log request
 	#echo "[`date`] > `echo $request | jq '.'`" >> $LOG
 
+	#check curl version and SSl session file
+	[[ `curl --help | grep -c ssl-session-file` -gt 0 && ! -z $SSL_SESSION_FILE ]] && ssl_session="--ssl-session-file $SSL_SESSION_FILE " || ssl_session=""
+
 	if [[ $AGENT_GZIP == 1 ]]; then
 		echo "[`date`] > Z $request" >> $LOG
 
-		response=$(echo $request | gzip -9 -c -f | curl --insecure -L --data-binary @- \
+		response=$(echo $request | gzip -9 -c -f | curl --insecure -L --data-binary @- ${ssl_session}\
 		--connect-timeout 7 --max-time 15 --silent \
 		-H "Content-Encoding: gzip" \
 		-H "Content-Type:" \
@@ -294,7 +297,7 @@ function loop {
 	else
 		echo "[`date`] > $request" >> $LOG
 
-		response=$(echo $request | curl --insecure -L --data @- \
+		response=$(echo $request | curl --insecure -L --data @- ${ssl_session}\
 		--connect-timeout 7 --max-time 15 --silent \
 		-H "Content-Type:" \
 		-H "User-Agent:" \
