@@ -345,8 +345,8 @@ function do_command () {
 		nvidia_upload)
 			# Batch mode
 			if [ $(echo $body | jq --raw-output '.batch != null') == 'true' ]; then
-				message info "Not finished yet" --id=$cmd_id
-				return 0
+				#message info "Not finished yet" --id=$cmd_id
+				#return 0
 				local gpu_groups=$(echo $body | jq --raw-output '.batch | length')
 				local need_reboot=$(echo $body | jq '.reboot' --raw-output)
 				[[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
