@@ -29,6 +29,11 @@ screen_count=`screen -ls | grep "\.agent" | grep -v $PPID | wc -l`
 	exit 1
 
 
+#check curl version and SSl session file
+[[ `curl --help | grep -c ssl-session-file` -gt 0 && ! -z $SSL_SESSION_FILE ]] &&
+	ssl_session="--ssl-session-file $SSL_SESSION_FILE " ||
+	ssl_session=""
+
 
 function process_gpu_detect_json() {
 	#{"temp":["61","42","41"],"fan":["92","0","0"],"load":["92","0","0"],"busids":["01:00.0","03:00.0","05:00.0"]}
@@ -280,9 +285,6 @@ function loop {
 
 	#log request
 	#echo "[`date`] > `echo $request | jq '.'`" >> $LOG
-
-	#check curl version and SSl session file
-	[[ `curl --help | grep -c ssl-session-file` -gt 0 && ! -z $SSL_SESSION_FILE ]] && ssl_session="--ssl-session-file $SSL_SESSION_FILE " || ssl_session=""
 
 	if [[ $AGENT_GZIP == 1 ]]; then
 		echo "[`date`] > Z $request" >> $LOG
