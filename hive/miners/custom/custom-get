@@ -61,6 +61,7 @@ fi
 
 
 ## Downloading
+[[ -e /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3.0.0 ]] && export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/hive/lib
 cd $MINER_DIR/downloads
 echo -e "${YELLOW}> Downloading $url${NOCOLOR}"
 [[ -f $archive ]] && echo "> $archive found locally, maybe incomplete, trying to recover"
