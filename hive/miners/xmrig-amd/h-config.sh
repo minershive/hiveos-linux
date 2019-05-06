@@ -8,13 +8,13 @@ function miner_fork() {
 
 function miner_ver() {
 	local MINER_VER=$XMRIG_AMD_VER
-  local fork=${MINER_FORK^^} #uppercase MINER_FORK
-  [[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${fork//-/_}" #char replace
-  echo $MINER_VER
+	local fork=${MINER_FORK^^} #uppercase MINER_FORK
+	[[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${fork//-/_}" #char replace
+	echo $MINER_VER
 }
 
 function miner_config_echo() {
-  export MINER_FORK=`miner_fork`
+	local MINER_FORK=`miner_fork`
 	local MINER_VER=`miner_ver`
 	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_FORK/$MINER_VER/config.json"
 }
