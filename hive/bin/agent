@@ -30,7 +30,7 @@ screen_count=`screen -ls | grep "\.agent" | grep -v $PPID | wc -l`
 
 
 #check curl version and SSl session file
-[[ `curl --help | grep -c ssl-session-file` -gt 0 && ! -z $SSL_SESSION_FILE ]] &&
+curl --help | grep -q ssl-session-file && [[ ! -z $SSL_SESSION_FILE ]] &&
 	ssl_session="--ssl-session-file $SSL_SESSION_FILE" ||
 	ssl_session=""
 
