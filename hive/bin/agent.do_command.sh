@@ -296,7 +296,9 @@ function do_command () {
 			listjson=`gpu-detect listjson NVIDIA`
 			gpu_biosid=`echo "$listjson" | jq -r ".[$gpu_index].vbios" | sed -e 's/[\ ]/_/g'`
 			gpu_type=`echo "$listjson" | jq -r ".[$gpu_index].name" | sed -e 's/[\,\.\ ]//g'`
-			gpu_memsize=`echo "$listjson" | jq -r ".[$gpu_index].mem" | sed -e 's/^\(..\).*/\1/' | sed -e 's/.$/G/'`
+			#gpu_memsize=`echo "$listjson" | jq -r ".[$gpu_index].mem" | sed -e 's/^\(..\).*/\1/' | sed -e 's/.$/G/'`
+			#Fix for memsize > 10G
+			gpu_memsize=$(( $(echo "$listjson" | jq -r ".[$gpu_index].mem" | awk '{print $1}') / 1000 ))"G"
 			rom_name="${WORKER_NAME}-$gpu_index-$gpu_type-$gpu_memsize-$gpu_biosid.rom"
 			#echo message info $rom_name
 			#return
