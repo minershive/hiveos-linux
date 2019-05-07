@@ -157,7 +157,7 @@ elif [[ $1 == "list" ]]; then
 elif [[ $1 == "getlist" ]]; then
 	getlist $2
 elif [[ $1 == "update" ]]; then
-	update
+	update || exit $?
 elif [[ $1 == "install" && $2 == "miners" ]]; then
 	install_miners_all $3
 else
