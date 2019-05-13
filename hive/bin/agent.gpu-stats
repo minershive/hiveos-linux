@@ -4,6 +4,13 @@
 
 INTERVAL=10
 
+if [[ ! "$1" == "run" ]]; then
+	while true; do
+		$0 run
+		sleep 1 
+		echo "Restarting..."
+	done
+fi
 
 while true; do
 	date
