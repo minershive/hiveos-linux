@@ -266,6 +266,9 @@ if [[ $X_DISABLED != 1 ]]; then
 			done
 		fi
 	fi
+else
+	amd-oc-safe
+	systemctl restart hive-console
 fi
 
 
@@ -297,11 +300,5 @@ fi
 
 
 echo2 "> Hive Start Finished"
-
-
-if [[ $X_DISABLED = 1 ]]; then
-	amd-oc-safe
-	systemctl restart hive-console
-fi
 
 exit 0
