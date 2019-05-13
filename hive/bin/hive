@@ -266,6 +266,10 @@ if [[ $X_DISABLED != 1 ]]; then
 			done
 		fi
 	fi
+else
+	# Apply amd-oc before miner start
+	amd-oc-safe
+	systemctl restart hive-console
 fi
 
 
