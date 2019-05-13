@@ -32,16 +32,24 @@ if [[ $running -ne 1 ]]; then
 	echo "Starting new agent screen session"
 
 	#screen -dm -S agent "agent"
-
-	screen -dm -S agent
+	
+	#run bash in screen 0
+	#screen -dm -S agent 
+	
+	#run gpu-stats in screen 0
+	screen -dm -S agent agent.gpu-stats
+	
 	for i in {1..25}; do
 		sleep 0.2 #it needs some time? it happens that you'll have "No screen session found" without sleep
 		session_count=`screen -ls agent | grep agent | wc -l`
 		[[ $session_count > 0 ]] && break
 		[[ $i == 25 ]] && echo -e "${RED}screen agent not found in 25 iterations, check logs and maybe flash drive speed${NOCOLOR}"
 	done
-
-	screen -S agent -X screen 2 agent.gpu-stats
+	
+	#run gpu-stats in screen 2
+	#screen -S agent -X screen 2 agent.gpu-stats
+	
+	#run agent in screen 1
 	screen -S agent -X screen 1 agent
 
 	exit 1 #was not running, starting
