@@ -60,7 +60,7 @@ function usage {
 	echo -e
 	echo -e "Options:"
 	echo -e "${GREEN}  -y|--yes                    ${NOCOLOR}Do not ask for confirmation, answer yes to all questions"
-	echo -e "${GREEN}  -f|--force                  ${NOCOLOR}Forced replace. Do not check the checksum of ZIP archive. Use with caution!"
+	echo -e "${GREEN}  -f|--force                  ${NOCOLOR}Forced replace. Do not check the MD5 checksum of ZIP archive"
 	echo -e "${GREEN}  --nfs                       ${NOCOLOR}To use NFS Shared resource. e.g.: ${GREEN}IP_NFS_server:/shared_dir/hive_zip${NOCOLOR}"
 	echo -e "${GREEN}  --smb                       ${NOCOLOR}To use Windows Shared resource. e.g.: ${GREEN}//IP_Windows_comp/shared_folder/hive_zip${NOCOLOR}"
 	echo -e "${GREEN}  --smbuser=Windows user      ${NOCOLOR}UserName for Windows Shared resource. Do not set this option for guest/anonymous access"
@@ -115,9 +115,10 @@ function get {
 	if [[ $force -ne 1 ]]; then
 		#default is "http://download.hiveos.farm/VERSIONS.txt"
 		md5_url=$(dirname "$url")/VERSIONS.txt
-		curl -s $md5_url > $TMPDIR/VERSIONS.txt
+		#curl -s $md5_url > $TMPDIR/VERSIONS.txt
+		wget -q -O $TMPDIR/VERSIONS.txt $md5_url
 		[[ $? -ne 0 ]] && echo -e "${RED}Сan't get $md5_url to check MD5 checksum. Use -f to ignore this.${NOCOLOR}" && return 1
-		mdsum=$(sed -n "/$archname/p" $TMPDIR/VERSIONS.txt | awk '{print$2}')
+		mdsum=$(sed -n "/$archname/p" $TMPDIR/VERSIONS.txt | awk '{printf$2}')
 		[[ -z $mdsum ]] && echo -e "${RED}Сan't get md5sum from $md5_url to check MD5 checksum. Use -f to ignore this.${NOCOLOR}" && return 1
 	fi
 
@@ -138,10 +139,14 @@ function get {
 	#check md5
 	if [[ $force -ne 1 ]]; then
 		echo -e "\n${CYAN}> Checking MD5 summ of image file${NOCOLOR}"
-		mdsum_hive=$(md5sum $TMPDIR/$archname | awk '{print$1}')
+		mdsum_hive=$(md5sum $TMPDIR/$archname | awk '{printf$1}')
 		[[ $mdsum != $mdsum_hive ]] && echo -e "${RED}MD5 checksum of image file does not match${NOCOLOR}\nGot $mdsum_hive, expected $mdsum" && return 1
 	fi
-
+	
+	#check zip integrity
+	echo -e "\n${CYAN}> Checking ZIP file integrity${NOCOLOR}"
+	unzip -t $TMPDIR/$archname > /dev/null
+	[[ $? -ne 0 ]] && echo -e "${RED}ZIP file is damaged${NOCOLOR}" && return 1
 
 	echo -e "${GREEN}Download|copy Hive OS image successful!${NOCOLOR}"
 	return 0
@@ -185,8 +190,8 @@ function prepare {
 	need_install=
 	dpkg -s lsof > /dev/null 2>&1
 	[[ $? -ne 0 ]] && programs=1 && need_install="lsof"
-	dpkg -s curl > /dev/null 2>&1
-	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install curl"
+	#dpkg -s curl > /dev/null 2>&1
+	#[[ $? -ne 0 ]] && programs=1 && need_install="$need_install curl"
 	dpkg -s wget > /dev/null 2>&1
 	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install wget"
 	dpkg -s unzip > /dev/null 2>&1
@@ -285,11 +290,12 @@ function prepare {
 	`systemctl list-units -t service | awk '{print $1}' | grep -v -e ssh | grep -v -e openvpn | grep -v -e shellinabox | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions | grep -v -e hive`; \
 	do systemctl stop $SERVICE > /dev/null 2>&1 && echo "> stop $SERVICE"; done
 	
+	#skip self, telec, hssh, watchdog!
 	pid="1"
 	while [[ ! -z $pid ]]; do
-		pid=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | grep -v -e hssh | sed '2!d' | awk '{print $2}')
+		pid=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | grep -v -e hssh | grep -v -e watchdog | sed '2!d' | awk '{print $2}')
 		[[ -z $pid ]] && continue
-		process=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | grep -v -e hssh | sed '2!d' | awk '{print $1}')
+		process=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | grep -v -e hssh | grep -v -e watchdog | sed '2!d' | awk '{print $1}')
 		echo -e "> kill $process"
 		kill $pid
 		sleep 1
