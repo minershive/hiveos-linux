@@ -69,6 +69,7 @@ fi
 
 
 [[ ! -z $FAN && ${FAN[$i]} > 0 ]] &&
+	echo 1 > /sys/class/drm/card$cardno/device/hwmon/hwmon*/pwm1_enable &&
 	wolfamdctrl -i $cardno --set-fanspeed ${FAN[$i]}
 #		args+=" --set-fanspeed ${FAN[$i]}"
 
