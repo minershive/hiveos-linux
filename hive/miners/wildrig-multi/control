@@ -1,8 +1,8 @@
 Package: hive-miners-wildrig-multi
-Version: 0.6-32
+Version: 0.6-33
 Section: base
 Priority: optional
 Architecture: all
-Depends: libuv1, hive-miners-wildrig-multi-0.16.4
+Depends: libuv1, hive-miners-wildrig-multi-0.16.5
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - WildRig-Multi OpenCL miner
