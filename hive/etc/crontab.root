@@ -28,3 +28,6 @@ PATH="./:/hive/bin:/hive/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:
 #check agent is running...
 */10 * * * * agent-screen dontattach || echo "[`date`] STARTED BY CRON" >> /var/log/hive-agent.log
 
+
+# systemd-timesyncd check
+0 * * * * /hive/sbin/timesync

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+# Forces time sync
+# On some China networks this is an issue
+
+
+status=`timedatectl status`
+synced=1
+echo $status | grep -qv "NTP synchronized: yes" &&
+echo $status | grep -qv "systemd-timesyncd.service active: yes" &&
+synced=0
+
+[[ synced -eq 1 ]] &&
+	echo "Time is synced" ||
+	echo "Time is not synced, restarting service"
+
+
+[[ synced -eq 1 && $1 != "-f" ]] && exit 0
+
+systemctl restart systemd-timesyncd
+
+#TODO: manual date set if service fails
