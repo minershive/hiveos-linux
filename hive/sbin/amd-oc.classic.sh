@@ -74,8 +74,8 @@ else
 	oc_cmd="wolfamdctrl -i $cardno $args"
 	echo $oc_cmd
 	eval $oc_cmd
+
+	echo 1 > /sys/class/drm/card$cardno/device/hwmon/hwmon*/pwm1_enable
 	
-[[ ! -z $FAN && ${FAN[$i]} > 0 ]] &&
-	echo 1 > /sys/class/drm/card$cardno/device/hwmon/hwmon*/pwm1_enable &&
-	wolfamdctrl -i $cardno --set-fanspeed ${FAN[$i]}
+	[[ ! -z $FAN && ${FAN[$i]} > 0 ]] && wolfamdctrl -i $cardno --set-fanspeed ${FAN[$i]}
 fi
