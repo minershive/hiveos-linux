@@ -50,15 +50,16 @@ function set_lastgood() {
 }
 
 
+
 function check_la() {
 
 	local max_la=$WD_MAX_LA
-	[[ -z $max_la || $max_la -lt $MIN_WD_LA ]] && max_la=MIN_WD_LA
+	[[ $max_la -lt $MIN_WD_LA ]] && max_la=$MIN_WD_LA
 	local max_la2x=$(( $max_la * 2 ))
 	local la=$( cat /proc/loadavg )
 	local la1=$( awk '{printf int($1)}' <<< $la )
 	local la5=$( awk '{printf int($2)}' <<< $la )
-	
+
 	# reboot if LA (5 min) >= maxLA
 	if [ $la5 -ge $max_la ]; then
 		echo -e "${RED}LA is more than $max_la: $la5 ${NOCOLOR}"
@@ -95,20 +96,20 @@ function check_gpu() {
 	fi
 }
 
-check_count=0
+
 set_lastgood
 ok_count=0
-
+check_count=0
 
 function loop() {
 	#echo -n "[`date`] "
 
 	loadconf
-	
+
 	#check every 2nd interval, ie 20 sec
 	if [[ $(( $check_count % 2 )) == 0 ]]; then
-		[[ ! -z $WD_CHECK_GPU ]] && check_gpu
-		[[ ! -z $WD_MAX_LA ]] && check_la
+		[[ "$WD_CHECK_GPU" == "1" ]] && check_gpu
+		[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && check_la
 	fi
 	((check_count++))
 	[[ $check_count -ge $OK_MESSAGE_REDUCE ]] && check_count=0
@@ -167,21 +168,16 @@ function loop() {
 	fi
 }
 
-
 function run() {
 
 	loadconf
 
-	#temporary until frontend will be ready
-	WD_CHECK_GPU=1
-	WD_MAX_LA=25
-
 	echo "MINER RESTART:  $WD_MINER minutes"
 	echo "REBOOT:         $WD_REBOOT minutes"
-	
-	[[ ! -z $WD_MAX_LA ]] && echo "MAX LA:         $WD_MAX_LA.0 (min $MIN_WD_LA.0)"
-	[[ ! -z $WD_CHECK_GPU ]] && echo "CHECK GPU:      Enabled"
-	
+
+	[[ "$WD_CHECK_GPU" == "1" ]] && echo "CHECK GPU:      Enabled"
+	[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && echo "MAX LA:         $WD_MAX_LA.0 (min $MIN_WD_LA.0)"
+
 	while true; do
 		loop
 		sleep $SLEEP
