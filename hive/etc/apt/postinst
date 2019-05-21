@@ -190,7 +190,7 @@ fi
 # actually we should leave this only in selfupgrade
 # but when updating from 0.5 to 0.6 selfupgrade will not fetch this
 # remove this after the majority is on 0.6+ version
-repover-touch
+/hive/bin/repover-touch
 
 
 exit 0
