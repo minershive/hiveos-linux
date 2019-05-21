@@ -1,0 +1,8 @@
+Package: hive-miners-ethminer-teominer
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-ethminer-teominer-0.16.3
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - TEOminer
