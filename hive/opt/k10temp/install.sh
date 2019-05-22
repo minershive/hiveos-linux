@@ -12,7 +12,7 @@ rmmod k10temp
 mkdir -p $tmpDir
 cd $tmpDir
 
-wget -c $downloadUrl
+wget -c --no-check-certificate $downloadUrl
 [ $? -ne 0 ] && echo -e "${RED}Error downloading $downloadUrl${NOCOLOR}" && exit 1
 
 
