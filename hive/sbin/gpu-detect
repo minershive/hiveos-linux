@@ -88,7 +88,7 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 
 				#[   26.705145] amdgpu 0000:07:00.0: VRAM: 4096M 0x0000000000000000 - 0x00000000FFFFFFFF (4096M used)
 				mem=`dmesg | grep -oE "amdgpu 0000:${busid}: VRAM:\s.*" | sed -n 's/.*VRAM:\s\([0-9MG]\+\).*/\1/p'`
-				ref=`amdmemtweak --current | sed -n "/pci:0000:${busid}/,/pci/p" |grep Refresh | awk '{print$3}' `
+				ref=`amdmemtweak --current | sed -n "/pci:0000:${busid}/,/pci/p" |grep REF | awk '{print$3}' `
 				additional=" ($mem, ${meminfo[3]}, ${meminfo[4]})"
 				if [[ $1 == "listjson" ]]; then
 					gpujson=`jq -n -c --arg busid "$busid" --arg name "$name" --arg brand "amd" --arg subvendor "$subvendor" \
