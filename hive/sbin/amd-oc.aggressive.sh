@@ -71,7 +71,7 @@ fi
 
 [[ ! -z $FAN && ${FAN[$i]} > 0 ]] && wolfamdctrl -i $cardno --set-fanspeed ${FAN[$i]}
 #		args+=" --set-fanspeed ${FAN[$i]}"
-
+[[ ! -z $REF && ${REF[$i]} > 0 ]] && amdmemtweak --gpu $i --REF ${REF[$i]}
 
 
 #if [[ ! -z $args ]]; then

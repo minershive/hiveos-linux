@@ -69,6 +69,12 @@ for (( i=${#FAN[@]}; i < $n; ++i )); do
 	FAN[$i]=${FAN[$i-1]}
 done
 
+[[ ! -z $REF ]] &&
+REF=($REF) &&
+for (( i=${#REF[@]}; i < $n; ++i )); do
+	REF[$i]=${REF[$i-1]}
+done
+
 
 echo "CORE_CLOCK = ${CORE_CLOCK[*]}"
 echo "CORE_STATE = ${CORE_STATE[*]}"
@@ -76,6 +82,7 @@ echo "CORE_VDDC  = ${CORE_VDDC[*]}"
 echo "MEM_CLOCK  = ${MEM_CLOCK[*]}"
 echo "MEM_STATE  = ${MEM_STATE[*]}"
 echo "FAN        = ${FAN[*]}"
+echo "REF        = ${REF[*]}"
 
 #exit
 

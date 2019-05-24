@@ -48,6 +48,8 @@ if [[ ! -z $CORE_VDDC && ${CORE_VDDC[$i]} > 0 ]]; then
 	_SetcoreVDDC ${CORE_VDDC[$i]}
 fi
 
+[[ ! -z $REF && ${REF[$i]} > 0 ]] && amdmemtweak --gpu $i --REF ${REF[$i]}
+
 	echo 1 > /sys/class/drm/card$cardno/device/hwmon/hwmon*/pwm1_enable
 	echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
 	echo 4 > /sys/class/drm/card$cardno/device/pp_power_profile_mode
