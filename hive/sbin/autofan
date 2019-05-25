@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AUTOFAN_VERSION="2.09"
+AUTOFAN_VERSION="2.11"
 
 if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
 	source /etc/environment
@@ -185,6 +185,10 @@ get_fan_speed () {
 			# do not spin down fan if temp going up
 			[[ $target_fan_speed -lt $cur_fan_speed ]] && target_fan_speed=$cur_fan_speed
 
+			# spin up more
+			[[ $(( $cur_temp - 1 )) -gt $target_temp ]] &&
+				target_fan_speed=$(( ($cur_fan_speed * ($cur_temp + $diff) + $target_temp - 1) / $target_temp + 1 )) && msg="+"
+			
 			if [[ $diff -gt 1 ]]; then
 				# spin up fan in advance
 				[[ $(( $cur_temp + $diff )) -gt $target_temp ]] &&
@@ -193,11 +197,12 @@ get_fan_speed () {
 				# spin up fan in advance even more
 				[[ $cur_temp -lt $target_temp && $(( $cur_temp + $diff * 2 - 1 )) -gt $target_temp ]] &&
 					target_fan_speed=$(( ($cur_fan_speed * ($cur_temp + diff * 2) + $prev_temp - 1) / $prev_temp + 1 )) && msg="+++"
+					
+				# spin up fan faster if temp is more than target+5
+				fast_fan=$(( ( $max_fan + $cur_fan_speed + 1 ) / 2 ))
+				[[ $cur_temp -gt $(( $target_temp + 5 )) && $fast_fan -gt $target_fan_speed ]] &&
+					target_fan_speed=$fast_fan && msg="++++"
 			fi
-			
-			# spin up more
-			[[ $(( $cur_temp - 1 )) -gt $target_temp ]] &&
-				target_fan_speed=$(( ($cur_fan_speed * ($cur_temp + $diff) + $target_temp - 1) / $target_temp + 1 )) && msg="+"
 			
 		elif [[ $cur_temp -lt $prev_temp ]]; then
 			
@@ -205,8 +210,8 @@ get_fan_speed () {
 			[[ $target_fan_speed -gt $cur_fan_speed ]] && target_fan_speed=$cur_fan_speed
 
 			# spin down fan in advance
-			#[[ $diff -lt -1 && $(( $cur_temp + $diff + 2 )) -lt $target_temp ]] &&
-			#	target_fan_speed=$(( ($cur_fan_speed * ($cur_temp + $diff)) / $target_temp + 1 )) && msg="-"
+			[[ $diff -lt -1 && $(( $cur_temp + $diff + 2 )) -lt $target_temp ]] &&
+				target_fan_speed=$(( ($cur_fan_speed * ($cur_temp + $diff)) / $target_temp + 1 )) && msg="-"
 		fi
 	fi	
 
@@ -230,13 +235,13 @@ get_fan_speed () {
 	local echo_temp="$cur_temp°"
 
 	local temp_diff=$(( $cur_temp - $prev_temp ))
-	printf -v temp_diff "%-3.3s" "${temp_diff#-}°"
+	printf -v temp_diff "%-4.4s" "${temp_diff#-}°"
 	if [[ $cur_temp -lt $prev_temp ]]; then
 		echo_temp="$echo_temp -$temp_diff"
 	elif [[ $prev_temp -gt 1 && $cur_temp -gt $prev_temp ]]; then
 		echo_temp="$echo_temp +$temp_diff"
 	else
-		echo_temp="$echo_temp    "
+		echo_temp="$echo_temp     "
 	fi
 
 	if [[ $cur_temp -lt $(( $target_temp - 5 )) ]]; then
@@ -266,11 +271,10 @@ get_fan_speed () {
 
 	[[ $i -lt 10 ]] && i=" $i"
 	[[ $brand == "Nvidia" ]] &&
-		gpu_info+="GPU $i ${GREEN}${brand}${NOCOLOR} [${gpu_bus_id}]: $target_temp°C ~ $echo_temp * $echo_fan   $msg" ||
-		gpu_info+="GPU $i ${RED}${brand}${NOCOLOR} [${gpu_bus_id}]: $target_temp°C ~ $echo_temp * $echo_fan"
+		gpu_info+="GPU $i ${GREEN}${brand}${NOCOLOR}" ||
+		gpu_info+="GPU $i ${RED}${brand}${NOCOLOR}"
 
-	gpu_info+="\n"
-
+	gpu_info+=" [${gpu_bus_id}]: $target_temp°C ~ $echo_temp * $echo_fan    $msg\n"
 }
 
 
@@ -413,7 +417,7 @@ nvidia_auto_fan_control () {
 		check_gpu_params "$gpu_temperature"
 
 		[[ -z "${gpu_fan_speed##*[!0-9]*}" ]] && gpu_fan_speed=$gpu_fan_speed_previous
-        [[ $gpu_fan_speed_previous -eq 0 ]] && gpu_fan_speed_previous=$gpu_fan_speed
+		[[ $gpu_fan_speed_previous -eq 0 ]] && gpu_fan_speed_previous=$gpu_fan_speed
 
 		#skip if no temp
 		if [ ! -z "${gpu_temperature##*[!0-9]*}" ]; then
@@ -468,7 +472,7 @@ amd_auto_fan_control () {
 		check_gpu_params "$gpu_temperature"
 
 		[[ -z "${gpu_fan_speed##*[!0-9]*}" ]] && gpu_fan_speed=$gpu_fan_speed_previous
-        [[ $gpu_fan_speed_previous -eq 0 ]] && gpu_fan_speed_previous=$gpu_fan_speed
+		[[ $gpu_fan_speed_previous -eq 0 ]] && gpu_fan_speed_previous=$gpu_fan_speed
 
 		#skip if no temp
 		if [ ! -z "${gpu_temperature##*[!0-9]*}" ]; then
@@ -613,7 +617,7 @@ case $1 in
 #			echo -e "${RED}Autofan is already running${NOCOLOR}\nRun ${CYAN}autofan screen${NOCOLOR} to open it"
 #			exit 1
 #		fi
-
+		echo2 "Autofan v$AUTOFAN_VERSION started"
 		check_gpu
 		auto_fan_control
 	;;
