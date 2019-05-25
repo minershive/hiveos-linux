@@ -1,8 +1,8 @@
 Package: hive-miners-grinprominer
-Version: 0.6-05
+Version: 0.6-06
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-lib-dotnet, hive-miners-grinprominer-2.1
+Depends: hive-lib-dotnet, hive-miners-grinprominer-2.2
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - GrinPro Miner
