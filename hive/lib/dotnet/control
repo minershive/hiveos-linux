@@ -1,7 +1,7 @@
 Package: hive-lib-dotnet
-Version: 0.6-01
+Version: 0.6-02
 Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive OS shared libs
+Description: Hive OS shared libs - Microsoft .NET for Linux
