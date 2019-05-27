@@ -1,8 +1,8 @@
 Package: hive-miners-claymore
-Version: 0.6-03
+Version: 0.6-04
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-claymore-12.0
+Depends: hive-miners-claymore-14.6
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner
+Description: Hive miner - Claymore's Dual ETH GPU Miner
