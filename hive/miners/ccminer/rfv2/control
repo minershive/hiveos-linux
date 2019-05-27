@@ -1,0 +1,8 @@
+Package: hive-miners-ccminer-rfv2
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-ccminer-rfv2-1.0.2
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - ccminer-rfv2 (Rainforest v2)
