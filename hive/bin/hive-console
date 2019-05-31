@@ -5,7 +5,16 @@ export PATH="./:/hive/bin:/hive/sbin:$PATH"
 #[ -t 1 ] &&
 . colors #use them anyway
 
+if [[ -f /hive-config/.DISKLESS_AMD && $(cat /proc/mounts | grep "/ " | awk '{print $1}') == tmpfs ]];then
+msg=$(cat <<EOF
+$GREEN
 
+Diskless rig detected
+
+$NOCOLOR
+EOF
+)
+else
 msg=$(cat <<EOF
 $RED
 
@@ -16,11 +25,10 @@ But you still can use Hive in console.
 $NOCOLOR
 EOF
 )
+fi
 
 echo -e "$msg"
 
-
 sleep 2
-
 
 sudo -i bash -c "motd; firstrun; bash"

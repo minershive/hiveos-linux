@@ -8,7 +8,7 @@ LOG="/var/log/hive-agent.log"
 API_TIMEOUT=15 #timeout to wait for miner API response, can take very long time on 13+ gpus
 
 
-LAST_OK=$(( $(date +%s) - 86100 ))
+LAST_OK=$(( $(date +%s) - 431700 ))
 force_stop=0
 
 
@@ -151,7 +151,7 @@ function wait-for-gpu-stats() {
 # Main loop cycle
 function loop {
 	#In some rare cases he have empty stats array
-	DT=86400
+	DT=432000
 
 	no_link=$(( $(date +%s) - $LAST_OK ))
 	if [[ $no_link -gt $DT ]]; then

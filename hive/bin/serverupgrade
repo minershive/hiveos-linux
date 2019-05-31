@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 . colors
-
+[[ ! -f /hive-config/.DISKLESS_AMD ]] && echo -e "${RED}Only for server upgrade${NOCOLOR}" && exit 0
 [[ -f /hive-config/.DISKLESS_AMD && $(cat /proc/mounts | grep "/ " | awk '{print $1}') == tmpfs ]] && echo -e "${RED}Diskless rig. Selfupgrade restricted${NOCOLOR}" && exit 0
 
 #This will prevent asking interactive questions
@@ -16,9 +16,6 @@ current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 	repover=0
 echo -e "Current version: ${YELLOW}$current_version@$repover${NOCOLOR}"
 
-screen -wipe > /dev/null 2>&1
-as=$(screen -ls | grep -c autoswitch)
-
 VERSION=$1
 
 if [[ ! -z $VERSION ]]; then
@@ -30,8 +27,6 @@ fi
 
 
 #remove stupid rep file for smaller updates
-[[ -f /etc/apt/sources.list.d/amdgpu-pro.list ]] && rm /etc/apt/sources.list.d/amdgpu-pro.list
-
 
 #Sometimes Ubuntu fails to update repos
 dpkg --configure -a
@@ -59,13 +54,8 @@ echo ------------------------------------------------------
 if [[ -z $VERSION ]]; then #normal upgrade to the latest available
 	exitcode=0
 
-	hive_extra_packages=""
-	#check if hive-lib-dotnet is installed and if yes then add to checked packages
-	dpkg -s hive-lib-dotnet > /dev/null 2>&1 &&
-		hive_extra_packages="hive-lib-dotnet $hive_extra_packages"
-
 	#Here should be listed all non-miner packages so that versions check will work
-	apt-get install -y --only-upgrade hive hive-lib hive-opt $hive_extra_packages
+	apt-get install -y --only-upgrade hive hive-lib hive-opt
 	aexitcode=$?
 	[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 
@@ -109,29 +99,6 @@ apt-get clean
 #Reread env variables
 source /etc/environment
 export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
-
-
-#echo ------------------------------------------------------
-#Moved from postinst again as hello need to see new version
-echo -e "${YELLOW}> Saying hello to server again${NOCOLOR}"
-hello restartminer
-#miner restart
-#wd restart
-
-
-#Restart agent
-echo -e "${YELLOW}> Restarting agent${NOCOLOR}"
-screen -S agent -X quit
-agent-screen
-
-#Restart autofan
-echo -e "${YELLOW}> Restarting autofan${NOCOLOR}"
-screen -S autofan -X quit
-autofan
-
-#Restart autoswitch if running
-[[ $as -ne 0 ]] && echo -e "${YELLOW}> Restarting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
-
 
 current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 [[ -e /hive-config/RepoVer ]] &&

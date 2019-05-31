@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 # Post installation script for deb package
-
 mkdir -p /run/hive
 
 chown -R user:user /hive
@@ -9,7 +8,6 @@ chown -R root:root /hive/etc/logrotate.d/* #or the rules will not work
 
 #just to ensure log is preserved between boots
 mkdir -p /var/log/journal
-
 
 #miner logdirscreate
 
@@ -44,6 +42,11 @@ mkdir -p /var/log/journal
 [[ ! -f /lib/systemd/system/hive-watchdog.service ]] &&
 	echo "Linking hive-watchdog service" &&
 	ln -s /hive/etc/hive-watchdog.service /lib/systemd/system/hive-watchdog.service
+	
+[[ ! -f /lib/systemd/system/hive-netpre.service ]] &&
+	echo "Linking hive-netpre service" &&
+	ln -s /hive/etc/hive-netpre.service /lib/systemd/system/hive-netpre.service &&
+	systemctl enable hive-netpre.service	
 
 if [[ ! -L /lib/systemd/system/systemd-networkd-wait-online.service ]]; then #check for symlink
 	echo "Linking systemd-networkd-wait-online.service"
@@ -107,23 +110,24 @@ cat /etc/sysctl.conf | grep -q "vm.nr_hugepages"; [[ $? -eq 1 ]] && (echo "vm.nr
 #cat /etc/security/limits.conf | grep -q "* soft memlock 262144"; [[ $? -eq 1 ]] && echo "* soft memlock 262144" >> /etc/security/limits.conf
 #cat /etc/security/limits.conf | grep -q "* hard memlock 262144"; [[ $? -eq 1 ]] && echo "* hard memlock 262144" >> /etc/security/limits.conf
 
-
-# USB drive optimizations --------------------------------------------------------------------------------------
-cat /etc/fstab | grep "^UUID=2158442c-b245-4f6d-941b-ced5f3d3a427" | grep -q "noatime,commit=120"
-[[ $? -eq 1 ]] && #not found
-    echo "Setting \"noatime,commit=120\" as root FS mount options" &&
-    sed -i 's/^UUID=2158442c-b245-4f6d-941b-ced5f3d3a427.*/UUID=2158442c-b245-4f6d-941b-ced5f3d3a427 \/ ext4 errors=remount-ro,noatime,commit=120 0 1/g' /etc/fstab
-
-
-#NTFS hive-config mount options
-if cat /etc/fstab | grep -q "^LABEL=HIVE.*ntfs-3g"; then
-	mountopts="errors=remount-ro,fmask=0133,dmask=0022,noatime,remove_hiberfile,nofail"
-	cat /etc/fstab | grep "^LABEL=HIVE" | grep -q "$mountopts"
+if [[ ! -f /hive-config/.DISKLESS_AMD ]]; then
+	# USB drive optimizations --------------------------------------------------------------------------------------
+	cat /etc/fstab | grep "^UUID=2158442c-b245-4f6d-941b-ced5f3d3a427" | grep -q "noatime,commit=120"
 	[[ $? -eq 1 ]] && #not found
-		echo "Setting NTFS mount options" &&
-		sed -i 's/^LABEL=HIVE.*/LABEL=HIVE \/hive-config ntfs-3g '$mountopts' 0 2/g' /etc/fstab
-fi
+		echo "Setting \"noatime,commit=120\" as root FS mount options" &&
+		sed -i 's/^UUID=2158442c-b245-4f6d-941b-ced5f3d3a427.*/UUID=2158442c-b245-4f6d-941b-ced5f3d3a427 \/ ext4 errors=remount-ro,noatime,commit=120 0 1/g' /etc/fstab
 
+
+
+	#NTFS hive-config mount options
+	if cat /etc/fstab | grep -q "^LABEL=HIVE.*ntfs-3g"; then
+		mountopts="errors=remount-ro,fmask=0133,dmask=0022,noatime,remove_hiberfile,nofail"
+		cat /etc/fstab | grep "^LABEL=HIVE" | grep -q "$mountopts"
+		[[ $? -eq 1 ]] && #not found
+			echo "Setting NTFS mount options" &&
+			sed -i 's/^LABEL=HIVE.*/LABEL=HIVE \/hive-config ntfs-3g '$mountopts' 0 2/g' /etc/fstab
+	fi
+fi
 
 
 
@@ -174,14 +178,15 @@ rm -rf /hive/bminer* /hive/claymore* /hive/ccminer* /hive/cpuminer* /hive/custom
 #	cp hive/etc/hive-config.stub/vnc-password.txt /hive-config/vnc-password.txt
 
 
-
-# Fix systemd-journald persistent files
-if (cat /etc/fstab | grep -q '^# LOGS OFF START$') && ! (cat /etc/systemd/journald.conf | grep -q '^Storage=volatile$'); then
-	# logs are OFF, let's fix persistent logs storage
-	echo "Fixing systemd-journald volatile storage"
-	sed -E 's/^[#]?Storage=.*$/Storage=volatile/g' -i /etc/systemd/journald.conf
-	systemctl restart systemd-journald #this will put logs to ram now
-	mount --bind / /mnt && rm -rf /mnt/var/log/* && umount /mnt
+if [[ ! -f /hive-config/.DISKLESS_AMD ]]; then
+	# Fix systemd-journald persistent files
+	if (cat /etc/fstab | grep -q '^# LOGS OFF START$') && ! (cat /etc/systemd/journald.conf | grep -q '^Storage=volatile$'); then
+		# logs are OFF, let's fix persistent logs storage
+		echo "Fixing systemd-journald volatile storage"
+		sed -E 's/^[#]?Storage=.*$/Storage=volatile/g' -i /etc/systemd/journald.conf
+		systemctl restart systemd-journald #this will put logs to ram now
+		mount --bind / /mnt && rm -rf /mnt/var/log/* && umount /mnt
+	fi
 fi
 
 
@@ -191,6 +196,5 @@ fi
 # but when updating from 0.5 to 0.6 selfupgrade will not fetch this
 # remove this after the majority is on 0.6+ version
 /hive/bin/repover-touch
-
 
 exit 0
