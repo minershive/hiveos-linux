@@ -3,6 +3,6 @@ Version: 0.6-01
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-xmrig-xmrig-2.15.0
+Depends: hive-miners-xmrig-xmrig-2.14.4
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner
+Description: Hive miner - XMRig (for CPU)
