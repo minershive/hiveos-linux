@@ -1,8 +1,8 @@
 Package: hive-miners-cpuminer-opt
-Version: 0.6-06
+Version: 0.6-07
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-cpuminer-opt-3.9.1
+Depends: hive-miners-cpuminer-opt-3.9.1.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - CPUminer-opt
