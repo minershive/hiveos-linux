@@ -61,7 +61,8 @@ fix_sgminer_gm
 ########################################################################################################################
 
 function start() {
-	amd-oc-safe > /dev/null #be silent
+	# OC is applied on boot and on change in agent. so disable it here.
+	#amd-oc-safe > /dev/null #be silent
 
 	session_count=`screen -ls miner | grep miner | wc -l`
 	if [[ $session_count > 0 ]]; then
