@@ -5,8 +5,11 @@ if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be e
 	export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
 fi
 
+# set minimum LA for watchdog to 2 * cores/threads + 1
+MIN_WD_LA=$(( $(nproc --all) * 2 + 1 ))
+
 SLEEP=10 #seconds to sleep over iteration
-OK_MESSAGE_REDUCE=$(( 1 * 60 / $SLEEP )) #e.g. only every 12th message will be displayed to reduce log
+OK_MESSAGE_REDUCE=$(( 1 * 60 / $SLEEP )) #e.g. only every 6th message will be displayed to reduce log
 
 [ -t 1 ] && . /hive/bin/colors
 
@@ -47,12 +50,70 @@ function set_lastgood() {
 }
 
 
+
+function check_la() {
+
+	local max_la=$WD_MAX_LA
+	[[ $max_la -lt $MIN_WD_LA ]] && max_la=$MIN_WD_LA
+	local max_la2x=$(( $max_la * 2 ))
+	local la=$( cat /proc/loadavg )
+	local la1=$( awk '{printf int($1)}' <<< $la )
+	local la5=$( awk '{printf int($2)}' <<< $la )
+
+	# reboot if LA (5 min) >= maxLA
+	if [ $la5 -ge $max_la ]; then
+		echo -e "${RED}LA is more than $max_la: $la5 ${NOCOLOR}"
+		message error "LA > $max_la, rebooting" > /dev/nul
+		sleep 5
+		#nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+		sreboot
+	# reboot if LA (1 min) >= maxLA * 2
+	elif [ $la1 -ge $max_la2x ]; then
+		echo -e "${RED}LA is more than $max_la2x: $la1 ${NOCOLOR}"
+		message error "LA > $max_la2x, rebooting" > /dev/nul
+		sleep 5
+		#nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+		sreboot
+	elif [[ $check_count == 0 ]]; then
+		echo "${GREEN}OK${NOCOLOR} LA(5m): $la5.0 < $max_la.0, LA(1m): $la1.0 < $max_la2x.0"
+	fi
+}
+
+
+function check_gpu() {
+	# check if gpu-stat stop working most likely because of hanged gpu
+	local gpu_cnt=$(cat /run/hive/gpu-stats.json | jq 'length')
+	if [[ "$gpu_cnt" == "0" ]]; then
+		#check again
+		sleep 30
+		gpu_cnt=$(cat /run/hive/gpu-stats.json | jq 'length')
+		if [[ "$gpu_cnt" == "0" ]]; then
+			echo -e "{RED}GPU are lost, rebooting ${NOCOLOR}"
+			message error "GPU are lost, rebooting" > /dev/nul
+			sleep 5
+			sreboot
+		fi
+	fi
+}
+
+
 set_lastgood
 ok_count=0
+check_count=0
+
 function loop() {
 	#echo -n "[`date`] "
 
 	loadconf
+
+	#check every 2nd interval, ie 20 sec
+	if [[ $(( $check_count % 2 )) == 0 ]]; then
+		[[ "$WD_CHECK_GPU" == "1" ]] && check_gpu
+		[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && check_la
+	fi
+	((check_count++))
+	[[ $check_count -ge $OK_MESSAGE_REDUCE ]] && check_count=0
+
 
 	khs=
 	[[ -e $HASHRATE_KHS ]] && khs=`cat $HASHRATE_KHS`
@@ -107,18 +168,27 @@ function loop() {
 	fi
 }
 
+function run() {
+
+	loadconf
+
+	echo "MINER RESTART:  $WD_MINER minutes"
+	echo "REBOOT:         $WD_REBOOT minutes"
+
+	[[ "$WD_CHECK_GPU" == "1" ]] && echo "CHECK GPU:      Enabled"
+	[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && echo "MAX LA:         $WD_MAX_LA.0 (min $MIN_WD_LA.0)"
+
+	while true; do
+		loop
+		sleep $SLEEP
+	done
+}
 
 ########################################################################################################################
 
 case $1 in
 	run)
-		loadconf
-		echo "MINER RERSTART:  $WD_MINER minutes"
-		echo "REBOOT:          $WD_REBOOT minutes"
-		while true; do
-			loop
-			sleep $SLEEP
-		done
+		run
 	;;
 	stop)
 		systemctl stop hive-watchdog
