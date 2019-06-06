@@ -1,8 +1,8 @@
 Package: hive-miners-kbminer
-Version: 0.6-04
+Version: 0.6-05
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-kbminer-1.2.2
+Depends: hive-miners-kbminer-1.3.0
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - KBminer
