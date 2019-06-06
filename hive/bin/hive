@@ -282,7 +282,6 @@ if [[ $MAINTENANCE -eq 1 ]]; then
 	echo2 "> Maintenance mode. Miner and software watchdog are disabled"
 else
 	if [[ $MINER_DELAY -gt 0 ]]; then
-		[[ $MINER_DELAY -gt 60 ]] && MINER_DELAY=60
 		echo2 "Waiting $MINER_DELAY seconds before start miner"
 		sleep $MINER_DELAY
 	fi
@@ -291,8 +290,8 @@ else
 	[[ $WD_ENABLED == 1 ]] &&
 		echo2 "> Hashrate Watchdog enabled" &&
 		wd start
-		
-		
+
+
 	echo2 "> Starting miner"
 	miner start
 fi
