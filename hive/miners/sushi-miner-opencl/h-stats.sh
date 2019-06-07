@@ -7,7 +7,7 @@
 get_cards_hashes(){ 
 #                                      5                  9                  13
 # [I 20:24:28] SushiMiner: Hashrate: 207.3 kH/s | GPU0: 107.0 kH/s | GPU1: 100.3 kH/s
-  local hs_line=$(cat $log_name | tail -n 50 | grep "GPU" | tail -n 1)
+  local hs_line=$(cat $log_name | tail -n +30 | tail -n 50 | grep "GPU" | tail -n 1)
 
   khs=$(echo $hs_line | cut -d " " -f 5)
 
