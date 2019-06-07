@@ -19,6 +19,7 @@ echo ""
 echo "xinit exited (exitcode=$exitcode), starting hive-console"
 
 #xinit failed, so no OC was run, do it now
-amd-oc-safe
+#it does not work here
+#amd-oc-safe
 
 systemctl restart hive-console

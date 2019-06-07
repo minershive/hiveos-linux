@@ -44,12 +44,11 @@ tint2 &
 
 termcmd=""
 
-
+#amd-oc is done before X server
 #amd-oc-safe
 #[[ $? = 0 ]] &&
 #    termcmd+="cat /var/log/amd-oc.log;"
-
-termcmd+="amd-oc-safe;"
+#termcmd+="amd-oc-safe;"
 
 
 #cat /sys/class/drm/card0/device/power_dpm_force_performance_level

@@ -239,11 +239,13 @@ agent-screen dontattach
 
 
 if [[ $X_DISABLED != 1 && $DISKLESS != 1 ]]; then
+	# Apply amd-oc before X server
+	amd-oc-safe
+
 	echo2 "> Starting HiveX"
 	systemctl start hivex
 
 	#give X server some time or nvidia-settings could throw an error
-	#amd-oc also there
 	sleep 7
 
 	#Apply Nvidia OC before miner or it can hang on 13+ GPUs
