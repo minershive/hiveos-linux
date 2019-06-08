@@ -24,7 +24,7 @@ else
 	local algo="ethash"
 	khs=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $1}'`
 	if [[ $khs -gt 0 ]]; then
-		local hs=`jq -rc '[ .[3]|split(";")|.[]|if .=="off" then 0 else .|tonumber end ]' <<< $stats_raw`
+		local hs=`jq -rc '[ .[3]|split(";")|.[]|if .=="off" then 0 elif .=="stopped" then 0 else .|tonumber end ]' <<< $stats_raw`
 		local ac=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $2}'`
 		local rj=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $3}'`
 		local ir=`echo $stats_raw | jq -r '.[8]' | awk -F';' '{print $1}'`
