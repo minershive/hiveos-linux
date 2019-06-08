@@ -239,9 +239,6 @@ agent-screen dontattach
 
 
 if [[ $X_DISABLED != 1 && $DISKLESS != 1 ]]; then
-	# Apply amd-oc before X server
-	amd-oc-safe
-
 	echo2 "> Starting HiveX"
 	systemctl start hivex
 
@@ -273,6 +270,8 @@ if [[ $X_DISABLED != 1 && $DISKLESS != 1 ]]; then
 			done
 		fi
 	fi
+	# Apply amd-oc before miner start
+	amd-oc-safe	
 else
 	# Apply amd-oc before miner start
 	amd-oc-safe
