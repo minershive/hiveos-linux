@@ -168,6 +168,8 @@ function loop {
 	#increase current push interval if last command was received more then $RESPONSE_TIME ago
 	no_command=$(( $(date +%s) - $LAST_COMMAND ))
 	[[ $no_command -gt $RESPONSE_TIME ]] && CUR_PUSH_INTERVAL=$PUSH_INTERVAL #&& echo "CUR_PUSH_INCREASED"
+	#but set it back to 0 if there was an error with sending stats to server
+	[[ $exitcode -ne 0 || -z $response ]] && CUR_PUSH_INTERVAL=0 && echo #"CUR_PUSH SET TO 0"
 
 	[[ -z $gpu_detect_json ]] && process_gpu_detect_json redetect
 
