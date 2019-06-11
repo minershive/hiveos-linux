@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+
+# Sanitize functions to prepare stats values for backend
+
+TEMP_MIN=-100
+TEMP_MAX=200
+TEMP_FALLBACK_MIN=0
+TEMP_FALLBACK_MAX=0
+
+OCTOFAN_TEMP_MIN=-100
+OCTOFAN_TEMP_MAX=255
+OCTOFAN_TEMP_FALLBACK_MIN=0
+OCTOFAN_TEMP_FALLBACK_MAX=255
+
+FAN_MIN=0
+FAN_MAX=100
+FAN_FALLBACK_MIN=0
+FAN_FALLBACK_MAX=100
+
+POWER_MIN=0
+POWER_MAX=500
+POWER_FALLBACK_MIN=0
+POWER_FALLBACK_MAX=0
+
+HASHRATE_MIN=0
+HASHRATE_MAX=999999999
+HASHRATE_FALLBACK_MIN=0
+HASHRATE_FALLBACK_MAX=0
+
+function sanitize_value() {
+  local v=$1
+  if (( $(echo "$v < $2" | bc -l) )); then
+    v=$4
+  elif (( $(echo "$v > $3" |bc -l) ));then
+    v=$5
+  fi
+  echo $v
+}
+
+function sanitize_temp() {
+  local t_json=$@
+  local s_values=
+  local a_values=`echo $t_json | jq -r .[]`
+  for i_value in $a_values; do
+    [[ ! -z "$s_values" ]] && s_values+=","
+    s_values+=`sanitize_value $i_value $TEMP_MIN $TEMP_MAX $TEMP_FALLBACK_MIN $TEMP_FALLBACK_MAX`
+  done
+  echo "[$s_values]"
+}
+
+
+function sanitize_fan() {
+  local t_json=$@
+  local s_values=
+  local a_values=`echo $t_json | jq -r .[]`
+  for i_value in $a_values; do
+    [[ ! -z "$s_values" ]] && s_values+=","
+    s_values+=`sanitize_value $i_value $FAN_MIN $FAN_MAX $FAN_FALLBACK_MIN $FAN_FALLBACK_MAX`
+  done
+  echo "[$s_values]"
+}
+
+
+function sanitize_power() {
+  local t_json=$@
+  local s_values=
+  local a_values=`echo $t_json | jq -r .[]`
+  for i_value in $a_values; do
+    [[ ! -z "$s_values" ]] && s_values+=","
+    s_values+=`sanitize_value $i_value $POWER_MIN $POWER_MAX $POWER_FALLBACK_MIN $POWER_FALLBACK_MAX`
+  done
+  echo "[$s_values]"
+}
+
+function sanitize_octofan_temp() {
+  local t_json=$@
+  local s_values=
+  local a_values=`echo $t_json | jq -r .[]`
+  for i_value in $a_values; do
+    [[ ! -z "$s_values" ]] && s_values+=","
+    s_values+=`sanitize_value $i_value $OCTOFAN_TEMP_MIN $OCTOFAN_TEMP_MAX $OCTOFAN_TEMP_FALLBACK_MIN $OCTOFAN_TEMP_FALLBACK_MAX`
+  done
+  echo "[$s_values]"
+}
+
+function sanitize_hashrate() {
+  local t_json=$@
+  local s_values=
+  local a_values=`echo $t_json | jq -r .[]`
+  for i_value in $a_values; do
+    [[ ! -z "$s_values" ]] && s_values+=","
+    s_values+=`sanitize_value $i_value $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX`
+  done
+  echo "[$s_values]"
+}
+
+function sanitize_total_hashrate() {
+  local i_value=`sanitize_value $1 $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX`
+  echo $i_value
+}
+
+function sanitize_ar() {
+  local t_json=$@
+  local s_values=
+  local a_values=`echo $t_json | jq -r .[]`
+  local i=0
+  for i_value in $a_values; do
+    [[ ! -z "$s_values" ]] && s_values+=","
+    [[ i -ne 3 ]] && s_values+=$i_value || s_values+="\"$i_value\""
+    let i++
+  done
+  echo "[$s_values]"
+}
+
+function sanitize_miner_stats() {
+  local stats=$@
+  local i=0
+  local n=''
+  local value=
+
+  for (( i = 1; i <= 32; i++ )); do
+    [[ $i -eq 1 ]] && n='' || n=$i
+
+    eval 'local value=`echo $stats | jq .hs$n`'
+    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
+      value=`sanitize_hashrate $value`
+      value='"hs'$n'":'$value
+      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
+    else
+      break
+    fi
+
+    eval 'local value=`echo $stats | jq -r .total_khs$n`'
+    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
+      value=`sanitize_total_hashrate $value`
+      value='"total_khs'$n'":'$value
+      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
+    fi
+
+    eval 'local value=`echo $stats | jq .temp$n`'
+    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
+      value=`sanitize_temp $value`
+      value='"temp'$n'":'$value
+      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
+    fi
+
+    eval 'local value=`echo $stats | jq .fan$n`'
+    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
+      value=`sanitize_fan $value`
+      value='"fan'$n'":'$value
+      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
+    fi
+
+    eval 'local value=`echo $stats | jq -r .uptime$n`'
+    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
+      value='"uptime'$n'":'$value
+      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
+    fi
+
+    eval 'local value=`echo $stats | jq .ar$n`'
+    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
+      value=`sanitize_ar $value`
+      value='"ar'$n'":'$value
+      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
+    fi
+
+  done
+
+  echo $stats
+}
+
+#sanitize_miner_stats '{"hs":[8.5,7.4],"hs_units":"hs","temp":["48","53"],"fan":[80,80],"uptime":150399,"ar":["2151","0"],"bus_numbers":[1,2],"algo":"150_5","ver":"1.42"}'
+#sanitize_miner_stats '{ "total_khs": "0.143", "hs": [ 0.0715, 0.0715 ], "algo": "randomhash", "temp": [ 44, 44 ], "uptime": 11204, "ar": [ 23, 0, 0 ], "ver": "1.5.1-oldgencpu" }'
+# [ "12.0 - ETH", "2", "29858;3;0", "14779;15078", "49763;0;0", "24632;25131", "48;100;56;100", "eu-eth.hiveon.net:4444;dcr.coinmine.pl:2222", "0;0;0;0", "1;2", "0;0", "0;0", "0;0", "0;0", "0;0", "1;2", "sia" ]
+# { "total_khs": 26991, "hs": [ 13467, 13524 ], "temp": [ "47", "55" ], "fan": [ "101", "98" ], "uptime": 60, "algo": "ethash", "ar": [ "0", "0", "0", "0;0" ], "ver": "12.0 - ETH", "bus_numbers": [ 1, 2 ], "total_khs2": 44985, "hs2": [ 22445, 22540 ], "algo2": "dcr", "ar2": [ "0", "0", "0", "0;0" ] }
+# {"total_khs":26757,"hs":[13245,13511],"temp":[45,53],"fan":[98,100],"uptime":79260,"algo":"ethash","ar":[520,0,0,"0;0"],"ver":"12.0 - ETH","bus_numbers":[1,2],"total_khs2":44594,"hs2":[22075,22519],"algo2":"dcr","ar2":["75","1","0","0;0"]}

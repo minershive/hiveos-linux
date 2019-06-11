@@ -54,6 +54,8 @@ function process_gpu_detect_json() {
 	cpu_indexes_array=$(jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]' <<< "$gpu_detect_json")
 }
 
+# sanitize functions are used to prepare stats values for backend '
+. sanitize
 
 gpu_stats=
 gpu_detect_json=
@@ -165,7 +167,7 @@ function loop {
 
 	#increase current push interval if last command was received more then $RESPONSE_TIME ago
 	no_command=$(( $(date +%s) - $LAST_COMMAND ))
-	[[ $no_command -gt $RESPONSE_TIME ]] && CUR_PUSH_INTERVAL=$PUSH_INTERVAL
+	[[ $no_command -gt $RESPONSE_TIME ]] && CUR_PUSH_INTERVAL=$PUSH_INTERVAL #&& echo "CUR_PUSH_INCREASED"
 
 	[[ -z $gpu_detect_json ]] && process_gpu_detect_json redetect
 
@@ -208,11 +210,12 @@ function loop {
 		if [[ ! -z $minerval ]]; then
 			miner_stats $minerval $mindex
 			eval khs$mindex=\$khs
+			local t_khs=$(sanitize_total_hashrate $khs)
+			stats=$(sanitize_miner_stats $stats)
 			miner_json=$(jq -n -c \
 				--arg miner$mindex "$minerval" \
-				--arg total_khs$mindex "$khs" \
 				--argjson miner_stats$mindex "$stats" \
-				'{"params": {$miner'$mindex', $total_khs'$mindex', $miner_stats'$mindex'}}')
+				'{"params": {$miner'$mindex', "total_khs'$mindex'":'$t_khs', $miner_stats'$mindex'}}')
 			eval miner${mindex}_json="\$miner_json"
 		else
 			eval miner${mindex}_json=
@@ -241,6 +244,12 @@ function loop {
 	#echo $stats
 	#uptime: load averages for the past 1, 5, and 15 minutes
 
+	temp=$(sanitize_temp $temp)
+	fan=$(sanitize_fan $fan)
+	power=$(sanitize_power $power)
+	khs=$(sanitize_total_hashrate $khs)
+	stats=$(sanitize_miner_stats $stats)
+
 	[[ ! -z $META ]] && meta="$META" || meta='null'
 	request=$(
 	jq -c -n \
@@ -249,7 +258,6 @@ function loop {
 	--arg miner "$MINER" \
 	--argjson meta "$meta" \
 	--argjson miner_stats "$stats" \
-	--arg total_khs "$khs" \
 	--argjson temp "$temp" \
 	--argjson fan "$fan" \
 	--argjson power "$power" \
@@ -258,8 +266,8 @@ function loop {
 	--argjson cpuavg "[`uptime | awk -F': ' '{print $2}'`]" \
 	'{
 		"method": "stats",
-		"params": {
-			$rig_id, $passwd, $miner, $meta, $miner_stats, $total_khs,
+		"params": {"v":1,
+			"rig_id":'$RIG_ID', $passwd, $miner, $meta, $miner_stats, "total_khs":'$khs',
 			$temp, $fan, $power, $df, $mem, $cpuavg
 		}
 	}'
