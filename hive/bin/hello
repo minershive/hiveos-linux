@@ -53,7 +53,7 @@ gpu_count_amd=`gpu-detect AMD`
 gpu_count_nvidia=`gpu-detect NVIDIA`
 ips=`hostname -I | sed 's/ /\n/g'`
 ips_json=`echo "${ips[@]}" | jq -R . | jq -s -c .`
-net_interfaces=`ip -o link | grep -vE 'LOOPBACK|POINTOPOINT|sit0|can0' | awk '{  printf "{\"iface\": \"%s\", \"mac\": \"%s\"}\n", substr($2, 1, length($2)-1), $(NF-2)  }' | jq -sc .`
+net_interfaces=`ip -o link | grep -vE 'LOOPBACK|POINTOPOINT|sit0|can0|docker|sonm|ifb' | awk '{  printf "{\"iface\": \"%s\", \"mac\": \"%s\"}\n", substr($2, 1, length($2)-1), $(NF-2)  }' | jq -sc .`
 [ -f $VPN_INSTALLED ] && openvpn=1 || openvpn=0
 #taken from netconf
 lan_address=`ip -o -f inet addr show | grep eth0 | awk '/scope global/ {print $4}'`
