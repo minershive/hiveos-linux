@@ -1,0 +1,1 @@
+../teamredminer-watchdog.sh

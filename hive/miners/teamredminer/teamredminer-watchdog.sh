@@ -4,18 +4,10 @@
 
 #save last messages about hanging cards
 if [[ -e $MINER_LOG_BASENAME.log ]]; then
-  tail -n 100 $MINER_LOG_BASENAME.log > ${MINER_LOG_BASENAME}_reboot.log
-
-  #2018-12-20 08:26:02:  Can't work on device: 1
-  lastmsg=`tac $MINER_LOG_BASENAME.log | grep -m1 -E "Can't work on device"`
-
-  #echo $lastmsg
-  [[ $lastmsg =~ ^([0-9]{4}-[0-9]{2}-[0-9]{2})[[:space:]]+([0-9:]+)[[:space:]]+(.*) ]]
-
-  if [[ ! -z ${BASH_REMATCH[3]} ]]; then
-    lastmsg=${BASH_REMATCH[3]}
-  fi
-  #echo $lastmsg
+   tail -n 50 $MINER_LOG_BASENAME.log > ${MINER_LOG_BASENAME}_reboot.log
+   lastmsg=`cat ${MINER_LOG_BASENAME}_reboot.log`
+  echo "Watchdog test"
+  echo $lastmsg
 fi
 
 if [[ -z $lastmsg ]]; then
@@ -32,3 +24,5 @@ fi
 
 #need nohup or the sreboot will stop miner and this process also in it
 nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+
+exit 0
