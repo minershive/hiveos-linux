@@ -16,7 +16,6 @@
 
 cd $MINER_DIR/$MINER_VER
 
-CUDA_DEVICE_ORDER=PCI_BUS_ID
-LD_LIBRARY_PATH=./
+#LD_LIBRARY_PATH=/hive/lib
 
 ./kbminer `cat kbminer.conf` --enableapi --apiaddr :$MINER_API_PORT 2>&1 | tee $MINER_LOG_BASENAME.log
