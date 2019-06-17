@@ -75,7 +75,8 @@ install-deps
 #Just a copy-paste
 #bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
 #bootdisk=${bootpart::-1} #cutoff partnumber
-
+GPT=0
+[[ $(blkid -o value -s PTTYPE /dev/${DISK_NAME}) == "gpt" ]] && GPT=1
 
 PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
 #echo $PART_UUID
@@ -93,15 +94,18 @@ PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$
 echo -e "HIVE booted from ${GREEN}$DISK_NAME${NOCOLOR} and whole drive size is ${WHITE}$DISK_SIZE${NOCOLOR} MB"
 echo -e "HIVE partition is ${YELLOW}$DISK_PART${NOCOLOR} and it's size is ${WHITE}$PART_SIZE${NOCOLOR} MB"
 
+if [[ $GPT == 1 ]]; then
+	EXPAND_SIZE=$((DISK_SIZE-PART_SIZE-28-40-1)) # minus Hive configuration partition and EFI part and reserved
+else
+	EXPAND_SIZE=$((DISK_SIZE-PART_SIZE-28)) # minus Hive configuration partition and reserved
+fi
 
-EXPAND_SIZE=$((DISK_SIZE-PART_SIZE-28)) # minus Hive configuration partition and reserved
 if [ $EXPAND_SIZE -le ${FREE_SPACE_LIMIT} ]; then
 	echo -e "${RED}Free disk space less then ${FREE_SPACE_LIMIT} MB. Stopped${NOCOLOR}"
 	exit 1
 else
 	echo -e "Try to auto-expand Hive partition by ${WHITE}${EXPAND_SIZE}${NOCOLOR} MB up to ${WHITE}$((PART_SIZE+EXPAND_SIZE))${NOCOLOR} MB in total"
-
-	echo -e "Press Ctrl+C to stop or wait 5 seconds to continue";
+		echo -e "Press Ctrl+C to stop or wait 5 seconds to continue";
 	# Give user time for break process
 	DelayDot
 #	read -t 5
@@ -109,6 +113,7 @@ else
 	part_expand "$DISK_NAME" "$DISK_PART"
 
 	if [ $? = 0 ]; then
+		partprobe > /dev/null 2>&1
 		NEW_PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
 		echo -e "New HIVE partition size is ${GREEN}$NEW_PART_SIZE${NOCOLOR} MB"
 	fi

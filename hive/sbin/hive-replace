@@ -81,13 +81,6 @@ function get {
 	cd $TMPDIR
 	rm $TMPDIR/*hive* > /dev/null 2>&1
 
-	#Remove interactive	
-	#[[ ! -z $url ]] && echo -e  "${GREEN}\nCurrent URL|path to Hive OS image is ${YELLOW}\"$url\"${GREEN}.\nIf this URL|path is correct press ENTER or retype correct URL|path.${NOCOLOR}"
-	#echo -en "${GREEN}\nLink|path to ZIP file with Hive OS image (HTTP|FTP link or local|NFS path): ${NOCOLOR}"
-	#read answer
-	#[[ ! -z $answer ]] && url=$answer
-	###
-
 	basename=`basename -s .zip "$url"`
 	archname=`basename "$url"`
 	
@@ -188,6 +181,7 @@ function prepare {
 	##check programs
 	programs=0
 	need_install=
+	
 	dpkg -s lsof > /dev/null 2>&1
 	[[ $? -ne 0 ]] && programs=1 && need_install="lsof"
 	#dpkg -s curl > /dev/null 2>&1
@@ -196,6 +190,8 @@ function prepare {
 	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install wget"
 	dpkg -s unzip > /dev/null 2>&1
 	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install unzip"
+	dpkg -s gdisk > /dev/null 2>&1
+	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install gdisk"
 	if [[ smb -eq 1 ]]; then
 		dpkg -s smbclient > /dev/null 2>&1
 		[[ $? -ne 0 ]] && programs=1 && need_install="$need_install smbclient"
@@ -221,43 +217,23 @@ function prepare {
 
 
 	#get farm_hash or old config
-	[[ $thishive -eq 1 && -f /hive-config/rig.conf ]] && cp /hive-config/rig.conf $TMPDIR/
-	[[ $thishive -eq 1 && -f /hive-config/rig.conf ]] && cp -R /hive-config/network $TMPDIR/
-	[[ $thishive -eq 1 && -f /hive-config/rig.conf ]] && cp -R /hive-config/openvpn $TMPDIR/
+	mkdir -p $TMPDIR/old-config
+	if [[ $thishive -eq 1 && -f /hive-config/rig.conf ]]; then
+		cp /hive-config/rig.conf ${TMPDIR}/old-config/
+	else
+		echo -e "HIVE_HOST_URL=\"http://api.hiveos.farm\"" > ${TMPDIR}/old-config/rig.conf
+		echo -e "FARM_HASH=$farm\n" >> ${TMPDIR}/old-config/rig.conf
+	fi
+	[[ $thishive -eq 1 && -d /hive-config/network ]] && cp -R /hive-config/network $TMPDIR/old-config/
+	[[ $thishive -eq 1 && -d /hive-config/openvpn ]] && cp -R /hive-config/openvpn $TMPDIR/old-config/
+	[[ $thishive -eq 1 && -d /hive-config/watchdog ]] && cp -R /hive-config/watchdog $TMPDIR/old-config/
 	
-	
-	
-	
-	#Remove interactive
-	#	if [[ $thishive -eq 1 && -f /hive-config/rig.conf ]]; then
-	#	cp /hive-config/rig.conf $TMPDIR/
-	#else
-	#	farm=""
-	#	while [[ -z $farm ]]; do
-	#		echo -en "${GREEN}\nFARM_HASH from Web-interface: ${NOCOLOR}"
-	#		read farm
-	#		[[ -z $farm ]] && echo "${RED}FAMR_HASH can't be empty. Please retype.${NOCOLOR}"
-	#	done
-	#fi
-
 	
 	#get hive zip
 	get
 	[[ $? -ne 0 ]] && exit
 		
-	#flag_get=1
-	#while [[ $flag_get -ne 0 ]]; do
-	#	get
-	#	flag_get=$?
-	#	if [[ $flag_get -ne 0 ]]; then
-	#		repeat="y"
-	#		echo -en "You want to try again (Y/n): "
-	#		read answer
-	#		[[ ! -z $answer ]] && repeat=$answer
-	#		[[ $repeat != y* && $repeat != Y* ]] && echo -e "${YELLOW}\nBye, bye!${NOCOLOR}" && exit
-	#	fi
-	#done
-
+	
 	#Disable kernel message to tty
 	echo 0 > /proc/sys/kernel/printk
 	echo 1 > /proc/sys/kernel/sysrq
@@ -308,30 +284,6 @@ function prepare {
 	done
 
 
-	#get config partition and mount it to loop
-	arch=$(ls $TMPDIR/*hive*zip)
-	unzip -p $arch | dd of=$TMPDIR/conf.img bs=1M count=50 iflag=fullblock > /dev/null 2>&1
-	begin_conf=$(( $(fdisk -l $TMPDIR/conf.img | grep NTFS | awk '{print $2}') * 512 ))
-	conf_loop=$(losetup -f)
-	losetup -o $begin_conf $conf_loop $TMPDIR/conf.img
-	mkdir $TMPDIR/hive-config
-	mount $conf_loop $TMPDIR/hive-config
-
-	if [[ -f $TMPDIR/rig.conf ]]; then
-		cp $TMPDIR/rig.conf $TMPDIR/hive-config/rig.conf
-	else
-		echo -e "HIVE_HOST_URL=\"http://api.hiveos.farm\"" > $TMPDIR/hive-config/rig.conf
-		echo -e "FARM_HASH=$farm\n" >> $TMPDIR/hive-config/rig.conf
-	fi
-	
-	[[ -d $TMPDIR/network ]] && cp -R $TMPDIR/network $TMPDIR/hive-config/
-	[[ -d $TMPDIR/openvpn ]] && cp -R $TMPDIR/openvpn $TMPDIR/hive-config/
-	
-	
-	#write image of configs partition
-	dd if=$conf_loop of=$TMPDIR/new_conf.img > /dev/null 2>&1
-
-
 	#create temp root
 	echo -e "\n${CYAN}> Creating temporary root filesystem${NOCOLOR}"
 	mkdir -p $TMPDIR/{proc,sys,run,dev,usr,var,oldroot,bin,sbin,lib,tmp,usr/lib,usr/share,usr/lib/x86_64-linux-gnu,lib/lsb}
@@ -343,16 +295,19 @@ function prepare {
 	cp -a /usr/lib/x86_64-linux-gnu/libmpfr* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
 	cp -a /usr/lib/x86_64-linux-gnu/libsigsegv* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
 	cp -a /usr/lib/x86_64-linux-gnu/libgmp* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
+	cp -a /usr/lib/x86_64-linux-gnu/libstdc++* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
+	cp -a /usr/lib/x86_64-linux-gnu/libpopt.so* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
 	cp -aR /dev $TMPDIR > /dev/null 2>&1
 	cp $myself $TMPDIR > /dev/null 2>&1
 	chmod +x $TMPDIR/$SCRIPT_NAME > /dev/null 2>&1
-
+	
 	mount --bind /proc $TMPDIR/proc
 	mount --bind /sys $TMPDIR/sys
 	mount --bind /dev $TMPDIR/dev
 
 	#create conf for second part
 	echo "wr=1" > $TMPDIR/replace.conf
+	echo "archname=$archname" >> $TMPDIR/replace.conf
 	echo "root_dev=$DISK_NAME" >> $TMPDIR/replace.conf
 	echo "conf_loop=$conf_loop" >> $TMPDIR/replace.conf
 
@@ -371,23 +326,37 @@ function prepare {
 function write {
 
 	cd /
-
-	arch=$(ls *hive*zip)
-	conf_part=$root_dev"1"
+	[[ -z $archname || ! -f $archname ]] && echo -e "${RED}>HiveOS image not found. Exiting.${NOCOLOR}" && return 1
 
 	echo -e "\n${CYAN}> Writing Hive OS filesystem to $root_dev${NOCOLOR}"
 	echo -e "Please wait, this can take long"
 	echo -e "To prevent damage to your disk device\ndo not turn off your computer until the end of the process.\n"
 
-	unzip -p $arch | dd of=/dev/$root_dev status=progress bs=20M
-	[[ $? -ne 0 ]] && echo -e "Write image failed. Exiting." && return
-
+	unzip -p $archname | dd of=/dev/$root_dev status=progress
+	[[ $? -ne 0 ]] && echo -e "Write image failed. Exiting." && return 1
+	
+	partprobe > /dev/null 2>&1
 
 	#Rewrite config partition
-	partprobe > /dev/null 2>&1
-	dd if=/new_conf.img of=/dev/$conf_part > /dev/null 2>&1
+	dd if=/dev/${root_dev}1 of=new_conf.img status=progress
 
+	LOOPDEV=$(losetup --find --show new_conf.img)
+	partprobe ${LOOPDEV}
+	
+	mkdir hive-config
+	mount ${LOOPDEV} hive-config
+	cp -R old-config/* hive-config
+	sync
 
+	dd if=/new_conf.img of=/dev/${root_dev}1 status=progress
+	
+	#Fix GPT table if needed
+	if [[ $(blkid -o value -s PTTYPE /dev/$root_dev) == "gpt" ]]; then
+		partprobe > /dev/null 2>&1
+		sgdisk -e /dev/$root_dev
+		sgdisk -C /dev/$root_dev
+	fi
+		
 	#Reboot
 	sync
 
@@ -404,6 +373,7 @@ function write {
 
 	echo 1 > /proc/sys/kernel/sysrq
 	echo b > /proc/sysrq-trigger
+	
 }
 
 
