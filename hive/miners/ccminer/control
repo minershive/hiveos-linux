@@ -1,5 +1,5 @@
 Package: hive-miners-ccminer
-Version: 0.6-31
+Version: 0.6-32
 Section: base
 Priority: optional
 Architecture: all
