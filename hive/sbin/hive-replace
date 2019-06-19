@@ -332,7 +332,7 @@ function write {
 	echo -e "Please wait, this can take long"
 	echo -e "To prevent damage to your disk device\ndo not turn off your computer until the end of the process.\n"
 
-	unzip -p $archname | dd of=/dev/$root_dev status=progress
+	unzip -p $archname | dd of=/dev/$root_dev status=progress bs=20M
 	[[ $? -ne 0 ]] && echo -e "Write image failed. Exiting." && return 1
 	
 	partprobe > /dev/null 2>&1
