@@ -218,7 +218,7 @@ function do_command () {
 					fi
 					local force=$(echo $body | jq --arg queue $queue '.batch[$queue|tonumber].force' --raw-output)
 					local need_reboot=$(echo $body | jq '.reboot' --raw-output)
-					[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
+					[[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
 					[[ ! -z $force && $force == "1" ]] && extra_args="-f" || extra_args=""
 					# Save ROM
 					echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded.rom
@@ -257,7 +257,7 @@ function do_command () {
 			    local rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
 				local need_reboot=$(echo $body | jq '.reboot' --raw-output)
 				[[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
-			    if [[ -z $gpu_index || $gpu_index == "null" ]]; then
+				if [[ -z $gpu_index || $gpu_index == "null" ]]; then
 					message error "No \"gpu_index\" given" --id=$cmd_id
 				elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
 				    message error "No \"rom_base64\" given" --id=$cmd_id
