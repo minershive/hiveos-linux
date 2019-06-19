@@ -26,7 +26,7 @@ fi
 
 echo $$ > $LOCK_FILE
 
-timeout -s9 90 amd-oc 2>&1 | tee /var/log/amd-oc.log
+timeout -s9 90 bash -c "amd-oc 2>&1 | tee /var/log/amd-oc.log"
 
 if [[ $? -ge 124 ]]; then
 	echo -e "${RED}ERROR: AMD OC failed ${NOCOLOR}"
