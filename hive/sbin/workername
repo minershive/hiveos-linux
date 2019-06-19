@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Changing worker name
+
+. colors
+. $RIG_CONF
+
+function set_worker_name() {
+	[[ -z $worker_name ]] && return 0
+	[[ $worker_name == $WORKER_NAME ]] && return 0
+
+	echo -e "${YELLOW}> Changing rig name${NOCOLOR}"
+	SET_WORKER_NAME="$worker_name" hello
+
+	echo
+}
+
+if [[ -z "$1" ]]; then
+	while true; do
+		echo -e "${YELLOW}Changing worker name${NOCOLOR}"
+		echo -n "New name: " && read worker_name
+		[[ -z $worker_name && ! -z $WORKER_NAME ]] && break
+		[[ ! -z $worker_name ]] &&
+			echo -e "Old worker name: ${YELLOW}$WORKER_NAME${NOCOLOR}" &&
+			set_worker_name  > /dev/null &&
+			. $RIG_CONF && echo -e "New worker name: ${YELLOW}$WORKER_NAME${NOCOLOR}" &&
+			break
+		echo "Invalid worker name"
+    done
+else
+	worker_name=$1
+	echo -e "Old worker name: ${YELLOW}$WORKER_NAME${NOCOLOR}"
+	set_worker_name > /dev/null
+	. $RIG_CONF && echo -e "New worker name: ${YELLOW}$WORKER_NAME${NOCOLOR}"
+fi
+echo
+
+exit 0
