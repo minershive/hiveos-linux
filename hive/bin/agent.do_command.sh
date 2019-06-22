@@ -244,13 +244,13 @@ function do_command () {
 				done
 				local meta=$(jq -n --arg good "`echo ${meta_good[@]} | tr " " ","`" --arg bad "`echo ${meta_bad[@]} | tr " " ","`" '{$good,$bad}')
 				local reboot_msg=""
-				[[ $need_reboot -eq 1 && $error == 0 ]] && reboot_msg=", now reboot"
+				[[ $need_reboot -eq 1 && $errors == 0 ]] && reboot_msg=", now reboot"
 				if [ $errors == 0 ]; then
 					echo "$payload" | message ok "ROM flashing OK$reboot_msg" payload --id=$cmd_id --meta="$meta"
 				else
 					echo "$payload" | message warn "ROM flashing with errors$reboot_msg" payload --id=$cmd_id --meta="$meta"
 				fi
-				[[ $need_reboot -eq 1 && $error == 0 ]] && nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+				[[ $need_reboot -eq 1 && $errors == 0 ]] && nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 			# Single mode
 			else
 			    local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
