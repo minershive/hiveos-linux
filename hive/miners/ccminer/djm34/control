@@ -1,8 +1,8 @@
 Package: hive-miners-ccminer-djm34
-Version: 0.6-20
+Version: 0.6-21
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-ccminer-djm34-1.1.20-cuda92
+Depends: hive-miners-ccminer-djm34-1.1.21-cuda92
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - ccminer-djm34 (Zcoin official CUDA miner)
