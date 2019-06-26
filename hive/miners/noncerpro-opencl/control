@@ -1,0 +1,8 @@
+Package: hive-miners-noncerpro-opencl
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-noncerpro-opencl-3.0.2
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner
