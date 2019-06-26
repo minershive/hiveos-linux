@@ -1,0 +1,7 @@
+Package: hive-miners-nanominer-1.4.0
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - nanominer v1.4.0
