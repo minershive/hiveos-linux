@@ -112,6 +112,8 @@ export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all vari
 
 
 #echo ------------------------------------------------------
+screen -wipe #Wipe possible dead screen
+
 #Moved from postinst again as hello need to see new version
 echo -e "${YELLOW}> Saying hello to server again${NOCOLOR}"
 hello restartminer
