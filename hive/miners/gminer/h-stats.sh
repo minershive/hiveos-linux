@@ -21,8 +21,10 @@ else
   #All busid array
   local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
   #Formating arrays
-  bus_id_array=`sed 's/\n/ /' <<< $bus_id_array`
-  fan=`sed 's/\n/ /' <<< $fan`
+#  bus_id_array=`sed 's/\n/ /' <<< $bus_id_array`
+#  fan=`sed 's/\n/ /' <<< $fan`
+  bus_id_array=`tr '\n' ' ' <<< $bus_id_array`
+  fan=`tr '\n' ' ' <<< $fan`
   IFS=' ' read -r -a bus_id_array <<< "$bus_id_array"
   IFS=' ' read -r -a fan <<< "$fan"
   #busid equality
