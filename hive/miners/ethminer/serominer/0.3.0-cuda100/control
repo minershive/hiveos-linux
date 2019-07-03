@@ -1,0 +1,7 @@
+Package: hive-miners-ethminer-serominer-0.3.0-cuda100
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - SeroMiner v0.3.0 CUDA 10.0 + OpenCL
