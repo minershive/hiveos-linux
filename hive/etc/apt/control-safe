@@ -1,10 +1,10 @@
 Package: hive
-Version: 0.6-55
+Version: 0.6-56
 Section: base
 Priority: optional
 Architecture: all
 Depends: hive-lib, hive-opt, libjansson4, curl, openvpn, hwinfo, screen, ssh, at, xz-utils, jq, cpufrequtils, pciutils, shellinabox, libnet-pcap-perl, libnet-rawip-perl, libnetpacket-perl, dos2unix, dialog, libpci3, bc, expect, mc, htop, nano, libssh-4, dnsutils 
 Recommends: libgtk2.0-0, openbox, menu, obmenu, lxterminal, roxterm, tint2, feh, x11vnc, fonts-inconsolata, florence
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive OS Client v0.6-55
+Description: Hive OS Client v0.6-56
 
