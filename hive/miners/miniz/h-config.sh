@@ -19,6 +19,9 @@ function miner_config_gen() {
 
   ssl=
   [[ $MINIZ_TLS == 1 ]] && ssl='ssl://'
+  
+  [[ -z $MINIZ_ALGO ]] && MINIZ_ALGO="144,5" 
+  local conf="--par=$MINIZ_ALGO"
 
   for url in $MINIZ_URL; do
     conf+=" --url=${ssl}${MINIZ_TEMPLATE}@${url}"
