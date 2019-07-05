@@ -1,8 +1,8 @@
 Package: hive-miners-cryptodredge
-Version: 0.6-18
+Version: 0.6-19
 Section: base
 Priority: optional
 Architecture: all
-Depends: libc-ares2, hive-miners-cryptodredge-0.20.1-cuda92
+Depends: libc-ares2, hive-miners-cryptodredge-0.20.2-cuda92
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - CryptoDredge
