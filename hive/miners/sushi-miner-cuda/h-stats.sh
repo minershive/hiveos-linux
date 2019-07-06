@@ -4,17 +4,19 @@
 # Functions
 #######################
 
-get_cards_hashes(){ 
+get_cards_hashes(){
 #                                      5                  9                  13
 # [I 20:24:28] SushiMiner: Hashrate: 207.3 kH/s | GPU0: 107.0 kH/s | GPU1: 100.3 kH/s
   local hs_line=$(cat $log_name | tail -n +30 | tail -n 50 | grep "GPU" | tail -n 1)
 
-  khs=$(echo $hs_line | cut -d " " -f 5)
+  #khs=$(echo $hs_line | cut -d " " -f 5)
 
   hs=
   for (( i=0; i < ${GPU_COUNT_NVIDIA}; i++ )); do
     hs+=$(echo $hs_line | cut -d " " -f $(expr 9 + 4 \* $i))" "
   done
+
+  khs=$(echo ${hs%' '} | tr ' ' + | bc)
 }
 
 get_miner_uptime(){
@@ -73,7 +75,7 @@ if [[ -f $log_name ]]; then
 
         # create JSON
         stats=$(jq -nc \
-                   --argjson hs "`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`" \
+                   --argjson hs "`echo ${hs} | tr " " "\n" | jq -cs '.'`" \
                    --arg hs_units "$hs_units" \
                    --argjson temp "$temp" \
                    --argjson fan "$fan" \
@@ -85,4 +87,3 @@ if [[ -f $log_name ]]; then
                    '{$hs, $hs_units, $temp, $fan, $uptime, ar: [$ac, $rj], $algo, $ver}')
   fi
 fi
-
