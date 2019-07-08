@@ -63,6 +63,8 @@ function miner_config_gen() {
 
 	local pool=`head -n 1 <<< "$CRYPTODREDGE_URL"`
 
+	[[ -z $CRYPTODREDGE_PASS ]] && CRYPTODREDGE_PASS="x"
+
 	conf="${algo} -o $pool -u ${CRYPTODREDGE_TEMPLATE} -p ${CRYPTODREDGE_PASS} ${CRYPTODREDGE_USER_CONFIG}"
 
 	echo "$conf" > $MINER_CONFIG
