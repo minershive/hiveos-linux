@@ -18,7 +18,10 @@ else
 		BEAM)
 			algo="equihash 150/5"
 			;;
-		default)
+		ZEL)
+			algo="equihash 125/4"
+			;;
+		*)
 			algo=$(echo $stats_raw | jq -r '.Mining.Algorithm')
 			;;
 	esac
