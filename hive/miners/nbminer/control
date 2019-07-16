@@ -3,6 +3,6 @@ Version: 0.6-15
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-nbminer-24.0
+Depends: hive-miners-nbminer-24.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - NBMiner
