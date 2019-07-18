@@ -18,6 +18,12 @@ else
 		BEAM)
 			algo="equihash 150/5"
 			;;
+		GRIN-AD29)
+			algo="cuckoo"
+			;;
+		GRIN-AT31)
+			algo="cuckoo"
+			;;
 		ZEL)
 			algo="equihash 125/4"
 			;;
