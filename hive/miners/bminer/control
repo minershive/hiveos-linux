@@ -3,6 +3,6 @@ Version: 0.6-35
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-bminer-15.7.0
+Depends: hive-miners-bminer-15.7.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - Bminer
