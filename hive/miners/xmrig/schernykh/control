@@ -1,0 +1,8 @@
+Package: hive-miners-xmrig-schernykh
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-xmrig-schernykh-2.15.4-beta2
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - XMRig fork RandomX from SChernykh

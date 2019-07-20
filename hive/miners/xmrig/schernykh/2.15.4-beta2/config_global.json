@@ -1,0 +1,53 @@
+{
+    "algo": "randomx/wow",
+    "api": {
+        "id": null,
+        "worker-id": null
+    },
+    "http": {
+        "enabled": false,
+        "host": "127.0.0.1",
+        "port": 0,
+        "access-token": null,
+        "restricted": true
+    },
+    "asm": true,
+    "autosave": true,
+    "av": 0,
+    "background": false,
+    "colors": true,
+    "cpu-affinity": null,
+    "cpu-priority": null,
+    "donate-level": 1,
+    "donate-over-proxy": 1,
+    "huge-pages": true,
+    "hw-aes": null,
+    "log-file": null,
+    "max-cpu-usage": 100,
+    "pools": [
+        {
+            "url": "POOL_ADDRESS:POOL_PORT",
+            "user": "YOUR_WALLET",
+            "pass": "x",
+            "rig-id": null,
+            "nicehash": false,
+            "keepalive": false,
+            "variant": "rx/wow",
+            "enabled": true,
+            "tls": false,
+            "tls-fingerprint": null,
+            "daemon": false,
+            "daemon-poll-interval": 1000
+        }
+    ],
+    "print-time": 60,
+    "retries": 5,
+    "retry-pause": 5,
+    "safe": false,
+    "threads": [
+        { "low_power_mode": 1, "affine_to_cpu": 0 },
+    ],
+    "user-agent": null,
+    "syslog": false,
+    "watch": true
+}
