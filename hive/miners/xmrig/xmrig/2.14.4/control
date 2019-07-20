@@ -1,7 +1,7 @@
 Package: hive-miners-xmrig-xmrig-2.14.4
-Version: 0.6-01
+Version: 0.6-02
 Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - XMRig (for CPU)
+Description: Hive miner - XMRig v2.14.4 (for CPU)
