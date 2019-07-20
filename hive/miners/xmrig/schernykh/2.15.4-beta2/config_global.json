@@ -5,9 +5,9 @@
         "worker-id": null
     },
     "http": {
-        "enabled": false,
+        "enabled": true,
         "host": "127.0.0.1",
-        "port": 0,
+        "port": 60050,
         "access-token": null,
         "restricted": true
     },
@@ -23,7 +23,7 @@
     "huge-pages": true,
     "hw-aes": null,
     "log-file": null,
-    "max-cpu-usage": 100,
+    "max-cpu-usage": 75,
     "pools": [
         {
             "url": "POOL_ADDRESS:POOL_PORT",
@@ -45,7 +45,6 @@
     "retry-pause": 5,
     "safe": false,
     "threads": [
-        { "low_power_mode": 1, "affine_to_cpu": 0 },
     ],
     "user-agent": null,
     "syslog": false,
