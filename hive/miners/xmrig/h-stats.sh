@@ -10,7 +10,15 @@ function get_cpu_temp(){
     cat $HWMON_DIR/temp*_input
 }
 
-stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:$MINER_API_PORT`
+local ver=`miner_ver`
+local fork=`miner_fork`
+
+if [[ "$ver" < "2.15" ]]; then
+	stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:$MINER_API_PORT`
+else
+	stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:$MINER_API_PORT/1/summary`
+fi
+
 #echo $stats_raw | jq .
 if [[ $? -ne 0 || -z $stats_raw ]]; then
 	echo -e "${YELLOW}Failed to read $miner from localhost:$MINER_API_PORT${NOCOLOR}"
