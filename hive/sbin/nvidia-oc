@@ -172,7 +172,8 @@ for (( i=0; i < $n; ++i )); do
 	elif [[ $name =~ "P106-090" ]]; then x=1
 	elif [[ $name =~ "P104-100" ]]; then x=1
 	elif [[ $name =~ "P102-100" ]]; then x=1
-	elif [[ $name =~ "1660" ]]; then x=4
+	elif [[ $name =~ "1660 Ti" ]]; then x=4
+	elif [[ $name =~ "RTX" ]]; then x=4
 	fi
 
 	[[ ! -z $CLOCK ]] &&
