@@ -1,0 +1,315 @@
+PhoenixMiner 4.5c
+-----------------
+  - Added support for the latest AMD Windows drivers 19.7.3
+  - Fixed issue with ProgPOW BCI mining on Nvidia RTX20x0 and GTX16x0 cards
+
+PhoenixMiner 4.5b
+-----------------
+  - Changes in Nvidia kernels for more stable work and better utilization of the GPU
+  - Implemented ProgPOW BCI mining for Nvidia cards too
+  - Added support for all new AMD Linux drivers up to the latest 19.30-838629
+  - Added GPU power consumption if the driver reports it. You can also specify the
+    idle power (-pidle), PSU/GPU efficiency (-ppf) and electricity cost (-prate) and
+    have the miner calculate the daily electricity costs for you. If you are using
+    third-party mining software which doesn't expect the power consumption figures
+    in the miner's log, you can disable it by specifying -hstats 0
+  - The bench mode now works for dual mining and ProgPOW. The algorithm is determined
+    by the -coin and -dcoin parameters. E.g. -bench 10 -coin bci will bench the BCI
+    ProgPOW, and -bench 10 -dcoin blake2s will bench the dual mining
+  - Increased the maximum supported DAG epoch to 450. Note that AMD drivers don't
+    allow buffers larger than 4 GB so the biggest possible DAG epoch with current
+    AMD drivers is 378
+  - Small bugfixes and improvements
+
+PhoenixMiner 4.2c
+-----------------
+  - Added new Nvidia kernels v3 with slightly higher hashrate and lower power
+    consumption. The new kernels are supported only on GTX1050/1060/1070/1080/Ti
+    GPUs and are enabled by default on these GPUs. Note that you can't use these
+    kernels for dual-mining, only -nvkernel 2 works for dual mining on Nvidia.
+  - Added parameter to enable or disable driver-specific optimizations on
+    Nvidia GPUs. Use -nvdo 1 (the default is 0) to enable the optimizations.
+    This won't change speed but may make the cards more stable depending on
+    the concrete Nvidia driver.
+  - Fixed the slower DAG generation on Vega and Radeon VII GPUs
+  - Small bugfixes
+
+PhoenixMiner 4.2b
+-----------------
+  - Fixed the issue with Nvidia RTX20x0 and 1660 cards not working with 4.2a
+  - Fixed the problem with the watchdog timer when solo mining
+  - Added support for Windows AMD drivers 19.3.2
+  - Small bugfixes
+
+PhoenixMiner 4.2a
+-----------------
+  - Added support for dual mining Ethash and Blake2s on Nvidia GPUs
+  - Added experimental support for ProgPOW mining of Bitcoin Interest (BCI).
+    Note that the kernels are not optimized and only work on AMD. You must use -coin bci.
+  - Added support for EthereumStratum/2.0.0 protocol (use -proto 5 if the pool requires it)
+  - AMD hardware control code was rewritten, now should be more stable and work on older cards too
+  - Added command-line option -fcm to set the way fans are controlled. Use -fcm 2 if the
+    fans are not controlled properly or at all (AMD/Windows only)
+  - Added support for Radeon VII
+  - Added support for AMD drivers up to 19.3.1
+  - Added new command-line option -nvkernel to select the old (1) or new (2) CUDA kernels
+  - Increased the maximum supported DAG epoch to 329
+  - Added support for direct mining without DAG switching of Yocoin (YOC), Bitcoiin2Gen (B2G),
+    Ethersocial (ESN), Atheios (ATH), and REOSC (REOSC). See the -coin parameter for more information.
+  - Other small improvements and fixes.
+
+PhoenixMiner 4.1c
+-----------------
+  - Added support for turbo kernels (-clkernel 3) and dual mining.
+  - Added command-line option -vs to just print the version (e.g. 4.1c) and exit
+  - Added command-line option -wdtimeout to set the timeout of the watchdog timer. The valid
+    values are from 30 to 300 seconds, the default is 45 seconds.
+  - Added support for Windows AMD drivers 19.1.1
+  - Small bugfixes
+
+PhoenixMiner 4.1a
+-----------------
+  - Added faster "turbo" kernels (-clkernel 3) for AMD 470/480/570/580 GPUs. These are usually
+    faster than normal kernels (-clkernel 1 or -clkernel 2) but require double the amount of VRAM.
+    This means that you can only use them on 8 GB cards if mining ETH or ETC. You can use them on
+    cards with 4 GB or less VRAM only if you are mining low DAG epoch coins.
+  - Added Blake2s dual mining kernels, and green kernels for AMD Fury GPUs
+  - Added Blake2s dual mining kernels for AMD 280/285/290/380/390 GPUs
+  - New faster kernels for AMD 280/290/390 GPUs
+  - Added alternative kernels (-clkernel 2) for AMD 280 GPUs
+  - Added options -pauseat and -resumeat for scheduled pausing and resuming of the miner.
+    Example: -resumeat 22:00 -pauseat 6:00 - the miner will mine only between 22:00 and 6:00.
+    Example 2: -resumeat 22:00,12:00 -pauseat 6:00,16:00 - you can specify multiple pause
+    and resume times.
+  - When the miner is paused for more than a few minutes, the pool is disconnected. The pool
+    connection is restored when the mining is resumed.
+  - Added a watchdog protection against freezing of the network connection thread
+  - Automatic selection of compatible devfee coin if there isn't enough VRAM to mine ETH and
+    the main coin can't be recognized or isn't supported for devfee
+  - Automatic switch to the next pool if the cards VRAM is not enough for the requited DAG epoch.
+    This is especially useful if the pool is auto-switching the coins but your cards only support
+    lower DAG epoch coins.
+  - Added a -rvram option to set the minimal reserved VRAM that can't be used for mining. The
+    default values are 384 MB on Windows, and 128 MB on Linux. You can also set -rvram -1 if you
+    want to turn off the protection against using too much VRAM.
+  - Other small improvements and fixes
+
+PhoenixMiner 4.0b
+-----------------
+  - Added support for the new Ubqhash algorithm required for mining UBQ. Please note that you must
+    add -coin ubq to your command line (or COIN: ubq to your epools.txt file) in order to mine UBQ
+  - Some small bugfixes
+
+PhoenixMiner 4.0a
+-----------------
+  - Implemented dual mining (Ethash/Blake2s) for some AMD GPUs (RX580/570/560/480/470/460 and Vega).
+    Use the new -dpool, -dwal, -dpass, -dworker, and -dcoin options to set the Blake2s pool. You can
+    set the secondary coin mining intensity with the -sci option. For more information see the
+    Readme.txt file. Note that the devfee when using dual mining is 0.9% on the ethash coin (there is
+    no devfee on the secondary coin). 
+  - New kernels for AMD GPUs with better performance and hashrate stability (you may need to run
+    auto-tune again to find the best GT values)
+  - New kernels for Nvidia GPUs with slightly better hashrate
+  - Stability improvements in the Linux version
+  - Support for the latest Windows drivers for AMD GPUs (up to 18.11.2)
+  - Many other small fixes and improvements
+
+PhoenixMiner 3.5d
+-----------------
+  - Added support for direct mining of MOAC, Ether-1 (ETHO), and EtherCC (ETCC) coins.
+  - Small fixes for solo mining and advanced stats
+
+PhoenixMiner 3.5c
+-----------------
+  - Fixed freezing problems immediately after GPU are recognized
+  - Fixed hardware monitoring problem under Linux with more than 6 GPUs
+  - Fixed problems under Linux with unrecognized drivers and stale share increases
+
+PhoenixMiner 3.5a
+-----------------
+  - First release with support for Linux
+  - New "green" kernels (use -clgreen 1) for RX580/570/560/480/470/460 to lower the power consumption by 2-3%.
+    These kernels may also slightly lower the hashrate (by 0.2-0.5%), so you have to check if they are more
+    efficient for you depending on the electricity costs in your area.
+  - Small improvements in the AMD kernels to increase hashrate (RX4xx, RX5xx, Tonga, and Fury)
+  - Added advanced stats option (use -astats 1) that will try to estimate the daily earnings depending on
+    the current price of the coin you are mining and the current difficulty. Note that this is only an
+    estimation and it uses information from third-party web sites, which may not be accurate.
+  - Added support for direct mining of DubaiCoin (DBIX)
+  - Add -leaveoc option to prevent resetting of the HW OC settings to defaults on exit
+  - Many small fixes
+
+PhoenixMiner 3.0c
+-----------------
+  - Fixed problems with -gsi option causing lower reported hashrate
+  - Fixed remaining problems with -minrigspeed and auto-tuning
+  - Fixed some other small issues
+
+PhoenixMiner 3.0b
+-----------------
+  - Added option -gsi to set the speed stats interval (5-30 seconds, default 5; 0 turns off the speed stats).
+    The detailed stats are still shown every 45 seconds and aren't affected by the -gsi value
+  - Fixed crashing with Vega cards with AMD drivers 18.4.1 and newer
+  - Bugfix: don't restart the miner if -minrigspeed is exceeded but some cards are in auto-tuning
+
+PhoenixMiner 3.0a
+-----------------
+  - Implemented auto-tune function which will find the best GT value for each GPU. You can activate it by either omitting
+    the -gt parameter in the command line, or by pressing 'z' in the console. Note that auto-tune process
+    takes about 3 to 5 minutes on average and during this time the hashrate will be lower and will go up and down.
+    You can abort the auto-tuning by pressing the 'g' key in the console window.
+  - Added support for 'x' key in console window. This will allow you to select a single GPU for manual or automatic GT tuning
+  - Added support for direct mining (without DAG switching for DevFee) of the following coins: Nekonium (NUKO), MIX, EtherGem (EGEM),
+	 AURA, Hotelbyte Coin (HBC), Genom (GEN), EtherZero (ETZ), Callisto	(CLO). See the -coin option documentation in Readme.txt
+	 for details how to specify the coin you are mining.
+  - Added support for on-the-fly reload of config.txt file and applying the new options by pressing the key 'c' in the console window.
+    Note that most options require restart in order to change. Currently the follwing options can be changed without restarting:
+    -mi, -gt, -clf, -nvf, and all hardware control parameters (-tt, -fanmin, -fanmax, -powlim, -tmax, -cclock, -cvddc, -mclock, -mvddc).
+    This allows more convenient adjustment and fine-tuning of big mining rigs.
+  - Added -cdmrs option to reload the settings if config.txt is edited/uploaded by a remote manager. This allows you to change and
+    reload the config.txt options via remote manager without access to the console window of the miner.
+  - Small improvements in AMD kernels
+  - Added -nvf 3 setting that could solve some problems with unstable Nvidia cards (but may affect hashrate negatively)
+  - Added option -acm to turn on AMD compute mode on the supported GPUs. This is equivalent of pressing 'y' in the miner console.
+  - Added option -retrydelay that sets the pause between the reconnection attempts in seconds (min value 0, default value: 20)
+  - Added option -resetoc to reset the HW overclocking setting on startup to their default values
+  - Added option -gpureset, which forces full reset of the GPU when the miner is paused (or before DAG generation when
+    switching DAG epochs). This is designed to avoid problems like the hashrate drop of GeForce GTX1080 Ti after pause/resume.
+    This option can be specified per GPU and is turned on by default for GTX1080 Ti.
+  - Added option -gser for serializing of DAG creation if your PSU(s) can't take all GPUs generating DAG simultaneously.
+  - Graceful shutdown when closed by the close button of the console window (including reseting OC settings to defaults)
+  - Multiple small improvements and fixes
+
+PhoenixMiner 2.9e
+-----------------
+  - Added detection of AMD Compute mode in the supported drivers and GPUs. The detection is performed when the miner starts
+    and if the Compute mode is off on some of the GPUs, you will get warning messages.
+  - Added console command 'y' to turn on the AMD Compute mode if it is not turned on on some of the cards.
+  - Added -nvf command line option to control Nvidia kernel sync frequency (it is similar to the -clf command line
+	option for AMD cards). Try -nvf 2 if you have permanent hashrate drops after pausing and resuming mining on Nvidia cards
+  - Small improvement in the -logfile option: now you can insert $ character in the name, which will be removed from the name
+    but will force the miner to overwrite the log file on each startup, instead of appending to it.
+  - Fixed a problem with miner restart on some CUDA errors with Nvidia cards when the miner crashes instead of restarting    
+  
+PhoenixMiner 2.9d
+-----------------
+  - Additional improvements in the kernels for AMD GPUs, providing higher hashrate, lower percentage of
+    stale shares, and slightly lower power consumption. The new kernels are used by default for AMD GPUs.
+	You can still revert to using the old kernels with -clnew 0
+  - Note that the optimal -gt values for the new kernels may be different than before (but should be
+    in the same ballpark)
+  - Added optimized kernels for AMD RX550
+  - Alternative (-clkernel 2) kernels for AMD RX550, RX460/560, and 285/380. The alternative kernels for
+    Polaris (RX470/480/570/580) are also there.
+  - New Nvidia kernels, providing higher hashrate and much lower percentage of stale shares. You can still
+    revert to using the old CUDA kernels with -nvnew 0. The mining intensity (-mi) is by default 12 when
+	using the new Nvidia kernels and 10 for the old kernels
+  - New -clf parameter to control how often the OpenCL (AMD) kernels will sync (0 - never, 1 - sometimes (default),
+    2 - always). Try this if you have unstable hashrate on AMD GPU but in general, it is best to leave it alone
+  - Added -logfile command line option to be able to set the name of the log file. If you place an asterisk (*)
+    in the logfile name, it will be replaced by the current date/time to create a unique name every time
+	PhoenixMiner is started. If there is no asterisk in the log file name, the new log will be added to the
+	same file
+  - Added -logdir command line option to specify different folder for the log files
+  - Added -logsmaxsize command line option to specify the max size of the log files (200 MB by default)
+  - Many small fixes and changes
+  
+PhoenixMiner 2.8c
+-----------------
+  - Added new AMD kernels for all supported AMD GPUs, providing higher hashrate and lower percentage of
+    stale shares. The new kernels are used by default for AMD GPUs. You can also revert to using the old kernels with
+	-clnew 0.
+  - Some stability improvements with the new kernels
+  
+PhoenixMiner 2.8b
+-----------------
+  - New AMD kernels for AMD RX470/480/570/580, Vega, and Fury GPUs, providing higher hashrate and lower percentage of
+    stale shares. The new kernels are used by default for these GPUs. You can also revert to using the old kernels with
+	-clnew 0.
+  - When using the new kernels, the mining intensity is 12 by default instead of 10.
+  - The mining intensity range is now up to 14. Use high -mi only with the new AMD kernels as for the other kernels
+    the stale shares will increase too much.
+  - Many small improvements and fixes
+  
+PhoenixMiner 2.8a
+-----------------
+  - Small CUDA kernel stability improvements that also may (very) slightly increase the speed of Nvidia cards
+  - CPU utilization during normal operation is lowered by about a factor of 10 regardless of the number of GPUs
+  - Added support for -tstop and -tstart options to stop mining on given GPU if the temperature rise above specified value
+    and restart it after it cools down below -tstart temperature
+  - Fixed the problem with console window freezing after scrolling
+  - Implemented new -gpow n option to lower the GPU utilization (default: 100, the value is the desired GPU utilization in percent)
+  - Implemented the -li option to lower the intensity (use this instead of -gpow if you are already using -mi with low values)
+  - Improved GPU speed statistics, using moving average window for each GPU. You can change the size of the window with the
+	-gswin option (5-30 seconds; default 15; use 0 to revert to the old way of using 5 second "quants" which are independent of each other).
+  - Specify GPU number above 9 by typing three-digit sequence at the console (e.g. type 011 to pause or resume GPU11)  
+  - The command-line options are now case-insensitive
+  - Show the SSL and HTTP schemes to indicate the type of connection
+  - Added support for the miner_getstat2 remote monitoring request
+
+PhoenixMiner 2.7c
+-----------------
+  - Added support for secure mining using SSL (supported by ethermine.org) to prevent the increasing IP hijacking attacks.
+    To connect to a secured pool, use the ssl:// prefix (e.g. -pool ssl://eu1.ethermine.org:5555)
+  - Added support for solo mining (HTTP GetWork protocol)
+  - Other small changes and fixes
+  
+PhoenixMiner 2.7b
+-----------------
+  - Added support for controlling fans, clocks and voltages on AMD cards (use the command-line options -tt, -fanmin, -fanmax,
+      -tmax, -powlim, -cclock, -cvddc, -mclock, -mvddc).
+  - Improved GPU matching code to fix a problem with mismatched temperatures/fan speeds on Nvidia GPUs
+  
+PhoenixMiner 2.7a
+-----------------
+  - Improvements in switching between normal mode and devfee mode to avoid some GPUs "losing" their overcloking/undervolting settings
+  - Increase the frequency of getWork requests to lower the probability of stale shares
+  - Added support for direct mining of Akroma, WhaleCoin, and Victorium without DevFee switching
+  - Print warning messages and more detailed error messages when the virtual memory is low, or GPU memory is not enough for DAG allocation
+  - Other small improvements and fixes
+  
+PhoenixMiner 2.6
+----------------
+  - Possible fix for the increase of stale shares that some are experiencing with ver 2.5d
+  - Made the new OpenCL initialization code optional (use -altinit option to use the new code if you experience crashes on startup)
+  - Added -lidag command-line option to allow slower but less intense DAG generation to prevent crashes on DAG switches (AMD only)  
+  - Added a new interactive command in benchmark mode: press 'd' to advance to the next DAG epoch. You can use this option to test
+	  if your rig will be stable during the DAG switches, instead of waiting up to 5 days to find out if this is the case.
+  - Turn off the Quick Edit functionality of the console to prevent freezing of the miner when clicking in its window (Windows 10)
+  - Show the IP address of the pool when connecting
+  - Show a '>' character in front of the pool address in the remote manager when trying to connect to a pool
+  - Watchdog now also monitors the main thread for freezing
+  
+PhoenixMiner 2.5d
+-----------------
+  - Removed the usage of ethermine/ethpool for devfee
+  - Added -eres command-line option to allocate DAG buffers big enough for 2 or more DAG epochs after the current one
+  - New OpenCL initialization code for better stability on DAG generation in multi-GPU rigs  
+  - Stop mining if the connection can't be restored after some time to avoid wasting electricity
+  - Recognize failed connection attempt even if the pool doesn't close the socket
+  - Longer reconnect delay
+  - Several other small changes and impovments, mainly for stability
+  
+PhoenixMiner 2.4
+----------------
+  - Added optimized kernels for AMD Tahiti GPUs (280/280X/7950/7970)
+  - Added -minRigSpeed (or -minspeed) option to restart the rig if the 5 min average speed is below specified threshold
+  - Added support for mining Pegascoin (PGC) without DAG switch on devfee
+  - Bugfix: sometimes reconnect failed with one or more "Connection attempt aborted" errors
+  - Bugfix: sometimes the temperatures/fan speeds were shown only for the first GPU
+  - Bugfix: some Vega GPUs were not properly detected and used generic OpenCL kernels
+  
+PhoenixMiner 2.3
+----------------
+  - Added alternative kernels for RX470/480/570/580, which can be used by specifying -clKernel 2 (or -asm 2) on the command-line. In some cases these can be faster than the default kernels but more often than not you are better off with the default kernels. Additionally, the hashrate can be more unstable with the alternative kernels.
+  - Fixed a problem with not reporting temperatures/fan speed with the latest AMD drivers
+  - Fixed a problem with Intel iGPUs, which PhoenixMiner sometimes tries to use for mining, fails and then restarts and tries again, and so on
+  
+PhoenixMiner 2.2b
+-----------------
+  - Added support for Ellaism and Metaverse ETP
+  - Minor bugfixes
+  
+PhoenixMiner 2.1
+-----------------
+  - Initial public release
