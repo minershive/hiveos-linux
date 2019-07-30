@@ -1,7 +1,0 @@
-Package: hive-miners-xmrig-xmrig-2.15.0
-Version: 0.6-02
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - XMRig v2.15.0 (for CPU)
