@@ -14,9 +14,9 @@ OK=$GREEN"[OK]"$NOCOLOR
 FAIL=$RED"[FAIL]"$NOCOLOR
 LAST_RESULT=0
 
+GOODTIME=1000
 
 unset GREP_OPTIONS
-
 
 LOCAL_IP=`hostname -I | awk '{print $1}'`
 LOCAL_GW=`ip route | awk '/default/ { print $3 }'`
@@ -32,16 +32,32 @@ function PrintCase {
 }
 
 
+function TimeColor {
+	[[ $1 -le $GOODTIME ]] && echo "${WHITE} $1 ms ${NOCOLOR}" || echo "${RED} $1 ms ${NOCOLOR}"
+}
+
+
 # ping wrapper
 function Ping {
 	local LAST_RESULT=0
 	local IP=$2
+	local response=
 	[ -z ${IP} ] && IP=$1
 
 	PrintCase "ping $1"
-	ping -q -c 1 -w 5 $IP > /dev/null 2>&1
+	response=`ping -i 0 -q -c 1 -w 4 $IP 2>&1`
+	
 	LAST_RESULT=$?
-	[[ $LAST_RESULT == 0 ]] && echo -e $OK || echo -e $FAIL
+
+	if [[ $LAST_RESULT == 0 ]]; then
+		local totaltime=`echo "$response" | awk -F '/' 'END {print $5}'`
+		totaltime=`bc <<< "scale=0;($totaltime+0.99)/1"`
+		totaltime=`TimeColor $totaltime`
+		echo -e "$OK  $totaltime"
+	else
+		echo -e $FAIL
+	fi
+	
 	return $LAST_RESULT
 }
 
@@ -51,23 +67,31 @@ function Curl {
 	local LAST_RESULT=0
 	local checkApi=$2
 	local IP=
+	local response=
 	[ -z ${IP} ] && IP=$1
 
 	PrintCase "curl $1"
-	[[ $checkApi != "api" ]] &&
-		local response=`curl --insecure --connect-timeout 4 --max-time 10 --silent $IP` ||  #> /dev/null 2>&1
-		local response=`curl --insecure --connect-timeout 4 --max-time 10 --silent \
+	if [[ $checkApi != "api" ]]; then
+		response=`curl --insecure --connect-timeout 4 --max-time 10 --silent $IP -w "\n%{time_total}"` #> /dev/null 2>&1
+	else
+		response=`curl --insecure --connect-timeout 4 --max-time 10 --silent -w "\n%{time_total}"\
 				-H "Content-Type: application/json" \
 				-X POST -d '{"method":"stats", "params": {"rig_id":"-1", "passwd": "1"}}' \
 				$IP/worker/api`
-
+	fi
+	
 	LAST_RESULT=$?
+
 	if [[ $LAST_RESULT == 0 ]]; then
+		local totaltime=`echo "$response" | tail -1`
+		totaltime=`bc <<< "scale=0;$totaltime*1000/1"`
+		totaltime=`TimeColor $totaltime`
+
 		if [[ $checkApi != "api" ]]; then
-			echo -e $OK
+			echo -e "$OK  $totaltime"
 		else
 			local respCheck=`echo "$response" | jq .error.code 2>/dev/null`
-			[[ $respCheck == '' || $respCheck == 'null' ]] && echo -e $FAIL || echo -e $OK
+			[[ $respCheck == '' || $respCheck == 'null' ]] && echo -e $FAIL || echo -e "$OK  $totaltime"
 		fi
 	else
 		echo -e $FAIL
