@@ -19,15 +19,22 @@ echo -e "Current version: ${YELLOW}$current_version@$repover${NOCOLOR}"
 screen -wipe > /dev/null 2>&1
 as=$(screen -ls | grep -c autoswitch)
 
-VERSION=$1
+# it can help in situations when selfupgrade says Hive is up to date but this is not true
+if [[ "$1" == "--force" ]]; then
+	VERSION=
+	echo -e "${YELLOW}> Cleaning Hive apt lists${NOCOLOR}"
+	# force HiveOS lists download
+	rm -f /var/lib/apt/lists/*hiveos*
+else
+	VERSION=$1
 
-if [[ ! -z $VERSION ]]; then
-	[[ ! $VERSION =~ ^[0-9]+\.[0-9]+-[0-9]+$ ]] &&
-		echo -e "${YELLOW}Invalid version format \"$VERSION\"${NOCOLOR}" &&
-		echo -e "Please use the following format x.y-zz, like 0.5-12" &&
-		exit 1
+	if [[ ! -z $VERSION ]]; then
+		[[ ! $VERSION =~ ^[0-9]+\.[0-9]+-[0-9]+$ ]] &&
+			echo -e "${YELLOW}Invalid version format \"$VERSION\"${NOCOLOR}" &&
+			echo -e "Please use the following format x.y-zz, like 0.5-12" &&
+			exit 1
+	fi
 fi
-
 
 #remove stupid rep file for smaller updates
 [[ -f /etc/apt/sources.list.d/amdgpu-pro.list ]] && rm /etc/apt/sources.list.d/amdgpu-pro.list
