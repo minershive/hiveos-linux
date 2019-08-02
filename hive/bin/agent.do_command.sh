@@ -133,13 +133,13 @@ function do_command () {
 			if [[ ! -z $nvidia_oc_changed ]]; then
 				echo "$nvidia_oc" > $NVIDIA_OC_CONF && sync
 				nohup bash -c '
-					nvidia-oc-log
+					nvidia-oc-log quiet
 					exitcode=$?
 					payload=`cat /var/log/nvidia-oc.log`
 					#echo "$payload"
 					[[ $exitcode == 0 ]] &&
 						echo "$payload" | message ok "Nvidia settings applied" payload --id='$cmd_id' ||
-						echo "$payload" | message warn "Nvidia settings applied with errors, check X server running" payload --id='$cmd_id'
+						echo "$payload" | message warn "Nvidia settings applied with errors" payload --id='$cmd_id'
 				' > /tmp/nohup.log 2>&1 &
 			else
 				echo -e "${YELLOW}Nvidia OC unchanged${NOCOLOR}"
@@ -154,7 +154,7 @@ function do_command () {
 			if [[ ! -z $amd_oc_changed ]]; then
 				echo "$amd_oc" > $AMD_OC_CONF && sync
 				nohup bash -c '
-					amd-oc-safe
+					amd-oc-safe quiet
 					exitcode=$?
 					payload=`cat /var/log/amd-oc.log`
 					#echo "$payload"
@@ -649,13 +649,13 @@ function oc_if_changed () {
 		#echo -e "${YELLOW}Saving Nvidia OC config${NOCOLOR}"
 		echo "$nvidia_oc" > $NVIDIA_OC_CONF && sync
 		if [[ $justwrite != 1 ]]; then
-			nvidia-oc-log
+			nvidia-oc-log quiet
 			exitcode=$?
 			payload=`cat /var/log/nvidia-oc.log`
 			#echo "$payload"
 			[[ $exitcode == 0 ]] &&
 				echo "$payload" | message ok "Nvidia settings applied" payload --id=$cmd_id ||
-				echo "$payload" | message warn "Nvidia settings applied with errors, check X server running" payload --id=$cmd_id
+				echo "$payload" | message warn "Nvidia settings applied with errors" payload --id=$cmd_id
 		fi
 	fi
 
@@ -663,7 +663,7 @@ function oc_if_changed () {
 		#echo -e "${YELLOW}Saving AMD OC config${NOCOLOR}"
 		echo "$amd_oc" > $AMD_OC_CONF && sync
 		if [[ $justwrite != 1 ]]; then
-			amd-oc-safe
+			amd-oc-safe quiet
 			exitcode=$?
 			payload=`cat /var/log/amd-oc.log`
 			#echo "$payload"

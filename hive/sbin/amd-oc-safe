@@ -26,11 +26,12 @@ fi
 
 echo $$ > $LOCK_FILE
 
-timeout -s9 90 bash -c "amd-oc 2>&1 | tee /var/log/amd-oc.log"
+timeout -s9 90 bash -c "set -o pipefail; amd-oc 2>&1 | tee /var/log/amd-oc.log"
+exitcode=$?
 
-if [[ $? -ge 124 ]]; then
+if [[ $exitcode -ge 124 ]]; then
 	echo -e "${RED}ERROR: AMD OC failed ${NOCOLOR}"
-	cat /var/log/amd-oc.log | message error "AMD OC failed" payload > /dev/nul
+	[[ "$1" != "quiet" ]] && cat /var/log/amd-oc.log | message error "AMD OC failed" payload > /dev/nul
 fi
 
 rm $LOCK_FILE
@@ -41,4 +42,4 @@ rm $LOCK_FILE
 #sed -i "s,$(printf '\033')\\[[0-9;]*[a-zA-Z],,g" /var/log/amd-oc.log
 
 
-exit 0
+exit $exitcode
