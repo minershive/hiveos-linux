@@ -1,0 +1,7 @@
+Package: hive-miners-ccminer-djm34-1.2.0-cuda92
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner ccminer-djm34 v1.2.0 CUDA 9.2
