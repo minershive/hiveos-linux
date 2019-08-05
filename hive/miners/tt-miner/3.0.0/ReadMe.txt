@@ -19,7 +19,7 @@ to make sure that TT-Miner uses a certain cuda version please append one of thes
 			-101		for cuda 10.10	(ETHASH-101, MTP-101)
 
 Please note these requirements for the different cuda toolkit releases:
-Cuda-Toolkit		Windows		Linux
+Cuda-Toolkit		Linux		Windows
 CUDA 10.1.105		>= 418.39	>= 418.96
 CUDA 10.0.130		>= 410.48	>= 411.31
 CUDA 9.2.148		>= 396.37	>= 398.26
