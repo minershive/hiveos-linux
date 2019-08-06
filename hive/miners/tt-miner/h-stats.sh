@@ -28,7 +28,7 @@ else
 
 	local ac=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $2}'`
 	local rj=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $3}'`
-	local ver=`echo $stats_raw | jq -r '.[0]'`
+	local ver=`echo $stats_raw | jq -r '.[0]' | sed 's/TT-Miner\///'`
 	
 	stats=$(jq -n \
 		--arg uptime "`echo \"$stats_raw\" | jq -r '.[1]' | awk '{print $1*60}'`" \
