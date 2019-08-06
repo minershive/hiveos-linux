@@ -45,13 +45,12 @@ function miner_config_gen() {
   echo "-algo ${TT_MINER_ALGO}${CUDA_VERS}" >> $MINER_CONFIG
 
   pool1=$(head -n 1 <<< "$TT_MINER_URL")
-  pool2=$(head -n 2 <<< "$TT_MINER_URL" | tail -1 | sed -re 's:.*//\s*(.*):\1:') #' second pool should be without protocol.
-
   echo "-wal $TT_MINER_TEMPLATE" >> $MINER_CONFIG
   [[ ! -z $TT_MINER_PASS ]] && echo "-pass $TT_MINER_PASS" >> $MINER_CONFIG
   echo "-pool $pool1" >> $MINER_CONFIG
 
-  if [[ ! -z pool2 ]]; then
+  if [[ `echo "$TT_MINER_URL" | wc -l` -gt 1 ]]; then
+    pool2=$(head -n 2 <<< "$TT_MINER_URL" | tail -1 | sed -re 's:.*//\s*(.*):\1:') #' second pool should be without protocol.
     echo "-wal2 $TT_MINER_TEMPLATE" >> $MINER_CONFIG
     [[ ! -z $TT_MINER_PASS ]] && echo "-pass2 $TT_MINER_PASS" >> $MINER_CONFIG
     echo "-pool2 $pool2" >> $MINER_CONFIG
