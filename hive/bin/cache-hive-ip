@@ -1,73 +1,82 @@
 #!/usr/bin/env bash
 
-#Recreate. Because of shitty picky bugs
-echo "127.0.0.1	localhost
+# dns server to use for queries
+dns_serv=(" " "1.1.1.1" "8.8.8.8")
 
+# get current hosts
+oldhosts=`cat /etc/hosts`
+# it always looses last newline
+oldhosts+=$'\n'
+
+newhosts="# DO NOT EDIT. All changes will be overwritten by cache-hive-ip
+127.0.0.1 localhost
 # The following lines are desirable for IPv6 capable hosts
-::1     localhost ip6-localhost ip6-loopback
+::1 localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
-" > /etc/hosts
+"
 
-[[ $1 == "resetonly" ]] && exit 0
+function add_hosts () {
+	
+	[ ! -e $RIG_CONF ] && echo "> No $RIG_CONF" && return 2
+	. $RIG_CONF
+	[[ -z $HIVE_HOST_URL ]] && echo "> HIVE_HOST_URL is empty" && return 3
 
+	# add rig host
+	# not using hostname-check here as it directly writes to /etc/hosts
+	[[ ! -z $WORKER_NAME ]] && hostname=$WORKER_NAME || hostname=worker #fallback hostname
+	[[ $hostname =~ ^([0-9]+).* ]] && hostname="hive$WORKER_NAME" #echo "${BASH_REMATCH[1]}"
+	newhosts+=$'\n'"# WORKER NAME"$'\n'"127.0.0.1 $hostname"$'\n'
 
-#adds host ip
-/hive/bin/hostname-check
+	# resolve api host ip
+	SEPARATOR="# HIVEOS HOST CACHE BEGIN"
+	HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
+	[[ -z $HOST ]] && echo "> Unable to parse hostname from $HIVE_HOST_URL" && return 4
 
+	# using host for lookup. getenv uses /etc/host itself!
+	#ent=`getent ahosts $HOST | grep -m 1 STREAM | sed -E 's/(\w+)\s+STREAM\s+(.*)/\1 \2/'`
+	for serv in "${dns_serv[@]}"
+	do
+		resolve=`host -W 10 $HOST $serv`
+		exitcode=$?
+		echo "> Resolving $HOST"$'\n'"$resolve"
+		[[ $exitcode -eq 0 ]] && break
+	done
+	
+	count=`grep -c "has address" <<< "$resolve"`
+	#echo "$count, $exitcode"
 
-[ ! -e $RIG_CONF ] && echo "No $RIG_CONF" && exit 1
-. $RIG_CONF
-[[ -z $HIVE_HOST_URL ]] && echo "HIVE_HOST_URL is empty" && exit 1
+	if [[ $count -eq 1 ]]; then
+		resolve=`grep -m 1 "has address" <<< "$resolve"`
+		addr=${resolve#*has address }
+		if [[ $addr =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+			echo "> Adding to cache \"$addr $HOST\""
+			newhosts+=$'\n'$SEPARATOR$'\n'"$addr $HOST"$'\n'
+		else
+			echo "> Unable extract address"
+			return 5
+		fi
+	elif [[ $count -gt 1 ]]; then
+		echo "> Resolved multiple ip, skipping"
+	fi
 
+	return $exitcode
+}
 
-
-
-#Resolves host and writes it to /etc/hosts
-
-SEPARATOR="#HIVE HOST CACHE BEGIN"
-#HOST="hiveos.farm"
-HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
-[[ -z $HOST ]] && echo "Unable to parse hostname from $HIVE_HOST_URL" && exit 1
-
-
-
-#remove one line after match which should remove entry in hosts
-#sed -i "/^$SEPARATOR$/,+1d" /etc/hosts
-#sed -i "/$SEPARATOR/,+1d" /etc/hosts
-#hosts=`cat /etc/hosts | grep -v "$HOST" | grep -v "$SEPARATOR"`
-#echo "$hosts" > /etc/hosts
-
-#getent hosts hiveos.farm | awk '{ print $1 }' >> /etc/hosts
-#ent=`getent hosts hiveos.farm`
-
-ent=`getent ahosts $HOST | grep -m 1 STREAM | sed -E 's/(\w+)\s+STREAM\s+(.*)/\1 \2/'`
-exitcode=$?
-
-echo -e "\n$SEPARATOR" >> /etc/hosts
-if [[ -z $ent || $exitcode > 0 ]]; then
-    echo "Unable to resolve $HOST"
-    ent="#Unable to resolve $HOST" #to place this in file
+if [[ $1 != "resetonly" ]]; then
+	add_hosts
+	exitcode=$?
 else
-    echo "Writing DNS resolve \"$ent\" to /etc/hosts"
+	exitcode=0
 fi
 
-echo $ent >> /etc/hosts
+# update only if needed
+if [[ "$oldhosts" != "$newhosts" ]]; then
+	echo "$newhosts" > /etc/hosts
+	echo "> Hosts update done"
+	sync
+else
+	echo "> Hosts is up to date"
+fi
 
-#blocking nicehash servrs from Claymore
-echo "" >> /etc/hosts
-
-#nicehash is on again
-#echo "127.0.0.1 cryptonight.usa.nicehash.com" >> /etc/hosts
-#echo "127.0.0.1 daggerhashimoto.usa.nicehash.com" >> /etc/hosts
-
-
-sync
-
-#Example with double results
-#94.231.46.146 STREAM hiveos.farm
-#94.231.46.146 DGRAM
-#94.231.46.146 RAW
-#5ee7:2e92:: STREAM
-#5ee7:2e92:: DGRAM
-#5ee7:2e92:: RAW
+exit $exitcode
