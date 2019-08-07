@@ -3,12 +3,16 @@
 
 #nvidia-oc > /var/log/nvidia-oc.log 2>&1
 
-nvidia-oc 2>&1 | tee /var/log/nvidia-oc.log
-exitcode=$? #actually not sure is it nvidia or tee result
+timeout -s9 150 bash -c "set -o pipefail; nvidia-oc 2>&1 | tee /var/log/nvidia-oc.log"
+exitcode=$?
+
+if [[ $exitcode -ge 124 ]]; then
+	echo -e "${RED}ERROR: NVIDIA OC failed ${NOCOLOR}"
+	[[ "$1" != "quiet" ]] && cat /var/log/nvidia-oc.log | message error "NVIDIA OC failed" payload > /dev/nul
+fi
 
 #sed removes colors
 #[[ -e /var/log/nvidia-oc.log ]] &&
 #sed -i "s,$(printf '\033')\\[[0-9;]*[a-zA-Z],,g" /var/log/nvidia-oc.log
-
 
 exit $exitcode

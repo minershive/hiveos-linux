@@ -1,0 +1,7 @@
+Package: hive-miners-ccminer-xaya-0.1-cuda100
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - CCminer-xaya v0.1 (based on tpruvot v2.3) CUDA 10.0

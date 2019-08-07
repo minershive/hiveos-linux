@@ -6,12 +6,17 @@ if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be e
 fi
 
 # set minimum LA for watchdog to 2 * cores/threads + 1
-MIN_WD_LA=$(( $(nproc --all) * 2 + 1 ))
+WD_MIN_LA=$(( $(nproc --all) * 2 + 1 ))
 
-SLEEP=10 #seconds to sleep over iteration
-OK_MESSAGE_REDUCE=$(( 1 * 60 / $SLEEP )) #e.g. only every 6th message will be displayed to reduce log
+WD_SLEEP=10 #seconds to sleep over iteration
+OK_MESSAGE_REDUCE=$(( 1 * 60 / $WD_SLEEP )) #e.g. only every 6th message will be displayed to reduce log
 
 [ -t 1 ] && . /hive/bin/colors
+
+ok_count=0
+check_count=0
+gpu_err_count=0
+high_la_count=0
 
 
 function loadconf() {
@@ -25,11 +30,9 @@ function loadconf() {
 		. $RIG_CONF
 	fi
 
-
 	[[ -z $WD_ENABLED || $WD_ENABLED != 1 ]] &&
 		echo -e "${YELLOW}Watchdog not enabled, exiting${NOCOLOR}" &&
 		exit 0
-
 
 	minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
 	[[ -z $minhash || $minhash == "null" ]] &&
@@ -50,32 +53,37 @@ function set_lastgood() {
 }
 
 
-
 function check_la() {
 
 	local max_la=$WD_MAX_LA
-	[[ $max_la -lt $MIN_WD_LA ]] && max_la=$MIN_WD_LA
+	[[ $max_la -lt $WD_MIN_LA ]] && max_la=$WD_MIN_LA
 	local max_la2x=$(( $max_la * 2 ))
 	local la=$( cat /proc/loadavg )
 	local la1=$( awk '{printf int($1)}' <<< $la )
 	local la5=$( awk '{printf int($2)}' <<< $la )
 
-	# reboot if LA (5 min) >= maxLA
+	# reboot immediately if LA (5 min) >= maxLA
 	if [ $la5 -ge $max_la ]; then
-		echo -e "${RED}LA is more than $max_la: $la5 ${NOCOLOR}"
-		message error "LA > $max_la, rebooting" > /dev/nul
-		sleep 5
-		#nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+		echo -e "${RED}LA is more than $max_la: $la5, rebooting ${NOCOLOR}"
+		echo $la | message error "LA > $max_la, rebooting" payload > /dev/nul
+		#sleep 5
 		sreboot
 	# reboot if LA (1 min) >= maxLA * 2
 	elif [ $la1 -ge $max_la2x ]; then
-		echo -e "${RED}LA is more than $max_la2x: $la1 ${NOCOLOR}"
-		message error "LA > $max_la2x, rebooting" > /dev/nul
-		sleep 5
-		#nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
-		sreboot
-	elif [[ $check_count == 0 ]]; then
-		echo "${GREEN}OK${NOCOLOR} LA(5m): $la5.0 < $max_la.0, LA(1m): $la1.0 < $max_la2x.0"
+		# check few times to avoid short peaks
+		if [[ $high_la_count -ge 2 ]]; then
+			echo -e "${RED}LA is more than $max_la2x: $la1, rebooting ${NOCOLOR}"
+			echo $la | message error "LA > $max_la2x, rebooting" payload > /dev/nul
+			#sleep 5
+			sreboot
+		else
+			echo -e "${RED}LA is more than $max_la2x: $la1, waiting ${NOCOLOR}"
+			[[ $high_la_count -eq 0 ]] && echo $la | message warning "LA > $max_la2x" payload > /dev/nul
+		fi
+		((high_la_count++))
+	else
+		high_la_count=0
+		[[ $check_count == 0 ]] && echo "${GREEN}OK${NOCOLOR} LA(5m): $la5.0 < $max_la.0, LA(1m): $la1.0 < $max_la2x.0"
 	fi
 }
 
@@ -84,29 +92,27 @@ function check_gpu() {
 	# check if gpu-stat stop working most likely because of hanged gpu
 	local gpu_cnt=$(cat /run/hive/gpu-stats.json | jq 'length')
 	if [[ "$gpu_cnt" == "0" ]]; then
-		#check again
-		sleep 30
-		gpu_cnt=$(cat /run/hive/gpu-stats.json | jq 'length')
-		if [[ "$gpu_cnt" == "0" ]]; then
+		# check few times to be sure
+		if [[ $gpu_err_count -ge 2 ]]; then
 			echo -e "{RED}GPU are lost, rebooting ${NOCOLOR}"
 			message error "GPU are lost, rebooting" > /dev/nul
-			sleep 5
+			#sleep 5
 			sreboot
+		else
+			echo -e "{RED}GPU are lost, waiting ${NOCOLOR}"
+			#[[ $gpu_err_count -eq 0 ]] && message warning "GPU are lost" > /dev/nul
 		fi
+		((gpu_err_count++))
+	else
+		gpu_err_count=0
 	fi
 }
 
 
-set_lastgood
-ok_count=0
-check_count=0
-
 function loop() {
 	#echo -n "[`date`] "
 
-	loadconf
-
-	#check every 2nd interval, ie 20 sec
+	# check every 2nd interval, ie 20 sec
 	if [[ $(( $check_count % 2 )) == 0 ]]; then
 		[[ "$WD_CHECK_GPU" == "1" ]] && check_gpu
 		[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && check_la
@@ -133,14 +139,13 @@ function loop() {
 		return
 	fi
 
-
 	now=`date +%s`
 	elapsed=$(($now - $lastgood))
 	#echo Elapsed $elapsed seconds
 
 	echo -e "${RED}BARK${NOCOLOR} ${CYAN}$MINER${NOCOLOR} $khs kHs < $minhash kHs for $elapsed seconds"
 
-	#Check to reboot first
+	# check to reboot first
 	if [[ ! -z $WD_REBOOT ]]; then
 		reboot_timeout=`echo $WD_REBOOT 60 | awk '{print $1 * $2}'`
 		if [[ $elapsed -ge $reboot_timeout ]]; then
@@ -148,13 +153,13 @@ function loop() {
 			echo -e "---"
 			echo -e "${RED}Rebooting after $WD_REBOOT minutes${NOCOLOR}"
 			echo -e "---"
-			#sreboot
-			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+			#nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+			sreboot
 			return #for testing and if it does not work)
 		fi
 	fi
 
-	#Check to restart miner
+	# check to restart miner
 	if [[ ! -z $WD_MINER ]]; then
 		miner_restart_timeout=`echo $WD_MINER 60 | awk '{print $1 * $2}'`
 		if [[ $miner_restart_count == 0 && $elapsed -ge $miner_restart_timeout ]]; then
@@ -170,17 +175,20 @@ function loop() {
 
 function run() {
 
+	set_lastgood
+
 	loadconf
 
 	echo "MINER RESTART:  $WD_MINER minutes"
 	echo "REBOOT:         $WD_REBOOT minutes"
 
 	[[ "$WD_CHECK_GPU" == "1" ]] && echo "CHECK GPU:      Enabled"
-	[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && echo "MAX LA:         $WD_MAX_LA.0 (min $MIN_WD_LA.0)"
+	[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && echo "MAX LA:         $WD_MAX_LA.0 (min $WD_MIN_LA.0)"
 
 	while true; do
 		loop
-		sleep $SLEEP
+		sleep $WD_SLEEP
+		loadconf
 	done
 }
 

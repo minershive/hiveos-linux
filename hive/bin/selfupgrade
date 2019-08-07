@@ -19,15 +19,26 @@ echo -e "Current version: ${YELLOW}$current_version@$repover${NOCOLOR}"
 screen -wipe > /dev/null 2>&1
 as=$(screen -ls | grep -c autoswitch)
 
-VERSION=$1
+VERSION=
 
-if [[ ! -z $VERSION ]]; then
-	[[ ! $VERSION =~ ^[0-9]+\.[0-9]+-[0-9]+$ ]] &&
-		echo -e "${YELLOW}Invalid version format \"$VERSION\"${NOCOLOR}" &&
-		echo -e "Please use the following format x.y-zz, like 0.5-12" &&
-		exit 1
-fi
+case $1 in
+	--force|-f) # it can help in situations when selfupgrade says Hive is up to date but this is not true
+		echo -e "${YELLOW}> Cleaning Hive apt lists${NOCOLOR}"
+		# force HiveOS lists download
+		rm -f /var/lib/apt/lists/*hiveos*
+	;;
 
+	*) # version
+		VERSION=$1
+		if [[ ! -z $VERSION ]]; then
+			[[ ! $VERSION =~ ^[0-9]+\.[0-9]+-[0-9]+$ ]] &&
+				echo -e "${YELLOW}Invalid version format \"$VERSION\"${NOCOLOR}" &&
+				echo -e "Please use the following format x.y-zz, like 0.5-12" &&
+				exit 1
+			echo -e "${YELLOW}> Upgrading to version ${WHITE}$VERSION${NOCOLOR}"
+		fi
+	;;
+esac
 
 #remove stupid rep file for smaller updates
 [[ -f /etc/apt/sources.list.d/amdgpu-pro.list ]] && rm /etc/apt/sources.list.d/amdgpu-pro.list
@@ -42,14 +53,15 @@ hpkg update || exit $?
 if [[ -z $VERSION ]]; then #no target version
 	updateavail=`apt list --upgradable 2>&1 | grep '^hive' | wc -l`
 	if [[ $updateavail == 0 ]]; then
-		echo -e "${GREEN}Hive is up to date already${NOCOLOR}"
 		[[ -e /hive-config/RepoVer ]] && oldrepover=`cat /hive-config/RepoVer` || oldrepover=0
-
 		repover-touch
 		[[ -e /hive-config/RepoVer ]] && repover=`cat /hive-config/RepoVer` || repover=0
-
-		[[ $repover != $oldrepover ]] && hello
-
+		if [[ $repover != $oldrepover ]]; then
+			hello
+			echo -e "${GREEN}Upgrade to ${YELLOW}$current_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
+		else
+			echo -e "${GREEN}Hive is up to date already${NOCOLOR}"
+		fi
 		exit 0
 	fi
 fi
