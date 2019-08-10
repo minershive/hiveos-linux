@@ -28,13 +28,33 @@ function miner_config_gen() {
 
 	conf=`cat $MINER_DIR/$MINER_FORK/$MINER_VER/config_global.json | envsubst`
 	userconf='{}'
-	#merge user config options into main config
-	if [[ ! -z $XMRIG_USER_CONFIG ]]; then
-		while read -r line; do
-			[[ -z $line ]] && continue
-			conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
-		done <<< "$XMRIG_USER_CONFIG"
+	local ver=$MINER_VER
+	#local fork=`miner_fork`
+    echo VER=$MINER_VER
+	if [[ "$ver" < "2.98" ]]; then
+		#merge user config options into main config
+		if [[ ! -z $XMRIG_USER_CONFIG ]]; then
+			while read -r line; do
+				[[ -z $line ]] && continue
+				conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
+			done <<< "$XMRIG_USER_CONFIG"
+		fi
+	else
+		local param=
+		local XMRIG_ALGO=
+		#merge user config options into main config
+		if [[ ! -z $XMRIG_USER_CONFIG ]]; then
+			while read -r line; do
+				[[ -z $line ]] && continue
+				param=$(jq -r '.algo' <<< "{$line}")
+				echo $param
+				[[ ! -z $param ]] & [[ "$param" != "null" ]]&& XMRIG_ALGO=$param && continue
+				conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
+			done <<< "$XMRIG_USER_CONFIG"
+		fi
 	fi
+	
+#	echo XMRIG_ALGO=$XMRIG_ALGO
 
 	#merge CPU settings into main config
 	if [[ -z $XMRIG_THREADS || $XMRIG_THREADS == '[]' || $XMRIG_THREADS == 'null' ]]; then
@@ -61,10 +81,17 @@ function miner_config_gen() {
 	for url in $XMRIG_URL; do
 		[[ ${nicehash,,} = "true" || ${url,,} = *"nicehash"* ]] && c_nicehash='true' || c_nicehash='false'
 
-		pool=$(cat <<EOF
+		if [[ -z $XMRIG_ALGO ]]; then
+			pool=$(cat <<EOF
 					{"url": "$url", "user": "$XMRIG_TEMPLATE", "pass": "$XMRIG_PASS", "rig_id": "$rig_id", "use_nicehash": $c_nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "variant": "$variant", "keepalive": true }
 EOF
 )
+		else
+			pool=$(cat <<EOF
+					{"algo": "$XMRIG_ALGO", "url": "$url", "user": "$XMRIG_TEMPLATE", "pass": "$XMRIG_PASS", "rig_id": "$rig_id", "use_nicehash": $c_nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "variant": "$variant", "keepalive": true }
+EOF
+)
+		fi
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
 	done
 
