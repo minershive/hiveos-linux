@@ -74,7 +74,11 @@ cpu_id=$(sudo dmidecode -t 4 | grep ID | sed 's/.*ID://;s/ //g')
 	first_mac=$(echo $net_interfaces | jq -r .[0].mac | sed 's/://g') #just grab the first in list
 
 bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
-bootdisk=${bootpart::-1} #cutoff partnumber
+if [[ "$(echo $bootpart | grep -c nvme)" -gt 0 ]]; then 
+	bootdisk=${bootpart::-2} #cutoff partnumber
+else
+	bootdisk=${bootpart::-1} #cutoff partnumber
+fi
 disk_model=`parted -ml | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
 
 kernel=`uname --kernel-release`

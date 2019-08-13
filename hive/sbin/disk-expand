@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERS="0.2"
+VERS="0.3"
 DELAY=5
 FREE_SPACE_LIMIT=100
 
@@ -24,7 +24,11 @@ part_expand(){
 	local part_name=$2
 
 	[[ -z $part_name ]] && echo -e "${YELLOW}No partition name given${NOCOLOR}" && return 1
-	local part_num=`echo $2 | sed 's/\([[:alpha:]]*\)//'`
+	if [[ "$(echo $part_name | grep -c nvme)" -gt 0 ]]; then
+	    local part_num=`echo $2 | sed -e "s/^$1//" | sed 's/^p//'`
+	else
+	    local part_num=`echo $2 | sed 's/\([[:alpha:]]*\)//'`
+	fi
 	local dev_part="/dev/$2"
 	#  echo dev=$dev_name
 	#  echo part=$part_name
@@ -82,8 +86,13 @@ PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\
 #echo $PART_UUID
 #DISK_PART=`blkid | grep -m1 $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
 DISK_PART=`blkid -U "${PART_UUID}" | sed 's/\(^\/dev\/\)//'`
-#echo "/dev/sda2:" | sed 's/\([[:digit:]]\)://'
-DISK_NAME=`echo ${DISK_PART} | sed 's/\([[:digit:]]\)//'`
+if [[ "$(echo $DISK_PART | grep -c nvme)" -gt 0 ]];
+then
+    DISK_NAME=${DISK_PART::-2} #cutoff partnumber pN
+else
+    DISK_NAME=${DISK_PART::-1} #cutoff partnumber N
+fi
+#DISK_NAME=`echo ${DISK_PART} | sed 's/\([[:digit:]]\)//'`
 #echo $DISK_NAME $DISK_PART
 #exit 1
 #parted -lm $DISK_NAME | head -n 2 | tail -n 1 #| tr ":" "\n"
