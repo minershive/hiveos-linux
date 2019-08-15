@@ -58,6 +58,9 @@ function miner_config_gen() {
 		"cryptonight-trtl" )
 			algo="cnturtle"
 		;;
+		"cryptonight-ccx" )
+			algo="cnconceal"
+		;;
 	esac
 	[[ ! -z ${algo} ]] && algo="-a ${algo}"
 
