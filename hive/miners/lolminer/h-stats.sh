@@ -18,6 +18,12 @@ else
 		BEAM)
 			algo="equihash 150/5"
 			;;
+		BEAM-I)
+			algo="equihash 150/5"
+			;;
+		BEAM-II)
+			algo="equihash 150/5"
+			;;
 		GRIN-AD29)
 			algo="cuckoo"
 			;;
