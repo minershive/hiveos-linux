@@ -16,13 +16,13 @@ else
 	local algo=""
 	case "$(echo $stats_raw | jq -r '.Mining.Coin')" in
 		BEAM)
-			algo="equihash 150/5"
+			algo="equihash 150/5/3"
 			;;
 		BEAM-I)
 			algo="equihash 150/5"
 			;;
 		BEAM-II)
-			algo="equihash 150/5"
+			algo="equihash 150/5/3"
 			;;
 		GRIN-AD29)
 			algo="cuckoo"
