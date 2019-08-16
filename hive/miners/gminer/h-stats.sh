@@ -38,6 +38,9 @@ else
   done
 
   [[ -z $GMINER_ALGO ]] && GMINER_ALGO="144_5"
+  [[ "$GMINER_ALGO" == "beamhashI" ]] && GMINER_ALGO="150_5"
+  [[ "$GMINER_ALGO" == "beamhash" ]] && GMINER_ALGO="equihash 150/5"
+  [[ "$GMINER_ALGO" == "beamhashII" ]] && GMINER_ALGO="equihash 150/5/3"
 
   local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
 

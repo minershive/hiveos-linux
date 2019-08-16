@@ -28,9 +28,9 @@ function miner_config_gen() {
 
     conf+=" --server $host --port $port --user $GMINER_TEMPLATE"
     [[ ! -z $GMINER_PASS ]] && conf+=" --pass $GMINER_PASS"
-  done
 
-  [[ $GMINER_TLS -eq 1 ]] && conf+=" --ssl 1"
+    [[ $GMINER_TLS -eq 1 ]] && conf+=" --ssl 1"
+  done
 
   conf+=" $GMINER_USER_CONFIG"
 
