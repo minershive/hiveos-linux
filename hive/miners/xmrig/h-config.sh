@@ -30,7 +30,7 @@ function miner_config_gen() {
 	userconf='{}'
 	local ver=$MINER_VER
 	#local fork=`miner_fork`
-    echo VER=$MINER_VER
+	#echo VER=$MINER_VER
 	if [[ "$ver" < "2.98" ]]; then
 		#merge user config options into main config
 		if [[ ! -z $XMRIG_USER_CONFIG ]]; then
@@ -41,7 +41,7 @@ function miner_config_gen() {
 		fi
 	else
 		local param=
-		local XMRIG_ALGO=
+		local XMRIG_ALGO="cn/r"
 		#merge user config options into main config
 		if [[ ! -z $XMRIG_USER_CONFIG ]]; then
 			while read -r line; do
