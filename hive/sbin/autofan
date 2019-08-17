@@ -72,6 +72,8 @@ while true; do
 		nvidia_indexes_array=`echo "$gpu_detect_json" | jq -r "$nvidia_indexes_query| .[]"`
 		nvidia_cards_number=`echo "$gpu_detect_json" | jq -c "$nvidia_indexes_query | length"`
 
+		declare -a fan_count_array=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value) | .value.fan_cnt'`)
+		
 		# TODO cpus maybe required to use autofans too
 		#cpu_indexes_query='[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'
 		#cpu_indexes_array=`echo "$gpu_detect_json" | jq -r "$cpu_indexes_query"`
@@ -350,22 +352,31 @@ do_miner_action() {
 nvidia_auto_fan_control () {
 	args=
 	#set start index
-	i=0
+	local fan_idx=0
+	local gpu_idx=0
 	for index in ${nvidia_indexes_array[@]}; do
 		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on nvidia_indexes_array[@] as argument
 		local gpu_temperature=${temperatures_array[index]}
 		local gpu_temperature_previous=${temperatures_array_previous[index]}
-		if [[ -z $gpu_temperature_previous ]]; then gpu_temperature_previous=0; fi
+		[[ -z $gpu_temperature_previous ]] && gpu_temperature_previous=0
 		local gpu_fan_speed=${fans_array[index]}
 		local card_bus_id=${card_bus_ids_array[index]}
 		local brand="Nvidia"
+		local fan_count=${fan_count_array[index]}
+		[[ -z $fan_count || $fan_count == "null" ]] && fan_count=1
 		#event_by_temperature $gpu_temperature
-		#echo "get_fan_speed \"$gpu_temperature\" \"$gpu_temperature_previous\" \"$gpu_fan_speed\" \"$card_bus_id\" $i $brand"
-		get_fan_speed "$gpu_temperature" "$gpu_temperature_previous" "$gpu_fan_speed" "$card_bus_id" $i $brand
+		#echo "get_fan_speed \"$gpu_temperature\" \"$gpu_temperature_previous\" \"$gpu_fan_speed\" \"$card_bus_id\" $gpu_idx $brand"
+		get_fan_speed "$gpu_temperature" "$gpu_temperature_previous" "$gpu_fan_speed" "$card_bus_id" $index $brand
 		#not set fan_speed if not changed
-		[[ -n $target_fan_speed && $target_fan_speed -ne $gpu_fan_speed ]] && 
-			args+=" -a [gpu:$i]/GPUFanControlState=1 -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
-		i=$(( $i+1 ))
+		if [[ -n $target_fan_speed && $target_fan_speed -ne $gpu_fan_speed ]]; then
+			args+=" -a [gpu:$gpu_idx]/GPUFanControlState=1"
+			for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
+				args+=" -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
+			done
+		fi
+		#echo "gpu $gpu_idx, fan $fan_idx, count $fan_count, index $index"
+		gpu_idx=$(( $gpu_idx+1 ))
+		fan_idx=$(( $fan_idx+$fan_count ))
 	done
 	#[[ -n $args ]] && nvidia-settings $args > /dev/null 2>&1
 	if [[ -n $args ]]; then
@@ -544,7 +555,7 @@ case $1 in
 		if [[ $session_count > 0 ]]; then
 			screen -x -S autofan
 		else #start new screen
-			screen -dm -S autofan autofan run
+			screen -dm -S autofan $0 run
 			echo2 "Autofan screen started"
 		fi
 	;;

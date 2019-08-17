@@ -2,20 +2,15 @@
 #[ -t 1 ] &&
 . colors
 
+# it is used to save OC settings to apply only changes on next run. can be disabled
+#NVIDIA_OC_FILE=/run/hive/nvidia-oc
+
 date
 echo ""
 
 export DISPLAY=":0"
 
-n=`gpu-detect NVIDIA`
-
-if [ $n == 0 ]; then
-	echo "No NVIDIA cards detected, exiting"
-	exit
-fi
-echo "Detected $n NVIDIA cards"
-
-
+# check it in first place
 if [ ! -f $NVIDIA_OC_CONF ]; then
 	echo "$NVIDIA_OC_CONF does not exist"
 	exit
@@ -23,39 +18,31 @@ fi
 
 source $NVIDIA_OC_CONF
 
+if [ ! -f $GPU_DETECT_JSON ]; then
+	gpu_detect_json=`gpu-detect listjson`
+else
+	gpu_detect_json=`cat $GPU_DETECT_JSON`
+fi
+
+n=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ] | length'`
+
+if [[ $n == 0 ]]; then
+	echo "No NVIDIA cards detected, exiting"
+	exit
+fi
+
+echo "Detected $n NVIDIA cards"
 
 if [[ ! -z $RUNNING_DELAY ]]; then
 	echo -e "${CYAN}Sleeping $RUNNING_DELAY seconds...${NOCOLOR}"
 	sleep $RUNNING_DELAY
 fi
 
+[[ -z $FAN || $FAN == "" ]] && FAN=0
 
+[[ -z $PLIMIT || $PLIMIT == "" ]] && PLIMIT=0
 
-if [[ -z $MEM ]]; then
-	:
-	#MEM=0
-	#echo "ERROR: no MEM set"
-	#exit
-fi
-
-if [[ -z $CLOCK || $CLOCK == "" ]]; then
-	:
-	#CLOCK=0
-	#echo "ERROR: no CLOCK set"
-	#exit
-fi
-
-if [[ -z $FAN || $FAN == "" ]]; then
-	FAN=0
-fi
-
-if [[ -z $PLIMIT || $PLIMIT == "" ]]; then
-	PLIMIT=0
-fi
-
-if [[ -z $OHGODAPILL_ENABLED || $OHGODAPILL_ENABLED == "" ]]; then
-	OHGODAPILL_ENABLED=0
-fi
+[[ -z $OHGODAPILL_ENABLED || $OHGODAPILL_ENABLED == "" ]] && OHGODAPILL_ENABLED=0
 
 #Start OhGodAnETHlargementPill. It will exit if its 0
 OHGODAPILL_RUNNING=`ps aux | grep /hive/opt/ohgodapill/run.sh | grep -v grep | wc -l`
@@ -72,8 +59,6 @@ else
 		pkill -f '/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2'
 	fi
 fi
-
-
 
 #pad arrays
 [[ ! -z $CLOCK ]] &&
@@ -100,93 +85,128 @@ for (( i=${#PLIMIT[@]}; i < $n; ++i )); do
 	PLIMIT[$i]=${PLIMIT[$i-1]}
 done
 
+declare -a FANCNT=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.fan_cnt'`)
 
-echo "CLOCK  = ${CLOCK[*]}"
-echo "MEM    = ${MEM[*]}"
-echo "FAN    = ${FAN[*]}"
-echo "PLIMIT = ${PLIMIT[*]}"
-
-#exit
+# load previous settings from file
+if [[ ! -z $NVIDIA_OC_FILE && -f $NVIDIA_OC_FILE ]]; then
+	source $NVIDIA_OC_FILE
+	PREV_CLOCK=($PREV_CLOCK)
+	PREV_MEM=($PREV_MEM)
+	PREV_PLIMIT=($PREV_PLIMIT)
+	PREV_FAN=($PREV_FAN)
+	#echo ""
+	#echo "OLD CORE  = ${PREV_CLOCK[*]}"
+	#echo "OLD MEM    = ${PREV_MEM[*]}"
+	#echo "OLD PLIMIT = ${PREV_PLIMIT[*]}"
+	#echo "OLD FAN    = ${PREV_FAN[*]}"
+fi
 
 echo ""
-nvidia-persistenced --persistence-mode
+
+echo "CORE   = ${CLOCK[*]}"
+echo "MEM    = ${MEM[*]}"
+echo "PLIMIT = ${PLIMIT[*]}"
+echo "FAN    = ${FAN[*]}"
+echo "FANCNT = ${FANCNT[*]}"
+
+echo ""
+
+pgrep --full nvidia-persistenced > /dev/null
+if [[ $? -ne 0 ]]; then
+	nvidia-persistenced --persistence-mode
+	#nvidia-smi -pm 1
+fi
 nvidia-smi -pm 1
 
-echo ""
+_IFS=$IFS && IFS=$'\n'
+declare -a NAME=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.name'`)
+declare -a RAM=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.mem'`)
+declare -a BUSID=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.busid'`)
+declare -a PLMAX=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_max'`)
+declare -a PLMIN=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_min'`)
+declare -a PLDEF=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_def'`)
+IFS=$_IFS
 
-#for i in {0..$n}
+fan_idx=0
+
 for (( i=0; i < $n; ++i )); do
-	#name=`nvidia-smi --query-gpu=gpu_name,gpu_bus_id --format=csv,noheader -i $i`
-	nvidiainfo=`nvidia-smi --query-gpu=gpu_bus_id,gpu_name,power.default_limit,power.limit,power.draw --format=csv,noheader -i $i`
-	bus=`awk -F', ' '{print $1}' <<< $nvidiainfo`
-	name=`awk -F', ' '{print $2}' <<< $nvidiainfo`
-	plim_def=`awk -F', ' '{print $3}' <<< $nvidiainfo`
-	plim=`awk -F', ' '{print $4}' <<< $nvidiainfo`
-	power_draw=`awk -F', ' '{print $5}' <<< $nvidiainfo`
 
-	bus=`awk '{print substr($1,10); }' <<< $bus` #00000000:01:00.0
+	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${BUSID[$i]} ${GREEN}${NAME[$i]} ${RAM[$i]}${NOCOLOR}, PL: ${PLMIN[$i]}, ${PLDEF[$i]}, ${PLMAX[$i]}  ${YELLOW}=== `date +"%T"`${NOCOLOR}"
 
-	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, $bus ${GREEN}$name${NOCOLOR}, $power_draw / $plim (Default $plim_def) ${YELLOW}=== `date +"%T"`${NOCOLOR}"
-
-	#persistense mode, save settings on process restart
-	#nvidia-smi -i $i -pm 1
-
-	#continue
-
-	#power limit
-	if [[ ! -z $PLIMIT && ${PLIMIT[$i]} > 0 ]]; then
-		nvresult=`nvidia-smi -i $i -pl ${PLIMIT[$i]}`
-		[[ $? -ne 0 ]] && color=$RED || color=$NOCOLOR
-		nvresult=`echo "$nvresult" | grep -v "^$"`
-		echo -e "${color}$nvresult${NOCOLOR}"
+	if [[ "${PREV_PLIMIT[$i]}" == "${PLIMIT[$i]}" ]]; then
+		echo "PLIMIT was already set to ${PLIMIT[$i]}"
 	else
-		if [[ $plim != $plim_def ]]; then
-			echo "Restoring default power limit"
-			nvidia-smi -i $i -pl `awk -F' W' '{print $1}' <<< $plim_def` | grep -v "^$"
+		if [[ ! -z $PLIMIT && ${PLIMIT[$i]} -gt 0 ]]; then
+			# check limits
+			#plmax=${PLMAX[$i]%%[!0-9]*}
+			#plmin=${PLMIN[$i]%%[!0-9]*}
+			#[[ ${PLIMIT[$i]} -gt $plmax ]] && PLIMIT[$i]=$plmax
+			#[[ ${PLIMIT[$i]} -lt $plmin ]] && PLIMIT[$i]=$plmin
+			nvresult=`nvidia-smi -i $i -pl ${PLIMIT[$i]}`
+			[[ $? -ne 0 ]] && color=$RED || color=$NOCOLOR
+			nvresult=`echo "$nvresult" | grep -v "^$"`
+			echo -e "${color}$nvresult${NOCOLOR}"
+		else
+			pldef=${PLDEF[$i]%%[!0-9]*}
+			#if [[ $plcur != $pldef ]]; then
+				echo "Restoring default power limit ${pldef}"
+				nvidia-smi -i $i -pl $pldef | grep -v "^$"
+			#fi
 		fi
 	fi
-
+	
 	#not working
 	#nvidia-smi -i ${i} -ac 4004,1911
 
 	args=
-	#nvidia-settings -a [gpu:$i]/GPUPowerMizerMode=1 | grep -v "^$"
-	args+=" -a [gpu:$i]/GPUPowerMizerMode=1"
+	[[ -z $PREV_POWERMIZER ]] &&
+		args+=" -a [gpu:$i]/GPUPowerMizerMode=1"
 
-	if [[ -z $FAN || ${FAN[$i]} == 0 ]]; then
-		#nvidia-settings -a [gpu:$i]/GPUFanControlState=0 | grep -v "^$"
-		args+=" -a [gpu:$i]/GPUFanControlState=0"
+	fans_count=${FANCNT[$i]}
+	[[ -z $fans_count || $fans_count == "null" ]] && fans_count=1
+
+	if [[ "${PREV_FAN[$i]}" == "${FAN[$i]}" ]]; then
+		echo "FAN was already set to ${FAN[$i]}"
 	else
-		#nvidia-settings -a [gpu:$i]/GPUFanControlState=1 | grep -v "^$"
-		#nvidia-settings -a [fan:$i]/GPUTargetFanSpeed=${FAN[$i]} | grep -v "^$"
-		args+=" -a [gpu:$i]/GPUFanControlState=1"
-		args+=" -a [fan:$i]/GPUTargetFanSpeed=${FAN[$i]}"
+		if [[ -z $FAN || ${FAN[$i]} == 0 ]]; then
+			args+=" -a [gpu:$i]/GPUFanControlState=0"
+		else
+			args+=" -a [gpu:$i]/GPUFanControlState=1"
+			for (( z = $fan_idx; z < $(( $fan_idx+$fans_count )); z++ )); do
+				args+=" -a [fan:$z]/GPUTargetFanSpeed=${FAN[$i]}"
+			done
+		fi
 	fi
 
+	fan_idx=$(( $fan_idx+$fans_count ))
 
 	#echo "i=$i x=$x"
 	#GTX 1050 wanted i=2, allothers want i=3
 	x=3
-	if [[ $name =~ "1050" ]]; then x=2
-	elif [[ $name =~ "P106-100" ]]; then x=2
-	elif [[ $name =~ "P106-090" ]]; then x=1
-	elif [[ $name =~ "P104-100" ]]; then x=1
-	elif [[ $name =~ "P102-100" ]]; then x=1
-	elif [[ $name =~ "1660 Ti" ]]; then x=4
-	elif [[ $name =~ "RTX" ]]; then x=4
+	if [[ ${NAME[$i]} =~ "1050" ]]; then x=2
+	elif [[ ${NAME[$i]} =~ "P106-100" ]]; then x=2
+	elif [[ ${NAME[$i]} =~ "P106-090" ]]; then x=1
+	elif [[ ${NAME[$i]} =~ "P104-100" ]]; then x=1
+	elif [[ ${NAME[$i]} =~ "P102-100" ]]; then x=1
+	elif [[ ${NAME[$i]} =~ "1660 Ti" ]]; then x=4
+	elif [[ ${NAME[$i]} =~ "RTX" ]]; then x=4
 	fi
 
-	[[ ! -z $CLOCK ]] &&
-		#nvidia-settings -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]} | grep -v "^$"
-		args+=" -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]}"
+	if [[ "${PREV_CLOCK[$i]}" == "${CLOCK[$i]}" ]]; then
+		echo "CORE CLOCK was already set to ${CLOCK[$i]}"
+	else
+		[[ ! -z $CLOCK && "${PREV_CLOCK[$i]}" != "${CLOCK[$i]}" ]] &&
+			args+=" -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]}"
+	fi
+	
+	if [[ "${PREV_MEM[$i]}" == "${MEM[$i]}" ]]; then
+		echo "MEM CLOCK was already set to ${MEM[$i]}"
+	else
+		[[ ! -z $MEM ]]
+			args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]}"
+	fi
 
-	[[ ! -z $MEM ]] &&
-		#nvidia-settings -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]} | grep -v "^$"
-		args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]}"
-
-
-	[[ ! -z $LOGO_BRIGHTNESS ]] &&
-		#nvidia-settings -a [gpu:$i]/GPULogoBrightness=$LOGO_BRIGHTNESS | grep -v "^$"
+	[[ ! -z $LOGO_BRIGHTNESS && "${PREV_LOGO_BRIGHTNESS}" != "${LOGO_BRIGHTNESS}" ]] &&
 		args+=" -a [gpu:$i]/GPULogoBrightness=$LOGO_BRIGHTNESS"
 
 	if [[ ! -z $args ]]; then
@@ -195,9 +215,19 @@ for (( i=0; i < $n; ++i )); do
 		nvresult=`echo "$nvresult" | grep -v "^$"`
 		echo -e "${color}$nvresult${NOCOLOR}"
 	fi
+	
 done
 
-
+# save settings to file
+if [[ ! -z $NVIDIA_OC_FILE ]]; then
+	data="PREV_POWERMIZER=1"$'\n'
+	data+="PREV_LOGO_BRIGHTNESS=$LOGO_BRIGHTNESS"$'\n'
+	data+="PREV_CLOCK=\"${CLOCK[*]}\""$'\n'
+	data+="PREV_MEM=\"${MEM[*]}\""$'\n'
+	data+="PREV_FAN=\"${FAN[*]}\""$'\n'
+	data+="PREV_PLIMIT=\"${PLIMIT[*]}\""$'\n'
+	echo "$data" > $NVIDIA_OC_FILE
+fi
 
 #
 #if [ -z $CPUFREQ ]; then
