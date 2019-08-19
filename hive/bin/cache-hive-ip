@@ -1,73 +1,102 @@
 #!/usr/bin/env bash
 
-#Recreate. Because of shitty picky bugs
-echo "127.0.0.1	localhost
+# !!!using only IPv4 addresses!!!
 
+# name servers for queries
+dns_srv=(" " "1.1.1.1" "8.8.8.8" "114.114.114.114")
+
+# update servers to cache
+upd_srv=("download.hiveos.farm")
+
+# get current hosts
+oldhosts=`cat /etc/hosts`
+# it always looses last newline
+oldhosts+=$'\n'
+
+newhosts="# DO NOT EDIT. All changes will be overwritten by cache-hive-ip
+127.0.0.1 localhost
 # The following lines are desirable for IPv6 capable hosts
-::1     localhost ip6-localhost ip6-loopback
+::1 localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
-" > /etc/hosts
-
-[[ $1 == "resetonly" ]] && exit 0
+"
 
 
-#adds host ip
-/hive/bin/hostname-check
+function add_host {
+
+	# using host for lookup. getenv uses /etc/host itself!
+	for srv in "${dns_srv[@]}"
+	do
+		resolve=`host -W 10 $1 $srv`
+		exitcode=$?
+		echo "> Resolving $1"$'\n'"$resolve"
+		[[ $exitcode -eq 0 ]] && break
+	done
+
+	count=`grep -c "has address" <<< "$resolve"` # IPv4
+	#echo "$count, $exitcode"
+
+	[[ $exitcode -ne 0 || $count -eq 0 ]] && return 10
+
+	# adding only first address
+	resolve=`grep -m 1 "has address" <<< "$resolve"`
+	addr=${resolve#*has address }
+	
+	# IPv4 only!
+	if [[ $addr =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+		echo "> Adding to cache \"$addr $1\""
+		newhosts+="$addr $1"$'\n'
+		return 0
+	fi
+	
+	echo "> Unable to extract address"
+	return 11
+}
 
 
-[ ! -e $RIG_CONF ] && echo "No $RIG_CONF" && exit 1
-. $RIG_CONF
-[[ -z $HIVE_HOST_URL ]] && echo "HIVE_HOST_URL is empty" && exit 1
+function update_hosts () {
+	
+	[ ! -e $RIG_CONF ] && echo "> No $RIG_CONF" && return 1
+	. $RIG_CONF
+	[[ -z $HIVE_HOST_URL ]] && echo "> HIVE_HOST_URL is empty" && return 2
 
+	# add rig host
+	# not using hostname-check here as it directly writes to /etc/hosts
+	[[ ! -z $WORKER_NAME ]] && hostname=$WORKER_NAME || hostname=worker #fallback hostname
+	[[ $hostname =~ ^([0-9]+).* ]] && hostname="hive$WORKER_NAME" #echo "${BASH_REMATCH[1]}"
+	newhosts+=$'\n'"# WORKER NAME"$'\n'"127.0.0.1 $hostname"$'\n'
 
+	newhosts+=$'\n'"# HIVEOS CACHE BEGIN"$'\n'
 
+	# add update hosts
+	for host in "${upd_srv[@]}"
+	do
+		add_host $host
+	done
 
-#Resolves host and writes it to /etc/hosts
+	# add api host
+	local HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
+	[[ -z $HOST ]] && echo "> Unable to parse hostname from $HIVE_HOST_URL" && return 3
+	add_host $HOST
+	exitcode=$?
 
-SEPARATOR="#HIVE HOST CACHE BEGIN"
-#HOST="hiveos.farm"
-HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
-[[ -z $HOST ]] && echo "Unable to parse hostname from $HIVE_HOST_URL" && exit 1
+	return $exitcode
+}
 
+exitcode=0
 
-
-#remove one line after match which should remove entry in hosts
-#sed -i "/^$SEPARATOR$/,+1d" /etc/hosts
-#sed -i "/$SEPARATOR/,+1d" /etc/hosts
-#hosts=`cat /etc/hosts | grep -v "$HOST" | grep -v "$SEPARATOR"`
-#echo "$hosts" > /etc/hosts
-
-#getent hosts hiveos.farm | awk '{ print $1 }' >> /etc/hosts
-#ent=`getent hosts hiveos.farm`
-
-ent=`getent ahosts $HOST | grep -m 1 STREAM | sed -E 's/(\w+)\s+STREAM\s+(.*)/\1 \2/'`
-exitcode=$?
-
-echo -e "\n$SEPARATOR" >> /etc/hosts
-if [[ -z $ent || $exitcode > 0 ]]; then
-    echo "Unable to resolve $HOST"
-    ent="#Unable to resolve $HOST" #to place this in file
-else
-    echo "Writing DNS resolve \"$ent\" to /etc/hosts"
+if [[ $1 != "resetonly" ]]; then
+	update_hosts
+	exitcode=$?
 fi
 
-echo $ent >> /etc/hosts
+# update only if needed
+if [[ "$oldhosts" != "$newhosts" ]]; then
+	echo "$newhosts" > /etc/hosts
+	echo "> Hosts update done"
+	sync
+else
+	echo "> Hosts is up to date"
+fi
 
-#blocking nicehash servrs from Claymore
-echo "" >> /etc/hosts
-
-#nicehash is on again
-#echo "127.0.0.1 cryptonight.usa.nicehash.com" >> /etc/hosts
-#echo "127.0.0.1 daggerhashimoto.usa.nicehash.com" >> /etc/hosts
-
-
-sync
-
-#Example with double results
-#94.231.46.146 STREAM hiveos.farm
-#94.231.46.146 DGRAM
-#94.231.46.146 RAW
-#5ee7:2e92:: STREAM
-#5ee7:2e92:: DGRAM
-#5ee7:2e92:: RAW
+exit $exitcode
