@@ -248,6 +248,7 @@ function do_command () {
 				done
 				local meta=$(jq -n --arg good "`echo ${meta_good[@]} | tr " " ","`" --arg bad "`echo ${meta_bad[@]} | tr " " ","`" '{$good,$bad}')
 				local reboot_msg=""
+				echo "Batch. need_reboot="$need_reboot >>/home/user/amd_reboot.log
 				[[ $need_reboot -eq 1 && $errors == 0 ]] && reboot_msg=", now reboot"
 				if [ $errors == 0 ]; then
 					echo "$payload" | message ok "ROM flashing OK$reboot_msg" payload --id=$cmd_id --meta="$meta"
@@ -261,6 +262,7 @@ function do_command () {
 				local rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
 				local need_reboot=$(echo $body | jq '.reboot' --raw-output)
 				[[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
+				echo "Single. need_reboot="$need_reboot >>/home/user/amd_reboot.log
 				if [[ -z $gpu_index || $gpu_index == "null" ]]; then
 					message error "No \"gpu_index\" given" --id=$cmd_id
 				elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
