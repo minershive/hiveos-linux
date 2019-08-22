@@ -32,6 +32,9 @@ function miner_config_gen() {
     [[ $GMINER_TLS -eq 1 ]] && conf+=" --ssl 1"
   done
 
+  #If there is no --pec param in USER_CONFIG, then disable power efficiency calculator to reduse CPU load.
+  [[ ! $GMINER_USER_CONFIG =~ "--pec" ]] && conf+=" --pec 0"
+
   conf+=" $GMINER_USER_CONFIG"
 
   echo "$conf" > $MINER_CONFIG
