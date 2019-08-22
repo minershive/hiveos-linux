@@ -190,6 +190,7 @@ for (( i=0; i < $n; ++i )); do
 	elif [[ ${NAME[$i]} =~ "P102-100" ]]; then x=1
 	elif [[ ${NAME[$i]} =~ "1660 Ti" ]]; then x=4
 	elif [[ ${NAME[$i]} =~ "RTX" ]]; then x=4
+	elif [[ ${NAME[$i]} =~ "1650" ]]; then x=2
 	fi
 
 	if [[ "${PREV_CLOCK[$i]}" == "${CLOCK[$i]}" ]]; then
