@@ -14,6 +14,10 @@ while true; do
 		break
 done
 
+export GPU_MAX_HEAP_SIZE=100
+export GPU_MAX_ALLOC_PERCENT=100
+export GPU_SINGLE_ALLOC_PERCENT=100
+
 cd $MINER_DIR/$MINER_VER
 
 ./finminer
