@@ -1,0 +1,7 @@
+Package: hive-miners-xmrig-nvidia-xmrig-2.14.5-cuda100
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - XMRig-Nvidia v2.14.5 build CUDA 10.0

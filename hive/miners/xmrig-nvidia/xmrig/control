@@ -1,8 +1,8 @@
 Package: hive-miners-xmrig-nvidia-xmrig
-Version: 0.6-03
+Version: 0.6-04
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-xmrig-nvidia-xmrig-2.14.4
+Depends: hive-miners-xmrig-nvidia-xmrig-2.14.5-cuda101
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - XMRig-Nvidia CUDA miner for cryptonight family algos
