@@ -13,6 +13,7 @@ help_context="USAGE
 DESCRIPTION
 \tTool for upgrading HiveOS from repository.
 OPTIONS
+\t-h, --help\t\tshow current help
 \t-f, --force\t\tforce upgrade; it can help in situations when selfupgrade says Hive is up to date but actually it isn't
 \trepository URL\t\tset repository to get updates from; should start with http like http://download.hiveos.farm/repo/binary or http://127.0.0.1/repo/binary
 \tverson\t\t\tspecify version to upgrade or downgrade; should use the following format x.y-zz, like 0.6-65
@@ -36,11 +37,11 @@ repository_list=
 
 for param in $@; do
 	case $param in
-		--help)
+		--help|-h)
 			echo -e "$help_context"
 			exit 0
 		;;
-		--force|-f) # it can help in situations when selfupgrade says Hive is up to date but this is not true
+		--force|-f) # it csan help in situations when selfupgrade says Hive is up to date but this is not true
 			echo -e "${YELLOW}> Cleaning Hive apt lists${NOCOLOR}"
 			# force HiveOS lists download
 			rm -f /var/lib/apt/lists/*hiveos*
