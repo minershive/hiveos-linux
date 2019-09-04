@@ -13,11 +13,21 @@ function get_cpu_temp(){
 local ver=`miner_ver`
 local fork=`miner_fork`
 
-if [[ "$ver" < "2.15" ]]; then
-	stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:$MINER_API_PORT`
-else
-	stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:$MINER_API_PORT/1/summary`
-fi
+case $fork in
+   xmrigcc)
+	if [[ "$ver" < "2.0" ]]; then
+		stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:$MINER_API_PORT`
+	else
+		stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:$MINER_API_PORT/1/summary`
+	fi
+	;;
+         *)
+	if [[ "$ver" < "2.15" ]]; then
+		stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:$MINER_API_PORT`
+	else
+		stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:$MINER_API_PORT/1/summary`
+	fi
+esac
 
 #echo $stats_raw | jq .
 if [[ $? -ne 0 || -z $stats_raw ]]; then

@@ -31,7 +31,15 @@ function miner_config_gen() {
 	local ver=$MINER_VER
 	#local fork=`miner_fork`
 	#echo VER=$MINER_VER
-	if [[ "$ver" < "2.98" ]]; then
+	if [[ "$ver" < "2.98" ]] && [[ "$MINER_FORK" != "xmrigcc" ]]; then
+		#merge user config options into main config
+		if [[ ! -z $XMRIG_USER_CONFIG ]]; then
+			while read -r line; do
+				[[ -z $line ]] && continue
+				conf=$(jq -s '.[0] * .[1]' <<< "$conf {$line}")
+			done <<< "$XMRIG_USER_CONFIG"
+		fi
+	elif [[ "$ver" < "1.99" ]] && [[ "$MINER_FORK" == "xmrigcc" ]]; then
 		#merge user config options into main config
 		if [[ ! -z $XMRIG_USER_CONFIG ]]; then
 			while read -r line; do
