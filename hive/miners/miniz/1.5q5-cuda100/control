@@ -1,0 +1,7 @@
+Package: hive-miners-miniz-1.5q5-cuda100
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - miniZ v1.5q5 CUDA 10.0
