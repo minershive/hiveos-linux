@@ -1,5 +1,5 @@
 Package: hive-miners-miniz-1.5q5-cuda80
-Version: 0.6-01
+Version: 0.6-02
 Section: base
 Priority: optional
 Architecture: all
