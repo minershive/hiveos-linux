@@ -41,7 +41,7 @@ for param in $@; do
 			echo -e "$help_context"
 			exit 0
 		;;
-		--force|-f) # it csan help in situations when selfupgrade says Hive is up to date but this is not true
+		--force|-f) # it can help in situations when selfupgrade says Hive is up to date but this is not true
 			echo -e "${YELLOW}> Cleaning Hive apt lists${NOCOLOR}"
 			# force HiveOS lists download
 			rm -f /var/lib/apt/lists/*hiveos*
