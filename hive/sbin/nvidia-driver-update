@@ -47,16 +47,23 @@ if [[ $exitcode -eq 0 ]]; then
 	./$basename --accept-license --no-questions --ui=none --dkms --install-libglvnd #--tmpdir=/hive-drivers-pack
 	exitcode=$?
 	if [[ $exitcode -eq 0 ]]; then
-		echo -e ""
-		echo -e "${CYAN}> Updating nvidia-settings${NOCOLOR}"
-		apt update
 		nvidia_settings_version=`dpkg -s nvidia-settings 2>&1 | grep '^Version: ' | sed 's/Version: //'`
-		if [[ -z $nvidia_settings_version ]]; then
-			apt-get install --reinstall -y nvidia-settings
-		else
-			apt-get install --only-upgrade --reinstall -y nvidia-settings
+		#Install strictly  361.42
+		if [[ $nvidia_settings_version != 361.42* ]]; then
+			echo -e ""
+			echo -e "${CYAN}> Updating nvidia-settings${NOCOLOR}"
+			apt update
+			apt remove --purge nvidia-settings > /dev/null 2>&1
+			apt install nvidia-settings=361.42-0ubuntu1
 		fi
+		apt-mark hold nvidia-settings > /dev/null 2>&1
+#		if [[ -z $nvidia_settings_version ]]; then
+#			apt-get install --reinstall -y nvidia-settings
+#		else
+#			apt-get install --only-upgrade --reinstall -y nvidia-settings
+#		fi
 	fi
+
 fi
 
 
