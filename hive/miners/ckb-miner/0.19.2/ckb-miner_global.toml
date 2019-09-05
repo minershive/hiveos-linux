@@ -1,0 +1,19 @@
+[logger]
+filter = "info"
+color = true
+log_to_file = true
+log_to_stdout = true
+
+[sentry]
+# set to blank to disable sentry error collection
+dsn = "https://48c6a88d92e246478e2d53b5917a887c@sentry.io/1422795"
+# if you are willing to help us to improve,
+# please leave a way to contact you when we have troubles to reproduce the errors.
+# org_contact = ""
+
+[miner]
+block_on_submit = true
+# block template polling interval in milliseconds
+poll_interval = 1000
+
+
