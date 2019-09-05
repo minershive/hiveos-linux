@@ -34,6 +34,10 @@ function loadconf() {
 		echo -e "${YELLOW}Watchdog not enabled, exiting${NOCOLOR}" &&
 		exit 0
 
+	[[ -z $MINER ]] &&
+		echo -e "${YELLOW}No miner is set in config, exiting${NOCOLOR}" &&
+		exit 1
+
 	minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
 	[[ -z $minhash || $minhash == "null" ]] &&
 		message warn "Minimal hashrate for $MINER is not set" &&

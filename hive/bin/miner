@@ -23,7 +23,8 @@ fi
 
 [[ -e $WALLET_CONF ]] && . $WALLET_CONF
 
-[[ -z $MINER ]] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
+# stop using claymore as default
+#[[ -z $MINER ]] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
 
 
 #HARDCODE FIX
@@ -70,6 +71,11 @@ function start() {
 		echo -e "Run ${CYAN}miner${NOCOLOR} or ${CYAN}screen -r${NOCOLOR} to resume screen"
 		return
 	fi
+
+	[[ -z $MINER ]] &&
+		message warn "No miner is set" > /dev/null &&
+		echo -e "${YELLOW}No miner is set in config, exiting ${NOCOLOR}" &&
+		exit 1
 
 	echo -en "Starting ${CYAN}$MINER${NOCOLOR}"
 	#[[ ! -z $MINER2 ]] &&

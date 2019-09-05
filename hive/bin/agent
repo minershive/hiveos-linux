@@ -182,8 +182,9 @@ function loop {
 	. $RIG_CONF
 	. $WALLET_CONF
 
+	# stop using claymore as default
+	#[[ -z $MINER ]] && MINER="claymore"
 
-	[[ -z $MINER ]] && MINER="claymore"
 	HIVE_URL="$HIVE_HOST_URL/worker/api"
 
 	echo -en "${YELLOW}"
@@ -197,51 +198,54 @@ function loop {
 	local fan=$(jq '.fan' <<< $gpu_stats)
 	local power=$(jq '.power' <<< $gpu_stats)
 
-#	miner2_json=
-#	if [[ ! -z $MINER2 ]]; then
-#		miner_stats $MINER2 2
-#		khs2=$khs
-#		miner2_json=$(jq -n --arg miner2 "$MINER2" --arg total_khs2 "$khs" --argjson miner_stats2 "$stats" \
-#			'{"params": {$miner2, $total_khs2, $miner_stats2}}')
-#	fi
+	if [[ ! -z $MINER ]]; then
+#		miner2_json=
+#		if [[ ! -z $MINER2 ]]; then
+#			miner_stats $MINER2 2
+#			khs2=$khs
+#			miner2_json=$(jq -n --arg miner2 "$MINER2" --arg total_khs2 "$khs" --argjson miner_stats2 "$stats" \
+#				'{"params": {$miner2, $total_khs2, $miner_stats2}}')
+#		fi
 
-	# Get other miners stats
-	local mindex
-	for mindex in {32..2}; do
-		eval minerval=\$MINER$mindex
-		if [[ ! -z $minerval ]]; then
-			miner_stats $minerval $mindex
-			eval khs$mindex=\$khs
-			local t_khs=$(sanitize_total_hashrate $khs)
-			stats=$(sanitize_miner_stats $stats)
-			miner_json=$(jq -n -c \
-				--arg miner$mindex "$minerval" \
-				--argjson miner_stats$mindex "$stats" \
-				'{"params": {$miner'$mindex', "total_khs'$mindex'":'$t_khs', $miner_stats'$mindex'}}')
-			eval miner${mindex}_json="\$miner_json"
-		else
-			eval miner${mindex}_json=
-		fi
-	done
-
-
-	miner_stats $MINER #khs and stats are global
-
-	echo -en "Hashrate ${CYAN}$MINER${NOCOLOR} `[[ $khs > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs${NOCOLOR} kH/s"
-	for mindex in {2..32}; do
-		#[[ ! -z $MINER2 ]] &&
-		#	echo -en " ${CYAN}$MINER2${NOCOLOR} `[[ $khs2 > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs2${NOCOLOR} kH/s"
-		eval minerval=\$MINER$mindex
-		if [[ ! -z $minerval ]]; then
-			eval khs_i=\$khs$mindex
-			echo -en ", ${CYAN}$minerval${NOCOLOR} `[[ $khs_i > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs_i${NOCOLOR} kH/s"
-		fi
-	done
-
-	echo -en "\n"
-	echo $khs > $HASHRATE_KHS
+		# Get other miners stats
+		local mindex
+		for mindex in {32..2}; do
+			eval minerval=\$MINER$mindex
+			if [[ ! -z $minerval ]]; then
+				miner_stats $minerval $mindex
+				eval khs$mindex=\$khs
+				local t_khs=$(sanitize_total_hashrate $khs)
+				stats=$(sanitize_miner_stats $stats)
+				miner_json=$(jq -n -c \
+					--arg miner$mindex "$minerval" \
+					--argjson miner_stats$mindex "$stats" \
+					'{"params": {$miner'$mindex', "total_khs'$mindex'":'$t_khs', $miner_stats'$mindex'}}')
+				eval miner${mindex}_json="\$miner_json"
+			else
+				eval miner${mindex}_json=
+			fi
+		done
 
 
+		miner_stats $MINER #khs and stats are global
+
+		echo -en "Hashrate ${CYAN}$MINER${NOCOLOR} `[[ $khs > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs${NOCOLOR} kH/s"
+		for mindex in {2..32}; do
+			#[[ ! -z $MINER2 ]] &&
+			#	echo -en " ${CYAN}$MINER2${NOCOLOR} `[[ $khs2 > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs2${NOCOLOR} kH/s"
+			eval minerval=\$MINER$mindex
+			if [[ ! -z $minerval ]]; then
+				eval khs_i=\$khs$mindex
+				echo -en ", ${CYAN}$minerval${NOCOLOR} `[[ $khs_i > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs_i${NOCOLOR} kH/s"
+			fi
+		done
+		echo -en "\n"
+		echo $khs > $HASHRATE_KHS
+	else
+		echo -e "${YELLOW}No miner is set in config!${NOCOLOR}"
+		khs=0
+		stats="null"
+	fi
 
 	#echo $stats
 	#uptime: load averages for the past 1, 5, and 15 minutes
@@ -334,10 +338,11 @@ function loop {
 
 	LAST_OK=$(date +%s)
 	if [[ $force_stop -eq 1 ]]; then
-		miner start
+		# always run wd before miner
 		wd start
+		miner start
 		force_stop=0
-		echo "[`date`] Сonnection with API server is OK. Start miner" >> $LOG
+		echo "[`date`] Connection with API server is OK. Start miner" >> $LOG
 	fi
 
 	command=$(echo $response | jq '.result.command' --raw-output)
