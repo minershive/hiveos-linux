@@ -1,5 +1,25 @@
 #!/usr/bin/env bash
+
 # Sends hello to Hive, receives config files, restarts miner
+
+# retry interval. set to 0 or comment to disable
+RETRY_TIME=60
+
+arg_retry=0
+arg_check=0
+# will need to restart miner after
+arg_restartminer=0
+# send boot flag with hello message
+arg_boot=0
+
+# check for arguments
+for var in "$@"; do
+    [[ $var == "restartminer" ]] && arg_restartminer=1 && continue
+    [[ $var == "boot" ]] && arg_boot=1 && continue
+    # used internally
+    [[ $var == "retry" ]] && arg_retry=1 && continue
+    [[ $var == "check" ]] && arg_check=1 && continue
+done
 
 if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
 	source /etc/environment
@@ -27,17 +47,19 @@ mkdir -p "/hive-config/openvpn"
 
 HIVE_URL="$HIVE_HOST_URL/worker/api"
 
+# retry again until success
+if [[ $arg_retry == 1 ]]; then
+	echo -e "${YELLOW}Will to try again in ${RETRY_TIME}s${NOCOLOR}"
+	while true; do
+		sleep $RETRY_TIME
+		date
+		[[ -f $HELLO_OK ]] && exit 0
+		# do we need to use boot or restart flags here?
+		$0 check
+		[[ $? == 0 ]] && exit 0
+	done
+fi
 
-#will need to restart miner after
-arg_restartminer=0
-#send boot flag with hello message
-arg_boot=0
-
-#check for arguments
-for var in "$@"; do
-    [[ $var == "restartminer" ]] && arg_restartminer=1
-    [[ $var == "boot" ]] && arg_boot=1
-done
 
 # Make hello request ================================================================
 
@@ -74,7 +96,7 @@ cpu_id=$(sudo dmidecode -t 4 | grep ID | sed 's/.*ID://;s/ //g')
 	first_mac=$(echo $net_interfaces | jq -r .[0].mac | sed 's/://g') #just grab the first in list
 
 bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
-if [[ "$(echo $bootpart | grep -c nvme)" -gt 0 ]]; then 
+if [[ "$(echo $bootpart | grep -c nvme)" -gt 0 ]]; then
 	bootdisk=${bootpart::-2} #cutoff partnumber
 else
 	bootdisk=${bootpart::-1} #cutoff partnumber
@@ -156,10 +178,15 @@ echo "$request" | jq -c '.'
 
 response=$(echo $request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=hello" -H "Content-Type: application/json")
 exitcode=$?
-[[ $exitcode -ne 0 ]] &&
-	echo -e "${RED}Error connecting to Hive server${NOCOLOR} $HIVE_HOST_URL" &&
-	human-curl-error $exitcode &&
-	exit $exitcode #404 is not a bad exit code
+if [[ $exitcode -ne 0 ]]; then
+	echo -e "${RED}Error connecting to Hive server${NOCOLOR} $HIVE_HOST_URL"
+	human-curl-error $exitcode
+	[[ ! -z $RETRY_TIME && $RETRY_TIME != 0 && $arg_check == 0 ]] &&
+		echo -e "${YELLOW}Will to try again in ${RETRY_TIME}s${NOCOLOR}" &&
+		[[ $(screen -ls | grep -c hello) == 0 ]] &&
+			screen -dmS hello $0 retry
+	exit $exitcode
+fi
 
 #output and check json
 echo "$response" | jq '.'
@@ -167,26 +194,33 @@ echo "$response" | jq '.'
 [ $? -ne 0 ] && echo -e "${RED}Error parsing JSON response:${NOCOLOR} $response" && exit $? #error json parsing
 
 error=$(echo $response | jq '.error' --raw-output)
-[[ ! -z $error && $error != "null" ]] && echo -e "${RED}ERROR:${NOCOLOR} `echo $response | jq '.error.message' -r`" && exit 1
-
+if [[ ! -z $error && $error != "null" ]]; then
+	echo -e "${RED}ERROR:${NOCOLOR} `echo $response | jq '.error.message' -r`"
+	screen -S hello -X quit > /dev/null
+	exit 1
+fi
 
 # Save config and check it ================================================================
 config=$(echo $response | jq '.result.config' --raw-output)
-[[ -z "$config" || "$config" == "null" ]] &&
-	echo "Response body: $response" &&
-	echo -e "${RED}ERROR:${NOCOLOR} no config field in response" &&
+if [[ -z "$config" || "$config" == "null" ]]; then
+	echo "Response body: $response"
+	echo -e "${RED}ERROR:${NOCOLOR} no config field in response"
+	screen -S hello -X quit > /dev/null
 	exit 1
+fi
+
+# stop screen session if not running from it
+[[ $arg_check == 0 ]] && screen -S hello -X quit > /dev/null
+
 echo "$config" > $RIG_CONF
 
 . $RIG_CONF
 hostname-check
 
-
 # Password ================================================================
 # SET_RIG_PASS var is from previous rig.conf
 [[ $SET_RIG_PASS -eq 1 ]] &&
 	(hive-passwd -conf; echo "")
-
 
 # Timezone ================================================================
 [[ ! -z $TIMEZONE ]] &&
@@ -196,16 +230,17 @@ hostname-check
 [[ ! -z $SYSTEM_LANG ]] &&
 	locale-setup "$SYSTEM_LANG"
 
-
 # Wallet config ================================================================
 wallet=$(echo $response | jq '.result.wallet' --raw-output)
 if [[ ! -z $wallet && $wallet != "null" ]]; then
+	echo "Saving Wallet config"
 	echo "$wallet" > $WALLET_CONF
 fi
 
 # Nvidia config ================================================================
 nvidia_oc=$(echo $response | jq '.result.nvidia_oc' --raw-output)
 if [[ ! -z $nvidia_oc && $nvidia_oc != "null" ]]; then
+	echo "Saving NVIDIA OC config"
 	echo "$nvidia_oc" > $NVIDIA_OC_CONF
 else
 	[[ -f $NVIDIA_OC_CONF ]] && rm $NVIDIA_OC_CONF
@@ -256,7 +291,6 @@ fi
 
 echo "Touching $HELLO_OK"
 touch $HELLO_OK
-
 
 #Flush buffers if any files changed
 sync
