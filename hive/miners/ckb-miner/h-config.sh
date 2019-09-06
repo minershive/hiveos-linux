@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function miner_ver() {
-  local MINER_VER=$BEAMCL_VER
+  local MINER_VER=$CKB_MINER_VER
   [[ -z $MINER_VER ]] && MINER_VER=$MINER_LATEST_VER
   echo $MINER_VER
 }
