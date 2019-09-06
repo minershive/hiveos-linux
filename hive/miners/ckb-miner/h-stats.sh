@@ -65,9 +65,6 @@ local rig_conf_str=`cat /hive-config/rig.conf | grep $MINER_NAME`
 index=${rig_conf_str:5:1}
 [[ $index == "=" ]] && index=1
 
-#!!!!!!!!!!!!!!!!!!!
-index=1
-
 local log_name="/run/hive/miner.$index"
 local ver=`miner_ver`
 
