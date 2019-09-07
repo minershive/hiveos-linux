@@ -351,12 +351,10 @@ function write {
 	dd if=/new_conf.img of=/dev/${root_dev}1 status=progress
 	
 	#Fix GPT table if needed
-	if [[ $(blkid -o value -s PTTYPE /dev/$root_dev) == "gpt" ]]; then
-		partprobe > /dev/null 2>&1
-		sgdisk -e /dev/$root_dev
-		sgdisk -C /dev/$root_dev
-	fi
-		
+	partprobe > /dev/null 2>&1
+	sgdisk -e /dev/$root_dev
+	sgdisk -C /dev/$root_dev
+			
 	#Reboot
 	sync
 
