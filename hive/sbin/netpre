@@ -2,11 +2,22 @@
 #Network preconfiguration
 export PATH="./:/hive/bin:/hive/sbin:$PATH"
 . colors
-[[ -f /hive-config/.DISKLESS_AMD && $(cat /proc/mounts | grep "/ " | awk '{print $1}') == tmpfs ]] && echo "Diskless rig. Skipped" && exit 0
+
 
 # FS checking is here as we don't want to have too many services
 # And we need clean fs before cnfig files
 #To ensure we can read and write /hive-config
+
+PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
+DISK_PART=`blkid | grep -m1 $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
+root_dev=`echo ${DISK_PART} | sed 's/\([[:digit:]]\)//'`
+
+if [[ $(blkid -o value -s PTTYPE /dev/$root_dev) == "gpt" ]]; then
+	sgdisk -e /dev/$root_dev > /dev/null 2>&1
+	sgdisk -C /dev/$root_dev > /dev/null 2>&1
+	partprobe > /dev/null 2>&1
+fi
+
 
 #probably it's mounted with fstab at boot
 if cat /proc/mounts | grep /hive-config; then
