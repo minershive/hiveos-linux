@@ -45,6 +45,10 @@ function remove_miners() {
 	echo -e "${CYAN}> Stopping miner${NOCOLOR}"
 	miner stop
 
+	# stop watchdog while installing packages
+	local wd=$(wd status | grep -c running)
+	[[ $wd -ne 0 ]] && wd stop
+
 	echo
 	echo -e "${CYAN}> Uninstalling packages${NOCOLOR}"
 	for package_name in $packages; do
@@ -62,9 +66,12 @@ function remove_miners() {
 
 
 	echo
-	[[ $1 == "noinstall" ]] &&
-		echo -e "${CYAN}> Skipping installing default miners${NOCOLOR}" &&
+	if [[ $1 == "noinstall" ]]; then
+		# restore anyway
+		[[ $wd -ne 0 ]] && wd start
+		echo -e "${CYAN}> Skipping installing default miners${NOCOLOR}"
 		exit 0
+	fi
 
 
 	echo -e "${CYAN}> Updating repository${NOCOLOR}"
@@ -87,6 +94,8 @@ function remove_miners() {
 		fi
 	done
 
+	# restore wd after install
+	[[ $wd -ne 0 ]] && wd start
 
 	echo
 	[[ $1 == "nostart" || $1 == "noinstall" ]] &&

@@ -35,6 +35,9 @@ function hive-package-install () {
 	dpkg -s $package_name > /dev/null 2>&1
 	if [[ $? -ne 0 ]]; then
 		echo -e "${YELLOW}Installing $package_name${NOCOLOR}"
+		# stop watchdog while installing packages
+		local wd=$(wd status | grep -c running)
+		[[ $wd -ne 0 ]] && wd stop
 		hpkg update
 		hive-package-install-do $package_name
 		if [[ $? -ne 0 ]]; then
@@ -44,10 +47,14 @@ function hive-package-install () {
 			if [[ $? -ne 0 ]]; then
 				#repover-touch #don't touch as we did not update all packages
 				cat /tmp/package-install.log | message error "Error installing $package_name" payload
+				# restore anyway
+				[[ $wd -ne 0 ]] && wd start
 				return 1
 			fi
-			apt-get clean
 		fi
+		apt-get clean
+		# restore after install
+		[[ $wd -ne 0 ]] && wd start
 	fi
 	return 0
 }
