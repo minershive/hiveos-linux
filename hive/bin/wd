@@ -34,6 +34,10 @@ function loadconf() {
 		echo -e "${YELLOW}Watchdog not enabled, exiting${NOCOLOR}" &&
 		exit 0
 
+	[[ ! -z $MAINTENANCE && $MAINTENANCE -gt 0 ]] &&
+		echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
+		exit 1
+
 	[[ -z $MINER ]] &&
 		echo -e "${YELLOW}No miner is set in config, exiting${NOCOLOR}" &&
 		exit 1

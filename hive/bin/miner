@@ -72,6 +72,10 @@ function start() {
 		return
 	fi
 
+	[[ ! -z $MAINTENANCE && $MAINTENANCE -gt 0 ]] &&
+		echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
+		exit 1
+
 	[[ -z $MINER ]] &&
 		message warn "No miner is set" > /dev/null &&
 		echo -e "${YELLOW}No miner is set in config, exiting ${NOCOLOR}" &&
