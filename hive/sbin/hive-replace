@@ -352,8 +352,8 @@ function write {
 	
 	#Fix GPT table if needed
 	partprobe > /dev/null 2>&1
-	sgdisk -e /dev/$root_dev
-	sgdisk -C /dev/$root_dev
+	sgdisk -e /dev/$root_dev > /dev/null 2>&1
+	sgdisk -C /dev/$root_dev > /dev/null 2>&1
 			
 	#Reboot
 	sync
