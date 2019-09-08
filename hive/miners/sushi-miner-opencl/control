@@ -1,8 +1,8 @@
 Package: hive-miners-sushi-miner-opencl
-Version: 0.6-02
+Version: 0.6-03
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-sushi-miner-opencl-2.0.5
+Depends: hive-miners-sushi-miner-opencl-2.1.1
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner
+Description: Hive miner - Sushi Miner for OpenCL
