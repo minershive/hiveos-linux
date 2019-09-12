@@ -1,8 +1,8 @@
 Package: hive-miners-ckb-miner
-Version: 0.6-02
+Version: 0.6-03
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-ckb-miner-0.20.0
+Depends: hive-miners-ckb-miner-0.20.0.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - ckb-miner

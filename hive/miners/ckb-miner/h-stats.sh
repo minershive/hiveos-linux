@@ -4,15 +4,18 @@
 # Functions
 #######################
 
+#. /hive-config/wallet.conf
+
 get_hashes(){
   #Eaglesong-Worker-GPU-0 [01:15:19] hash rate: 157081456.621 / seals found:         89
   hs=''
   khs=0
   local t_hs=0
   #get gpus hashes
+  [[ $CKB_MINER_OPENCL -eq 1 ]] && local platform="CL" || platform="CU"
   if [[ $gpu_count -gt 0 ]]; then
-    for t_gpu in `jq -r '.[]' <<< $gpu_indexes_array` ; do
-      t_hs=`cat $log_name | tail -n 100 | grep "\-Worker\-GPU\-$t_gpu" | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | tr -cd "[:print:]\n" | egrep -o '*hash\ rate: ([0-9\.])+' | awk '{ print $3 }'`
+    for t_gpu in `echo $gpu_indexes_array | tr "," " "`; do
+      t_hs=`cat $log_name | tail -n 100 | grep "\-GPU\-${platform}\-$t_gpu" | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | tr -cd "[:print:]\n" | egrep -o '*hash\ rate: ([0-9\.])+' | awk '{ print $3 }'`
       hs+="$t_hs "
       khs=`echo $khs $t_hs | awk '{ printf("%.6f", $1 + $2/1000) }'`
     done
@@ -70,30 +73,35 @@ local ver=`miner_ver`
 
 local conf_name="/run/hive/miners/$MINER_NAME/$MINER_NAME.toml"
 
-gpu_indexes_array=`cat $conf_name | grep gpus | tr -d " " | sed 's/gpus=//'`
-gpu_count=`jq length <<< $gpu_indexes_array`
+gpu_indexes_array=`cat $conf_name | grep gpu_ids | tr -d " " | sed 's/gpu_ids=//' | egrep -o '([0-9\,])+'`
+gpu_count=`echo $gpu_indexes_array | tr "," " " | wc -w`
 
-local temp="[]"
-local fan="[]"
+local temp_l=`jq '.temp' <<< $gpu_stats`
+local fan_l=`jq '.fan' <<< $gpu_stats`
 
 #[[ -z $GPU_COUNT_NVIDIA ]] &&
 #  GPU_COUNT_NVIDIA=`gpu-detect NVIDIA`
 
 if [[ $gpu_count -gt 0 ]]; then
-  local temp=`jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats`
-  local fan=`jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats`
+#   if [[ $CKB_MINER_OPENCL -eq 1 ]]; then
+#     local temp=`jq -c "[.temp$amd_indexes_array]" <<< $gpu_stats`
+#     local fan=`jq -c "[.fan$amd_indexes_array]" <<< $gpu_stats`
+#   else
+#     local temp=`jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats`
+#     local fan=`jq -c "[.fan$nvidia_indexes_array]" <<< $gpu_stats`
+#   fi
 
-  local temp=`jq -c "[.$gpu_indexes_array]" <<< $temp`
-  local fan=`jq -c "[.$gpu_indexes_array]" <<< $fan`
+  temp_l=`jq -c "[.[$gpu_indexes_array]]" <<< $temp_l`
+  fan_l=`jq -c "[.[$gpu_indexes_array]]" <<< $fan_l`
 fi
 
 cpu_count=`cat $conf_name | grep cpus | tr -d " " | sed 's/cpus=//'`
 
-if [[ ! $cpu_count -gt 0 ]]; then
+if [[ $cpu_count -gt 0 ]]; then
   local cpu_temp=`get_cpu_temps $cpu_count`
   cpu_temp=`echo ${cpu_temp[@]} | tr " " "\n" | jq -cs '.'`
 
-  temp=`jq -s '.[0] + .[1]' <<< "$temp $cpu_temp"`
+  temp_l=`jq -s '.[0] + .[1]' <<< "$temp $cpu_temp"`
 fi
 
 # Calc log freshness
@@ -110,20 +118,21 @@ if [ "$diffTime" -lt "$maxDelay" ]; then
   local hs_units='hs' # hashes utits
   local uptime=`get_miner_uptime $conf_name` # miner uptime
   local acc=`cat $log_name | tail -n 100 | grep "Total seals found: " | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | tr -cd "[:print:]\n" | awk '{ print $4 }'`
+  [[ -z $acc ]] && acc=0
 
 # make JSON
 #--argjson hs "`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`" \
+
   stats=$(jq -nc \
         --argjson hs "`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`" \
         --arg hs_units "$hs_units" \
-        --argjson temp "$temp" \
-        --argjson fan "$fan" \
+        --argjson temp "$temp_l" \
+        --argjson fan "$fan_l" \
         --arg uptime "$uptime" \
         --arg acc "$acc" \
-        --arg rej "$rej" \
         --arg algo "$algo" \
         --arg ver "$ver" \
-        '{$hs, $hs_units, ar: [$acc, $rej], $temp, $fan, $uptime, $algo, $ver}')
+       '{$hs, $hs_units, ar: [$acc,0], $temp, $fan, $uptime, $algo, $ver}')
 else
   stats=""
   khs=0
