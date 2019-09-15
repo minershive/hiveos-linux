@@ -26,17 +26,17 @@ function miner_config_gen() {
   local pool_num=
   for pool in $CORTEX_MINER_URL; do
     [[ ! -z $i ]] && pool_num="_$i"
-    conf="-pool_uri$pool_num=$pool"
+    conf+="-pool_uri$pool_num=$pool"
     let i++
   done
 
-  conf=" -account=$CORTEX_MINER_TEMPLATE"
+  conf+=" -account=$CORTEX_MINER_TEMPLATE"
 
   [[ ! -z $CORTEX_MINER_WORKER ]] && conf+=" -worker $CORTEX_MINER_WORKER"
 
   [[ ! -z $CORTEX_MINER_USER_CONFIG ]] && conf+=" $CORTEX_MINER_USER_CONFIG"
 
-  if [[ `echo $CORTEX_MINER_USER_CONFIG | grep -c "-devices"` -eq 0 ]]; then
+  if [[ `echo $CORTEX_MINER_USER_CONFIG | grep -c "\-devices"` -eq 0 ]]; then
     devices=
     for ((i=0; i < `gpu-detect NVIDIA`; i++)); do
       [[ ! -z $devices ]] && devices+=","
