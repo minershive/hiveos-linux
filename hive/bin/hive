@@ -235,7 +235,8 @@ agent-screen dontattach
 
 #remove previous log file for Nvidia OC
 [[ -e /var/log/nvidia-oc.log ]] && rm /var/log/nvidia-oc.log
-
+#remove old version
+[[ -e /root/nvidia-oc ]] && rm /root/nvidia-oc
 
 
 if [[ $X_DISABLED != 1 && $DISKLESS != 1 ]]; then
