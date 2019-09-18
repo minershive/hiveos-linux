@@ -67,8 +67,8 @@ function check_la() {
 	[[ $max_la -lt $WD_MIN_LA ]] && max_la=$WD_MIN_LA
 	local max_la2x=$(( $max_la * 2 ))
 	local la=$( cat /proc/loadavg )
-	local la1=$( awk '{printf int($1)}' <<< $la )
-	local la5=$( awk '{printf int($2)}' <<< $la )
+	local la1=$( awk '{printf int($1)}' <<< $la ) #'
+	local la5=$( awk '{printf int($2)}' <<< $la ) #'
 
 	# reboot immediately if LA (5 min) >= maxLA
 	if [ $la5 -ge $max_la ]; then
@@ -133,8 +133,24 @@ function loop() {
 	[[ -e $HASHRATE_KHS ]] && khs=`cat $HASHRATE_KHS`
 	[[ -z $khs ]] && khs=0
 
+	local hashok=`echo $khs $minhash | awk '{ print ($1 >= $2) ? 1 : 0 }'` #float comparison
 
-	hashok=`echo $khs $minhash | awk '{ print ($1 >= $2) ? 1 : 0 }'` #float comparison
+	local new=`date +%s`
+	# check and adjust time if changed too much
+	if [[ ! -z $now ]]; then
+		local diff=$(( $new - $now - $WD_SLEEP ))
+		# must be 0 in most cases. adjust if diff is more than 2x sleep time
+		if [[ $diff -lt $(( -2*$WD_SLEEP )) || $diff -gt $(( 2*$WD_SLEEP )) ]]; then
+			echo "Adjusting time: ${diff}s"
+			if [[ -e $HASHRATE_KHS ]]; then
+				local old=$( stat -c %Y $HASHRATE_KHS )
+				[[ $old == $lastgood || ( $old -ge $now && $old -le $(( $now + $WD_SLEEP )) ) ]] &&
+					touch -c -m --date=@$(( $old + $diff )) $HASHRATE_KHS
+			fi
+			lastgood=$(( $lastgood + $diff ))
+		fi
+	fi
+	now=$new
 
 	if [[ $hashok == 1 ]]; then
 		set_lastgood
@@ -146,9 +162,8 @@ function loop() {
 
 		return
 	fi
-
-	now=`date +%s`
-	elapsed=$(($now - $lastgood))
+	
+	local elapsed=$(( $now - $lastgood ))
 	#echo Elapsed $elapsed seconds
 
 	echo -e "${RED}BARK${NOCOLOR} ${CYAN}$MINER${NOCOLOR} $khs kHs < $minhash kHs for $elapsed seconds"
