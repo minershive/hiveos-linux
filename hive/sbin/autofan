@@ -553,7 +553,8 @@ case $1 in
 	*)
 		session_count=`screen -ls autofan | grep autofan | wc -l`
 		if [[ $session_count > 0 ]]; then
-			screen -x -S autofan
+			[[ $1 != "dontattach" ]] &&
+				screen -x -S autofan
 		else #start new screen
 			screen -dm -S autofan $0 run
 			echo2 "Autofan screen started"

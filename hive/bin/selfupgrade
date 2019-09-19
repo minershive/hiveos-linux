@@ -16,7 +16,7 @@ OPTIONS
 \t-h, --help\t\tshow current help
 \t-f, --force\t\tforce upgrade; it can help in situations when selfupgrade says Hive is up to date but actually it isn't
 \trepository URL\t\tset repository to get updates from; should start with http like http://download.hiveos.farm/repo/binary or http://127.0.0.1/repo/binary
-\tverson\t\t\tspecify version to upgrade or downgrade; should use the following format x.y-zz, like 0.6-65
+\tversion\t\t\tspecify version to upgrade or downgrade; should use the following format x.y-zz, like 0.6-65
 EXAMPLE
 \tselfupgrade 0.6-65 http://192.168.0.1/repo/binary -f
 \t\t\t\tforce upgrade/downgrade to version 0.6-65 from repository http://192.168.0.1/repo/binary"
@@ -28,8 +28,7 @@ current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 	repover=0
 echo -e "Current version: ${YELLOW}$current_version@$repover${NOCOLOR}"
 
-screen -wipe > /dev/null 2>&1
-as=$(screen -ls | grep -c autoswitch)
+#screen -wipe > /dev/null 2>&1
 
 VERSION=
 existing_repository_list=
@@ -75,9 +74,9 @@ fi
 #remove stupid rep file for smaller updates
 [[ -f /etc/apt/sources.list.d/amdgpu-pro.list ]] && rm /etc/apt/sources.list.d/amdgpu-pro.list
 
-
 #Sometimes Ubuntu fails to update repos
 dpkg --configure -a
+dexitcode=$? # we do not check it here. only return on exit to show a problem
 
 hpkg update
 exitcode=$?
@@ -89,15 +88,28 @@ if [[ $exitcode -eq 0 ]]; then
 			[[ -e /hive-config/RepoVer ]] && oldrepover=`cat /hive-config/RepoVer` || oldrepover=0
 			repover-touch
 			[[ -e /hive-config/RepoVer ]] && repover=`cat /hive-config/RepoVer` || repover=0
+			#Restore old repository
+			if [[ ! -z $existing_repository_list && $existing_repository_list != `cat $HIVEREPO_LIST` ]]; then
+				echo "Restoring old repository URLs"
+				echo "$existing_repository_list" > $HIVEREPO_LIST
+			fi
 			if [[ $repover != $oldrepover ]]; then
 				hello
 				echo -e "${GREEN}Upgrade to ${YELLOW}$current_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
 			else
 				echo -e "${GREEN}Hive is up to date already${NOCOLOR}"
 			fi
-			exit 0
+			exit $dexitcode
 		fi
 	fi
+
+	# Stop wd, miners, autofan, autoswitch to prevent reboots during upgrade
+	as=$(screen -ls | grep -c autoswitch)
+	[[ $as -ne 0 ]] && echo -e "${YELLOW}> Stopping autoswitch${NOCOLOR}" && autoswitch stop > /dev/null 2>&1
+	echo -e "${YELLOW}> Stopping autofan, watchdog, miners${NOCOLOR}"
+	miner stop
+	wd stop
+	screen -S autofan -X quit > /dev/null
 
 	echo ------------------------------------------------------
 
@@ -137,55 +149,59 @@ if [[ $exitcode -eq 0 ]]; then
 	fi
 fi
 
+echo ------------------------------------------------------
+
 #Restore old repository
 if [[ ! -z $existing_repository_list && $existing_repository_list != `cat $HIVEREPO_LIST` ]]; then
 	echo "Restoring old repository URLs"
 	echo "$existing_repository_list" > $HIVEREPO_LIST
 fi
 
-[[ $exitcode -ne 0 ]] && echo -e "${RED}Upgrade failed${NOCOLOR}" && exit $exitcode
+if [[ $exitcode -ne 0 ]];then
+	if [[ ! -z $as ]]; then
+		# Start autofan, wd, miners, autoswitch if we stopped them
+		echo -e "${YELLOW}> Starting autofan, watchdog, miners${NOCOLOR}"
+		screen -S autofan -X quit > /dev/null
+		autofan dontattach
+		wd start
+		miner start
+		[[ $as -ne 0 ]] && echo -e "${YELLOW}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &	
+	fi
+	echo -e "${RED}Upgrade failed${NOCOLOR}"
+	exit $exitcode
+fi
 
-# Save RepoVer ---------------------------------------------------------------------------------------
+#Save RepoVer
 repover-touch
-
-
-echo ------------------------------------------------------
 
 apt-get -y autoremove
 
-
 #clean cached packages to save space
 apt-get clean
-
 
 #Reread env variables
 source /etc/environment
 export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
 
-
 #echo ------------------------------------------------------
-screen -wipe #Wipe possible dead screen
+screen -wipe > /dev/null 2>&1 #Wipe possible dead screen
 
 #Moved from postinst again as hello need to see new version
 echo -e "${YELLOW}> Saying hello to server again${NOCOLOR}"
-hello restartminer
-#miner restart
-#wd restart
-
+hello
 
 #Restart agent
 echo -e "${YELLOW}> Restarting agent${NOCOLOR}"
 screen -S agent -X quit
-agent-screen
+agent-screen dontattach
 
-#Restart autofan
-echo -e "${YELLOW}> Restarting autofan${NOCOLOR}"
-screen -S autofan -X quit
-autofan
-
-#Restart autoswitch if running
-[[ $as -ne 0 ]] && echo -e "${YELLOW}> Restarting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
-
+# Start autofan, wd, miners, autoswitch
+echo -e "${YELLOW}> Starting autofan, watchdog, miners${NOCOLOR}"
+screen -S autofan -X quit > /dev/null
+autofan dontattach
+wd start
+miner start
+[[ $as -ne 0 ]] && echo -e "${YELLOW}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 
 current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 [[ -e /hive-config/RepoVer ]] &&
@@ -193,7 +209,4 @@ current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 	repover=0
 echo -e "${GREEN}Upgrade to ${YELLOW}$current_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
 
-#Flush buffers if any files changed
-sync
-
-exit 0
+exit $dexitcode
