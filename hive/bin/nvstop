@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
+. colors
+
 try_count=3
 [[ ! -z $1 ]] && try_count=$1
 echo -e ""
-echo -e "${CYAN}> Stoping services${NOCOLOR}"
+echo -e "${CYAN}> Stopping services${NOCOLOR}"
 echo 1 > /run/hive/NV_OFF
 
 for (( i=0; i < $try_count; i++ ))

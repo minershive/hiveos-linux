@@ -7,74 +7,106 @@
 ###
 . colors
 
-url=$1
-
-if [[ -z $url ]]; then
-	echo -e "${CYAN}> Getting the latest version${NOCOLOR}"
-	versions_url=http://download.hiveos.farm/drivers/VERSIONS.txt
-	versions=`curl -sLk $versions_url`
-	[[ -z $versions ]] && echo -e "${RED}Error downloading versions from $versions_url${NOCOLOR}" && exit 1
-	eval "$versions"
-	echo -e "The latest stable Nvidia driver version: ${GREEN}${NVIDIA_FILE_VER}${NOCOLOR}"
-	url=http://download.hiveos.farm/drivers/$NVIDIA_FILE_VER
-fi
-
-[[ -z $url ]] && echo -e "${YELLOW}Please give URL where to download driver${NOCOLOR}" && exit 1
-
-cd /hive-drivers-pack
-export TMPDIR=/hive-drivers-pack
-basename=`basename $url`
-
-if [[ -e ./$basename ]]; then
-	echo -e "${CYAN}> Driver $basename is already downloaded${NOCOLOR}"
-else
-	echo -e "${CYAN}> Downloading $url${NOCOLOR}"
-	wget -c $url #`[ -t 0 ] && echo '--no-verbose'`
-	[[ $? -ne 0 ]] && echo -e "${RED}Error downloading driver${NOCOLOR}" && exit 1
-fi
-chmod +x ./$basename
-
-screen -wipe > /dev/null 2>&1
-sleep 1
-as=$(screen -ls | grep -c autoswitch)
-mn=$(screen -ls | grep -c miner)
-af=$(screen -ls | grep -c autofan)
-nvstop
-exitcode=$?
-if [[ $exitcode -eq 0 ]]; then
+# --nvs option to reinstall nvidia-settings only
+if [[ $1 != "--nvs" ]]; then
+	url=$1
 	echo -e ""
-	echo -e "${CYAN}> Installing${NOCOLOR}"
-	./$basename --accept-license --no-questions --ui=none --dkms --install-libglvnd #--tmpdir=/hive-drivers-pack
-	exitcode=$?
-	if [[ $exitcode -eq 0 ]]; then
-		nvidia_settings_version=`dpkg -s nvidia-settings 2>&1 | grep '^Version: ' | sed 's/Version: //'`
-		#Install strictly  361.42
-#		if [[ $nvidia_settings_version != 361.42* ]]; then
-		echo -e ""
-		echo -e "${CYAN}> Updating nvidia-settings${NOCOLOR}"
-		apt update
-		apt remove --purge -y nvidia-settings > /dev/null 2>&1
-		apt install -y nvidia-settings=361.42-0ubuntu1
-#		fi
-		apt-mark hold nvidia-settings > /dev/null 2>&1
-#		if [[ -z $nvidia_settings_version ]]; then
-#			apt-get install --reinstall -y nvidia-settings
-#		else
-#			apt-get install --only-upgrade --reinstall -y nvidia-settings
-#		fi
+	
+	if [[ -z $url ]]; then
+		echo -e "${CYAN}> Getting the latest version${NOCOLOR}"
+		versions_url=http://download.hiveos.farm/drivers/VERSIONS.txt
+		versions=`curl -sLk $versions_url`
+		[[ -z $versions ]] && echo -e "${RED}> Error downloading versions from $versions_url${NOCOLOR}" && exit 1
+		eval "$versions"
+		echo -e "The latest stable Nvidia driver version: ${GREEN}${NVIDIA_FILE_VER}${NOCOLOR}"
+		url=http://download.hiveos.farm/drivers/$NVIDIA_FILE_VER
 	fi
 
+	[[ -z $url ]] && echo -e "${YELLOW}Please give URL where to download driver${NOCOLOR}" && exit 1
+
+	cd /hive-drivers-pack
+	export TMPDIR=/hive-drivers-pack
+	basename=`basename $url`
+
+	if [[ -e ./$basename ]]; then
+		echo -e "${CYAN}> Driver $basename is already downloaded${NOCOLOR}"
+	else
+		echo -e "${CYAN}> Downloading $url${NOCOLOR}"
+		wget -c $url #`[ -t 0 ] && echo '--no-verbose'`
+		[[ $? -ne 0 ]] && echo -e "${RED}> Error downloading driver${NOCOLOR}" && exit 1
+	fi
+	chmod +x ./$basename
+
+	screen -wipe > /dev/null 2>&1
+	sleep 1
+	as=$(screen -ls | grep -c autoswitch)
+	mn=$(screen -ls | grep -c miner)
+	af=$(screen -ls | grep -c autofan)
+	wd=$(wd status | grep -c running)
+	nvstop
+	exitcode=$?
+
+	if [[ $exitcode -eq 0 ]]; then
+		echo -e ""
+		echo -e "${CYAN}> Installing driver. ${WHITE}PLEASE WAIT!${NOCOLOR}"
+		for i in {1..2}; do
+			[[ $i -ne 1 ]] && echo -e "${YELLOW}> Failed. Trying again${NOCOLOR}"
+			./$basename --accept-license --no-questions --ui=none --dkms --install-libglvnd #--tmpdir=/hive-drivers-pack
+			exitcode=$?
+			[[ $exitcode -eq 0 ]] &&
+				echo -e "${GREEN}> Done${NOCOLOR}" &&
+				break
+		done
+	fi
+else
+	nvs=1
 fi
 
+if [[ $exitcode -eq 0 || $nvs == 1 ]]; then
+	#nvs_version=`dpkg -s nvidia-settings 2>&1 | grep '^Version: ' | sed 's/Version: //'`
+	nvs_version=`nvidia-settings --version | grep version | awk '{print $3}'`
+	# Install strictly  361.42
+	if [[ $nvs_version != 361.42* || $nvs == 1 ]]; then
+		echo -e ""
+		echo -e "${CYAN}> Reinstalling nvidia-settings (current $nvs_version)${NOCOLOR}"
+		#apt remove -y --allow-change-held-packages --purge nvidia-settings
+		#apt install -y nvidia-settings=361.42-0ubuntu1
+		apt install -y --reinstall --allow-downgrades --allow-change-held-packages nvidia-settings=361.42-0ubuntu1
+		exitcode=$?
+		# run apt update only on demand
+		if [[ $exitcode -ne 0 ]]; then
+			apt update
+			#apt install -y nvidia-settings=361.42-0ubuntu1
+			apt install -y --reinstall --allow-downgrades --allow-change-held-packages nvidia-settings=361.42-0ubuntu1
+			exitcode=$?
+		fi
+		[[ $exitcode -ne 0 ]] &&
+			echo -e "${RED}> Nvidia-settings reinstall error${NOCOLOR}" ||
+			echo -e "${GREEN}> Nvidia-settings reinstall successful${NOCOLOR}"
+	fi
+	#apt-mark hold nvidia-settings > /dev/null 2>&1
+#	if [[ -z $nvidia_settings_version ]]; then
+#		apt-get install --reinstall -y nvidia-settings
+#	else
+#		apt-get install --only-upgrade --reinstall -y nvidia-settings
+#	fi
+fi
+
+[[ $nvs == 1 ]] && exit 0
+
+echo -e ""
+echo -e "${CYAN}> Starting services${NOCOLOR}"
 
 rm /run/hive/NV_OFF > /dev/null 2>&1
 systemctl start hivex > /dev/null 2>&1
-sleep 5
-[[ $mn -ne 0 ]] && miner start
-[[ $af -ne 0 ]] && autofan
-systemctl start hive-watchdog > /dev/null 2>&1
-[[ $as -ne 0 ]] && nohup bash -c 'sleep 12 && autoswitch start' > /tmp/nohup.log 2>&1 &
+sleep 10
 
-[[ $exitcode -ne 0 ]] && echo -e "${RED}Error installing driver${NOCOLOR}" && exit 1
+[[ $wd -ne 0 ]] && wd start > /dev/null 2>&1
+[[ $mn -ne 0 ]] && miner start > /dev/null 2>&1
+[[ $af -ne 0 ]] && autofan > /dev/null 2>&1
+[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 
-echo -e "${GREEN}Driver installation successful. Reboot now.${NOCOLOR}" && exit 0
+[[ $exitcode -ne 0 ]] && echo -e "${RED}> Driver installation error${NOCOLOR}" && exit 1
+
+echo -e "${GREEN}> Driver installation successful. ${WHITE}REBOOT NOW!${NOCOLOR}"
+exit 0
