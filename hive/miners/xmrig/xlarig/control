@@ -1,0 +1,8 @@
+Package: hive-miners-xmrig-xlarig
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-xmrig-xlarig-3.2.0
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - XLArig (for CPU)
