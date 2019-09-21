@@ -1,0 +1,8 @@
+Package: hive-miners-xmr-stak-uplexa
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-xmr-stak-uplexa-2.1.2
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - xmr-stak fork for uPlexa (SparrowMiner-UPX2)
