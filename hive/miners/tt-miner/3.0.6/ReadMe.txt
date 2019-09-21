@@ -12,6 +12,8 @@ Please find below the available parameter and arguments, arguments in [] are not
 			LYRA2V3		Lyra2 Revision 3 (Vertcoin)
 			HONEYCOMB	HoneyComb (BeeNode)
 
+-AALT			ALGONAME	select the algorithm to use for mining the alternate coin
+
 This parameter will always load the algo that fits best to the installed driver. If you want 
 to make sure that TT-Miner uses a certain cuda version please append one of these values:
 			-92		for cuda 9.20	(ETHASH-92, UBQHASH-92)
@@ -69,7 +71,9 @@ CUDA 9.2.148		>= 396.37	>= 398.26
 -n, -list, -ndevs	List the detected CUDA devices and exit
 -logpool		Enable logging of the pool communication. TT-Miner creates the pool-logfile in the folder 'Logs'.
 -log			Enable logging of screen output and additional information, the file is created in the folder 'Logs'.
+-poolinfo, -pi		Show information of the active pool
 -luck			Show a second information line that shows you how long it should take to find a new solution (share).
+
 				Additionally the time already spend on the new solutions is printed and also a 'luck' value
 				in percent that shows you the progress. Values below 100% indicate that there is still time
 				left until the next solution should be found. Values above 100% indicate that the miner needs
