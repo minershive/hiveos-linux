@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
-VERS="0.3"
+VERS="0.3.1"
 DELAY=5
 FREE_SPACE_LIMIT=100
 
-#[ -t 1 ] &&
-. colors
+[ -t 1 ] && . colors
+
+[[ $1 == "-s" ]] && SILENT=1
 
 function DelayDot(){
         local i=0
@@ -30,10 +31,6 @@ part_expand(){
 	    local part_num=`echo $2 | sed 's/\([[:alpha:]]*\)//'`
 	fi
 	local dev_part="/dev/$2"
-	#  echo dev=$dev_name
-	#  echo part=$part_name
-	#  echo num=$part_num
-	#  exit 1
 
 	echo "> Starting to repartition"
 	growpart $dev_name $part_num
@@ -83,8 +80,6 @@ GPT=0
 [[ $(blkid -o value -s PTTYPE /dev/${DISK_NAME}) == "gpt" ]] && GPT=1
 
 PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
-#echo $PART_UUID
-#DISK_PART=`blkid | grep -m1 $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
 DISK_PART=`blkid -U "${PART_UUID}" | sed 's/\(^\/dev\/\)//'`
 if [[ "$(echo $DISK_PART | grep -c nvme)" -gt 0 ]];
 then
@@ -92,11 +87,7 @@ then
 else
     DISK_NAME=${DISK_PART::-1} #cutoff partnumber N
 fi
-#DISK_NAME=`echo ${DISK_PART} | sed 's/\([[:digit:]]\)//'`
-#echo $DISK_NAME $DISK_PART
-#exit 1
-#parted -lm $DISK_NAME | head -n 2 | tail -n 1 #| tr ":" "\n"
-#DISK_SIZE=`fdisk -l "/dev/${DISK_NAME}" | head -n 1 | awk '{print $5}' | awk '{printf("%.f\n",$1/(1024*1024))}'`
+
 DISK_SIZE=`cat /proc/partitions | grep -w "${DISK_NAME}" | awk '{ printf("%.f",$3/1024)}'`
 PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
 
@@ -114,10 +105,11 @@ if [ $EXPAND_SIZE -le ${FREE_SPACE_LIMIT} ]; then
 	exit 1
 else
 	echo -e "Try to auto-expand Hive partition by ${WHITE}${EXPAND_SIZE}${NOCOLOR} MB up to ${WHITE}$((PART_SIZE+EXPAND_SIZE))${NOCOLOR} MB in total"
+	# Give user time for break process in interactive mode
+	if [[ -z $SILENT ]]; then
 		echo -e "Press Ctrl+C to stop or wait 5 seconds to continue";
-	# Give user time for break process
-	DelayDot
-#	read -t 5
+		DelayDot
+	fi
 
 	part_expand "$DISK_NAME" "$DISK_PART"
 
@@ -127,4 +119,3 @@ else
 		echo -e "New HIVE partition size is ${GREEN}$NEW_PART_SIZE${NOCOLOR} MB"
 	fi
 fi
-

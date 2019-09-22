@@ -41,6 +41,7 @@ fi
 
 if [[ ! -e $RIG_CONF || $1 == "-f" ]]; then
 	selfupgrade
+	disk-expand -s
 	msg=$(cat <<EOF
 ${BRANDING_LOGO}
 ${CYAN}This is your first boot, no config found at "$RIG_CONF".
