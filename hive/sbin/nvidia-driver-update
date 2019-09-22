@@ -7,66 +7,240 @@
 ###
 . colors
 
-# --nvs option to reinstall nvidia-settings only
-if [[ $1 != "--nvs" ]]; then
-	url=$1
+URL=http://download.hiveos.farm/drivers/
+DRVPATH=/hive-drivers-pack/
+TIMEOUT=10
+RETRY=3
+MINFREEMB=700
+
+
+function get_freespace() {
+	local space=`df -k --output=avail $DRVPATH | tail -n 1 2>&1`
+	[[ $space -ge $(( $MINFREEMB * 1024 )) ]] && return 0
 	echo -e ""
-	
-	if [[ -z $url ]]; then
-		echo -e "${CYAN}> Getting the latest version${NOCOLOR}"
-		versions_url=http://download.hiveos.farm/drivers/VERSIONS.txt
-		versions=`curl -sLk $versions_url`
-		[[ -z $versions ]] && echo -e "${RED}> Error downloading versions from $versions_url${NOCOLOR}" && exit 1
-		eval "$versions"
-		echo -e "The latest stable Nvidia driver version: ${GREEN}${NVIDIA_FILE_VER}${NOCOLOR}"
-		url=http://download.hiveos.farm/drivers/$NVIDIA_FILE_VER
+	echo -e "${YELLOW}> Free space is less than ${WHITE}${MINFREEMB} MB${YELLOW} ($(( $space/1024 )) MB)${NOCOLOR}"
+	return 1
+}
+
+
+function get_versions() { # returns $versions
+	echo -e ""
+	echo -ne "${CYAN}> Loading drivers list - ${NOCOLOR}"
+	local cnt=0
+	list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY $URL`
+	if [[ $? -eq 0 ]]; then
+		versions=(`echo "$list" | grep -oP "\"NVIDIA-Linux-x86_64-\K[0-9]+\.[0-9]+(?=\.run\")" | sort -V`)
+		cnt=${#versions[@]}
+	fi
+	[[ $cnt -eq 0 ]] && echo -e "${RED}Failed${NOCOLOR}" && return 1
+	echo -e "${GREEN}$cnt${NOCOLOR}"
+	return 0
+}
+
+
+function get_latest() { # returns $latest_version
+	echo -e ""
+	echo -en "${CYAN}> Getting the latest stable version - ${NOCOLOR}"
+	local list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY ${URL}VERSIONS.txt`
+	[[ -z $list ]] && echo -e "${RED}Failed${NOCOLOR}" && return 1
+	latest_version=`echo "$list" | grep -oP "NVIDIA-Linux-x86_64-\K[0-9]+\.[0-9]+(?=\.run)" | tail -n 1`
+	[[ -z $latest_version ]] && echo -e "${RED}Error${NOCOLOR}" && return 2
+	echo -e "${WHITE}${latest_version}${NOCOLOR}"
+	return 0
+}
+
+
+function get_current() { # returns $current_vesion
+	smi=`nvidia-smi --help 2>&1`
+	if [[ $? -ne 0 ]]; then
+		echo -e "${RED}> Installed version - UNKNOWN${NOCOLOR}"
+		current_version=
+		return 1
+	fi
+	current_version=`echo "$smi" | head -n 1 | awk '{print $NF}' | sed 's/v//'`
+	echo -e "${GREEN}> Installed version - $current_version${NOCOLOR}"
+	return 0
+}
+
+
+function remove_packages() { # @filename to skip
+	local files=(`realpath ${DRVPATH}NVIDIA-Linux* | grep -v "*" | sort -V`)
+	local cnt=${#files[@]}
+	echo -e ""
+	echo -e "${CYAN}> Found driver packages - $cnt${NOCOLOR}"
+	[[ $cnt -eq 0 ]] && return 0
+
+	local skip=
+	if [[ ! -z $1 ]]; then
+		skip=`basename $1`
+		# skip only if it exists
+		[[ ! -f ${DRVPATH}$skip ]] && skip=
 	fi
 
-	[[ -z $url ]] && echo -e "${YELLOW}Please give URL where to download driver${NOCOLOR}" && exit 1
+	# skip current version by default
+	[[ -z $skip ]] && get_current && skip="NVIDIA-Linux-x86_64-${current_version}.run"
 
-	cd /hive-drivers-pack
-	export TMPDIR=/hive-drivers-pack
-	basename=`basename $url`
+	for drv in "${files[@]}"
+	do
+		local basename=`basename $drv`
+		if [[ "$basename" == "$skip" ]]; then
+			echo -e "${GREEN}> Skipping - ${WHITE}$basename${NOCOLOR}"
+		else
+			echo -e "${YELLOW}> Deleting - ${WHITE}$basename${NOCOLOR}"
+			unlink $drv
+		fi
+	done
+	return 0
+}
 
-	if [[ -e ./$basename ]]; then
-		echo -e "${CYAN}> Driver $basename is already downloaded${NOCOLOR}"
-	else
-		echo -e "${CYAN}> Downloading $url${NOCOLOR}"
-		wget -c $url #`[ -t 0 ] && echo '--no-verbose'`
-		[[ $? -ne 0 ]] && echo -e "${RED}> Error downloading driver${NOCOLOR}" && exit 1
-	fi
-	chmod +x ./$basename
 
-	screen -wipe > /dev/null 2>&1
-	sleep 1
-	as=$(screen -ls | grep -c autoswitch)
-	mn=$(screen -ls | grep -c miner)
-	af=$(screen -ls | grep -c autofan)
-	wd=$(wd status | grep -c running)
-	nvstop
-	exitcode=$?
-
-	if [[ $exitcode -eq 0 ]]; then
-		echo -e ""
-		echo -e "${CYAN}> Installing driver. ${WHITE}PLEASE WAIT!${NOCOLOR}"
-		for i in {1..2}; do
-			[[ $i -ne 1 ]] && echo -e "${YELLOW}> Failed. Trying again${NOCOLOR}"
-			./$basename --accept-license --no-questions --ui=none --dkms --install-libglvnd #--tmpdir=/hive-drivers-pack
-			exitcode=$?
-			[[ $exitcode -eq 0 ]] &&
-				echo -e "${GREEN}> Done${NOCOLOR}" &&
-				break
+function list_packages() {
+	get_versions
+	if [[ $? -eq 0 ]]; then
+		local last=
+		for drv in "${versions[@]}"
+		do
+			this=${drv%.*}
+			if [[ "$last" != "$this" || -z $last ]]; then
+				[[ ! -z $last ]] && echo -e ""
+				last=$this
+				echo -ne "  ${WHITE}$this${NOCOLOR}"
+			fi
+			[[ -f "${DRVPATH}NVIDIA-Linux-x86_64-${drv}.run" ]] &&
+				echo -ne "	${YELLOW}$drv${NOCOLOR}" ||
+				echo -ne "	$drv"
 		done
 	fi
-else
-	nvs=1
-fi
 
-if [[ $exitcode -eq 0 || $nvs == 1 ]]; then
+	get_latest
+	get_current
+
+	local files=(`realpath ${DRVPATH}NVIDIA-Linux* | grep -oP "NVIDIA-Linux-x86_64-\K[0-9]+\.[0-9]+(?=\.run)" | sort -V`)
+	[[ ${#files[@]} -eq 0 ]] && return 0
+	echo -en "${YELLOW}> Downloaded packages -${NOCOLOR}"
+	for drv in "${files[@]}"
+	do
+		local basename=`basename $drv`
+		echo -en "${YELLOW} $basename ${NOCOLOR}"
+	done
+	echo -e ""
+}
+
+
+function check_package() { # @filename
+	#local basename=`basename $1`
+	[[ ! -f ${DRVPATH}$1 ]] && return 1
+	#echo -e ""
+	echo -e "${CYAN}> Checking package integrity${NOCOLOR}"
+	local exitcode=1
+	# check size. zero file exits with 0
+	local size=`stat -c %s ${DRVPATH}$1`
+	if [[ $size -gt 1000 ]]; then
+		chmod +x ${DRVPATH}$1
+		${DRVPATH}$1 --check
+		exitcode=$?
+	fi
+	[[ $exitcode -ne 0 ]] && echo -e "${RED}> Check failed${NOCOLOR}"
+	return $exitcode
+}
+
+
+function get_url() { # @version or @url, returns $url
+	# latest stable
+	if [[ -z $1 ]]; then
+		get_latest || return $?
+		url="${URL}NVIDIA-Linux-x86_64-${latest_version}.run"
+	# 123.45 format
+	elif [[ $1 =~ ^[0-9]+\.[0-9]+$ ]]; then
+#		local last=
+#		get_versions
+#		if [[ $? -eq 0 ]]; then
+#			for drv in "${versions[@]}"
+#			do
+#				[[ $drv == $1 ]] && last=$drv && break
+#			done
+#		fi
+#		if [[ ! -z $last ]]; then
+#			url="${URL}NVIDIA-Linux-x86_64-${last}.run"
+#		else
+#			echo -e "${YELLOW}> ${WHITE}$1${YELLOW} was not found in the list. Trying to get it from NVIDIA${NOCOLOR}"
+			url="https://download.nvidia.com/XFree86/Linux-x86_64/$1/NVIDIA-Linux-x86_64-$1.run"
+#		fi
+	# 123 format
+	elif [[ $1 =~ ^[0-9]+$ ]]; then
+		get_versions || return $?
+		local last=
+		for drv in "${versions[@]}"
+		do
+			[[ ${drv%.*} == $1 ]] && last=$drv && continue
+			[[ ! -z $last ]] && break
+		done
+		[[ -z $last ]] && echo -e "${RED}> Unable to find latest driver version for $1 series${NOCOLOR}" && return 1
+		echo -e "${GREEN}> Latest driver for $1 series - ${WHITE}$last${NOCOLOR}"
+		url="${URL}NVIDIA-Linux-x86_64-${last}.run"
+	# url
+	else
+		url=$1
+	fi
+	[[ -z $url ]] && return 1
+	return 0
+}
+
+
+function get_package() { # @url or @file, returns $package
+	local exitcode=0
+	local url=$1
+
+	package=`basename $url`
+	[[ -z $package ]] && echo -e "${RED}> No file name in $url${NOCOLOR}" && return 1
+
+	# check if file already exists and it is good
+	local exist=0
+	if [[ -f ${DRVPATH}$package ]]; then
+		echo -e ""
+		echo -e "${YELLOW}> Driver package already exists${NOCOLOR}"
+		check_package $package && return 0
+		exist=1
+	fi
+
+	# local file
+	if [[ $url != ftp* && $url != http* ]]; then
+		#[[ ! -f $url ]] &&  echo -e "${RED} Unable to get from $url" && return 1
+		realpath=`realpath $url`
+		[[ "$realpath" == "${DRVPATH}$package" ]] && return 1
+		cp $url ${DRVPATH}$package
+		[[ $? -ne 0 ]] && echo -e "${RED}> Unable to get file from - ${WHITE}$url${NOCOLOR}" && return 1
+		check_package $package
+		return $?
+	fi
+
+	for i in {1..2}; do
+		# download file. resume if exists
+		echo -e ""
+		echo -e "${CYAN}> Downloading - ${WHITE}$url${NOCOLOR}"
+		wget -T $TIMEOUT -t $RETRY -c -P ${DRVPATH} $url 2>&1
+		exitcode=$?
+		[[ $exitcode -ne 0 ]] && echo -e "${RED}> Download error ($exitcode)${NOCOLOR}" && return $exitcode
+
+		# check it again
+		check_package $package && return 0
+
+		# if file existed before, delete it and try download again. it would help if it was already broken
+		[[ $exist -eq 0 ]] && return 1
+		echo -e ""
+		echo -e "${YELLOW}> File is broken. Deleting it and downloading again${NOCOLOR}"
+		unlink ${DRVPATH}$package
+		exist=0
+	done
+}
+
+
+function install_nvs() { # @force_install
+	local exitcode=0
 	#nvs_version=`dpkg -s nvidia-settings 2>&1 | grep '^Version: ' | sed 's/Version: //'`
-	nvs_version=`nvidia-settings --version | grep version | awk '{print $3}'`
+	local nvs_version=`nvidia-settings --version | grep version | awk '{print $3}'`
 	# Install strictly  361.42
-	if [[ $nvs_version != 361.42* || $nvs == 1 ]]; then
+	if [[ $nvs_version != 361.42* || ! -z $1 ]]; then
 		echo -e ""
 		echo -e "${CYAN}> Reinstalling nvidia-settings (current $nvs_version)${NOCOLOR}"
 		#apt remove -y --allow-change-held-packages --purge nvidia-settings
@@ -81,32 +255,120 @@ if [[ $exitcode -eq 0 || $nvs == 1 ]]; then
 			exitcode=$?
 		fi
 		[[ $exitcode -ne 0 ]] &&
-			echo -e "${RED}> Nvidia-settings reinstall error${NOCOLOR}" ||
+			echo -e "${RED}> Nvidia-settings reinstall failed${NOCOLOR}" ||
 			echo -e "${GREEN}> Nvidia-settings reinstall successful${NOCOLOR}"
 	fi
 	#apt-mark hold nvidia-settings > /dev/null 2>&1
-#	if [[ -z $nvidia_settings_version ]]; then
-#		apt-get install --reinstall -y nvidia-settings
-#	else
-#		apt-get install --only-upgrade --reinstall -y nvidia-settings
-#	fi
-fi
+	return $exitcode
+}
 
-[[ $nvs == 1 ]] && exit 0
 
-echo -e ""
-echo -e "${CYAN}> Starting services${NOCOLOR}"
+function install_driver() { # @url or @file
+	get_url $1 || return $?
 
-rm /run/hive/NV_OFF > /dev/null 2>&1
-systemctl start hivex > /dev/null 2>&1
-sleep 10
+	# check avaliable space and remove driver packages if needed
+	get_freespace
+	if [[ $? -ne 0 ]]; then
+		echo -e "${YELLOW}> Removing old driver packages${NOCOLOR}"
+		remove_packages $url
+		get_freespace
+		[[ $? -ne 0 ]] && echo -e "${RED}> Not enough free space to continue${NOCOLOR}" && return 1
+	fi
 
-[[ $wd -ne 0 ]] && wd start > /dev/null 2>&1
-[[ $mn -ne 0 ]] && miner start > /dev/null 2>&1
-[[ $af -ne 0 ]] && autofan > /dev/null 2>&1
-[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+	get_package $url || return $?
 
-[[ $exitcode -ne 0 ]] && echo -e "${RED}> Driver installation error${NOCOLOR}" && exit 1
+	#cd $DRVPATH
+	export TMPDIR=$DRVPATH
+	local basename=`basename $package`
+	# this check are redundant
+	[[ ! -f ${DRVPATH}$basename ]] && echo -e "${RED}> $basename not found${NOCOLOR}" && return 1
+	#check_package $basename
 
-echo -e "${GREEN}> Driver installation successful. ${WHITE}REBOOT NOW!${NOCOLOR}"
-exit 0
+	screen -wipe > /dev/null 2>&1
+	sleep 1
+	local as=$(screen -ls | grep -c autoswitch)
+	local mn=$(screen -ls | grep -c miner)
+	local af=$(screen -ls | grep -c autofan)
+	local wd=$(wd status | grep -c running)
+
+	local exitcode=
+
+	for i in {1..2}; do
+		nvstop
+		exitcode=$?
+		[[ $exitcode -ne 0 ]] && break
+		echo -e ""
+		echo -e "${CYAN}> Installing driver. ${WHITE}PLEASE WAIT!${NOCOLOR}"
+		${DRVPATH}$basename --accept-license --no-questions --ui=none --dkms #--no-opengl-files #--install-libglvnd #--tmpdir=/hive-drivers-pack
+		exitcode=$?
+		[[ $exitcode -eq 0 ]] && echo -e "${GREEN}> Done${NOCOLOR}" && break
+		# code 2 is integrity check, do not try again
+		[[ $exitcode -eq 2 ]] && break
+		[[ $i -ne 2 ]] && echo -e "${YELLOW}> Failed ($exitcode). Trying again${NOCOLOR}"
+	done
+
+	install_nvs
+
+	echo -e ""
+	echo -e "${CYAN}> Starting services${NOCOLOR}"
+
+	rm /run/hive/NV_OFF > /dev/null 2>&1
+	systemctl start hivex > /dev/null 2>&1
+	sleep 10
+
+	[[ $wd -ne 0 ]] && wd start
+	[[ $mn -ne 0 ]] && miner start
+	[[ $af -ne 0 ]] && autofan dontattach
+	[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+
+	[[ $exitcode -ne 0 ]] && echo -e "${RED}> Driver installation failed${NOCOLOR}" && return 1
+
+	echo -e "${GREEN}> Driver installation successful${NOCOLOR}" # ${WHITE}REBOOT NOW!${NOCOLOR}
+
+	# send new driver version
+	hello > /dev/null 2>&1
+	return 0
+}
+
+
+[[ ! -z $2 ]] && echo -e "${YELLOW}> Only ONE option in commmand line is supported${NOCOLOR}" && exit 1
+
+case $1 in
+	--help|-h)
+		echo -e "Usage:
+  nvidia-driver-update  		download and install latest stable driver version
+  nvidia-driver-update  URL		download and install driver from URL (http/https/ftp)
+  nvidia-driver-update  123		download and install latest driver from series 123.*
+  nvidia-driver-update  123.45		download and install specific driver version 123.45
+  nvidia-driver-update  -l | --list	list available driver versions
+  nvidia-driver-update  -n | --nvs	reinstall nvidia-settings only
+  nvidia-driver-update  -r | --remove	remove downloaded driver packages except currently installed
+  nvidia-driver-update  -h | --help	display help
+	"
+		exit 0
+	;;
+
+	-l|--list)
+		list_packages
+		exit $?
+	;;
+
+	-n|--nvs)
+		install_nvs 1
+		exit $?
+	;;
+
+	-r|--remove)
+		remove_packages
+		exit $?
+	;;
+
+	*)
+		[[ $1 == -* ]] && echo -e "${YELLOW}> Unsupported option $1${NOCOLOR}" && exit 1
+	    #123
+		#123.45
+		#url/path
+		install_driver $1
+		exit $?
+	;;
+esac
