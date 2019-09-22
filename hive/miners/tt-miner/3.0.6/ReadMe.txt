@@ -12,8 +12,6 @@ Please find below the available parameter and arguments, arguments in [] are not
 			LYRA2V3		Lyra2 Revision 3 (Vertcoin)
 			HONEYCOMB	HoneyComb (BeeNode)
 
--AALT			ALGONAME	select the algorithm to use for mining the alternate coin
-
 This parameter will always load the algo that fits best to the installed driver. If you want 
 to make sure that TT-Miner uses a certain cuda version please append one of these values:
 			-92		for cuda 9.20	(ETHASH-92, UBQHASH-92)
