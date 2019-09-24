@@ -151,6 +151,7 @@ else
 		hive-package-install $package_name || exit $?
 	fi
 
+	[[ $2 == "install" ]] && exit 0
 
 	# Generate config files after package is installed
 	miner_config_gen

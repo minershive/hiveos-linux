@@ -307,17 +307,36 @@ function check_second_miner {
 	MINER=$minerval #substitute MINER var with second miner
 }
 
+function bench_check (){
+	benchmark check > /dev/null 2>&1
+	[[ $? -eq 1 ]] && bench=0 || bench=1
+	if [[ $bench -eq 1 ]];then
+		echo -e "${RED}Detect running or unfinished benchmark.\nIf you want to stop him run \"benchmark stop\"${NOCOLOR}"
+		message warning "Detect running or unfinished benchmark. If you want to stop him run \"benchmark stop\"" > /dev/null 2>&1
+		exit
+	fi
+}
+
 
 ########################################################################################################################
 
 case $1 in
 	start)
+		bench_check
 		start
 	;;
 	stop)
+		bench_check
+		stop
+	;;
+	bench_start)
+		start
+	;;
+	bench_stop)
 		stop
 	;;
 	restart)
+		bench_check
 #		echo -e "Restarting ${CYAN}$MINER${NOCOLOR}"
 		echo -e "${YELLOW}Restarting miner${NOCOLOR}" #can be different on miner change
 		stop

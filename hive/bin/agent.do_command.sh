@@ -9,7 +9,11 @@ function do_command () {
 	#Optional command identifier
 	cmd_id=$(echo "$body" | jq -r '.id')
 	[[ $cmd_id == "null" ]] && cmd_id=
-
+	
+	bench=0
+	benchmark check > /dev/null 2>&1
+	[[ $? -eq 1 ]] && bench=0 || bench=1
+	
 	case $command in
 		OK)
 			echo -e "${BGREEN}$command${NOCOLOR}"
@@ -77,13 +81,18 @@ function do_command () {
 				fi
 
 				# Write new config and load it ---------------------------------------
-				echo "$config" > $RIG_CONF && sync
+				source $RIG_CONF
+				echo "$config" > $RIG_CONF
+				[[ $bench -eq 1 ]] && sed -i "s/^MINER=.*/MINER=${MINER}/" $RIG_CONF
+				sync
 				. $RIG_CONF
 
 				# Save wallet if given -----------------------------------------------
-				wallet=$(echo $body | jq '.wallet' --raw-output)
-				[[ ! -z $wallet && $wallet != "null" ]] &&
+				if [[ $bench -eq 0 ]]; then
+					wallet=$(echo $body | jq '.wallet' --raw-output)
+					[[ ! -z $wallet && $wallet != "null" ]] &&
 					echo "$wallet" > $WALLET_CONF
+				fi
 
 				# Save autofan config if given -----------------------------------------------
 				autofan=$(echo $response | jq '.result.autofan' --raw-output)
@@ -92,36 +101,44 @@ function do_command () {
 
 
 				# Overclocking if given in config --------------------------------------
-				oc_if_changed
+				[[ $bench -eq 0 ]] && oc_if_changed
 
 
 				# Final actions ---------------------------------------------------------
-				if [[ $justwrite != 1 ]]; then
+				if [[ $justwrite != 1 && $bench -eq 0 ]]; then
 					hostname-check
 					miner restart
 				fi
 
 				# Start Watchdog. It will exit if WD_ENABLED=0 ---------------------------
-				[[ $WD_ENABLED=1 ]] && wd restart
-
-				message ok "Rig config changed" --id=$cmd_id
+				[[ $WD_ENABLED=1 && $bench -eq 0 ]] && wd restart
+				
+				if [[ $bench -eq 0 ]]; then
+					message ok "Rig config changed" --id=$cmd_id
+				else
+					message ok "Benchmark not finished. Rig config partialy changed" --id=$cmd_id
+				fi
 				#[[ $? == 0 ]] && message ok "Wallet changed, miner restarted" || message warn "Error restarting miner"
 			else
 				message error "No rig \"config\" given" --id=$cmd_id
 			fi
 		;;
 		wallet)
-			wallet=$(echo $body | jq '.wallet' --raw-output)
-			if [[ ! -z $wallet && $wallet != "null" ]]; then
-				echo "$wallet" > $WALLET_CONF && sync
+			if [[ $bench -eq 0 ]]; then
+				wallet=$(echo $body | jq '.wallet' --raw-output)
+				if [[ ! -z $wallet && $wallet != "null" ]]; then
+					echo "$wallet" > $WALLET_CONF && sync
 
-				justwrite=
-				oc_if_changed
+					justwrite=
+					oc_if_changed
 
-				miner restart
-				[[ $? == 0 ]] && message ok "Wallet changed, miner restarted" --id=$cmd_id || message warn "Error restarting miner" --id=$cmd_id
+					miner restart
+					[[ $? == 0 ]] && message ok "Wallet changed, miner restarted" --id=$cmd_id || message warn "Error restarting miner" --id=$cmd_id
+				else
+					message error "No \"wallet\" config given" --id=$cmd_id
+				fi
 			else
-				message error "No \"wallet\" config given" --id=$cmd_id
+				message error "No changes applied. Detect running or unfinished benchmark. Stop benchmark first" --id=$cmd_id > /dev/null 2>&1
 			fi
 		;;
 		nvidia_oc)
@@ -617,6 +634,14 @@ function do_command () {
 			openvpn-install #will remove /tmp/.openvpn-installed file
 			hello
 			message ok "OpenVPN service stopped, certificates removed" --id=$cmd_id
+		;;
+		benchmark)
+			echo $body | jq '.bench_data' > /hive-config/benchmark.conf
+			sync
+			benchmark start
+		;;
+		benchmark_stop)
+			bechmark stop
 		;;
 		"")
 			echo -e "${YELLOW}Got empty command, might be temporary network issue${NOCOLOR}"

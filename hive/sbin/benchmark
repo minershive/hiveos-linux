@@ -1,0 +1,454 @@
+#!/usr/bin/env bash
+. colors
+
+RIG_CONF="/hive-config/rig.conf"
+WALLET_CONF="/hive-config/wallet.conf"
+BENCH_CONF="/hive-config/benchmark.conf"
+NVIDIA_OC_CONF="/hive-config/nvidia-oc.conf"
+AMD_OC_CONF="/hive-config/amd-oc.conf"
+HASHRATE="/run/hive/khs"
+POW="/run/hive/gpu-stats.json"
+LOG="/var/log/benchmark.log"
+bench_data=""
+algo_count=0
+wait_for_stat=60
+bench_time=240
+failed_time=180
+time_stat=10
+attempt_count=10
+attempt_pause=10
+
+source $RIG_CONF
+HIVE_URL="$HIVE_HOST_URL/worker/api"
+
+
+function usage() {
+	bname=`basename $0`
+	echo -e "Usage: ${CYAN}$bname start|stop${NOCOLOR}"
+	echo -e "If you run ${CYAN}$bname${NOCOLOR} without parameters benchmark screen will be tried to resume."
+}
+
+
+
+function check() {
+	[[ -f $BENCH_CONF ]] && bench_data=$(cat $BENCH_CONF | jq '.' 2>/dev/null)
+	[[ -z $bench_data ]] && return 1
+	algo_count=$(echo $bench_data | jq ".algo | length" 2>/dev/null)
+	[[ -z $algo_count || $algo_count -eq 0 ]] && return 1
+	return 0
+}
+
+function power() {
+	pow=0
+	stats_pow=""
+	[[ -f $POW ]] && stats_pow=$(cat $POW | jq ".power" 2>/dev/null)
+	if [[ -z $stats_pow ]]; then
+		echo 0
+	else
+		pow_length=$(echo $stats_pow | jq ". | length" 2>/dev/null)
+		for (( i=0; i < $pow_length; i++ ))
+		do
+			pow=$(( $pow + $(echo $stats_pow | jq ".[$i]" | tr -d \") ))
+		done
+		echo $pow
+	fi
+}
+
+
+function oc_if_changed () {
+	local cur_algo=$1
+	nvidia_oc=$(cat $BENCH_CONF | jq ".algo[] | select (.algo_name == $cur_algo) | .nvidia_oc" --raw-output)
+	amd_oc=$(cat $BENCH_CONF | jq ".algo[] | select (.algo_name == $cur_algo) | .amd_oc" --raw-output)
+
+	nvidia_oc_old=`[[ -e $NVIDIA_OC_CONF ]] && cat $NVIDIA_OC_CONF`
+	[[ ! -z $nvidia_oc && $nvidia_oc != "null" && $nvidia_oc != $nvidia_oc_old ]] &&
+		nvidia_oc_changed=1 || nvidia_oc_changed=
+	
+	amd_oc_old=`[[ -e $AMD_OC_CONF ]] && cat $AMD_OC_CONF`
+	[[ ! -z $amd_oc && $amd_oc != "null" && $amd_oc != $amd_oc_old ]] &&
+		amd_oc_changed=1 || amd_oc_changed=
+
+	if [[ ! -z $nvidia_oc_changed ]]; then
+		#echo -e "${YELLOW}Saving Nvidia OC config${NOCOLOR}"
+		echo "$nvidia_oc" > $NVIDIA_OC_CONF && sync
+		nvidia-oc-log quiet > /dev/null 2>&1
+		exitcode=$?
+		payload=`[[ -e /var/log/nvidia-oc.log ]] && cat /var/log/nvidia-oc.log`
+		#echo "$payload"
+		[[ $exitcode == 0 ]] &&
+		echo "$payload" | message ok "Nvidia settings applied" payload > /dev/null 2>&1 ||
+		echo "$payload" | message warn "Nvidia settings applied with errors" payload > /dev/null 2>&1
+	fi
+
+	if [[ ! -z $amd_oc_changed ]]; then
+		#echo -e "${YELLOW}Saving AMD OC config${NOCOLOR}"
+		echo "$amd_oc" > $AMD_OC_CONF && sync
+		amd-oc-safe quiet > /dev/null 2>&1
+		exitcode=$?
+		payload=`[[ -e /var/log/amd-oc.log ]] && cat /var/log/amd-oc.log`
+		[[ $exitcode == 0 ]] &&
+			echo "$payload" | message ok "AMD settings applied" payload > /dev/null 2>&1 ||
+			echo "$payload" | message warn "AMD settings applied with errors" payload > /dev/null 2>&1
+	fi
+}
+
+function restore (){
+	as=0
+	mn=0
+	
+	#Restore configs and del benchmark configs
+	[[ -f /hive-config/var.bench ]] && source /hive-config/var.bench
+	if [[ -f /hive-config/rig.conf.bench ]]; then
+		source /hive-config/rig.conf.bench
+		sed -i "s/^MINER=.*/MINER=${miner}/" $RIG_CONF
+	fi
+	[[ -f /hive-config/wallet.conf.bench ]] && cp /hive-config/wallet.conf.bench $WALLET_CONF
+	[[ -f /hive-config/nvidia-oc.bench ]] && cp /hive-config/nvidia-oc.bench /hive-config/nvidia-oc.conf
+	[[ -f /hive-config/amd-oc.bench ]] && cp /hive-config/amd-oc.bench /hive-config/amd-oc.conf
+	
+	rm /hive-config/*.bench > /dev/null 2>&1
+	[[ -f $BENCH_CONF ]] && rm $BENCH_CONF > /dev/null 2>&1
+	
+	sync
+	source $RIG_CONF
+	source $WALLET_CONF
+	hello > /dev/null 2>&1
+	
+	#Restore OC
+	nvidia-oc-log quiet > /dev/null 2>&1
+	exitcode=$?
+	payload=`[[ -e /var/log/nvidia-oc.log ]] && cat /var/log/nvidia-oc.log`
+	[[ $exitcode == 0 ]] &&
+		echo "$payload" | message ok "Nvidia settings applied" payload > /dev/null 2>&1 ||
+		echo "$payload" | message warn "Nvidia settings applied with errors" payload > /dev/null 2>&1
+	
+	amd-oc-safe quiet > /dev/null 2>&1
+	exitcode=$?
+	payload=`[[ -e /var/log/amd-oc.log ]] && cat /var/log/amd-oc.log`
+	[[ $exitcode == 0 ]] &&
+		echo "$payload" | message ok "AMD settings applied" payload > /dev/null 2>&1 ||
+		echo "$payload" | message warn "AMD settings applied with errors" payload > /dev/null 2>&1
+	
+	#Restore miner or autoswitch
+	if [[ $as -eq 1 ]]; then
+		autoswitch start > /dev/null 2>&1
+	else
+		[[ $mn -eq 1 ]] && miner restart > /dev/null 2>&1
+	fi
+
+	wd start > /dev/null 2>&1
+	
+	
+}
+
+function install (){
+	rm /tmp/bench_install.exitcode > /dev/null 2>&1
+	miner-run $1 install
+	exitcode=$?
+	echo $exitcode > /tmp/bench_install.exitcode
+	sync
+}
+
+function run() {
+	check
+	[[ $? -ne 0 ]] && echo "Nothing to benchmark" && exit
+	echo "***********************************" >> $LOG
+	echo "> [$(date +%D) $(date +%T)] Start benchmark" | tee -a $LOG
+	msg="Start benchmark"
+	message info "$msg" > /dev/null 2>&1
+	#Stop miner,wd,autoswitch
+	echo "> Stopping watchdog, miner, autoswitch"
+	screen -wipe > /dev/null 2>&1
+	sleep 1
+	as=$(screen -ls | grep -c autoswitch)
+	mn=$(screen -ls | grep -c miner)
+	if [[ ! -f /hive-config/var.bench ]]; then
+		echo "as=${as}" > /hive-config/var.bench
+		echo "mn=${mn}" >> /hive-config/var.bench
+	fi
+	wd stop
+	[[ $as -ne 0 ]] && autoswitch stop > /dev/null 2>&1
+	[[ $mn -ne 0 ]] && miner bench_stop > /dev/null 2>&1
+	
+	
+	
+	#Backup rig.conf, wallet.conf, oc conf
+	[[ ! -f /hive-config/rig.conf.bench ]] && cp $RIG_CONF /hive-config/rig.conf.bench > /dev/null 2>&1
+	[[ ! -f /hive-config/wallet.conf.bench ]] && cp $WALLET_CONF /hive-config/wallet.conf.bench > /dev/null 2>&1
+	[[ ! -f /hive-config/nvidia-oc.bench ]] && cp /hive-config/nvidia-oc.conf /hive-config/nvidia-oc.bench > /dev/null 2>&1
+	[[ ! -f /hive-config/amd-oc.bench ]] && cp /hive-config/amd-oc.conf /hive-config/amd-oc.bench > /dev/null 2>&1
+	
+	bench_data=$(cat $BENCH_CONF | jq '.' 2>/dev/null)
+	new_bench_data=$bench_data
+	bench_id=0
+	bench_id=$(echo $bench_data | jq ".id")
+	algo_count=$(echo $bench_data | jq ".algo | length" 2>/dev/null)
+	
+	for (( i=0; i < $algo_count; i++ ))
+	do
+		algo=""
+		algo=$(echo $bench_data | jq ".algo[$i]" )
+		algo_name=""
+		algo_name=$(echo $algo | jq ".algo_name") 
+		echo -e "> Algorithm: ${GREEN}$algo_name${NOCOLOR}" | tee -a $LOG
+		#Apply OC if needed
+		oc_if_changed "${algo_name}"
+		
+		miners_count=0
+		miners_count=$(echo $algo | jq ".miners | length" 2>/dev/null)
+		for (( j=0; j < $miners_count; j++ ))
+		do
+			miner bench_stop > /dev/null 2>&1
+			sleep 5
+			miner=$(echo $algo | jq ".miners[$j].miner" | tr -d \") 
+			echo -e ">     [$(date +%D) $(date +%T)] Start ${CYAN}$miner${NOCOLOR}" | tee -a $LOG
+			echo -en ">     Check installation of ${CYAN}$miner${NOCOLOR} and install if needed"
+			
+			rm /tmp/bench_install.exitcode > /dev/null 2>&1
+			sync
+			screen -dm benchmark install $miner
+			while [[ ! -f /tmp/bench_install.exitcode ]]
+			do
+				echo -n "."
+				sleep 1
+			done
+			screen -wipe > /dev/null 2>&1
+			install_exitcode=$(cat /tmp/bench_install.exitcode)
+			rm /tmp/bench_install.exitcode > /dev/null 2>&1
+
+			if [[ $install_exitcode -eq 0 ]]; then
+				echo -e " ${GREEN}OK${NOCOLOR}"
+			else
+				echo -e " ${RED}FAILED. Skip${NOCOLOR}\n"  | tee -a $LOG
+				
+				new_bench_data=$(echo $new_bench_data | jq 'del (.algo[0].miners[0])')
+				echo $new_bench_data | jq '.' > $BENCH_CONF
+				continue
+			fi
+			
+			#Change configs and start miner
+			sed -i "s/^MINER=.*/MINER=${miner}/" $RIG_CONF
+			wallet=""
+			wallet=$(echo $algo | jq ".miners[$j].wallet" --raw-output)
+			echo "$wallet" > $WALLET_CONF
+			echo 0 > $HASHRATE
+			miner bench_start > /dev/null 2>&1
+			
+			sec=0
+			failed=0
+			while (( $(echo "$(cat $HASHRATE) == 0" |bc -l) ))
+			do
+				
+				echo -en "      We are waiting for hashrate from miner (max 180 s): $sec s\r"
+				sec=$(( $sec + 1 ))
+				[[ $sec -ge $failed_time ]] && failed=1 && echo -en "\033[2K" && break
+				sleep 1
+				echo -en "\033[2K"
+			done
+			if [[ $failed -eq 1 ]]; then
+				echo -en "\033[1A"
+				echo -en "\033[2K"
+				echo -e "      ${RED}Benchmark for ${CYAN}$miner${RED} failed${NOCOLOR}\n" | tee -a $LOG
+				message error "Benchmark: $miner start error for algorithm $algo_name" > /dev/null 2>&1
+				new_bench_data=$(echo $new_bench_data | jq 'del (.algo[0].miners[0])')
+				echo $new_bench_data | jq '.' > $BENCH_CONF
+				continue
+			fi
+			for (( rtime=$wait_for_stat; rtime > 0; rtime-- ))
+			do
+				echo -en "      We are waiting for $wait_for_stat s to stabilize the work of the miner: $rtime s\r"
+				sleep 1
+				echo -en "\033[2K"
+			done
+			echo -en "\033[2K"
+			summ_khs=$(cat $HASHRATE)
+			av_khs=$summ_khs
+			summ_pow=$(power)
+			av_pow=$summ_pow
+			time_to_stat=0
+			count=1
+			for (( rtime=$bench_time; rtime > 0; rtime-- ))
+			do
+				
+				echo -e "      ${CYAN}$miner${NOCOLOR} is working. Time left until the end of the benchmark: $rtime s"
+				echo -en "      Average data: Hashrate=$(printf "%1.6g" $av_khs) kH/s, Pow=$av_pow W\r"
+				
+				if [[ $time_to_stat -ge $time_stat ]]; then
+					count=$(( $count + 1 ))
+					summ_khs=$(echo "scale=6; $summ_khs+$(cat $HASHRATE)" |bc -l)
+					av_khs=$(echo "scale=6; $summ_khs/$count" |bc -l)
+					summ_pow=$(( $summ_pow + $(power) ))
+					av_pow=$(( $summ_pow / $count ))
+					time_to_stat=0
+				fi
+				
+				sleep 1
+				time_to_stat=$(( $time_to_stat + 1 ))
+				echo -en "\033[2K"
+				echo -en "\033[1A"
+				echo -en "\033[2K"
+			done
+			echo -en "\033[1A"
+			echo -en "\033[2K"
+			
+			
+			echo -e ">     [$(date +%D) $(date +%T)] Benchmark ${CYAN}$miner${NOCOLOR} is complete. Average data: Hashrate=$(printf "%1.6g" $av_khs) kH/s, Pow=$av_pow W" | tee -a $LOG
+			
+			#Send result to server and removal of completed tasks from the config
+			request=$(
+			jq -c -n \
+			--arg passwd "$RIG_PASSWD" \
+			--arg miner "$miner" \
+			'{
+			"method": "benchmark_result",
+			"params": {"rig_id":'$RIG_ID',$passwd,"benchmark_id":'$bench_id',"algo":'"${algo_name}"',$miner,"hs_units":"khs","hashrate":'$av_khs', "power":'$av_pow'}
+			}'
+			)
+			if [[ $i == $(( $algo_count - 1 )) && $j == $(( $miners_count - 1 )) ]]; then
+				request=$(
+				jq -c -n \
+				--arg passwd "$RIG_PASSWD" \
+				--arg miner "$miner" \
+				'{
+				"method": "benchmark_result",
+				"params": {"rig_id":'$RIG_ID',$passwd,"benchmark_id":'$bench_id',"algo":'"${algo_name}"',$miner,"hs_units":"khs","hashrate":'$av_khs', "power":'$av_pow', "finished": true }
+				}'
+				)
+			fi
+			
+			new_bench_data=$(echo $new_bench_data | jq 'del (.algo[0].miners[0])')
+			echo $new_bench_data | jq '.' > $BENCH_CONF
+			
+			echo -en ">     Send result to the server"
+			send=0
+			for (( x=0; x < $attempt_count; x++ ))
+			do
+				response=$(echo $request | curl -w "\n%{http_code}" --insecure -L --data @- ${ssl_session} \
+				--connect-timeout 7 --max-time 15 --silent \
+				-H "Content-Type:" \
+				-H "User-Agent:" \
+				-H "Accept:" \
+				-X POST "${HIVE_URL}")
+				exitcode=$?
+				statusCode=`echo "$response" | tail -1`
+				response=`echo "$response" | sed '$d'`
+				
+				if [[ $statusCode == 200 && $exitcode == 0 ]]; then
+					
+					echo -e "[$(date +%D) $(date +%T)] Send result to server successfull." >> $LOG
+					message info "Benchmark $miner on $algo_name is complete. Average data: Hashrate=$(printf "%1.6g" $av_khs) kH/s, Pow=$av_pow W" > /dev/null 2>&1
+					send=1
+					break
+				fi
+				
+				echo -en " ${RED}FAILED.${NOCOLOR} Try again in 10 sec."
+				for (( y=0; y < $attempt_pause; y++ ))
+				do
+					echo -en "."
+					sleep 1
+				done
+			done
+			
+			if [[ $send -eq 1 ]]; then
+				echo -en "\033[2K"
+				echo -e "\r>     [$(date +%D) $(date +%T)] Send result to the server ${GREEN}successfull${NOCOLOR}\n"
+				continue
+			fi
+			echo
+			
+			if [[ $exitcode -ne 0 || -z $response ]]; then
+				echo -e "${RED}Error sending result${NOCOLOR} to $HIVE_HOST_URL" && human-curl-error $exitcode
+				echo "[$(date +%D) $(date +%T)] ERROR SENDING RESULT TO $HIVE_HOST_URL (curl code=$exitcode) \"$response\"" >> $LOG
+				continue
+			fi
+
+			echo "[$(date +%D) $(date +%T)] $response" >> $LOG
+
+			error=$(echo $response | jq '.error' --raw-output 2>/dev/null)
+			[[ $? != 0 ]] && echo -e "${RED}Invalid response${NOCOLOR}: $HIVE_HOST_URL\n$response" && continue
+			[[ ! -z $error && $error != "null" ]] && echo -e "${RED}Error response${NOCOLOR}: $error"
+			
+		done
+		new_bench_data=$(echo $new_bench_data | jq 'del (.algo[0])')
+		echo $new_bench_data | jq '.' > $BENCH_CONF
+	done
+	sleep 5
+	message info "Benchmark full complete. Restoring the previous tasks of the worker" > /dev/null 2>&1
+	restore
+	exit 0
+}
+
+
+function start() {
+	session_count=`screen -ls benchmark | grep benchmark | wc -l`
+	if [[ $session_count > 0 ]]; then
+		echo -e "${RED}Benchmark screen is already running${NOCOLOR}"
+		echo -e "Run ${CYAN}benchmark${NOCOLOR} or ${CYAN}screen -r ${CYAN}benchmark${NOCOLOR} to resume screen"
+		return
+	fi
+	check
+	if [[ $? -ne 0 ]]; then
+		echo -e "${RED}Nothing to benchmark${NOCOLOR}"
+		rm /hive-config/*.bench > /dev/null 2>&1
+		[[ -f $BENCH_CONF ]] && rm $BENCH_CONF > /dev/null 2>&1
+		exit 1
+	fi
+	screen -dmS benchmark /hive/sbin/benchmark run
+}
+
+
+function stop() {
+	bench_id=""
+	[[ -f $BENCH_CONF ]] && bench_id=$(cat $BENCH_CONF | jq ".id")
+	if [[ ! -z $bench_id && $bench_id != null ]]; then
+		request=$(
+			jq -c -n \
+			--arg passwd "$RIG_PASSWD" \
+			'{
+			"method": "benchmark_result",
+			"params": {"rig_id":'$RIG_ID',$passwd,"benchmark_id":'$bench_id', "aborted": true }
+			}'
+			)
+		response=$(echo $request | curl -w "\n%{http_code}" --insecure -L --data @- ${ssl_session} \
+			--connect-timeout 7 --max-time 15 --silent \
+			-H "Content-Type:" \
+			-H "User-Agent:" \
+			-H "Accept:" \
+			-X POST "${HIVE_URL}")
+	fi
+			
+	screens=`screen -ls benchmark | grep -E "[0-9]+\.benchmark" | cut -d. -f1 | awk '{print $1}'`
+	if [[ -z $screens ]]; then
+		echo "No benchmark screens found"
+	else
+		for pid in $screens; do
+			echo "Stopping screen session $pid"
+			screen -S $pid -X quit
+		done
+	fi
+	message info "Benchmark aborted. Restoring the previous tasks of the worker" > /dev/null 2>&1
+	restore
+}
+
+case $1 in
+	start)
+		start
+	;;
+	stop)
+		stop
+	;;
+	install)
+		install $2
+	;;
+	check)
+		check
+		exit $?
+	;;
+	run)
+		run
+	;;
+	*)
+		screen -x -S benchmark
+		[[ $? != 0 ]] && usage
+	;;
+esac

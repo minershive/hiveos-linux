@@ -18,6 +18,10 @@ export HOME=/home/user #required by ccminer
 DISKLESS=0
 [[ -f /hive-config/.DISKLESS_AMD && $(cat /proc/mounts | grep "/ " | awk '{print $1}') == tmpfs ]] && DISKLESS=1
 
+#Check benchmark
+bench=0
+benchmark check > /dev/null 2>&1
+[[ $? -eq 1 ]] && bench=0 || bench=1
 
 function echo2 {
 	echo -e "$1" > /dev/tty1
@@ -288,14 +292,18 @@ else
 		sleep $MINER_DELAY
 	fi
 
-	#Start Watchdog. It will exit if its 0
-	[[ $WD_ENABLED == 1 ]] &&
-		echo2 "> Hashrate Watchdog enabled" &&
-		wd start
-
-
-	echo2 "> Starting miner"
-	miner start
+	#check the unfinished Benchmark, and continue if found
+	if [[ $bench == 1 ]]; then
+		echo2 "> Unfinished Benchmark found. Continue Benchmark"
+		benchmark start
+	else
+		#Start Watchdog. It will exit if its 0
+		[[ $WD_ENABLED == 1 ]] &&
+			echo2 "> Hashrate Watchdog enabled" &&
+			wd start
+		echo2 "> Starting miner"
+		miner start
+	fi
 fi
 
 
