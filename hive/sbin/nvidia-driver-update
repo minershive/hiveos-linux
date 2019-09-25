@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
-### Update Nvidia driver from URL
+### Update Nvidia driver
 ### It will try to get the latest stable version from Hive server
-###
-### Example usage from shell:
-### cd /tmp && curl -sLkO https://raw.githubusercontent.com/minershive/hiveos-linux/master/hive/sbin/nvidia-driver-update && bash /tmp/nvidia-driver-update http://download.hiveos.farm/drivers/NVIDIA-Linux-x86_64-390.59.run
-###
+
 . colors
 
 URL=http://download.hiveos.farm/drivers/
@@ -255,7 +252,7 @@ function install_nvs() { # @force_install
 			exitcode=$?
 		fi
 		[[ $exitcode -ne 0 ]] &&
-			echo -e "${RED}> Nvidia-settings reinstall failed${NOCOLOR}" ||
+			echo -e "${RED}> Nvidia-settings reinstall failed ($exitcode)${NOCOLOR}" ||
 			echo -e "${GREEN}> Nvidia-settings reinstall successful${NOCOLOR}"
 	fi
 	#apt-mark hold nvidia-settings > /dev/null 2>&1
@@ -264,6 +261,9 @@ function install_nvs() { # @force_install
 
 
 function install_driver() { # @url or @file
+	# it must exist
+	[[ ! -d ${DRVPATH} ]] && mkdir ${DRVPATH}
+	
 	get_url $1 || return $?
 
 	# check avaliable space and remove driver packages if needed
@@ -280,7 +280,7 @@ function install_driver() { # @url or @file
 	#cd $DRVPATH
 	export TMPDIR=$DRVPATH
 	local basename=`basename $package`
-	# this check are redundant
+	# this check is redundant
 	[[ ! -f ${DRVPATH}$basename ]] && echo -e "${RED}> $basename not found${NOCOLOR}" && return 1
 	#check_package $basename
 
@@ -299,15 +299,17 @@ function install_driver() { # @url or @file
 		[[ $exitcode -ne 0 ]] && break
 		echo -e ""
 		echo -e "${CYAN}> Installing driver. ${WHITE}PLEASE WAIT!${NOCOLOR}"
-		${DRVPATH}$basename --accept-license --no-questions --ui=none --dkms #--no-opengl-files #--install-libglvnd #--tmpdir=/hive-drivers-pack
+		${DRVPATH}$basename --accept-license --no-questions --ui=none --dkms --no-opengl-files #--install-libglvnd #--tmpdir=/hive-drivers-pack
 		exitcode=$?
 		[[ $exitcode -eq 0 ]] && echo -e "${GREEN}> Done${NOCOLOR}" && break
 		# code 2 is integrity check, do not try again
 		[[ $exitcode -eq 2 ]] && break
+		# need more info 
+		#[[ $exitcode -eq 1 ]] && break
 		[[ $i -ne 2 ]] && echo -e "${YELLOW}> Failed ($exitcode). Trying again${NOCOLOR}"
 	done
 
-	install_nvs
+	install_nvs || exitcode=$?
 
 	echo -e ""
 	echo -e "${CYAN}> Starting services${NOCOLOR}"
@@ -321,7 +323,7 @@ function install_driver() { # @url or @file
 	[[ $af -ne 0 ]] && autofan dontattach
 	[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 
-	[[ $exitcode -ne 0 ]] && echo -e "${RED}> Driver installation failed${NOCOLOR}" && return 1
+	[[ $exitcode -ne 0 ]] && echo -e "${RED}> Driver installation failed ($exitcode)${NOCOLOR}" && return 1
 
 	echo -e "${GREEN}> Driver installation successful${NOCOLOR}" # ${WHITE}REBOOT NOW!${NOCOLOR}
 
