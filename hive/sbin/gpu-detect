@@ -114,7 +114,7 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 			#00000000:01:00.0, GeForce GTX 1050 Ti, 4038 MiB, 52.50 W, 120.00 W, 130.00 W
 
 			[[ -z $NVIDIA_FAN_COUNT ]] &&
-				NVIDIA_FAN_COUNT=`nvtool -quiet -csv -busid -fancount`
+				NVIDIA_FAN_COUNT=`nvtool -quiet -csv -busid -fancount 2>/dev/null`
 
 			nvidiainfo=`grep -i "00000000:$busid, " $NVIDIASMI_FILE` #ignore busid case
 			if [[ ! -z $nvidiainfo ]]; then
@@ -140,7 +140,7 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 				plim_max=${plim_max/.00/}
 
 				fan_cnt=`grep -i "00000000:$busid" <<< "$NVIDIA_FAN_COUNT" | awk -F',' '{print $2}'`
-				[[ -z $fan_cnt ]] && fan_cnt=1
+				[[ -z $fan_cnt || $fan_cnt == 0 ]] && fan_cnt=1
 
 				additional=" ($mem, $plim_def)"
 				if [[ $1 == "listjson" ]]; then
