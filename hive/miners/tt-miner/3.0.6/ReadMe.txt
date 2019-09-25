@@ -12,6 +12,8 @@ Please find below the available parameter and arguments, arguments in [] are not
 			LYRA2V3		Lyra2 Revision 3 (Vertcoin)
 			HONEYCOMB	HoneyComb (BeeNode)
 
+-AALT			ALGONAME	select the algorithm to use for mining the alternate coin
+
 This parameter will always load the algo that fits best to the installed driver. If you want 
 to make sure that TT-Miner uses a certain cuda version please append one of these values:
 			-92		for cuda 9.20	(ETHASH-92, UBQHASH-92)
@@ -45,6 +47,8 @@ CUDA 9.2.148		>= 396.37	>= 398.26
 						are the GPUs you may have selected with the -d parameter. If you
 						have installed 6 GPUs and use -d 3 4, the parameter -i 19 18
 						will set the intensity of 19 to your system GPU 3 and 18 to GPU 4.
+
+-iALT			same as -i, just for the alternate algo
 
 -ig, -gs		intensity grid/grid-size. Same as intensity (-i, -intensity) just defines the size for the grid directly.
 			This will give you more and finer control about the number of threads that should run on the gpu.
@@ -99,6 +103,8 @@ CUDA 9.2.148		>= 396.37	>= 398.26
 			'stratum+tcp://' is not required because TT-Miner will try to detect which stratum protocol is in use.
 			The first -P will define your primary pool, all following -P definition will work as
 			backup/failover pool.
+
+-PALT			same as -P, just for the alternate algo
 
 -o, -pool, -url		YOUR_SERVER_IP:YOUR_SERVER_POOL
 -u, -user, -wal		YOUR_WALLET[.YOUR_WORKER] or YOUR_USER
