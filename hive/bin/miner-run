@@ -159,6 +159,7 @@ fi
 
 
 # Run miner ==========================================================================
+[[ ! -z $MINER_STOP && -f $MINER_STOP ]] && rm $MINER_STOP > /dev/null 2>&1
 
 cd $MINER_DIR
 while true; do
@@ -170,6 +171,8 @@ while true; do
 	miner logrotate $MINER_NAME
 
 	source $MINER_DIR/h-run.sh
+	# exit loop if miner stop exists
+	[[ ! -z $MINER_STOP && -f $MINER_STOP ]] && break
 
 	echo ""
 	echo -e "${YELLOW}$MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"

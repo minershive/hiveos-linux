@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+STOP_TIMEOUT=15
+export MINER_STOP=/run/hive/MINER_STOP
+
 MINER_LOGS_BASE_DIR=/var/log/miner
 
 function usage() {
@@ -115,31 +118,51 @@ function start() {
 
 	screen -S miner -X screen 1 miner-run $MINER &&
 	screen -S miner -X title $MINER #set nice title
+	# close bash window #0
+	screen -S miner -p bash -X stuff 'exit\n'
 }
 
 
 function stop() {
 	#echo -e "Stopping ${CYAN}$MINER${NOCOLOR}"
-
-#	screen -S miner -Q select .
-#	if [ $? -eq 0 ] ; then
-#		echo "Screen exists"
-#		screen -r -S miner
-#		exit
-#	fi
-
 	#screen -S miner -X quit
 
-	screens=`screen -ls miner | grep -E "[0-9]+\.miner" | cut -d. -f1 | awk '{print $1}'`
+	#screens=`screen -ls miner | grep -E "[0-9]+\.miner" | cut -d. -f1 | awk '{print $1}'`
+	screens=`screen -ls miner | grep -Po "\K[0-9]+(?=\.miner)"`
+	[[ -z $screens ]] &&
+		echo "No miner screens found" &&
+		return
 
-	if [[ -z $screens ]]; then
-		echo "No miner screens found"
-	else
-		for pid in $screens; do
-			echo "Stopping screen session $pid"
-			screen -S $pid -X quit
+	# prevent some miners from restarting in the loop
+	echo 1 > $MINER_STOP
+
+	for pid in $screens; do
+		echo "Sending Ctrl+C to screen session $pid"
+		screen -S $pid -X at "#" stuff ^C
+	done
+	sleep 1
+	check=`screen -ls miner`
+	if [[ $? -eq 0 ]]; then
+		echo -n "Waiting ${STOP_TIMEOUT}s for miners to exit"
+		for (( i=1; i <= $STOP_TIMEOUT; i++ ))
+		do
+			echo -n ". "
+			sleep 1
+			check=`screen -ls miner`
+			[[ $? -ne 0 ]] && echo -n "Done" && break
 		done
+		echo ""
 	fi
+
+	# quit them all
+	screens=`screen -ls miner | grep -Po "\K[0-9]+(?=\.miner)"`
+	for pid in $screens; do
+		echo "Stopping screen session $pid"
+		screen -S $pid -X quit
+	done
+
+	# remove stop file
+	[[ -f $MINER_STOP ]] && rm $MINER_STOP
 
 	#remove khs so no confusing for watchdog
 	#[[ -e /run/hive/khs ]] && rm /run/hive/khs
@@ -185,6 +208,7 @@ function miner_log_basename {
 	echo $log_basename
 	return 0
 }
+
 
 function log_tail {
 	local TAIL_LINE=80
@@ -249,7 +273,6 @@ function config() {
 
 
 
-
 function logs_rotate {
 	log_basename=`miner_log_basename $1`
 	if [[ $? > 0 ]]; then
@@ -293,7 +316,6 @@ function log_truncate {
 }
 
 
-
 # Sets MINER to MINER2 if requested
 function check_second_miner {
 	local mindex=$1 #empty or 2, 3, 4, ...
@@ -306,6 +328,7 @@ function check_second_miner {
 
 	MINER=$minerval #substitute MINER var with second miner
 }
+
 
 function bench_check (){
 	benchmark check > /dev/null 2>&1
