@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERS="0.3.1"
+VERS="0.3.2"
 DELAY=5
 FREE_SPACE_LIMIT=100
 
@@ -9,14 +9,14 @@ FREE_SPACE_LIMIT=100
 [[ $1 == "-s" ]] && SILENT=1
 
 function DelayDot(){
-        local i=0
-        while [ "$i" -le "$DELAY" ]
-        do
-                echo -n '.'
-                sleep 1
-                i=$((i+1))
-        done
-        echo
+	local i=0
+	while [ "$i" -le "$DELAY" ]
+	do
+		echo -n '.'
+		sleep 1
+		i=$((i+1))
+	done
+	echo
 }
 
 part_expand(){
@@ -32,7 +32,7 @@ part_expand(){
 	fi
 	local dev_part="/dev/$2"
 
-	echo "> Starting to repartition"
+	echo -e "${CYAN}> Starting to repartition${NOCOLOR}"
 	growpart $dev_name $part_num
 	if [ $? = 0 ]; then
 		echo -e "${GREEN}Repartition complete${NOCOLOR}"
@@ -41,7 +41,7 @@ part_expand(){
 		exit 1
 	fi
 
-	echo "> Resizing filesystem"
+	echo -e "${CYAN}> Resizing filesystem${NOCOLOR}"
 	resize2fs $dev_part
 	if [ $? = 0 ]; then
 		echo -e "${GREEN}Resizing complete${NOCOLOR}"
@@ -69,9 +69,8 @@ function install-deps() {
 
 ######################################################################
 
-echo -e "${CYAN}Hive Disk Expand Utility v${VERS}${NOCOLOR}"
-
-install-deps
+[[ -z $SILENT ]] &&
+	echo -e "${CYAN}Hive Disk Expand Utility v${VERS}${NOCOLOR}"
 
 #Just a copy-paste
 #bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
@@ -83,16 +82,18 @@ PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\
 DISK_PART=`blkid -U "${PART_UUID}" | sed 's/\(^\/dev\/\)//'`
 if [[ "$(echo $DISK_PART | grep -c nvme)" -gt 0 ]];
 then
-    DISK_NAME=${DISK_PART::-2} #cutoff partnumber pN
+	DISK_NAME=${DISK_PART::-2} #cutoff partnumber pN
 else
-    DISK_NAME=${DISK_PART::-1} #cutoff partnumber N
+	DISK_NAME=${DISK_PART::-1} #cutoff partnumber N
 fi
 
 DISK_SIZE=`cat /proc/partitions | grep -w "${DISK_NAME}" | awk '{ printf("%.f",$3/1024)}'`
 PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
 
-echo -e "HIVE booted from ${GREEN}$DISK_NAME${NOCOLOR} and whole drive size is ${WHITE}$DISK_SIZE${NOCOLOR} MB"
-echo -e "HIVE partition is ${YELLOW}$DISK_PART${NOCOLOR} and it's size is ${WHITE}$PART_SIZE${NOCOLOR} MB"
+if [[ -z $SILENT ]]; then
+	echo -e "HIVE booted from ${GREEN}$DISK_NAME${NOCOLOR} and whole drive size is ${WHITE}$DISK_SIZE MB${NOCOLOR}"
+	echo -e "HIVE partition is ${YELLOW}$DISK_PART${NOCOLOR} and it's size is ${WHITE}$PART_SIZE MB${NOCOLOR}"
+fi
 
 if [[ $GPT == 1 ]]; then
 	EXPAND_SIZE=$((DISK_SIZE-PART_SIZE-28-40-1)) # minus Hive configuration partition and EFI part and reserved
@@ -100,22 +101,28 @@ else
 	EXPAND_SIZE=$((DISK_SIZE-PART_SIZE-28)) # minus Hive configuration partition and reserved
 fi
 
-if [ $EXPAND_SIZE -le ${FREE_SPACE_LIMIT} ]; then
-	echo -e "${RED}Free disk space less then ${FREE_SPACE_LIMIT} MB. Stopped${NOCOLOR}"
+if [[ $EXPAND_SIZE -le ${FREE_SPACE_LIMIT} ]]; then
+	[[ -z $SILENT ]] &&
+		echo -e "${RED}Free disk space less then ${FREE_SPACE_LIMIT} MB. Exiting${NOCOLOR}"
 	exit 1
-else
-	echo -e "Try to auto-expand Hive partition by ${WHITE}${EXPAND_SIZE}${NOCOLOR} MB up to ${WHITE}$((PART_SIZE+EXPAND_SIZE))${NOCOLOR} MB in total"
-	# Give user time for break process in interactive mode
-	if [[ -z $SILENT ]]; then
-		echo -e "Press Ctrl+C to stop or wait 5 seconds to continue";
-		DelayDot
-	fi
-
-	part_expand "$DISK_NAME" "$DISK_PART"
-
-	if [ $? = 0 ]; then
-		partprobe > /dev/null 2>&1
-		NEW_PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
-		echo -e "New HIVE partition size is ${GREEN}$NEW_PART_SIZE${NOCOLOR} MB"
-	fi
 fi
+
+install-deps
+
+echo -e "${YELLOW}> Trying to auto-expand Hive partition by ${WHITE}${EXPAND_SIZE} MB${NOCOLOR}${YELLOW} up to ${WHITE}$((PART_SIZE+EXPAND_SIZE)) MB${NOCOLOR}${YELLOW} in total${NOCOLOR}"
+
+# Give user time for break process in interactive mode
+if [[ -z $SILENT ]]; then
+	echo -e "Press Ctrl+C to stop or wait 5 seconds to continue"
+	DelayDot
+fi
+
+part_expand "$DISK_NAME" "$DISK_PART"
+
+if [ $? = 0 ]; then
+	partprobe > /dev/null 2>&1
+	NEW_PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
+	echo -e "New HIVE partition size is ${GREEN}$NEW_PART_SIZE${NOCOLOR} MB"
+fi
+
+exit 0
