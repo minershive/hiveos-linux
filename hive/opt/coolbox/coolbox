@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+
+if [[ -z $COOLBOX_CONF ]]; then #reread env variables as after upgrade this can be empty
+  source /etc/environment
+  export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+fi
+
+. colors
+
+CLI_OUTPUT=/run/hive/coolbox_output
+SERIAL_LENGTH=88
+
+MIN_WD_RESET_INTERVAL=3
+
+#flag that the message was sent
+unable_to_set_fan_speed=0
+#unparsable data
+error_in_read_configs=0
+
+# Log write
+function echo2 {
+  echo -e "$1"
+}
+
+check_config () {
+  if [ ! -f $COOLBOX_CONF ]; then
+    echo2 "${RED}No config $COOLBOX_CONF${NOCOLOR}"
+  fi
+}
+
+get_file_time_diff(){
+  local a=999
+  [[ -f $CLI_OUTPUT ]] && let a=`date +%s`-`stat --format='%Y' $CLI_OUTPUT`
+  echo $a
+}
+
+send_request(){
+  local rtn=
+  stty -F /dev/ttyUSB0 raw ispeed 9600 ospeed 9600 -ignpar cs8 -cstopb -echo
+  echo -n $1 > /dev/ttyUSB0
+  read -t 2 -d \$ rtn < /dev/ttyUSB0
+  echo $rtn
+}
+
+get_stats(){
+  # read fresh data from cache
+  if [[ `get_file_time_diff` -lt 5 ]]; then
+    cat $CLI_OUTPUT
+    return 0
+  fi
+
+  WATCHDOG=0
+  AUTO_FAN=0
+  TARGET_TEMP=85
+  WD_RESET_INTERVAL=5
+
+  #read config
+  if [[ -f $COOLBOX_CONF ]]; then #in case serial verification error no conf will be received
+    source $COOLBOX_CONF
+  fi
+
+  [[ $WD_RESET_INTERVAL -lt $MIN_WD_RESET_INTERVAL ]] && WD_RESET_INTERVAL=$MIN_WD_RESET_INTERVAL
+
+  [[ $AUTO_FAN -eq 0 ]] && FAN_MODE=1 || FAN_MODE=2
+
+  temp_array=
+
+  #check $GPU_STATS_JSON and do nothing while not exist
+  while true; do
+    if [ -f $GPU_STATS_JSON ]; then
+      temp_array=`cat $GPU_STATS_JSON | tail -1 | jq -c ".temp"`
+      break
+    fi
+    sleep 10
+  done
+
+  #remove Internal Gpus
+  [[ $cpu_indexes_array != '[]' && ! -z $cpu_indexes_array ]] &&
+      temp_array=$(jq -c "del(.$cpu_indexes_array)" <<< $temp_array) #"
+
+  temp_array=`echo $temp_array | jq -rc '.[]'`
+  local request_str=''
+  i=0
+  for t in $temp_array; do
+    ((i++))
+    request_str+=`printf "%02d" $t`
+  done
+  request_str="^"$(printf "%02d" $i)"$request_str"$(printf "%02d" $TARGET_TEMP)$(printf "%03d" $MANUAL_FAN)${FAN_MODE}${WATCHDOG}$(printf "%02d" $WD_RESET_INTERVAL)"\$"
+
+  local answer_str=`send_request $request_str`
+  echo $answer_str > $CLI_OUTPUT
+  echo $answer_str
+}
+
+get_serial(){
+  coolbox_stats=`get_stats`
+  echo ${coolbox_stats:0:$SERIAL_LENGTH}
+}
+
+get_json(){
+  coolbox_stats=`get_stats`
+
+  pos=`expr $SERIAL_LENGTH + 1`
+
+  echo ${coolbox_stats:$pos} | jq -c '.'
+
+  #fan_count=`expr ${coolbox_stats:$pos:2} + 0`
+  #fans=
+  #for (( i = 0; i < $fan_count; i++ )); do
+  #  pos=`expr $SERIAL_LENGTH + 3 + 3 \* $i`
+  #  fans+=`expr ${coolbox_stats:$pos:3} + 0`" "
+  #done
+  #echo ${fans[@]} | tr " " "\n" | jq -cs '.'
+
+  #echo '{"casefan": [55,55,0,550], "thermosensors": [23,32,350]}'
+}
+
+if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
+  if [[ $1 == "--get_json" ]]; then
+    echo `get_json`
+  elif [[ $1 == "--get_serial" ]]; then
+    echo `get_serial`
+  fi
+else
+  if [[ $1 == "--get_json" ]]; then
+    echo "{}"
+  else
+    echo "No Coolbox hardware found"
+  fi
+fi

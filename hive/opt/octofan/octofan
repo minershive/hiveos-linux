@@ -1,0 +1,814 @@
+#!/usr/bin/env bash
+
+################################################################################
+# Firmware info
+FW_VERSION="1.1"
+#V2_FW_FILENAME="fan_controller_v0.2.hex"
+#V4_FW_FILENAME="fan_controller_v0.4.hex"
+V7_FW_FILENAME="/hive/opt/octofan/firmware.hex"
+MAINTENANCE_SEM_NAME="/tmp/octofan_fw_update"
+################################################################################
+
+if [[ -z $OCTOFAN_CONF ]]; then #reread env variables as after upgrade this can be empty
+  source /etc/environment
+  export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+fi
+
+. colors
+. /hive-config/rig.conf
+
+export DISPLAY=":0"
+
+#AUTOFAN_LOG="/var/log/hive-autofan.log"
+
+#Must be empty in release
+DEBUG_COMMANDS=
+
+DEF_SLEEP_TIME=10
+
+OCTOFAN_BIN=/hive/opt/octofan/fan_controller_cli
+CLI_OUTPUT=/tmp/fan_controller_cli_output
+OCTOFAN_PERCENT_PWM=/hive/opt/octofan/octofan_percent_pwm
+
+CALC_AVERAGE_SPEED=1
+
+################################################################################
+#settings (for octofan.conf without DEF_), default values
+#blink on errors
+DEF_BLINK_ON_ERRORS=1
+#LED number for blink on errors
+DEF_BLINK_ON_ERRORS_LED=2
+#blink type on errors: 0=off, 1=on, 2=blink 0.1s, 3=blink 1s, >=4=blink 3s
+DEF_BLINK_ON_ERRORS_TYPE=2
+#blink type on warnings: 0=off, 1=on, 2=blink 0.1s, 3=blink 1s, >=4=blink 3s
+DEF_BLINK_ON_WARNINGS_TYPE=3
+#blink off type: 0=off, 1=on, 2=blink 0.1s, 3=blink 1s, >=4=blink 3s
+DEF_BLINK_OFF_TYPE=0
+#blink to find the rig in rack
+DEF_BLINK_TO_FIND=0
+#LED number for blink to find the rig in rack
+DEF_BLINK_TO_FIND_LED=2
+#blink type to find the rig in rack: 0=off, 1=on, 2=blink 0.1s, 3=blink 1s, >=4=blink 3s
+DEF_BLINK_TO_FIND_TYPE=1
+#manual fan speed
+DEF_MANUAL_FAN=100
+#enabled auto fan control
+DEF_AUTO_ENABLED=1
+#minimal fan speed
+DEF_MIN_FAN=30
+#maximum fan speed
+DEF_MAX_FAN=100
+
+DEF_FAN1=0
+DEF_FAN2=1
+DEF_FAN3=2
+
+DEF_FAN_PWN_FACTOR=-30
+#######################################################################
+
+#flag that the message was sent
+unable_to_set_fan_speed=0
+#unparsable data
+error_in_read_configs=0
+
+#######################################################################
+
+save_text_to_EEPROM () {
+  check_sem
+  [[ $? -ne 0 ]] && return 1 #octofan in maintenance mode
+
+  echo2 "${GREEN}Saving text to Octofan EEPROM${NOCOLOR}"
+  local current_ip=`hostname -I | sed 's/ /\n/g' | head -1`
+  #$OCTOFAN_BIN -o 1,0,3 -v "ROH Ultra"
+  $OCTOFAN_BIN -o 0,0,4 -v 0
+  local str=`print_c "$WORKER_NAME" 10`
+  $OCTOFAN_BIN -o 0,0,3 -v "$str"
+  $OCTOFAN_BIN -o 0,2,2 -v "IP: $current_ip"
+  $OCTOFAN_BIN -o 0,3,2 -v "Algo:"
+  $OCTOFAN_BIN -o 0,4,2 -v "Hashrate:"
+  $OCTOFAN_BIN -o 0,5,2 -v "Power:"
+  $OCTOFAN_BIN -o 0,6,2 -v "In:"
+  $OCTOFAN_BIN -o 11,6,2 -v "Out:"
+  $OCTOFAN_BIN -o 0,7,2 -v "Fans:"
+}
+
+update_text () {
+  check_sem
+  [[ $? -ne 0 ]] && return 1 #octofan in maintenance mode
+
+  check_cli_output
+
+  echo2 "${GREEN}Updating Octofan OLED text${NOCOLOR}"
+  local hashrate=`echo "$2*1000" | bc`
+  hashrate=`shorten_hashrate $hashrate`
+  power_ac=`cat $CLI_OUTPUT | grep "PSU Pac:" | cut -d " " -f 4`
+  in_t=`cat $CLI_OUTPUT | grep "Temperature No. 0" | cut -d " " -f 5`
+  out_t=`cat $CLI_OUTPUT | grep "Temperature No. 1" | cut -d " " -f 5`
+  f1_speed=`cat $CLI_OUTPUT | grep "FAN No. $DEF_FAN1 RPM in percent:" | cut -d " " -f 7`
+  f2_speed=`cat $CLI_OUTPUT | grep "FAN No. $DEF_FAN2 RPM in percent:" | cut -d " " -f 7`
+  f3_speed=`cat $CLI_OUTPUT | grep "FAN No. $DEF_FAN3 RPM in percent:" | cut -d " " -f 7`
+
+  local str=`print_l $1 14`
+  $OCTOFAN_BIN -o 6,3,0 -v "$str"
+  str=`print_l $hashrate 10`
+  $OCTOFAN_BIN -o 10,4,0 -v "$str"
+  str=`print_l "${power_ac}W" 13`
+  $OCTOFAN_BIN -o 7,5,0 -v "$str"
+  #In 20°C  Out 40°C
+  str=`print_l "${in_t}°C" 5`
+  $OCTOFAN_BIN -o 4,6,0 -v "$str"
+  str=`print_l "${out_t}°C" 4`
+  $OCTOFAN_BIN -o 16,6,0 -v "$str"
+  #Fans 100% 100% 100%
+  str=`print_r "${f1_speed}% ${f2_speed}% ${f3_speed}%" 14`
+  $OCTOFAN_BIN -o 6,7,0 -v "$str"
+}
+
+function echo2 {
+  echo -e "$1"
+}
+
+check_config () {
+  if [ ! -f $OCTOFAN_CONF ]; then
+    echo2 "${RED}No config $OCTOFAN_CONF${NOCOLOR}"
+  fi
+}
+
+print_space () {
+  for i in $(seq $1); do
+    echo -n ' '
+  done
+}
+
+print_l () {
+  local length=${#1}
+  if [[ $2 -gt $length ]]; then
+    echo -n "$1"
+    print_space $(($2 - $length))
+  else
+    [[ length -ne $2 ]] && echo "$1" | cut -c1-$2 || echo "$1"
+  fi
+}
+
+print_r () {
+  local length=${#1}
+  if [[ $2 -gt $length ]]; then
+    print_space $(($2 - $length))
+    echo -n "$1"
+  else
+    [[ length -ne $2 ]] && echo "$1" | cut -c1-$2 || echo "$1"
+  fi
+}
+
+print_c () {
+  local length=${#1}
+  if [[ $2 -gt $length ]]; then
+    l_space=$((($2 - $length) / 2))
+    r_space=$(($2 - $l_space - $length))
+    print_space $l_space
+    echo -n "$1"
+    print_space $r_space
+  else
+    [[ length -ne $2 ]] && echo "$1" | cut -c1-$2 || echo "$1"
+  fi
+}
+
+function echo2 {
+  echo -e "$1"
+}
+
+check_config () {
+  if [ ! -f $OCTOFAN_CONF ]; then
+    echo2 "${RED}No config $OCTOFAN_CONF${NOCOLOR}"
+  fi
+}
+
+shorten_hashrate () {
+  if [[ $1 > 100 ]]; then
+    echo $1 | numfmt --suffix="h/s" --to=si
+  else
+    echo $1 | numfmt --suffix="h/s" --format="%'3.3f"
+  fi
+}
+
+calc_fan_speed () {
+  if [[ $AUTO_ENABLED != 1 ]]; then
+    if [[ ! -z $MANUAL_FAN ]]; then
+      echo $MANUAL_FAN #showing manual value
+    else
+      echo 100 #can't get manual value, setting fan speed to 100%
+    fi
+    return 0
+  fi
+
+  if [[ -z $bus_id_array ]]; then
+    #check $GPU_DETECT_JSON and do nothing while not exist
+    while true; do
+      if [ -f $GPU_DETECT_JSON ]; then
+        bus_id_array=(`cat $GPU_DETECT_JSON | jq -c '[ . | to_entries[] | select(.value) | .value.busid [0:2] ]'`)
+        break
+      else
+        echo2 "${RED}No $GPU_DETECT_JSON file exist${NOCOLOR}"
+      fi
+      sleep 10
+    done
+  fi
+
+  if [[ -z $fan_array ]]; then
+    #check $GPU_STATS_JSON and do nothing while not exist
+    while true; do
+      if [ -f $GPU_STATS_JSON ]; then
+        fan_array=(`cat $GPU_STATS_JSON | tail -1 | jq -c ".fan"`)
+        break
+      else
+        echo2 "${RED}No $GPU_STATS_JSON file exist${NOCOLOR}"
+      fi
+      sleep 10
+    done
+  fi
+
+  local fan_speed=$MIN_FAN
+  local t_bus_id=0
+  local a_fan=0
+  local s_fan=0
+  local n_fan=0
+  if [[ ! -z $bus_id_array && ! -z $fan_array ]]; then
+    case $1 in
+      $DEF_FAN1) #fan 1 blows on cards 01:00.0, 02:00.0, 03:00.0
+      for (( i=1; i <= 3; i++ )); do
+        for ((j = 0; j < $(jq length <<< "$bus_id_array"); j++)); do
+          t_bus_id=$(jq -r .[$j] <<< $bus_id_array)
+          if [[ "$(( 0x${t_bus_id} ))" == "$i" ]]; then
+            a_fan=$(jq -r .[$j] <<< $fan_array)
+            [[ $a_fan -gt $fan_speed ]] && fan_speed=$a_fan
+            [[ $a_fan -gt 0 ]] && ((s_fan+=$a_fan)) && ((n_fan++))
+          fi
+        done
+      done
+      [[ $CALC_AVERAGE_SPEED == 1 && $n_fan -gt 0 ]] && fan_speed=`expr $s_fan / $n_fan`
+      [[ $fan_speed -lt $MIN_FAN ]] && fan_speed=$MIN_FAN
+
+      #adding 10% to compensate extra heat from CPU and PSU
+      fan_speed=`expr $fan_speed + 10`
+      [[ $fan_speed -gt 100 ]] && fan_speed=100
+      ;;
+
+      $DEF_FAN2) #fan 2 blows on cards 05:00.0, 06:00.0, 07:00.0
+      for (( i=5; i <= 7; i++ )); do
+        for ((j = 0; j < $(jq length <<< "$bus_id_array"); j++)); do
+          t_bus_id=$(jq -r .[$j] <<< $bus_id_array)
+          if [[ "$(( 0x${t_bus_id} ))" == "$i" ]]; then
+            a_fan=$(jq -r .[$j] <<< $fan_array)
+            [[ $a_fan -gt $fan_speed ]] && fan_speed=$a_fan
+            [[ $a_fan -gt 0 ]] && ((s_fan+=$a_fan)) && ((n_fan++))
+          fi
+        done
+      done
+      [[ $CALC_AVERAGE_SPEED == 1 && $n_fan -gt 0 ]] && fan_speed=`expr $s_fan / $n_fan`
+      [[ $fan_speed -lt $MIN_FAN ]] && fan_speed=$MIN_FAN
+      ;;
+
+      $DEF_FAN3) #fan 3 blows on cards 08:00.0, 09:00.0, 0a:00.0
+      for (( i=8; i <= 10; i++ )); do
+        for ((j = 0; j < $(jq length <<< "$bus_id_array"); j++)); do
+          t_bus_id=$(jq -r .[$j] <<< $bus_id_array)
+          if [[ "$(( 0x${t_bus_id} ))" == "$i" ]]; then
+            a_fan=$(jq -r .[$j] <<< $fan_array)
+            [[ $a_fan -gt $fan_speed ]] && fan_speed=$a_fan
+            [[ $a_fan -gt 0 ]] && ((s_fan+=$a_fan)) && ((n_fan++))
+          fi
+        done
+      done
+      [[ $CALC_AVERAGE_SPEED == 1 && $n_fan -gt 0 ]] && fan_speed=`expr $s_fan / $n_fan`
+      [[ $fan_speed -lt $MIN_FAN ]] && fan_speed=$MIN_FAN
+      ;;
+    esac
+  else #error on getting card fan values, setting max speed
+    fan_speed=$MAX_FAN
+  fi
+
+  echo $fan_speed
+}
+
+percent_to_pwm () {
+  local pwm=
+  # [[ -f $OCTOFAN_PERCENT_PWM ]] && pwm=`cat $OCTOFAN_PERCENT_PWM | grep " ${1}%" | head -1 | cut -d " " -f 4`
+  [[ -z $pwm ]] && pwm=`echo $1 $DEF_FAN_PWN_FACTOR| awk '{ printf("%.0f\n",255*$1/100+$2) }'`
+  echo $pwm
+}
+
+set_fan_speed () {
+  check_sem
+  if [[ $? -eq 0 ]]; then
+    local pwm=`percent_to_pwm $2`
+    echo2 "Setting FAN $1 speed to ${PURPLE}$2%${NOCOLOR}, Min Fan $MIN_FAN%, Max Fan $MAX_FAN%, PWM=$pwm"
+    [[ ! -z $1 && ! -z $2 ]] && $OCTOFAN_BIN -f $1 -v $pwm
+  fi
+}
+
+set_fans_speed () {
+  check_sem
+  if [[ $? -eq 0 ]]; then
+    if [[ ! -z $1 ]]; then
+      for j in {1..3}; do
+        eval "i=\$DEF_FAN$j"
+        set_fan_speed $i $1
+        #echo2 "Setting FAN $i speed to ${PURPLE}$1%${NOCOLOR}, Min Fan $MIN_FAN%, Max Fan $MAX_FAN%"
+        #$OCTOFAN_BIN -f $i -v `percent_to_pwm $1`
+      done
+    fi
+  fi
+}
+
+blink_error () {
+  check_sem
+  [[ $? -ne 0 ]] && return 1 #octofan in maintenance mode
+
+  if [[ $BLINK_ON_ERRORS == 1 ]]; then
+    echo2 "${RED}Blinking LED to show error state${NOCOLOR}"
+
+    $OCTOFAN_BIN -l $BLINK_ON_ERRORS_LED -v $BLINK_ON_ERRORS_TYPE
+  else
+    echo2 "${GREEN}Blink on error disabled, turning off LED${NOCOLOR}"
+
+    $OCTOFAN_BIN -l $BLINK_ON_ERRORS_LED -v $BLINK_OFF_TYPE
+  fi
+}
+
+blink_warning () {
+  check_sem
+  [[ $? -ne 0 ]] && return 1 #octofan in maintenance mode
+
+  if [[ $BLINK_ON_ERRORS == 1 ]]; then
+    echo2 "${YELLOW}Blinking LED to show warning state${NOCOLOR}"
+
+    $OCTOFAN_BIN -l $BLINK_ON_ERRORS_LED -v $DEF_BLINK_ON_WARNINGS_TYPE
+  else
+    echo2 "${GREEN}Blink on error disabled, turning off LED${NOCOLOR}"
+
+    $OCTOFAN_BIN -l $BLINK_ON_ERRORS_LED -v $BLINK_OFF_TYPE
+  fi
+}
+
+blink_off () {
+  check_sem
+  [[ $? -ne 0 ]] && return 1 #octofan in maintenance mode
+
+  echo2 "${GREEN}Normal state, turning off LED${NOCOLOR}"
+
+  $OCTOFAN_BIN -l $BLINK_ON_ERRORS_LED -v $BLINK_OFF_TYPE
+}
+
+blink_to_find () {
+  check_sem
+  [[ $? -ne 0 ]] && return 1 #octofan in maintenance mode
+
+  if [[ $BLINK_TO_FIND == 1 ]]; then
+    echo2 "${WHITE}Turning on LED to find the rig in rack${NOCOLOR}"
+
+    $OCTOFAN_BIN -l $BLINK_TO_FIND_LED -v $BLINK_TO_FIND_TYPE
+  else
+    $OCTOFAN_BIN -l $BLINK_TO_FIND_LED -v $BLINK_OFF_TYPE
+  fi
+}
+
+load_def_values () {
+  [[ -f $OCTOFAN_CONF ]] && source $OCTOFAN_CONF
+
+  if [[ ! -f $OCTOFAN_CONF ]]; then
+    #set default values
+    [[ -z $BLINK_ON_ERRORS ]] && BLINK_ON_ERRORS=$DEF_BLINK_ON_ERRORS
+    [[ -z $BLINK_TO_FIND ]] && BLINK_TO_FIND=$DEF_BLINK_TO_FIND
+    [[ -z $MANUAL_FAN ]] && MANUAL_FAN=$DEF_MANUAL_FAN
+    [[ -z $AUTO_ENABLED ]] &&AUTO_ENABLED=$DEF_AUTO_ENABLED
+    [[ -z $MIN_FAN ]] && MIN_FAN=$DEF_MIN_FAN
+    [[ -z $MAX_FAN ]] && MAX_FAN=$DEF_MAX_FAN
+  fi
+
+  [[ -z $BLINK_ON_ERRORS_LED ]] && BLINK_ON_ERRORS_LED=$DEF_BLINK_ON_ERRORS_LED
+  [[ -z $BLINK_ON_ERRORS_TYPE ]] && BLINK_ON_ERRORS_TYPE=$DEF_BLINK_ON_ERRORS_TYPE
+  [[ -z $BLINK_ON_WARNINGS_TYPE ]] && BLINK_ON_WARNINGS_TYPE=$DEF_BLINK_ON_WARNINGS_TYPE
+  [[ -z $BLINK_OFF_TYPE ]] && BLINK_OFF_TYPE=$DEF_BLINK_OFF_TYPE
+  [[ -z $BLINK_TO_FIND_LED ]] && BLINK_TO_FIND_LED=$DEF_BLINK_TO_FIND_LED
+  [[ -z $BLINK_TO_FIND_TYPE ]] && BLINK_TO_FIND_TYPE=$DEF_BLINK_TO_FIND_TYPE
+
+}
+
+octo_fan_control () {
+  while true;  do
+    unset AUTO_ENABLED
+    MIN_FAN=
+    MAX_FAN=
+
+    bus_id_array=
+    fan_array=
+
+    load_def_values
+
+    SLEEP_TIME=$DEF_SLEEP_TIME
+
+    echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
+
+    #check $GPU_DETECT_JSON and do nothing while not exist
+    while true; do
+      if [ -f $GPU_DETECT_JSON ]; then
+        bus_id_array=(`cat $GPU_DETECT_JSON | jq -c '[ . | to_entries[] | select(.value) | .value.busid [0:2] ]'`)
+        break
+      else
+        echo2 "${RED}No $GPU_DETECT_JSON file exist${NOCOLOR}"
+      fi
+      sleep 10
+    done
+
+    #check $GPU_STATS_JSON and do nothing while not exist
+    while true; do
+      if [ -f $GPU_STATS_JSON ]; then
+        fan_array=(`cat $GPU_STATS_JSON | tail -1 | jq -c ".fan"`)
+        break
+      else
+        echo2 "${RED}No $GPU_STATS_JSON file exist${NOCOLOR}"
+      fi
+      sleep 10
+    done
+
+
+    #[[ $BLINK_ON_ERRORS == 1 ]] && blink_error
+
+    #blinking to find the rig in rack
+    blink_to_find
+    sleep 1
+
+    local a_fan=0
+    if [[ $AUTO_ENABLED == 1 ]]; then #"autofan" enabled
+      for j in {3..1}; do
+        eval "i=\$DEF_FAN$j"
+        i_fan=`calc_fan_speed $i` #getting current fan speed value
+        set_fan_speed $i $i_fan #setting current fan speed value
+        sleep 1
+      done
+    else
+      if [[ ! -z $MANUAL_FAN ]]; then
+        set_fans_speed $MANUAL_FAN #setting all fans speed to manual value
+      else
+        set_fans_speed 100 #can't get manual value, setting all fans speed to 100%
+      fi
+    fi
+
+    check_fan_max_rpm
+
+    read -t $SLEEP_TIME
+  done
+}
+
+get_file_time_diff () {
+  local a=999
+  [[ -f $CLI_OUTPUT ]] && let a=`date +%s`-`stat --format='%Y' $CLI_OUTPUT`
+  echo $a
+}
+
+check_cli_output () {
+  [[ `get_file_time_diff` -gt 5 ]] && $OCTOFAN_BIN -r > $CLI_OUTPUT
+}
+
+get_temp () {
+  check_cli_output
+
+  local temp=`cat $CLI_OUTPUT | grep "Temperature No. $1" | cut -d " " -f 5`
+
+  [[ $temp != "" ]] && echo ${temps[@]} | tr " " "\n" | jq -cs '.' || echo 255
+}
+
+get_temp_json () {
+  check_cli_output
+
+  # local temps=
+  # for i in {0..4}; do
+  #   temps+=`cat $CLI_OUTPUT | grep "Temperature No. $i" | cut -d " " -f 5`" "
+  # done
+
+  temps+=`cat $CLI_OUTPUT | grep "Temperature No. 0" | cut -d " " -f 5`" " #in
+  temps+=`cat $CLI_OUTPUT | grep "Temperature No. 1" | cut -d " " -f 5`" " #out
+  temps+=`cat $CLI_OUTPUT | grep "PSU T2:" | cut -d " " -f 4`" " #psu in
+  temps+=`cat $CLI_OUTPUT | grep "PSU T1:" | cut -d " " -f 4`" " #psu out
+
+  echo ${temps[@]} | tr " " "\n" | jq -cs '.'
+}
+
+get_psu_json () {
+  check_cli_output
+
+  # local voltage_ac=`cat $CLI_OUTPUT | grep "PSU Vac:" | cut -d " " -f 4`
+  # local amperage_ac=`cat $CLI_OUTPUT | grep "PSU Iac:" | cut -d " " -f 4`
+  local power_ac=`cat $CLI_OUTPUT | grep "PSU Pac:" | cut -d " " -f 4`
+  # local voltage_dc=`cat $CLI_OUTPUT | grep "PSU Vdc:" | cut -d " " -f 4`
+  # local amperage_dc=`cat $CLI_OUTPUT | grep "PSU Idc:" | cut -d " " -f 4`
+  # local power_dc=`cat $CLI_OUTPUT | grep "PSU Pdc:" | cut -d " " -f 4`
+
+  # jq -cns \
+  #    --arg voltage_ac $voltage_ac \
+  #    --arg amperage_ac $amperage_ac \
+  #    --arg power_ac $power_ac \
+  #    --arg voltage_dc $voltage_dc \
+  #    --arg amperage_dc $amperage_dc \
+  #    --arg power_dc $power_dc \
+  #    '{$voltage_ac, $amperage_ac, $power_ac, $voltage_dc, $amperage_dc, $power_dc}'
+
+  jq -cns \
+    --arg power_ac $power_ac \
+    '{$power_ac}'
+}
+
+get_fan_json_calc () {
+  check_cli_output
+
+  local fans=
+  local rpm=0
+  local fan=0
+  for j in {1..3}; do
+    eval "i=\$DEF_FAN$j"
+    rpm=`cat $CLI_OUTPUT | grep "FAN No. $i RPM:" | cut -d " " -f 5`" "
+    [[ $rpm != 0 ]] && fan=`calc_fan_speed $i` || fan=0
+    fans+=$fan" "
+  done
+
+  echo ${fans[@]} | tr " " "\n" | jq -cs '.'
+}
+
+rpm_to_percent () {
+  local fan=
+  [[ -f $OCTOFAN_PERCENT_PWM ]] && fan=`cat $OCTOFAN_PERCENT_PWM | grep " ${1}PWM" | head -1 | cut -d " " -f 4`
+  [[ -z $fan ]] && fan=`echo $1 | awk '{ printf("%.0f\n",$1/255*100) }'`
+  echo $fan
+}
+
+get_fan_json_pwm () {
+  check_cli_output
+
+  local fans=
+  local pwm=0
+  local fan=0
+  for j in {1..3}; do
+    eval "i=\$DEF_FAN$j"
+    pwm=`cat $CLI_OUTPUT | grep "FAN No. $i Current PWM:" | cut -d " " -f 6`
+    fan=`rpm_to_percent $pwm`
+    fans+=$fan" "
+  done
+
+  echo ${fans[@]} | tr " " "\n" | jq -cs '.'
+}
+
+get_fan_json_percent () {
+  check_cli_output
+
+  local fans=
+  local fan=0
+  for j in {1..3}; do
+    eval "i=\$DEF_FAN$j"
+    fan=`cat $CLI_OUTPUT | grep "FAN No. $i RPM in percent:" | cut -d " " -f 7`
+    fans+=$fan" "
+  done
+
+  echo ${fans[@]} | tr " " "\n" | jq -cs '.'
+}
+
+get_fan_json () {
+  local bin_ver=`$OCTOFAN_BIN -r | grep VERSION-CLI | cut -d " " -f 2`
+  dpkg --compare-versions "$bin_ver" "lt" "0.5"
+  if [ $? -eq "0" ]; then
+    get_fan_json_calc
+  else
+    dpkg --compare-versions "$bin_ver" "lt" "0.7"
+    if [ $? -eq "0" ]; then
+      get_fan_json_pwm
+    else
+      get_fan_json_percent
+    fi
+  fi
+}
+
+check_avrdude () {
+  if [[ `dpkg -s avrdude 2>/dev/null | grep -c "ok installed"` -eq 0 ]]; then
+    apt-get install -y avrdude
+#    cp /hive/opt/octofan/avrdude.conf   /etc/avrdude.conf
+  fi
+}
+
+update_fw () {
+  echo "$(date +"%Y-%m-%d %T") - update firmware" > $MAINTENANCE_SEM_NAME
+
+  local error_txt=
+  local t_error_txt=
+  local bl_enter=0
+  local error=0
+
+  local bin_dir=`dirname "$OCTOFAN_BIN"`
+  cd $bin_dir
+
+  echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
+  echo2 "Updating fan controller firmware to version $FW_VERSION"
+
+  echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
+  echo2 "Stopping miner"
+  miner stop
+  sleep 10
+
+  echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
+  echo2 "Entering bootloader"
+  t_error_txt=`$OCTOFAN_BIN -b 2>&1`
+  if [[ $? -ne 0 ]]; then
+    error=1
+    error_txt+="$(date +"%Y-%m-%d %T") Error on entering bootloader: $t_error_txt "
+  else
+    bl_enter=1
+  fi
+  sleep 1
+
+  if [[ $bl_enter == 1 ]]; then
+    cp /hive/opt/octofan/avrdude.conf /etc/avrdude.conf
+    echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
+    echo2 "Flashing the firmware $1"
+
+    #echo2 "/usr/bin/avrdude -pm328pb -cusbasp -Uflash:w:$1:a"
+    #t_error_txt=`/usr/bin/avrdude -pm328pb -cusbasp -Uflash:w:$1:a 2>&1`
+    #echo2 "/usr/bin/avrdude -pm324pb -cusbasp -U lfuse:w:0xff:m -U hfuse:w:0xd8:m -U efuse:w:0xfd:m -U flash:w:$1:a"
+    #t_error_txt=`/usr/bin/avrdude -pm324pb -cusbasp -U lfuse:w:0xff:m -U hfuse:w:0xd8:m -U efuse:w:0xfd:m -U flash:w:$1:a 2>&1`
+    echo2 "/usr/bin/avrdude -pm324pb -cusbasp -U flash:w:$1:a"
+    t_error_txt=`/usr/bin/avrdude -pm324pb -cusbasp -U flash:w:$1:a 2>&1`
+    if [[ $? -ne 0 ]]; then
+      #one more try
+      t_error_txt=`/usr/bin/avrdude -pm324pb -cusbasp -U flash:w:$1:a 2>&1`
+      if [[ $? -ne 0 ]]; then
+        error=1
+        error_txt+="$(date +"%Y-%m-%d %T") Error on flashing firmware: $t_error_txt "
+      fi
+    fi
+    sleep 3
+  fi
+
+   echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
+   echo2 "Exiting bootloader"
+   t_error_txt=`$OCTOFAN_BIN -bx 2>&1`
+   if [[ $? -ne 0 ]]; then
+     error=1
+     error_txt+="$(date +"%Y-%m-%d %T") Error on exiting bootloader: $t_error_txt "
+   fi
+   sleep 3
+
+  #checking firmvare
+  echo2 "Checking firmware"
+  local fw_cur_ver=`$OCTOFAN_BIN -r | grep "VERSION-FW:" | cut -f 2 -d " "`
+  dpkg --compare-versions "$FW_VERSION" "le" "$fw_cur_ver"
+  if [ $? -ne "0" ]; then
+    error=1
+    error_txt+="$(date +"%Y-%m-%d %T") Firmware not updated, current version: $fw_cur_ver "
+  fi
+  sleep 3
+
+  save_text_to_EEPROM
+
+  echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
+  echo2 "Starting miner"
+  miner start
+  sleep 3
+
+  if [[ $error == 0 ]]; then
+    test_max_rpm
+
+    echo2 ""
+    echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
+    echo2 "Done"
+  else
+    error_txt="Error on updating fan controller firmware: $error_txt"
+    /hive/bin/message danger "$error_txt"
+  fi
+  rm -f ${MAINTENANCE_SEM_NAME}
+}
+
+test_max_rpm () {
+  echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
+  echo2 "Testing max fans RPM"
+
+  $OCTOFAN_BIN -t
+  # for (( i=1; i<=70; i++)); do
+  #   echo -n '.'
+  #   sleep 0.5
+  # done
+}
+
+check_fan_max_rpm () {
+  check_sem $1
+  if [[ $? -eq 0 ]]; then
+
+    check_cli_output
+
+    local f1_max_rpm=`cat $CLI_OUTPUT | grep "FAN No. $DEF_FAN1 max RPM:" | cut -f 6 -d " "`
+    local f2_max_rpm=`cat $CLI_OUTPUT | grep "FAN No. $DEF_FAN2 max RPM:" | cut -f 6 -d " "`
+    local f3_max_rpm=`cat $CLI_OUTPUT | grep "FAN No. $DEF_FAN3 max RPM:" | cut -f 6 -d " "`
+
+    [[ $FAN1_MAX_RPM -gt 0 && $FAN1_MAX_RPM -ne $f1_max_rpm ]] && echo2 "Setting FAN 0 max PRM to ${PURPLE}$FAN1_MAX_RPM${NOCOLOR}" && $OCTOFAN_BIN -m $DEF_FAN1 -v $FAN1_MAX_RPM
+    [[ $FAN2_MAX_RPM -gt 0 && $FAN2_MAX_RPM -ne $f2_max_rpm ]] && echo2 "Setting FAN 1 max PRM to ${PURPLE}$FAN2_MAX_RPM${NOCOLOR}" && $OCTOFAN_BIN -m $DEF_FAN2 -v $FAN2_MAX_RPM
+    [[ $FAN3_MAX_RPM -gt 0 && $FAN3_MAX_RPM -ne $f3_max_rpm ]] && echo2 "Setting FAN 2 max PRM to ${PURPLE}$FAN3_MAX_RPM${NOCOLOR}" && $OCTOFAN_BIN -m $DEF_FAN3 -v $FAN3_MAX_RPM
+  fi
+}
+
+get_max_rpm_json () {
+  check_cli_output
+
+  local f1_max_rpm=`cat $CLI_OUTPUT | grep "FAN No. $DEF_FAN1 max RPM:" | cut -f 6 -d " "`
+  local f2_max_rpm=`cat $CLI_OUTPUT | grep "FAN No. $DEF_FAN2 max RPM:" | cut -f 6 -d " "`
+  local f3_max_rpm=`cat $CLI_OUTPUT | grep "FAN No. $DEF_FAN3 max RPM:" | cut -f 6 -d " "`
+  echo '{"fan1_max_rpm": '$f1_max_rpm', "fan2_max_rpm": '$f2_max_rpm', "fan3_max_rpm": '$f3_max_rpm'}'
+}
+
+recalibrate_fans () {
+  echo "$(date +"%Y-%m-%d %T") - recalibrate fans" > $MAINTENANCE_SEM_NAME
+
+  test_max_rpm
+
+  rm -f ${MAINTENANCE_SEM_NAME}
+}
+
+check_firmware () {
+  local fw_cur_ver=`$OCTOFAN_BIN -r | grep "VERSION-FW:" | cut -f 2 -d " "`
+  echo2 "Current FW version is: $fw_cur_ver"
+  local hw_cur_ver=`$OCTOFAN_BIN -r | grep "VERSION-HW:" | cut -f 2 -d " "`
+  echo2 "Current HW version is: $hw_cur_ver"
+
+  dpkg --compare-versions "$FW_VERSION" "le" "$fw_cur_ver"
+  if [ $? -ne "0" ]; then
+    check_avrdude
+
+    dpkg --compare-versions "0.7" "gt" "$hw_cur_ver"
+    if [ $? -ne "0" ]; then
+      #HW verison 0.7+
+      update_fw $V7_FW_FILENAME
+    else
+      echo2 "No firmware updates for hardware lower than 0.7"
+    fi
+  fi
+}
+
+check_sem () {
+if [[ -f $MAINTENANCE_SEM_NAME ]]; then
+  a=0
+  let a=`date +%s`-`stat --format='%Y' $MAINTENANCE_SEM_NAME`
+  [[ a -le 60 ]] && echo2 "Octofan is in maintenance mode. Command ignored." && return 1 #octofan in maintenance mode
+fi
+}
+
+if [ ! $1 = "" ]; then
+  check_sem
+  [[ $? -ne 0 ]] && exit 1 #octofan in maintenance mode
+fi
+
+load_def_values
+
+if [[ `lsusb | grep -c 16c0:05dc` -eq 1 ]]; then
+  if [[ $1 == "update_text" ]];  then
+    update_text $2 $3
+  elif [[ $1 == "get_fan_json" ]]; then
+    get_fan_json
+  elif [[ $1 == "get_temp_json" ]]; then
+    get_temp_json
+  elif [[ $1 == "get_psu_json" ]]; then
+    get_psu_json
+  elif [[ $1 == "blink_error" ]]; then
+    blink_error
+  elif [[ $1 == "blink_warning" ]]; then
+    blink_warning
+  elif [[ $1 == "blink_off" ]]; then
+    blink_off
+  elif [[ $1 == "run" ]]; then
+    check_config
+    check_firmware
+    octo_fan_control
+  elif [[ $1 == "save_text_to_EEPROM" ]]; then
+    save_text_to_EEPROM
+  elif [[ $1 == "get_fan" ]]; then
+    [[ ! -z $2 ]] && echo `calc_fan_speed $2`
+  elif [[ $1 == "get_temp" ]]; then
+    get_temp $2
+  elif [[ $1 == "recalibrate" ]]; then
+    recalibrate_fans
+  elif [[ $1 == "get_max_rpm_json" ]]; then
+    get_max_rpm_json
+  elif [[ $1 == "" ]]; then
+    session_count=`screen -ls octofan | grep octofan | wc -l`
+    if [[ $session_count > 0 ]]; then
+      screen -x -S octofan
+    else #start new screen
+      screen -dm -S octofan $0 run
+      echo2 "Octofan screen started"
+    fi
+  fi
+else
+  if [[ $1 == "calc_fan_speed" ]]; then
+    echo 0
+  elif [[ $1 == "get_fan_json" ]]; then
+    echo "[]"
+  elif [[ $1 == "get_temp_json" ]]; then
+    echo "[]"
+  else
+    echo "No Octofan hardware found"
+  fi
+fi

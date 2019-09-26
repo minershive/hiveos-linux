@@ -17,6 +17,12 @@ NVIDIASMI_FILE=/run/hive/nvidia_smi_info
 
 AUTOFAN_CONF=/hive-config/autofan.conf
 
+OCTOFAN_CONF=/hive-config/octofan.conf
+OCTOFAN=/hive/opt/octofan/octofan
+
+COOLBOX_CONF=/hive-config/coolbox.conf
+COOLBOX=/hive/opt/coolbox/coolbox 
+
 GPU_DETECT_JSON=/run/hive/gpu-detect.json
 GPU_STATS_JSON=/run/hive/gpu-stats.json
 

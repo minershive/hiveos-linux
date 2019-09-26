@@ -164,6 +164,43 @@ jq -n \
 }'
 )
 
+#ROH case fan
+if [[ `lsusb | grep -c 16c0:05dc` -eq 1 ]]; then
+	 octofan=`$OCTOFAN get_max_rpm_json`
+	 if [[ ! -z $octofan && $octofan != '[]' ]]; then
+		 octofan_json=$(
+		 	jq -n \
+		 	--argjson octofan "$octofan" \
+		 	'{
+		 		"params": {
+				 	$octofan
+		 		}
+		 	}'
+		 )
+		 [[ ! -z $octofan_json ]] &&
+		 	request=`echo "$request" "$octofan_json" | jq -s '.[0] * .[1]'`
+	fi
+fi
+
+#Coolbox Autofan
+if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
+	coolbox_serial=`$COOLBOX --get_serial`
+	if [[ ! -z $coolbox_serial ]]; then
+		coolbox_json=$(
+			jq -n \
+			--arg serial "$coolbox_serial" \
+			'{
+				"params": {
+					"coolbox": {$serial}
+				}
+			}'
+		)
+
+		[[ ! -z $coolbox_json ]] &&
+			request=`echo "$request" "$coolbox_json" | jq -s '.[0] * .[1]'`
+	fi
+fi
+
 [[ ! -z $FARM_HASH ]] &&
 	request=`echo "$request" | jq --arg farm_hash "$FARM_HASH" '. * {"params": {$farm_hash}}'`
 
@@ -260,6 +297,30 @@ autofan=$(echo $response | jq '.result.autofan' --raw-output)
 if [[ ! -z $autofan && $autofan != "null" ]]; then
 	echo "Saving Autofan config"
 	echo "$autofan" > $AUTOFAN_CONF
+fi
+
+# Octofan config ================================================================
+octofan=$(echo $response | jq '.result.octofan' --raw-output)
+if [[ ! -z $octofan && $octofan != "null" ]]; then
+	if [[ -z $OCTOFAN_CONF ]]; then #reread env variables as after upgrade this can be empty
+		source /etc/environment
+		export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+	fi
+	echo "Saving Octofan config"
+	echo "$octofan" > $OCTOFAN_CONF
+
+  $OCTOFAN save_text_to_EEPROM
+fi
+
+# Coolbox Autofan config========================================================
+coolbox=$(echo $response | jq '.result.coolbox' --raw-output)
+if [[ ! -z $coolbox && $coolbox != "null" ]]; then
+	if [[ -z $COOLBOX_CONF ]]; then #reread env variables as after upgrade this can be empty
+		source /etc/environment
+		export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+	fi
+	echo "Saving Coolbox Autofan config"
+	echo "$coolbox" > $COOLBOX_CONF
 fi
 
 # Repositpry URLs ================================================================

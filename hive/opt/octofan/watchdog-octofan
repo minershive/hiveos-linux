@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+MAINTENANCE_SEM_NAME="/tmp/octofan_fw_update"
+
+bin_name="/hive/opt/octofan/fan_controller_cli"
+t1=120
+t2=600
+
+check_sem () {
+if [[ -f $MAINTENANCE_SEM_NAME ]]; then
+  a=0
+  let a=`date +%s`-`stat --format='%Y' $MAINTENANCE_SEM_NAME`
+  [[ a -le 60 ]] && return 1 #octofan in maintenance mode
+fi
+}
+
+[[ -z $1 ]] &&
+	echo "Usage: `basename $0` ping|reset|power" &&
+	exit 1
+
+while true; do
+	check_sem
+	[[ $? -eq 0 ]] && break || echo "Octofan in maintenance mode. Next try in 5 sec."
+	sleep 5
+done
+
+if [[ $1 == "reset" ]]; then
+	echo "Pushing Reset"
+	$bin_name
+	exit 0
+fi
+
+if [[ $1 == "power" ]]; then
+	echo "Pushing Power"
+	$bin_name
+	exit 0
+fi
+
+#should be ping here, but will work with any
+#if port 22 (ssh) responds then
+#send ping signal to WD, if WD does not receive it for a while, then WD RESET the MB.
+
+echo "Watchdog initialization"
+echo "Short timeout = $t1"
+echo "Long timeout = $t2"
+$bin_name -w $t1 -v $t2
+
+while true; do
+	check_sem
+	if [[ $? -ne 0 ]]; then
+	  #octofan in maintenance mode
+	  echo "Octofan in maintenance mode"
+	else
+		echo "Pinging watchdog"
+		[[ `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]] && $bin_name -s
+	fi
+	sleep 5
+done

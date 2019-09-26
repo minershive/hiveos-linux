@@ -210,6 +210,7 @@ echo2 "`/hive/opt/opendev/watchdog-opendev.sh`"
 echo2 "`/hive/opt/esonics/watchdog-esonics.sh`"
 echo2 "`/hive/opt/qinheng/hl340.sh`"
 echo2 "`/hive/opt/srrv2/srrv2.sh`"
+echo2 "`/hive/opt/octofan/watchdog-octofan.sh`"
 
 echo2 "> Applying crontab"
 crontab /hive/etc/crontab.root
@@ -310,6 +311,9 @@ fi
 
 echo2 "> Starting autofan"
 autofan
+
+echo2 "> Starting octofan"
+$OCTOFAN
 
 #k10temp for cpu temp
 modprobe k10temp

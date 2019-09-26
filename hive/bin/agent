@@ -279,7 +279,6 @@ function loop {
 	}'
 	)
 
-
 	# Add other miners stats to json
 	for mindex in {2..32}; do
 		#[[ ! -z $miner2_json ]] && #add miner2 stats to json
@@ -288,6 +287,51 @@ function loop {
 		[[ ! -z $miner_json ]] && #add miner2 stats to json
 			request=`echo "$request" "$miner_json" | jq -s -c '.[0] * .[1]'`
 	done
+
+	# Add ROH Fan controller stats to json
+	if [[ `lsusb | grep -c 16c0:05dc` -eq 1 ]]; then
+		casefan=`$OCTOFAN get_fan_json`
+		thermosensors=`$OCTOFAN get_temp_json`
+		psu=`$OCTOFAN get_psu_json`
+
+		octofan_stats=$(
+		jq -n \
+		--argjson casefan "$casefan" \
+		--argjson thermosensors $thermosensors \
+		--argjson psu $psu \
+		'{
+			"params": {
+				"octofan_stats": {
+					$casefan, $thermosensors, $psu
+				}
+			}
+		}'
+		)
+
+		octofan_stats=`sanitize_fan_controller_stats $octofan_stats`
+
+		[[ ! -z $octofan_stats ]] &&
+			request=`echo "$request" "$octofan_stats" | jq -s -c '.[0] * .[1]'`
+	fi
+
+	# Add Coolbox Autofan controller stats to json
+	if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
+		if [[ ! -z `$COOLBOX --get_serial` ]]; then
+			local coolbox=`$COOLBOX --get_json`
+			coolbox=`sanitize_fan_controller_stats "$coolbox"`
+			coolbox_stats=$(
+				jq -n \
+				--argjson coolbox_stats "$coolbox" \
+				'{
+					"params": {$coolbox_stats}
+				}'
+			)
+
+			[[ ! -z $coolbox_stats ]] &&
+				request=`echo "$request" "$coolbox_stats" | jq -s -c '.[0] * .[1]'`
+		fi
+	fi
+
 
 	[[ $AGENT_GZIP == 1 ]] && echo -n  "Z "
 	echo $request | jq '.' -c
@@ -367,6 +411,23 @@ function loop {
 			do_command
 		done
 	fi
+
+	# ROH Fan controller blink error state
+	if [[ `lsusb | grep -c 16c0:05dc` -eq 1 ]]; then
+		#update text to OLED screen
+		miner_algo=`echo $stats | jq -r '.algo'`
+		$OCTOFAN update_text $miner_algo $khs
+		
+		error_state=$(echo $response | jq -r '.result.error_state')
+		if [[ $error_state == "danger" ]]; then
+			$OCTOFAN blink_error
+		elif [[ $error_state == "warning" ]]; then
+			$OCTOFAN blink_warning
+		else
+			$OCTOFAN blink_off
+		fi
+	fi
+
 }
 
 

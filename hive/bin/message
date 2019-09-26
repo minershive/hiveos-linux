@@ -32,6 +32,9 @@ MSGCOLOR=$CYAN
 
 
 
+#sending blink command to octofan in case of errors
+[[ $type == "danger" && -e $OCTOFAN ]] && $OCTOFAN blink_error
+
 request=$(
 echo "$payload_json" | jq -n \
 --arg rig_id "$RIG_ID" \

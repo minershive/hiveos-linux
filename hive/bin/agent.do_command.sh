@@ -99,6 +99,15 @@ function do_command () {
 				[[ ! -z $autofan && $autofan != "null" ]] &&
 					echo "$autofan" > $AUTOFAN_CONF
 
+				# Save ROH Fan conroller config if given -----------------------------------------------
+				octofan=$(echo $response | jq '.result.octofan' --raw-output)
+				[[ ! -z $octofan && $octofan != "null" ]] &&
+					echo "$octofan" > $OCTOFAN_CONF
+
+				# Save Coolbox Autofan config if given -----------------------------------------------
+				coolbox=$(echo $response | jq '.result.coolbox' --raw-output)
+				[[ ! -z $coolbox && $coolbox != "null" ]] &&
+					echo "$coolbox" > $COOLBOX_CONF
 
 				# Overclocking if given in config --------------------------------------
 				[[ $bench -eq 0 ]] && oc_if_changed
@@ -190,6 +199,36 @@ function do_command () {
 				message ok "Autofan config applied" --id=$cmd_id
 			else
 				message error "No \"autofan\" config given" --id=$cmd_id
+			fi
+		;;
+		octofan)
+			octofan=$(echo $body | jq '.octofan' --raw-output)
+			if [[ ! -z $octofan && $octofan != "null" ]]; then
+				echo "$octofan" > $OCTOFAN_CONF
+				message ok "Octofan config applied" --id=$cmd_id
+			else
+				message error "No \"Octofan\" config given" --id=$cmd_id
+			fi
+		;;
+		coolbox)
+			coolbox=$(echo $body | jq '.coolbox' --raw-output)
+			if [[ ! -z $coolbox && $coolbox != "null" ]]; then
+				echo "$coolbox" > $COOLBOX_CONF
+				message ok "Coolbox Autofan config applied" --id=$cmd_id
+			else
+				message error "No \"Coolbox Autofan\" config given" --id=$cmd_id
+			fi
+		;;
+		octofan_recalibrate)
+			$OCTOFAN recalibrate
+			exitcode=$?
+
+			local meta=`$OCTOFAN get_max_rpm_json`
+
+			if [[ $exitcode == 0 ]]; then
+				message success "Case fans recalibrated successfuly" --id=$cmd_id --meta="$meta"
+			else
+				message error "Case fans recalibrated with error" --id=$cmd_id --meta="$meta"
 			fi
 		;;
 		amd_download)
