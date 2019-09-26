@@ -332,7 +332,7 @@ function check_second_miner {
 
 function bench_check (){
 	benchmark check > /dev/null 2>&1
-	[[ $? -eq 1 ]] && bench=0 || bench=1
+	[[ $? == 0 ]] && bench=1 || bench=0
 	if [[ $bench -eq 1 ]];then
 		echo -e "${RED}Detect running or unfinished benchmark.\nIf you want to stop him run \"benchmark stop\"${NOCOLOR}"
 		message warning "Detect running or unfinished benchmark. If you want to stop him run \"benchmark stop\"" > /dev/null 2>&1

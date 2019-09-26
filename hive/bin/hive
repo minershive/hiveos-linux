@@ -21,7 +21,7 @@ DISKLESS=0
 #Check benchmark
 bench=0
 benchmark check > /dev/null 2>&1
-[[ $? -eq 1 ]] && bench=0 || bench=1
+[[ $? == 0 ]] && bench=1 || bench=0
 
 function echo2 {
 	echo -e "$1" > /dev/tty1

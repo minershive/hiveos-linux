@@ -12,7 +12,7 @@ function do_command () {
 	
 	bench=0
 	benchmark check > /dev/null 2>&1
-	[[ $? -eq 1 ]] && bench=0 || bench=1
+	[[ $? == 0 ]] && bench=1 || bench=0
 	
 	case $command in
 		OK)
