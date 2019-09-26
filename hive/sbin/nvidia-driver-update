@@ -11,12 +11,33 @@ RETRY=3
 MINFREEMB=700
 
 
-function get_freespace() {
+function get_freespace() { # @silent
 	local space=`df -k --output=avail $DRVPATH | tail -n 1 2>&1`
 	[[ $space -ge $(( $MINFREEMB * 1024 )) ]] && return 0
-	echo -e ""
-	echo -e "${YELLOW}> Free space is less than ${WHITE}${MINFREEMB} MB${YELLOW} ($(( $space/1024 )) MB)${NOCOLOR}"
+	[[ -z $1 ]] &&
+		echo -e "" &&
+		echo -e "${YELLOW}> Free space is less than ${WHITE}${MINFREEMB} MB${YELLOW} ($(( $space/1024 )) MB)${NOCOLOR}"
 	return 1
+}
+
+
+function free_space() { # @url for package to keep
+	get_freespace && return 0
+	# step 1. try disk-expand
+	disk-expand -s
+	get_freespace 1 && return 0
+	# step 2. remove some packages
+	echo -e "${YELLOW}> Removing old driver packages${NOCOLOR}"
+	remove_packages $url
+	get_freespace 1 && return 0
+	# step 3. clean ${DRVPATH} completely
+	if [[ ! -z ${DRVPATH} && ${#DRVPATH} -gt 2 && -n "$(ls -A ${DRVPATH})" ]]; then
+		echo -e ""
+		echo -e "${YELLOW}> Removing everything from ${DRVPATH}${NOCOLOR}"
+		rm -v -r --one-file-system ${DRVPATH}*
+	fi
+	get_freespace
+	return $?
 }
 
 
@@ -60,7 +81,7 @@ function get_current() { # returns $current_vesion
 }
 
 
-function remove_packages() { # @filename to skip
+function remove_packages() { # @filename to skip, returns $removed_packages
 	local files=(`realpath ${DRVPATH}NVIDIA-Linux* | grep -v "*" | sort -V`)
 	local cnt=${#files[@]}
 	echo -e ""
@@ -71,12 +92,13 @@ function remove_packages() { # @filename to skip
 	if [[ ! -z $1 ]]; then
 		skip=`basename $1`
 		# skip only if it exists
-		[[ ! -f ${DRVPATH}$skip ]] && skip=
+		#[[ ! -f ${DRVPATH}$skip ]] && skip=
 	fi
 
 	# skip current version by default
 	[[ -z $skip ]] && get_current && skip="NVIDIA-Linux-x86_64-${current_version}.run"
 
+	removed_packages=0
 	for drv in "${files[@]}"
 	do
 		local basename=`basename $drv`
@@ -85,6 +107,7 @@ function remove_packages() { # @filename to skip
 		else
 			echo -e "${YELLOW}> Deleting - ${WHITE}$basename${NOCOLOR}"
 			unlink $drv
+			((removed_packages++))
 		fi
 	done
 	return 0
@@ -266,14 +289,9 @@ function install_driver() { # @url or @file
 	
 	get_url $1 || return $?
 
-	# check avaliable space and remove driver packages if needed
-	get_freespace
-	if [[ $? -ne 0 ]]; then
-		echo -e "${YELLOW}> Removing old driver packages${NOCOLOR}"
-		remove_packages $url
-		get_freespace
-		[[ $? -ne 0 ]] && echo -e "${RED}> Not enough free space to continue${NOCOLOR}" && return 1
-	fi
+	# check avaliable space and try to get some
+	free_space $url
+	[[ $? -ne 0 ]] && echo -e "${RED}> Not enough free space to continue${NOCOLOR}" && return 1
 
 	get_package $url || return $?
 
