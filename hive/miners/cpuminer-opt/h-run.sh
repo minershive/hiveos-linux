@@ -38,8 +38,8 @@ else
 	CPU_FLAG="sse2"
 fi
 
-echo -e "Running ${CYAN}cpuminer-opt${NOCOLOR} optimized for ${GREEN}$CPU_FLAG${NOCOLOR}" | tee ${MINER_LOG_BASENAME}.log
+echo -e "Running ${CYAN}cpuminer-opt-$MINER_FORK${NOCOLOR} optimized for ${GREEN}$CPU_FLAG${NOCOLOR}" | tee ${MINER_LOG_BASENAME}.log
 
-cd ${MINER_DIR}/${MINER_VER}
+cd ${MINER_DIR}/${MINER_FORK}/${MINER_VER}
 
 ./cpuminer-$CPU_FLAG -c cpuminer.conf 2>&1 | tee ${MINER_LOG_BASENAME}.log
