@@ -22,19 +22,19 @@ OCTOFAN_AMPERAGE_DC_MAX=420
 OCTOFAN_POWER_DC_MIN=0
 OCTOFAN_POWER_DC_MAX=5000
 OCTOFAN_TEMP_FALLBACK_MIN=0
-OCTOFAN_TEMP_FALLBACK_MAX=255
+OCTOFAN_TEMP_FALLBACK_MAX=0
 OCTOFAN_VOLTAGE_AC_FALLBACK_MIN=0
-OCTOFAN_VOLTAGE_AC_FALLBACK_MAX=400
+OCTOFAN_VOLTAGE_AC_FALLBACK_MAX=0
 OCTOFAN_AMPERAGE_AC_FALLBACK_MIN=0
-OCTOFAN_AMPERAGE_AC_FALLBACK_MAX=22
+OCTOFAN_AMPERAGE_AC_FALLBACK_MAX=0
 OCTOFAN_POWER_AC_FALLBACK_MIN=0
-OCTOFAN_POWER_AC_FALLBACK_MAX=5000
+OCTOFAN_POWER_AC_FALLBACK_MAX=0
 OCTOFAN_VOLTAGE_DC_FALLBACK_MIN=0
-OCTOFAN_VOLTAGE_DC_FALLBACK_MAX=40
+OCTOFAN_VOLTAGE_DC_FALLBACK_MAX=0
 OCTOFAN_AMPERAGE_DC_FALLBACK_MIN=0
-OCTOFAN_AMPERAGE_DC_FALLBACK_MAX=420
+OCTOFAN_AMPERAGE_DC_FALLBACK_MAX=0
 OCTOFAN_POWER_DC_FALLBACK_MIN=0
-OCTOFAN_POWER_DC_FALLBACK_MAX=5000
+OCTOFAN_POWER_DC_FALLBACK_MAX=0
 
 FAN_MIN=0
 FAN_MAX=100
@@ -241,39 +241,40 @@ function sanitize_fan_controller_stats() {
 
   local value=`echo $stats | jq .psu`
   if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-    local voltage_ac=`echo $value | jq .voltage_ac`
+    local voltage_ac=`echo $value | jq -r .voltage_ac`
     if [[ ! -z $voltage_ac && $voltage_ac != '[]' && $voltage_ac != 'null' ]]; then
-      voltage_ac='"voltage_ac":'`sanitize_octofan_voltage_ac`', '
+      voltage_ac='voltage_ac":'`sanitize_octofan_voltage_ac $voltage_ac`', '
     else
       voltage_ac=
     fi
-    local amperage_ac=`echo $value | jq .amperage_ac`
+    local amperage_ac=`echo $value | jq -r .amperage_ac`
     if [[ ! -z $amperage_ac && $amperage_ac != '[]' && $amperage_ac != 'null' ]]; then
-      amperage_ac='"amperage_ac":'`sanitize_octofan_amperage_ac`', '
+      amperage_ac='"amperage_ac":'`sanitize_octofan_amperage_ac $amperage_ac`', '
     else
       amperage_ac=
     fi
-    local power_ac=`echo $value | jq .power_ac`
+    local power_ac=`echo $value | jq -r .power_ac`
     if [[ ! -z $power_ac && $power_ac != '[]' && $power_ac != 'null' ]]; then
-      power_ac='"power_ac":'`sanitize_octofan_power_ac`', '
+      power_ac=`sanitize_octofan_power_ac $power_ac`
+      power_ac='"power_ac": '$power_ac', '
     else
       power_ac=
     fi
-    local voltage_dc=`echo $value | jq .voltage_dc`
+    local voltage_dc=`echo $value | jq -r .voltage_dc`
     if [[ ! -z $voltage_dc && $voltage_dc != '[]' && $voltage_dc != 'null' ]]; then
-      voltage_dc='"voltage_dc":'`sanitize_octofan_voltage_dc`', '
+      voltage_dc='"voltage_dc":'`sanitize_octofan_voltage_dc $voltage_dc`', '
     else
       voltage_dc=
     fi
-    local amperage_dc=`echo $value | jq .amperage_dc`
+    local amperage_dc=`echo $value | jq -r .amperage_dc`
     if [[ ! -z $amperage_dc && $amperage_dc != '[]' && $amperage_dc != 'null' ]]; then
-      amperage_dc='"amperage_dc":'`sanitize_octofan_amperage_dc`', '
+      amperage_dc='"amperage_dc":'`sanitize_octofan_amperage_dc $amperage_dc`', '
     else
       amperage_dc=
     fi
-    local power_dc=`echo $value | jq .power_dc`
+    local power_dc=`echo $value | jq -r .power_dc`
     if [[ ! -z $power_dc && $power_dc != '[]' && $power_dc != 'null' ]]; then
-      power_dc='"power_dc":'`sanitize_octofan_power_dc`', '
+      power_dc='"power_dc":'`sanitize_octofan_power_dc $power_dc`', '
     else
       power_dc=
     fi
@@ -281,7 +282,7 @@ function sanitize_fan_controller_stats() {
     value=${voltage_ac}${amperage_ac}${power_ac}${voltage_dc}${amperage_dc}${power_dc}
     value=${value%", "}
 
-    value=`echo '"casefan":{"psu":{'$value'}}'`
+    value=`echo '"psu": { '$value' }'`
     stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
   fi
 
@@ -290,6 +291,7 @@ function sanitize_fan_controller_stats() {
 
 #sanitize_miner_stats '{"hs":[8.5,7.4],"hs_units":"hs","temp":["48","53"],"fan":[80,80],"uptime":150399,"ar":["2151","0"],"bus_numbers":[1,2],"algo":"150_5","ver":"1.42"}'
 #sanitize_miner_stats '{ "total_khs": "0.143", "hs": [ 0.0715, 0.0715 ], "algo": "randomhash", "temp": [ 44, 44 ], "uptime": 11204, "ar": [ 23, 0, 0 ], "ver": "1.5.1-oldgencpu" }'
+#sanitize_fan_controller_stats '{ "casefan": [ 100, 100, 100 ], "thermosensors": [ 16, 24, 855.9, 849.5 ], "psu": { "power_ac": "17245.0" } }'
 # [ "12.0 - ETH", "2", "29858;3;0", "14779;15078", "49763;0;0", "24632;25131", "48;100;56;100", "eu-eth.hiveon.net:4444;dcr.coinmine.pl:2222", "0;0;0;0", "1;2", "0;0", "0;0", "0;0", "0;0", "0;0", "1;2", "sia" ]
 # { "total_khs": 26991, "hs": [ 13467, 13524 ], "temp": [ "47", "55" ], "fan": [ "101", "98" ], "uptime": 60, "algo": "ethash", "ar": [ "0", "0", "0", "0;0" ], "ver": "12.0 - ETH", "bus_numbers": [ 1, 2 ], "total_khs2": 44985, "hs2": [ 22445, 22540 ], "algo2": "dcr", "ar2": [ "0", "0", "0", "0;0" ] }
 # {"total_khs":26757,"hs":[13245,13511],"temp":[45,53],"fan":[98,100],"uptime":79260,"algo":"ethash","ar":[520,0,0,"0;0"],"ver":"12.0 - ETH","bus_numbers":[1,2],"total_khs2":44594,"hs2":[22075,22519],"algo2":"dcr","ar2":["75","1","0","0;0"]}
