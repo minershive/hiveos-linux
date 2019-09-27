@@ -300,15 +300,19 @@ function loop {
 		--argjson thermosensors $thermosensors \
 		--argjson psu $psu \
 		'{
-			"params": {
-				"octofan_stats": {
-					$casefan, $thermosensors, $psu
-				}
-			}
+			$casefan, $thermosensors, $psu
 		}'
 		)
 
 		octofan_stats=`sanitize_fan_controller_stats $octofan_stats`
+
+		octofan_stats=$(
+			jq -n \
+			--argjson octofan_stats "$octofan_stats" \
+			'{
+				"params": { $octofan_stats }
+			}'
+		)
 
 		[[ ! -z $octofan_stats ]] &&
 			request=`echo "$request" "$octofan_stats" | jq -s -c '.[0] * .[1]'`
@@ -417,7 +421,7 @@ function loop {
 		#update text to OLED screen
 		miner_algo=`echo $stats | jq -r '.algo'`
 		$OCTOFAN update_text $miner_algo $khs
-		
+
 		error_state=$(echo $response | jq -r '.result.error_state')
 		if [[ $error_state == "danger" ]]; then
 			$OCTOFAN blink_error
