@@ -157,6 +157,14 @@ else
 	miner_config_gen
 fi
 
+#Drop TIME_WAIT sockets
+while (( `netstat -anp  | grep TIME_WAIT | grep $MINER_API_PORT | grep -v grep | wc -l` != 0 )); do
+    echo "Try to release TIME_WAIT sockets"
+	netstat -anp | grep $MINER_API_PORT | grep WAIT
+	echo
+	netstat -n | grep $MINER_API_PORT | grep WAIT | awk '{print $4"\t"$5}' >/proc/net/tcpdropsock
+	sleep 1
+done
 
 # Run miner ==========================================================================
 [[ ! -z $MINER_STOP && -f $MINER_STOP ]] && rm $MINER_STOP > /dev/null 2>&1
