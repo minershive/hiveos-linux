@@ -170,7 +170,7 @@ while true; do
 	miner logrotate $MINER_NAME
 	
 	#Drop TIME_WAIT sockets
-	if [[ ! -z $MINER_API_PORT ]]; then
+	if [[ ! -z $MINER_API_PORT && $(lsmod | grep droptcpsock) ]]; then
 		while true; do
 			socket=$(netstat -n | grep ":$MINER_API_PORT " | grep WAIT | head -n 1)
 			[[ -z $socket ]] && break
