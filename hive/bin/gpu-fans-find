@@ -2,7 +2,11 @@
 
 #[ -t 1 ] &&
 . colors
-. $RIG_CONF
+[[ -f $RIG_CONF ]] && . $RIG_CONF
+
+[[ $MAINTENANCE == 2 ]] &&
+	echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
+	exit 1
 
 # set timeout for fan test
 timeout=7
@@ -42,12 +46,30 @@ stop_fans() {
 		echo -e "${CYAN}> Stopping all AMD GPU fans...${NOCOLOR}"
 		for busid in "${AMD_BUSID[@]}"; do
 			# find gpu_id by bus_id and apply fan setting to gpu
-			cardno=`echo "$cards_indexes" | grep $busid | awk -F/card '  { print $2 }'`
-			[[ -z $cardno ]] && echo -e "${RED}Setting GPU with busid $busid failed${NOCOLOR}" && return
-			[[ "$DEBUG" == "1" ]] && echo "-i $cardno --set-fanspeed 0" ||
-				wolfamdctrl -i $cardno --set-fanspeed 0 1>/dev/null
+			cardno=${AMD_CARDID["$busid"]}
+			hwmondir=`realpath /sys/class/drm/card${cardno}/device/hwmon/hwmon*/ 2>&1`
+			[[ $? -ne 0 ]] && echo -e "${RED}Setting GPU with busid $busid failed${NOCOLOR}" && return
+
+			[[ "$DEBUG" == "1" ]] &&
+				echo "-i $cardno --set-fanspeed 0" &&
+				continue
+
+			echo "auto" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
+			echo 1 > ${hwmondir}/pwm1_enable
+			echo 0 > ${hwmondir}/pwm1 #wolfamdctrl -i $cardno --set-fanspeed 0 1>/dev/null
 		done
 	fi
+
+	echo -e "${CYAN}> Checking fans speed...${NOCOLOR}"
+	sleep 3
+	stats=`gpu-stats`
+	fans=(`jq -r ".fan | .[]" <<< "$stats" 2>/dev/null`)
+	busids=(`jq -r ".busids | .[]" <<< "$stats" 2>/dev/null`)
+	i=0
+	for key in "${GPU_KEYS[@]}"; do
+		[[ ${fans[$key]} -ne 0 ]] && echo -e "${YELLOW}GPU#$i with busid ${busids[$key]} still spins fans - ${fans[$key]}%${NOCOLOR}"
+		((i++))
+	done
 }
 
 
@@ -67,6 +89,7 @@ test_gpu() {
 	[[ $brand == "cpu" ]] && return
 
 	echo -ne "> Spinning fans on GPU ${YELLOW}#$1${NOCOLOR} $busid ${COLOR}$name${NOCOLOR}"
+	[[ "$DEBUG" == "1" ]] && echo ""
 
 	if [[ $brand == "nvidia" ]]; then
 		local gpu_idx=0
@@ -103,18 +126,21 @@ test_gpu() {
 
 	if  [[ $brand == "amd" ]]; then
 		# find gpu index by bus_id
-		cardno=`echo "$cards_indexes" | grep $busid | awk -F/card '  { print $2 }'`
-		[[ -z $cardno ]] && echo -e "${RED}Setting GPU with busid $busid failed${NOCOLOR}" && return
+		cardno=${AMD_CARDID["$busid"]}
+		hwmondir=`realpath /sys/class/drm/card${cardno}/device/hwmon/hwmon*/ 2>&1`
+		[[ $? -ne 0 ]] && echo -e "${RED}Setting GPU with busid $busid failed${NOCOLOR}" && return
+		[[ -e ${hwmondir}/pwm1_max ]] && fanmax=`head -1 ${hwmondir}/pwm1_max` || fanmax=0
+		[[ $fanmax -eq 0 ]] && echo -e "${RED}Setting GPU with busid $busid failed (Max fan is unknown)${NOCOLOR}" && return
 		# apply fan setting to 100%
 		[[ "$DEBUG" == "1" ]] && echo "-i $cardno --set-fanspeed 100" ||
-			wolfamdctrl -i $cardno --set-fanspeed 100 1>/dev/null
+			echo $fanmax > ${hwmondir}/pwm1 #wolfamdctrl -i $cardno --set-fanspeed 100 1>/dev/null
 		# sleep for(timeout) in sec
 		for ((i=0; i<$timeout; i++)); do
 			echo -n "." && sleep 1
 		done
 		# set fan speed to 0% again
 		[[ "$DEBUG" == "1" ]] && echo "-i $cardno --set-fanspeed 0" ||
-			wolfamdctrl -i $cardno --set-fanspeed 0 1>/dev/null
+			echo 0 > ${hwmondir}/pwm1 #wolfamdctrl -i $cardno --set-fanspeed 0 1>/dev/null
 		echo -e "${GREEN}OK${NOCOLOR}"
 		sleep 1
 	fi
@@ -126,10 +152,20 @@ else
 	gpu_detect_json=`cat $GPU_DETECT_JSON`
 fi
 
-cards_indexes=`realpath /sys/devices/*/*/*/drm/card*`
+
 declare -a NVIDIA_BUSID=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.busid'`)
 declare -a NVIDIA_FANS=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.fan_cnt'`)
 declare -a AMD_BUSID=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "amd") | .value.busid'`)
+declare -A AMD_CARDID
+dirs=`ls -d1 /sys/class/drm/card*/device/pp_table 2>/dev/null | sort --version-sort` #natural sort for 10+ cards
+if [[ ! -z $dirs ]]; then
+	for dir in $dirs; do
+		busid=`cat ${dir%/*}/uevent | grep PCI_SLOT_NAME | awk -F= '{print substr($2,6)}'`
+		[[ $dir =~ \/card([0-9a-z]+)\/ ]]
+		AMD_CARDID["$busid"]=${BASH_REMATCH[1]}
+		#echo "$busid = ${BASH_REMATCH[1]}"
+	done
+fi
 
 # indexes of valid gpus
 declare -a GPU_KEYS=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand != "cpu") | .key'`)
@@ -138,15 +174,15 @@ gpu_count=${#GPU_KEYS[*]}
 
 if [[ "$DEBUG" == "1" ]]; then
 	echo "NVIDIA: ${NVIDIA_BUSID[*]}"
-	echo "FANS: ${NVIDIA_FANS[*]}"
-	echo "AMD: ${AMD_BUSID[*]}"
-	echo "KEYS: ${GPU_KEYS[*]}"
-	echo "COUNT: ${#GPU_KEYS[*]}"
+	echo "NVFANS: ${NVIDIA_FANS[*]}"
+	echo "AMD:    ${AMD_BUSID[*]}"
+	echo "KEYS:   ${GPU_KEYS[*]}"
+	echo "COUNT:  ${#GPU_KEYS[*]}"
 fi
 
 date
 
-echo -e "${YELLOW}================ START SEARCH GPU ================${NOCOLOR}"
+echo -e "${WHITE}=================== START SEARCH GPU ===================${NOCOLOR}"
 gpu-detect list
 echo ""
 
@@ -167,13 +203,8 @@ if [[ "$DEBUG" != "1" ]]; then
 	wd stop
 
 	echo -e "> Stopping autofan"
-	screen -S autofan -X quit;
+	screen -S autofan -X quit
 fi 
-
-#if [[ ! -z ${NVIDIA_BUSID[*]} ]]; then
-#	nvidia-persistenced --persistence-mode 1>/dev/null
-#	nvidia-smi -pm 1  1>/dev/null
-#fi
 
 echo -e "> Stopping Fans"
 [[ ! -z ${AMD_BUSID[*]} ]] && echo -e "${YELLOW}Notice: If you have AMD GPU with GPU temp 511 this fan will not be stopped!${NOCOLOR}"
@@ -193,20 +224,17 @@ else
 fi
 
 if [[ "$DEBUG" != "1" ]]; then
-	echo -e "> Restoring OC settings..."
+	echo -e "${CYAN}> Restoring OC settings...${NOCOLOR}"
 	[[ ! -z ${NVIDIA_BUSID[*]} ]] && nvidia-oc 1>/dev/null
 	[[ ! -z ${AMD_BUSID[*]} ]] && amd-oc 1>/dev/null
 
-	echo -e "> Starting autofan"
 	autofan
 
-	if [[ $MAINTENANCE -ne 1 ]]; then
-		echo -e "> Starting hashrate watchdog"
-		wd start
+	echo -e "> Starting hashrate watchdog"
+	wd start
 
-		echo -e "> Starting miner session"
-		miner start
-	fi 
+	echo -e "> Starting miner session"
+	miner start
 fi
 
 exit 0
