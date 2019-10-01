@@ -3,6 +3,6 @@ Version: 0.6-01
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-cpuminer-opt-jayddee-3.9.8
+Depends: hive-miners-cpuminer-opt-jayddee-3.9.8.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - CPUminer-opt-JayDDee
