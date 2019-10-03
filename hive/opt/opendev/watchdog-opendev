@@ -7,7 +7,7 @@
 PORT=/dev/ttyACM0
 
 if [ ! -z $2 ]; then
-	if [ $2 == "/dev/sg0" ]; then
+	if [[ $2 == "/dev/sg0" || $2 == "/dev/hidraw0" ]]; then
 		echo "Skipping buggy detected port $2"
 		exit 1;
 	fi
