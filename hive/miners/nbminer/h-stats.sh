@@ -11,7 +11,20 @@
     local hs_units="hs"
     local algo=; local algo2=;
     [[ -z $NBMINER_ALGO ]] && NBMINER_ALGO="ethash"
-    [[ $NBMINER_ALGO == "tensority_ethash" ]] && algo="tensority" && algo2="ethash" || algo=$NBMINER_ALGO
+ #   [[ $NBMINER_ALGO == "tensority_ethash" ]] && algo="tensority" && algo2="ethash" || algo=$NBMINER_ALGO
+    case $NBMINER_ALGO in
+       tensority_ethash)
+                        algo="tensority"
+                        algo2="ethash"
+                      ;;
+       eaglesong_ethash)
+                        algo="eaglesong"
+                        algo2="ethash"
+                      ;;
+                      *)
+                        algo=$NBMINER_ALGO
+                      ;;
+    esac
 
     #not working at the moment, just gives numbers from 0 to n, not bus numbers
     #local bus_numbers=$(echo $stats_raw | jq .miner | jq -r '[ .miners | to_entries[] | select(.value) | .key|tonumber ]') #'
