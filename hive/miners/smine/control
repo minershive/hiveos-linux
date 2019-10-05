@@ -1,8 +1,8 @@
 Package: hive-miners-smine
-Version: 0.6-02
+Version: 0.6-03
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-smine-0.2.1
+Depends: hive-miners-smine-0.3.0
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - smine
+Description: Hive miner - Spark-miner
