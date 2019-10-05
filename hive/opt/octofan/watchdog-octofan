@@ -10,7 +10,7 @@ check_sem () {
 if [[ -f $MAINTENANCE_SEM_NAME ]]; then
   a=0
   let a=`date +%s`-`stat --format='%Y' $MAINTENANCE_SEM_NAME`
-  [[ a -le 60 ]] && return 1 #octofan in maintenance mode
+  [[ a -le 60 ]] && return 1 || return 0
 fi
 }
 
