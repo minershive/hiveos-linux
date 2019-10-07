@@ -1,8 +1,8 @@
 Package: hive-miners-tt-miner
-Version: 0.6-06
+Version: 0.6-07
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-tt-miner-3.0.9
+Depends: hive-miners-tt-miner-3.0.10
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner TT-Miner
