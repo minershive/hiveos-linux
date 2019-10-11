@@ -25,9 +25,10 @@ export DISPLAY=":0"
 
 DEF_SLEEP_TIME=10
 
-OCTOFAN_BIN=/hive/opt/octofan/fan_controller_cli
-CLI_OUTPUT=/tmp/fan_controller_cli_output
-OCTOFAN_PERCENT_PWM=/hive/opt/octofan/octofan_percent_pwm
+OCTOFAN_BIN="/hive/opt/octofan/fan_controller_cli"
+CLI_OUTPUT="/tmp/fan_controller_cli_output"
+OCTOFAN_PERCENT_PWM="/hive/opt/octofan/octofan_percent_pwm"
+PSU_LAST_POWER_FILENAME="/tmp/octofan_psu_last_power"
 
 CALC_AVERAGE_SPEED=1
 
@@ -95,6 +96,7 @@ TARGET_TEMP=
 prev_temp_array=
 
 RECALIBRATE_TIME=70
+
 #######################################################################
 
 #flag that the message was sent
@@ -606,6 +608,13 @@ get_psu_json () {
   # local amperage_dc=`cat $CLI_OUTPUT | grep "PSU Idc:" | cut -d " " -f 4`
   # local power_dc=`cat $CLI_OUTPUT | grep "PSU Pdc:" | cut -d " " -f 4`
 
+  # Normalize PSU power
+  if (( `echo "$power_ac < 30" | bc -l` )); then
+    [[ -f $PSU_LAST_POWER_FILENAME ]] && power_ac=`cat $PSU_LAST_POWER_FILENAME | tail -1` || power_ac=0
+  else
+    echo $power_ac > $PSU_LAST_POWER_FILENAME
+  fi
+
   # jq -cns \
   #    --arg voltage_ac $voltage_ac \
   #    --arg amperage_ac $amperage_ac \
@@ -971,13 +980,20 @@ if [[ `lsusb | grep -c 16c0:05dc` -eq 1 ]]; then
   #   [[ ! -z $2 ]] && echo `calc_fan_speed $2`
   # elif [[ $1 == "get_temp" ]]; then
   #   get_temp $2
-elif [[ $1 == "recalibrate" || $1 == "-r" ]]; then
+  elif [[ $1 == "recalibrate" || $1 == "-r" ]]; then
     recalibrate_fans
+  elif [[ $1 == "dontattach" ]]; then
+    session_count=`screen -ls octofan | grep octofan | wc -l`
+    if [[ $session_count -eq 0 ]]; then
+      #start new screen
+      screen -dm -S octofan $0 run
+      echo2 "Octofan screen started"
+    fi
   elif [[ $1 == "get_max_rpm_json" || $1 == "-m" ]]; then
     get_max_rpm_json
   elif [[ $1 == "" ]]; then
     session_count=`screen -ls octofan | grep octofan | wc -l`
-    if [[ $session_count > 0 ]]; then
+    if [[ $session_count -gt 0 ]]; then
       screen -x -S octofan
     else #start new screen
       screen -dm -S octofan $0 run
