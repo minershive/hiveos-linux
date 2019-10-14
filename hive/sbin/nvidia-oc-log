@@ -6,7 +6,7 @@
 timeout -s9 150 bash -c "set -o pipefail; nvidia-oc 2>&1 | tee /var/log/nvidia-oc.log"
 exitcode=$?
 
-if [[ $exitcode -ge 124 ]]; then
+if [[ $exitcode -ne 0 ]]; then
 	echo -e "${RED}ERROR: NVIDIA OC failed ${NOCOLOR}"
 	[[ "$1" != "quiet" ]] && cat /var/log/nvidia-oc.log | message error "NVIDIA OC failed" payload > /dev/nul
 fi

@@ -8,6 +8,9 @@
 date
 echo ""
 
+systemctl status hivex > /dev/null
+[[ $? -ne 0 ]] && echo -e "${YELLOW}WARNING: X Server is not running! Some settings will not be applied!${NOCOLOR}"
+
 export DISPLAY=":0"
 
 # check it in first place
@@ -115,8 +118,9 @@ pgrep --full nvidia-persistenced > /dev/null
 if [[ $? -ne 0 ]]; then
 	nvidia-persistenced --persistence-mode
 	#nvidia-smi -pm 1
+else
+	nvidia-smi -pm 1
 fi
-nvidia-smi -pm 1
 
 _IFS=$IFS && IFS=$'\n'
 declare -a NAME=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.name'`)
@@ -128,6 +132,7 @@ declare -a PLDEF=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.v
 IFS=$_IFS
 
 fan_idx=0
+exitcode=0
 
 for (( i=0; i < $n; ++i )); do
 
@@ -212,9 +217,11 @@ for (( i=0; i < $n; ++i )); do
 
 	if [[ ! -z $args ]]; then
 		nvresult=`nvidia-settings $args`
-		[[ $? -ne 0 ]] && color=$RED || color=$NOCOLOR
+		nvcode=$?
+		[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
 		nvresult=`echo "$nvresult" | grep -v "^$"`
 		echo -e "${color}$nvresult${NOCOLOR}"
+		[[ $nvcode -ne 0 ]] && exitcode=$nvcode
 	fi
 	
 done
@@ -248,4 +255,4 @@ fi
 #fi
 
 
-exit 0
+exit $exitcode
