@@ -175,6 +175,9 @@ get_fan_speed () {
 
 	#set MIN_FAN & MAX_FAN speed if needed
 	[[ $target_fan_speed -lt $MIN_FAN ]] && target_fan_speed=$MIN_FAN
+	#Set min fan 25 for AMD
+	[[ $target_fan_speed -lt 25 && $6 != "Nvidia" ]] && target_fan_speed=25
+
 	[[ $target_fan_speed -gt $MAX_FAN ]] && target_fan_speed=$MAX_FAN
 		#Just to make sure
 	[[ $target_fan_speed -gt 100 ]] && target_fan_speed=100
