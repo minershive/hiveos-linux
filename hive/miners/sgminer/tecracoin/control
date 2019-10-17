@@ -1,0 +1,8 @@
+Package: hive-miners-sgminer-tecracoin
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-sgminer-tecracoin-0.1.4
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - SGminer fork for TecraCoin based on djm34 code
