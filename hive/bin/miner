@@ -87,6 +87,7 @@ function start() {
 	echo -en "Starting ${CYAN}$MINER${NOCOLOR}"
 	#[[ ! -z $MINER2 ]] &&
 	#	echo -en " and ${CYAN}$MINER2${NOCOLOR}"
+	[[ $WD_ENABLED == 1 ]] && wd start
 	local mindex
 	for mindex in {2..32}; do
 		eval minerval=\$MINER$mindex
@@ -163,6 +164,8 @@ function stop() {
 
 	# remove stop file
 	[[ -f $MINER_STOP ]] && rm $MINER_STOP
+
+	wd stop
 
 	#remove khs so no confusing for watchdog
 	#[[ -e /run/hive/khs ]] && rm /run/hive/khs
