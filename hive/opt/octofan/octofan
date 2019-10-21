@@ -281,7 +281,8 @@ calc_fan_speed () {
   local n_fan=0
   local a_temp=0
   local i=0
-  a_fan_inc_speed=-1
+  local a_fan_inc_speed=-2000
+  local t_fan_inc_speed=-1
   if [[ ! -z $bus_id_array && ! -z $fan_array ]]; then
     case $1 in
       0) #fan 0 blows on cards 01:00.0, 02:00.0, 03:00.0
@@ -299,58 +300,68 @@ calc_fan_speed () {
     esac
 
     for (( i=$first_gpu; i <= $last_gpu; i++ )); do
+      t_fan_inc_speed=
       for ((j = 0; j < $(jq length <<< "$bus_id_array"); j++)); do
         t_bus_id=$(jq -r .[$j] <<< $bus_id_array)
         if [[ "$(( 0x${t_bus_id} ))" == "$i" ]]; then
           a_fan=$(jq -r .[$j] <<< $fan_array)
           [[ $a_fan -gt $fan_speed ]] && fan_speed=$a_fan
-          [[ $a_fan -eq 0 ]] && a_fan=100 #fan broken, increaseing case fan speed to cool down gpu
+          [[ $a_fan -eq 0 ]] && a_fan=100 #fan broken or fanless GPU, increaseing case fan speed to cool down GPU
           ((s_fan+=$a_fan)) && ((n_fan++))
 
-          if [[ $a_fan -eq 100 ]]; then #gpu fan can't cool down gpu, increasing case fan speed
+          if [[ $a_fan -eq 100 ]]; then #calc fan increase factor to compensate GPU heat. It can be negative on fanless GPUs
             [[ $DEBUG_COMMANDS -ge 1 ]] && echo GPU$i fan is 100%
-            a_fan_inc_speed=0
             prev_temp=$(jq -r .[$j] <<< $prev_temp_array)
             if [[ ! -z $prev_temp && $prev_temp -ne 0 ]]; then
               a_temp=$(jq -r .[$j] <<< $temp_array)
               [[ $DEBUG_COMMANDS -ge 1 ]] && echo $prev_temp \=\> $a_temp
               if [[ $(($a_temp - $TARGET_TEMP)) -gt $DEF_TEMP_VARIATION ]]; then
                 if [[ $a_temp -gt $prev_temp ]]; then
-                  ((a_fan_inc_speed=$a_temp - $TARGET_TEMP))
+                  ((t_fan_inc_speed=$a_temp - $TARGET_TEMP))
                 elif [[ $a_temp -lt $prev_temp ]]; then
-                  a_fan_inc_speed=-1
+                  t_fan_inc_speed=-1
+                else
+                  t_fan_inc_speed=0
                 fi
               else #if [[ $a_temp -lt $TARGET_TEMP ]]; then
-                if [[ $a_temp -gt $prev_temp ]]; then
-                  ((a_fan_inc_speed=$a_temp - $prev_temp -1))
+                if [[ $(($TARGET_TEMP - $a_temp)) -gt 3 ]]; then
+                  ((t_fan_inc_speed=$a_temp - $TARGET_TEMP))
+                elif [[ $a_temp -gt $prev_temp ]]; then
+                  ((t_fan_inc_speed=$a_temp - $prev_temp -1))
                 elif [[ $a_temp -lt $prev_temp ]]; then
-                  a_fan_inc_speed=-1
+                  t_fan_inc_speed=-1
+                else
+                  t_fan_inc_speed=0
                 fi
               fi
             fi
           fi
         fi
       done
+      #take max fan_inc_speed factor from cooling GPU
+      [[ ! -z $t_fan_inc_speed && $a_fan_inc_speed -lt $t_fan_inc_speed ]] && a_fan_inc_speed=$t_fan_inc_speed
     done
+    [[ $a_fan_inc_speed -eq -2000 ]] && a_fan_inc_speed=0
 
     [[ $CALC_AVERAGE_SPEED == 1 && $n_fan -gt 0 ]] && fan_speed=`expr $s_fan / $n_fan`
-    [[ $fan_speed -lt $MIN_FAN ]] && fan_speed=$MIN_FAN
 
     #add speed factor to compensate gpu overheat
     ((FAN_INC_SPEED_FACTORS[$1]+=$a_fan_inc_speed * $DEF_FAN_INC_SPEED_STEP))
     [[ ${FAN_INC_SPEED_FACTORS[$1]} -gt 100 ]] && FAN_INC_SPEED_FACTORS[$1]=100
-    [[ ${FAN_INC_SPEED_FACTORS[$1]} -lt 0 ]] && FAN_INC_SPEED_FACTORS[$1]=0
-    [[ ${FAN_INC_SPEED_FACTORS[$1]} -gt 0 ]] && ((fan_speed+=${FAN_INC_SPEED_FACTORS[$1]}))
+    [[ ${FAN_INC_SPEED_FACTORS[$1]} -lt -100 ]] && FAN_INC_SPEED_FACTORS[$1]=-100
+    #[[ ${FAN_INC_SPEED_FACTORS[$1]} -lt 0 ]] && FAN_INC_SPEED_FACTORS[$1]=0
+    #[[ ${FAN_INC_SPEED_FACTORS[$1]} -gt 0 ]] &&
+    ((fan_speed+=${FAN_INC_SPEED_FACTORS[$1]}))
 
     #adding 10% to fan0 to compensate extra heat from CPU and PSU
     [[ $1 -eq 0 ]] && ((fan_speed+=10))
 
+    [[ $fan_speed -gt $MAX_FAN ]] && fan_speed=$MAX_FAN
+    [[ $fan_speed -lt $MIN_FAN ]] && fan_speed=$MIN_FAN
     [[ $fan_speed -gt 100 ]] && fan_speed=100
   else #error on getting card fan values, setting max speed
     fan_speed=$MAX_FAN
   fi
-
-  # echo $fan_speed
 }
 
 percent_to_pwm () {
@@ -556,7 +567,7 @@ calc_fan_pwm_factor () {
     if [ $fan_target_speed -eq 100 ]; then
       FAN_PWN_FACTORS[$i]=0
       echo2 "Reseting FAN$i PWM factor"
-    elif [ $fan_target_speed -gt 0 ]; then
+    elif [[ $fan_target_speed -gt 0 && $fan_current_speed -gt 0 ]]; then
       [[ $fan_current_speed -lt $fan_target_speed ]] && ((FAN_PWN_FACTORS[$i]+=$fan_target_speed-$fan_current_speed)) && echo2 "Increasing FAN$i PWM factor"
       [[ $fan_current_speed -gt $fan_target_speed ]] && ((FAN_PWN_FACTORS[$i]+=$fan_target_speed-$fan_current_speed)) && echo2 "Decreasing FAN$i PWM factor"
     fi
