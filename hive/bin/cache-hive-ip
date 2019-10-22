@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-# !!!using only IPv4 addresses!!!
+# !!!using only IPv4 addresses and interfaces!!!
+
+query_timeout=10
 
 # name servers for queries
-dns_srv=(" " "1.1.1.1" "8.8.8.8" "114.114.114.114")
+dns_srv=("8.8.8.8" "1.1.1.1" "114.114.114.114")
 
 # update servers to cache
 upd_srv=("download.hiveos.farm")
@@ -22,43 +24,36 @@ ff02::2 ip6-allrouters
 "
 
 
-function add_host {
-
-	# using host for lookup. getenv uses /etc/host itself!
-	for srv in "${dns_srv[@]}"
-	do
-		resolve=`host -W 10 $1 $srv`
-		exitcode=$?
-		echo "> Resolving $1"$'\n'"$resolve"
-		[[ $exitcode -eq 0 ]] && break
-	done
-
-	count=`grep -c "has address" <<< "$resolve"` # IPv4
-	#echo "$count, $exitcode"
-
-	[[ $exitcode -ne 0 || $count -eq 0 ]] && return 10
+function add_host { # global $resolve
 
 	# adding only first address
-	resolve=`grep -m 1 "has address" <<< "$resolve"`
-	addr=${resolve#*has address }
-	
+	addr=`grep -m 1 -oP "$1.*\sA\s\K[^\s]+$" <<< "$resolve"`
+	if [[ -z $addr ]]; then
+		# check for CNAME
+		cname=`grep -m 1 -oP "$1.*\sCNAME\s\K[^\s]+$" <<< "$resolve"`
+		[[ ! -z $cname ]] && addr=`grep -m 1 -oP "$cname.*\sA\s\K[^\s]+$" <<< "$resolve"`
+		[[ -z $addr ]] && echo "> Unable to resolve: $1" && return 4
+	fi
+
 	# IPv4 only!
 	if [[ $addr =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
 		echo "> Adding to cache \"$addr $1\""
 		newhosts+="$addr $1"$'\n'
 		return 0
 	fi
-	
-	echo "> Unable to extract address"
-	return 11
+
+	echo "> Unable to extract IP address: $addr"
+	return 5
 }
 
 
 function update_hosts () {
-	
+
 	[ ! -e $RIG_CONF ] && echo "> No $RIG_CONF" && return 1
 	. $RIG_CONF
 	[[ -z $HIVE_HOST_URL ]] && echo "> HIVE_HOST_URL is empty" && return 2
+	local HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
+	[[ -z $HOST ]] && echo "> Unable to parse host name: $HIVE_HOST_URL" && return 3
 
 	# add rig host
 	# not using hostname-check here as it directly writes to /etc/hosts
@@ -68,24 +63,60 @@ function update_hosts () {
 
 	newhosts+=$'\n'"# HIVEOS CACHE BEGIN"$'\n'
 
-	# add update hosts
+	# get system dns servers
+	local dns=(`dig +time=1 +retry=0 localhost | grep -oP "SERVER:.*\(\K[0-9.]+(?=\))"`)
+	if [[ ${dns[0]} =~ ^127\.0\.0\.[0-9]+$ ]]; then
+		# get real name servers (18.04)
+		dns=(`systemd-resolve --status 2>/dev/null | grep -Pazo "DNS Servers: \K[0-9\.\s]+" | tr -d "[:blank:]" | tr '\0' '\n'`)
+	fi
+
+	# merge all servers
+	dns+=("${dns_srv[@]}")
+
+	local query_servers=""
+	local dns_servers=()
+	# remove duplicates, empty and localhost
+	for((i=0; i<${#dns[@]}; i++))
+	do
+		[[ -z ${dns[$i]} || ${dns[$i]} =~ ^127\.0\.0\.[0-9]+$ || ! ${dns[$i]} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] && continue;
+		for((x=0; x<$i; x++))
+		do
+			[[ ${dns_servers[$x]} == ${dns[$i]} ]] && break
+		done
+		[[ $x == $i ]] && dns_servers[$i]=${dns[$i]} && query_servers+=" @${dns[$i]}"
+	done
+	echo "> Using DNS servers: ${dns_servers[@]}"
+
+	echo "> Resolving: $HOST"
+	# using dig to query multiple dns servers at once
+	resolve=`dig -4 +noall +answer +retry=0 +time=$query_timeout $query_servers $HOST`
+	echo "$resolve"
+
+	# parse Hive API host and exit on error
+	add_host $HOST || return $?
+
+	local query_hosts=
+	# add update hosts to query
+	for host in "${upd_srv[@]}"
+	do
+		query_hosts+="$host  "
+	done
+
+	echo "> Resolving: $query_hosts"
+	resolve=`dig -4 +noall +answer +retry=0 +time=$query_timeout $query_servers $query_hosts`
+	echo "$resolve"
+
+	# parse update hosts
 	for host in "${upd_srv[@]}"
 	do
 		add_host $host
 	done
-
-	# add api host
-	local HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
-	[[ -z $HOST ]] && echo "> Unable to parse hostname from $HIVE_HOST_URL" && return 3
-	add_host $HOST
-	exitcode=$?
-
-	return $exitcode
 }
 
 exitcode=0
 
 if [[ $1 != "resetonly" ]]; then
+	#[[ $(cat /sys/class/net/*/carrier 2>/dev/null | grep -c 1) -le 1 ]] && echo "> No connection to network" && exit 10
 	update_hosts
 	exitcode=$?
 fi
