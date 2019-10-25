@@ -64,11 +64,7 @@ function update_hosts () {
 	newhosts+=$'\n'"# HIVEOS CACHE BEGIN"$'\n'
 
 	# get system dns servers
-	local dns=(`dig +time=1 +retry=0 localhost | grep -oP "SERVER:.*\(\K[0-9.]+(?=\))"`)
-	if [[ ${dns[0]} =~ ^127\.0\.0\.[0-9]+$ ]]; then
-		# get real name servers (18.04)
-		dns=(`systemd-resolve --status 2>/dev/null | grep -Pazo "DNS Servers: \K[0-9\.\s]+" | tr -d "[:blank:]" | tr '\0' '\n'`)
-	fi
+	local dns=(`networkctl status 2>/dev/null | grep -Pazo "DNS: \K[0-9\.\s]+" | tr -d "[:blank:]" | tr -d "\0"`)
 
 	# merge all servers
 	dns+=("${dns_srv[@]}")
@@ -95,15 +91,8 @@ function update_hosts () {
 	# parse Hive API host and exit on error
 	add_host $HOST || return $?
 
-	local query_hosts=
-	# add update hosts to query
-	for host in "${upd_srv[@]}"
-	do
-		query_hosts+="$host  "
-	done
-
-	echo "> Resolving: $query_hosts"
-	resolve=`dig -4 +noall +answer +retry=0 +time=$query_timeout $query_servers $query_hosts`
+	echo "> Resolving: ${upd_srv[@]}"
+	resolve=`dig -4 +noall +answer +retry=0 +time=$query_timeout $query_servers ${upd_srv[@]}`
 	echo "$resolve"
 
 	# parse update hosts
@@ -116,7 +105,7 @@ function update_hosts () {
 exitcode=0
 
 if [[ $1 != "resetonly" ]]; then
-	#[[ $(cat /sys/class/net/*/carrier 2>/dev/null | grep -c 1) -le 1 ]] && echo "> No connection to network" && exit 10
+	#[[ $(networkctl list | grep -c routable) -eq 0 ]] && echo "> No connection to network" && exit 10
 	update_hosts
 	exitcode=$?
 fi
