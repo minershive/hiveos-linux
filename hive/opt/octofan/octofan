@@ -225,17 +225,17 @@ shorten_hashrate () {
 }
 
 calc_fan_speed () {
-  if [[ $AUTO_ENABLED != 1 ]]; then
+  if [[ $AUTO_ENABLED -ne 1 ]]; then
     if [[ ! -z $MANUAL_FAN ]]; then
-      echo $MANUAL_FAN #showing manual value
+      fan_speed=$MANUAL_FAN #showing manual value
     else
-      echo 100 #can't get manual value, setting fan speed to 100%
+      fan_speed=100 #can't get manual value, setting fan speed to 100%
     fi
     return 0
   fi
 
   if [[ -z $bus_id_array ]]; then
-    #check $GPU_DETECT_JSON and do nothing while not exist
+    [[ $DEBUG_COMMANDS -ge 1 ]] && echo "check GPU_DETECT_JSON and do nothing while not exist"
     while true; do
       if [ -f $GPU_DETECT_JSON ]; then
         bus_id_array=(`cat $GPU_DETECT_JSON | jq -c '[ . | to_entries[] | select(.value) | .value.busid [0:2] ]'`)
@@ -248,7 +248,7 @@ calc_fan_speed () {
   fi
 
   if [[ -z $fan_array ]]; then
-    #check $GPU_STATS_JSON and do nothing while not exist
+    [[ $DEBUG_COMMANDS -ge 1 ]] && echo "check GPU_STATS_JSON and do nothing while not exist"
     while true; do
       if [ -f $GPU_STATS_JSON ]; then
         fan_array=(`cat $GPU_STATS_JSON | tail -1 | jq -c ".fan"`)
@@ -261,7 +261,7 @@ calc_fan_speed () {
   fi
 
   if [[ -z $temp_array ]]; then
-    #check $GPU_STATS_JSON and do nothing while not exist
+    [[ $DEBUG_COMMANDS -ge 1 ]] && echo "check GPU_STATS_JSON and do nothing while not exist"
     while true; do
       if [ -f $GPU_STATS_JSON ]; then
         temp_array=(`cat $GPU_STATS_JSON | tail -1 | jq -c ".temp"`)
@@ -283,6 +283,7 @@ calc_fan_speed () {
   local i=0
   local a_fan_inc_speed=-2000
   local t_fan_inc_speed=-1
+  local a_gpus_fan_max_count=0
   if [[ ! -z $bus_id_array && ! -z $fan_array ]]; then
     case $1 in
       0) #fan 0 blows on cards 01:00.0, 02:00.0, 03:00.0
@@ -310,6 +311,7 @@ calc_fan_speed () {
           ((s_fan+=$a_fan)) && ((n_fan++))
 
           if [[ $a_fan -eq 100 ]]; then #calc fan increase factor to compensate GPU heat. It can be negative on fanless GPUs
+            ((a_gpus_fan_max_count++))
             [[ $DEBUG_COMMANDS -ge 1 ]] && echo GPU$i fan is 100%
             prev_temp=$(jq -r .[$j] <<< $prev_temp_array)
             if [[ ! -z $prev_temp && $prev_temp -ne 0 ]]; then
@@ -344,6 +346,20 @@ calc_fan_speed () {
     [[ $a_fan_inc_speed -eq -2000 ]] && a_fan_inc_speed=0
 
     [[ $CALC_AVERAGE_SPEED == 1 && $n_fan -gt 0 ]] && fan_speed=`expr $s_fan / $n_fan`
+
+    # if none of gpu fan speed is 100% then set a_fan_inc_speed closer to zero
+    [[ $DEBUG_COMMANDS -ge 1 ]] && echo "a_gpus_fan_max_count=$a_gpus_fan_max_count"
+    if [[ $a_gpus_fan_max_count -eq 0 ]]; then
+      if [[ ${FAN_INC_SPEED_FACTORS[$1]} -gt 0 ]]; then
+        [[ $DEBUG_COMMANDS -ge 1 ]] && echo "All GPUs fan speed are lower than 100%. Decreasing FAN_INC_SPEED_FACTORS[$1]"
+        a_fan_inc_speed=-1
+      elif [[ ${FAN_INC_SPEED_FACTORS[$1]} -lt 0 ]]; then
+        [[ $DEBUG_COMMANDS -ge 1 ]] && echo "All GPUs fan speed are lower than 100%. Increasing FAN_INC_SPEED_FACTORS[$1]"
+        a_fan_inc_speed=1
+      else
+        a_fan_inc_speed=0
+      fi
+    fi
 
     #add speed factor to compensate gpu overheat
     ((FAN_INC_SPEED_FACTORS[$1]+=$a_fan_inc_speed * $DEF_FAN_INC_SPEED_STEP))
