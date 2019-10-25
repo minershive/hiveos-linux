@@ -71,12 +71,16 @@ function miner_config_gen() {
 	fi
 
 	#merge pools into main config
-	pools='[]'
+	local pools='[]'
 	[[ $XMRIG_NEW_TLS -eq 1 ]] && local tls="true" || tls="false"
-	tls_fp=$(jq -r '."tls-fingerprint"' <<< "$conf")
+	local tls_fp=$(jq -r '."tls-fingerprint"' <<< "$conf")
 	[[ -z $tls_fp ]] && tls_fp="null"
-	nicehash=$(jq -r .nicehash <<< "$conf")
+	[[ ! $tls_fp == "null" && ! $tls_fp == "true" && ! $tls_fp == "false" ]] && tls_fp=\"$tls_fp\"
+	local nicehash=$(jq -r .nicehash <<< "$conf")
 	[[ -z $nicehash || $nicehash == "null" ]] && nicehash="false"
+	local self_select=$(jq -r '."self-select"' <<< "$conf")
+	[[ -z $self_select ]] && self_select="null"
+	[[ ! $self_select == "null" && ! $self_select == "true" && ! $self_select == "false" ]] && self_select=\"$self_select\"
 
 	[[ -z $XMRIG_NEW_ALGO ]] && XMRIG_NEW_ALGO="cn/r"
 
@@ -86,7 +90,10 @@ function miner_config_gen() {
 	for url in $XMRIG_NEW_URL; do
 		[[ ${nicehash,,} = "true" || ${url,,} = *"nicehash"* ]] && c_nicehash='true' || c_nicehash='false'
 		pool=$(cat <<EOF
-				{"algo": "$XMRIG_NEW_ALGO", "coin": null, "url": "$url", "user": "$XMRIG_NEW_TEMPLATE", "pass": "$XMRIG_NEW_PASS", "rig_id": "$XMRIG_NEW_WORKER", "nicehash": $c_nicehash, "keepalive": true, "enabled": true, "tls": $tls, "tls-fingerprint": $tls_fp, "daemon": false }
+				{"algo": "$XMRIG_NEW_ALGO", "coin": null, "url": "$url", "user": "$XMRIG_NEW_TEMPLATE", 
+				"pass": "$XMRIG_NEW_PASS", "rig_id": "$XMRIG_NEW_WORKER", "nicehash": $c_nicehash,
+				"keepalive": true, "enabled": true, "tls": $tls, "tls-fingerprint": $tls_fp, "daemon": false,
+				"self-select": $self_select}
 EOF
 )
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`

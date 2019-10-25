@@ -19,26 +19,12 @@
         "numa": true
     },
     "cpu": {
-        "enabled": true,
-        "huge-pages": true,
-        "hw-aes": null,
-        "priority": null,
-        "memory-pool": false,
-        "max-threads-hint": 100,
-        "asm": true,
-        "argon2-impl": null,
-        "cn/0": false,
-        "cn-lite/0": false
+        "enabled": true
     },
     "opencl": {
-        "enabled": false,
-        "cache": true,
-        "loader": null,
-        "platform": "AMD",
-        "cn/0": false,
-        "cn-lite/0": false
+        "enabled": true
     },
-    "donate-level": 5,
+    "donate-level": 1,
     "donate-over-proxy": 1,
     "log-file": "/var/log/miner/xmrig-new/xmrig-new.log",
     "pools": [
