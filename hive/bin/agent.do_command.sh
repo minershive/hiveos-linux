@@ -2,6 +2,35 @@
 
 # Part of agent
 
+### some helper functions
+nv_as=0
+nv_mn=0
+nv_af=0
+nv_wd=0
+
+function do_nvstop () {
+	nv_as=$(screen -ls | grep -c autoswitch)
+	nv_mn=$(screen -ls | grep -c miner)
+	nv_af=$(screen -ls | grep -c autofan)
+	nv_wd=$(wd status | grep -c running)
+	nvstop
+	return $?
+}
+
+function do_nvstart () {
+	#echo "nvstart $MAINTENANCE, $nv_wd, $nv_mn, $nv_af, $nv_as"
+	[[ $MAINTENANCE == 2 ]] && return
+	rm /run/hive/NV_OFF > /dev/null 2>&1
+	systemctl start hivex > /dev/null 2>&1
+	sleep 10
+	[[ $nv_wd -ne 0 ]] && wd start > /dev/null 2>&1
+	[[ $nv_mn -ne 0 ]] && miner start > /dev/null 2>&1
+	[[ $nv_af -ne 0 ]] && autofan > /dev/null 2>&1
+	[[ $nv_as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+}
+
+####
+
 function do_command () {
 	#body=$1
 	[[ -z $command ]] && command=`echo "$body" | jq -r '.command'` #get command for batch
@@ -9,21 +38,24 @@ function do_command () {
 	#Optional command identifier
 	cmd_id=$(echo "$body" | jq -r '.id')
 	[[ $cmd_id == "null" ]] && cmd_id=
-	
+
 	bench=0
 	benchmark check > /dev/null 2>&1
 	[[ $? == 0 ]] && bench=1 || bench=0
-	
+
 	case $command in
+
 		OK)
 			echo -e "${BGREEN}$command${NOCOLOR}"
 		;;
+
 		reboot)
 			message ok "Rebooting" --id=$cmd_id
 			echo -e "${BRED}Rebooting${NOCOLOR}"
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 			#superreboot
 		;;
+
 		upgrade)
 			local version=$(echo "$body" | jq -r '.version')
 			[[ $version == "null" ]] && version=
@@ -36,6 +68,7 @@ function do_command () {
 					echo "$payload" | message error "Selfupgrade failed" payload --id='$cmd_id'
 			' > /tmp/nohup.log 2>&1 &
 		;;
+
 		exec)
 			local exec=$(echo "$body" | jq '.exec' --raw-output)
 			nohup bash -c '
@@ -48,6 +81,7 @@ function do_command () {
 				echo "$payload" | message error "'"$exec"' (failed, exitcode=$exitcode)" payload --id='$cmd_id'
 			' > /tmp/nohup.log 2>&1 &
 		;;
+
 		config)
 			config=$(echo $body | jq '.config' --raw-output)
 			justwrite=$(echo $body | jq '.justwrite' --raw-output) #don't restart miner, just write config, maybe WD settings will be updated
@@ -91,7 +125,7 @@ function do_command () {
 				if [[ $bench -eq 0 ]]; then
 					wallet=$(echo $body | jq '.wallet' --raw-output)
 					[[ ! -z $wallet && $wallet != "null" ]] &&
-					echo "$wallet" > $WALLET_CONF
+						echo "$wallet" > $WALLET_CONF
 				fi
 
 				# Save autofan config if given -----------------------------------------------
@@ -132,6 +166,7 @@ function do_command () {
 				message error "No rig \"config\" given" --id=$cmd_id
 			fi
 		;;
+
 		wallet)
 			if [[ $bench -eq 0 ]]; then
 				wallet=$(echo $body | jq '.wallet' --raw-output)
@@ -150,6 +185,7 @@ function do_command () {
 				message error "No changes applied. Detect running or unfinished benchmark. Stop benchmark first" --id=$cmd_id > /dev/null 2>&1
 			fi
 		;;
+
 		nvidia_oc)
 			nvidia_oc=$(echo $body | jq '.nvidia_oc' --raw-output)
 			nvidia_oc_old=`[[ -e $NVIDIA_OC_CONF ]] && cat $NVIDIA_OC_CONF`
@@ -169,8 +205,10 @@ function do_command () {
 				' > /tmp/nohup.log 2>&1 &
 			else
 				echo -e "${YELLOW}Nvidia OC unchanged${NOCOLOR}"
+				message ok "Nvidia OC unchanged" --id=$cmd_id
 			fi
 		;;
+
 		amd_oc)
 			amd_oc=$(echo $body | jq '.amd_oc' --raw-output)
 			amd_oc_old=`[[ -e $AMD_OC_CONF ]] && cat $AMD_OC_CONF`
@@ -190,8 +228,10 @@ function do_command () {
 				' > /tmp/nohup.log 2>&1 &
 			else
 				echo -e "${YELLOW}AMD OC unchanged${NOCOLOR}"
+				message ok "AMD OC unchanged" --id=$cmd_id
 			fi
 		;;
+
 		autofan)
 			autofan=$(echo $body | jq '.autofan' --raw-output)
 			if [[ ! -z $autofan && $autofan != "null" ]]; then
@@ -201,6 +241,7 @@ function do_command () {
 				message error "No \"autofan\" config given" --id=$cmd_id
 			fi
 		;;
+
 		octofan)
 			octofan=$(echo $body | jq '.octofan' --raw-output)
 			if [[ ! -z $octofan && $octofan != "null" ]]; then
@@ -210,6 +251,7 @@ function do_command () {
 				message error "No \"Octofan\" config given" --id=$cmd_id
 			fi
 		;;
+
 		coolbox)
 			coolbox=$(echo $body | jq '.coolbox' --raw-output)
 			if [[ ! -z $coolbox && $coolbox != "null" ]]; then
@@ -219,6 +261,7 @@ function do_command () {
 				message error "No \"Coolbox Autofan\" config given" --id=$cmd_id
 			fi
 		;;
+
 		octofan_recalibrate)
 			$OCTOFAN recalibrate
 			exitcode=$?
@@ -231,6 +274,7 @@ function do_command () {
 				message error "Case fans recalibrated with error" --id=$cmd_id --meta="$meta"
 			fi
 		;;
+
 		amd_download)
 			local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
 			listjson=`gpu-detect listjson AMD`
@@ -255,10 +299,13 @@ function do_command () {
 				message error "No \"gpu_index\" given" --id=$cmd_id
 			fi
 		;;
+
 		amd_upload)
 			# stop watchdog and autofan to prevent reboot on errors during flashing
-			wd stop > /dev/null 2>&1
-			screen -S autofan -X quit > /dev/null 2>&1
+			local wd=$(wd status | grep -c running)
+			local af=$(screen -ls | grep -c autofan)
+			[[ $wd -ne 0 ]] && wd stop > /dev/null 2>&1
+			[[ $af -ne 0 ]] && screen -S autofan -X quit > /dev/null 2>&1
 
 			# Batch mode
 			if [ $(echo $body | jq --raw-output '.batch != null') == 'true' ]; then
@@ -352,10 +399,9 @@ function do_command () {
 			fi
 
 			# restart watchdog and autofan
-			systemctl start hive-watchdog > /dev/null 2>&1
-			autofan > /dev/null
+			[[ $wd -ne 0 ]] && wd start > /dev/null 2>&1
+			[[ $af -ne 0 ]] && autofan > /dev/null 2>&1
 		;;
-
 
 		nvidia_download)
 			local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
@@ -370,19 +416,10 @@ function do_command () {
 			#return
 			screen -wipe > /dev/null 2>&1
 			sleep 1
-			local as=$(screen -ls | grep -c autoswitch)
-			local mn=$(screen -ls | grep -c miner)
-			local af=$(screen -ls | grep -c autofan)
-			nvstop
+			do_nvstop
 			if [[ $? -ne 0 ]]; then
 				message error "Unload Nvidia driver failed" --id=$cmd_id
-				rm /run/hive/NV_OFF > /dev/null 2>&1
-				systemctl start hivex > /dev/null 2>&1
-				sleep 10
-				systemctl start hive-watchdog > /dev/null 2>&1
-				[[ $mn -ne 0 ]] && miner start
-				[[ $af -ne 0 ]] && autofan
-				[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+				do_nvstart
 				return 1
 			fi
 
@@ -400,13 +437,7 @@ function do_command () {
 			else
 				message error "No \"gpu_index\" given" --id=$cmd_id
 			fi
-			rm /run/hive/NV_OFF > /dev/null 2>&1
-			systemctl start hivex > /dev/null 2>&1
-			sleep 10
-			systemctl start hive-watchdog > /dev/null 2>&1
-			[[ $mn -ne 0 ]] && miner start
-			[[ $af -ne 0 ]] && autofan
-			[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+			do_nvstart
 		;;
 
 		nvidia_upload)
@@ -425,19 +456,10 @@ function do_command () {
 
 				screen -wipe > /dev/null 2>&1
 				sleep 1
-				local as=$(screen -ls | grep -c autoswitch)
-				local mn=$(screen -ls | grep -c miner)
-				local af=$(screen -ls | grep -c autofan)
-				nvstop
+				do_nvstop
 				if [[ $? -ne 0 ]]; then
 					message error "Unload Nvidia driver failed" --id=$cmd_id
-					rm /run/hive/NV_OFF > /dev/null 2>&1
-					systemctl start hivex > /dev/null 2>&1
-					sleep 10
-					systemctl start hive-watchdog > /dev/null 2>&1
-					[[ $mn -ne 0 ]] && miner start
-					[[ $af -ne 0 ]] && autofan
-					[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+					do_nvstart
 					return 1
 				fi
 
@@ -510,13 +532,7 @@ function do_command () {
 					nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 					return 0
 				else
-					rm /run/hive/NV_OFF > /dev/null 2>&1
-					systemctl start hivex > /dev/null 2>&1
-					sleep 10
-					systemctl start hive-watchdog > /dev/null 2>&1
-					[[ $mn -ne 0 ]] && miner start
-					[[ $af -ne 0 ]] && autofan
-					[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+					do_nvstart
 				fi
 
 			# Single mode
@@ -539,19 +555,10 @@ function do_command () {
 					else
 						screen -wipe > /dev/null 2>&1
 						sleep 1
-						local as=$(screen -ls | grep -c autoswitch)
-						local mn=$(screen -ls | grep -c miner)
-						local af=$(screen -ls | grep -c autofan)
-						nvstop
+						do_nvstop
 						if [[ $? -ne 0 ]]; then
 							message error "Unload Nvidia driver failed" --id=$cmd_id
-							rm /run/hive/NV_OFF > /dev/null 2>&1
-							systemctl start hivex > /dev/null 2>&1
-							sleep 10
-							systemctl start hive-watchdog > /dev/null 2>&1
-							[[ $mn -ne 0 ]] && miner start
-							[[ $af -ne 0 ]] && autofan
-							[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+							do_nvstart
 							return 1
 						fi
 
@@ -619,14 +626,7 @@ function do_command () {
 						else
 							echo "$payload" | message warn "ROM flashing failed" payload --id=$cmd_id
 						fi
-
-						rm /run/hive/NV_OFF > /dev/null 2>&1
-						systemctl start hivex > /dev/null 2>&1
-						sleep 10
-						systemctl start hive-watchdog > /dev/null 2>&1
-						[[ $mn -ne 0 ]] && miner start
-						[[ $af -ne 0 ]] && autofan
-						[[ $as -ne 0 ]] && nohup bash -c 'sleep 20 && autoswitch start' > /tmp/nohup.log 2>&1 &
+						do_nvstart
 					fi
 				fi
 			fi
@@ -667,6 +667,7 @@ function do_command () {
 				echo "$payload" | message warn "OpenVPN setup failed" payload --id=$cmd_id
 			fi
 		;;
+
 		openvpn_remove)
 			systemctl stop openvpn@client
 			(rm /hive-config/openvpn/*.crt; rm /hive-config/openvpn/*.key; rm /hive-config/openvpn/*.conf; rm /hive-config/openvpn/auth.txt) > /dev/null 2>&1
@@ -674,17 +675,21 @@ function do_command () {
 			hello
 			message ok "OpenVPN service stopped, certificates removed" --id=$cmd_id
 		;;
+
 		benchmark)
 			echo $body | jq '.bench_data' > /hive-config/benchmark.conf
 			sync
 			benchmark start
 		;;
+
 		benchmark_stop)
 			bechmark stop
 		;;
+
 		"")
 			echo -e "${YELLOW}Got empty command, might be temporary network issue${NOCOLOR}"
 		;;
+
 		*)
 			message warning "Got unknown command \"$command\"" --id=$cmd_id
 			echo -e "${YELLOW}Got unknown command ${CYAN}$command${NOCOLOR}"

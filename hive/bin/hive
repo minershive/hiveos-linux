@@ -105,8 +105,10 @@ openvpn-install
 
 
 ### Check for internal GPU ##############################################################################
+[[ -e $RIG_CONF ]] &&
+	. $RIG_CONF
 
-if [[ $GPU_FIRST_AMD == 0 && $GPU_FIRST_NVIDIA == 0 && $DISKLESS != 1 ]]; then
+if [[ $GPU_FIRST_AMD == 0 && $GPU_FIRST_NVIDIA == 0 && $DISKLESS != 1 && $X_DISABLED != 1 ]]; then
 	warnmsg=$(cat <<WARN
 $YELLOW
 #####################################################################
@@ -151,43 +153,82 @@ WARN
 	sleep 15
 fi
 
+# request maintenance mode before loading drivers
+if [[ ! -z $RIG_ID && ! -z $RIG_PASSWD && ! -z $HIVE_HOST_URL ]]; then
+	# check and waiting for online. rigs with ssd can boot faster than network is configured.
+	# systemd-networkd-wait-online is broken on Ubuntu 18 image
+	for((i=1; i<10; i++))
+	do 
+		networkctl list | grep -q routable && break
+		networkctl list | grep -q configuring || break
+		echo2 "> Waiting for network ($i)"
+		sleep 1
+	done
 
+	echo2 "> Quering boot settings"
 
-### modprobe drivers, nvidia better to be first ##################################################################
-if [ $GPU_COUNT_NVIDIA -gt 0 ]; then
-	echo2 "modprobe ${GREEN}NVIDIA${NOCOLOR} drivers"
-	modprobe nvidia_drm modeset=1
-	modprobe nvidia
-
-	echo2 "`nvidia-xorg`"
+	request=`jq -c -n --arg rig_id "$RIG_ID" --arg passwd "$RIG_PASSWD" '{"method":"get_options","params":{"rig_id": $rig_id,"passwd": $passwd}}' 2>/dev/null`
+	response=`echo "$request" | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "$HIVE_HOST_URL/worker/api" -H "Content-Type: application/json"`
+	if [[ $exitcode -ne 0 ]]; then
+		echo -e "${RED}Connection to Hive server '$HIVE_HOST_URL' failed ($exitcode)${NOCOLOR}"
+	else
+		_IFS=$IFS; IFS=$'\n'
+		res=(`echo "$response" | jq -c -r '.error.code, .result.disable_gui, .result.maintenance_mode, .error.message' 2>/dev/null`)
+		exitcode=$?
+		IFS=$_IFS
+		if [[ "${res[0]}" != "null"  ]]; then
+			[[ ! -z ${res[3]} && ${res[3]} != "null" ]] &&
+				echo -e "${RED}Got error (${res[0]}) - ${res[3]}${NOCOLOR}" ||
+				echo -e "${RED}Got bad response - ${YELLOW}'$response'${NOCOLOR}"
+		else
+			[[ "${res[1]}" == "null" ]] && X_DISABLED= || X_DISABLED=${res[1]}
+			[[ "${res[2]}" == "null" ]] && MAINTENANCE= || MAINTENANCE=${res[2]}
+		fi
+	fi
+	echo2 "> Boot settings: MAINTENANCE_MODE='$MAINTENANCE', DISABLE_GUI='$X_DISABLED'"
 fi
-if [ $GPU_COUNT_AMD -gt 0 ]; then
 
-	if [[ -e /opt/dkms-vega/amdgpu.ko ]]; then
-		. /hive/sbin/opencl_insert
+
+if [[ $MAINTENANCE == 2 ]]; then
+	echo2 "> Maintenance mode. ${YELLOW}WITHOUT GPU DRIVERS!${NOCOLOR}"
+	echo 1 > /run/hive/NV_OFF
+else
+	### modprobe drivers, nvidia better to be first ##################################################################
+	rm /run/hive/NV_OFF > /dev/null 2>&1
+
+	if [[ $GPU_COUNT_NVIDIA -gt 0 ]]; then
+		echo2 "> Loading ${GREEN}NVIDIA${NOCOLOR} drivers, $GPU_COUNT_NVIDIA GPU"
+		modprobe nvidia_drm modeset=1
+		#modprobe nvidia
+
+		echo2 "`nvidia-xorg`"
 	fi
+	if [ $GPU_COUNT_AMD -gt 0 ]; then
+		if [[ -e /opt/dkms-vega/amdgpu.ko ]]; then
+			. /hive/sbin/opencl_insert
+		fi
 
-	echo2 "modprobe ${RED}AMD${NOCOLOR} drivers"
-	modprobe amdgpu
-	#if there are nvidias then their config should be used, amd will not work anyways
-	if [ $GPU_COUNT_NVIDIA -eq 0 ]; then
-		echo2 "Copying AMD Xorg config"
-		cp /hive/etc/xorg.conf.amd /etc/X11/xorg.conf > /dev/null 2>&1
-	fi
+		echo2 "> Loading ${RED}AMD${NOCOLOR} drivers, $GPU_COUNT_AMD GPU"
+		modprobe amdgpu
+		# if there are nvidias then their config should be used, amd will not work anyways
+		if [ $GPU_COUNT_NVIDIA -eq 0 ]; then
+			echo2 "Copying AMD Xorg config"
+			cp /hive/etc/xorg.conf.amd /etc/X11/xorg.conf > /dev/null 2>&1
+		fi
 
-	echo2 "`amd-save-pp_tables`"
+		echo2 "`amd-save-pp_tables`"
 
-	#Moved here from gpu-detect
-	amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
-	[[ -f $AMDMEMINFO_FILE ]] && amdmeminfo=`cat $AMDMEMINFO_FILE`
-	#amdmeminfo can fail from the first time and skip some cards, let's rerun it
-	if [[ `echo "$amdmeminfo" | wc -l` != $GPU_COUNT_AMD ]]; then
-		sleep 0.1
+		# Moved here from gpu-detect
 		amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
+		[[ -f $AMDMEMINFO_FILE ]] && amdmeminfo=`cat $AMDMEMINFO_FILE`
+		# amdmeminfo can fail from the first time and skip some cards, let's rerun it
+		if [[ `echo "$amdmeminfo" | wc -l` != $GPU_COUNT_AMD ]]; then
+			sleep 0.1
+			amdmeminfo -q -s -n > $AMDMEMINFO_FILE 2>&1
+		fi
 	fi
+	#sleep 1
 fi
-#sleep 1
-
 
 gpu-detect listjson > $GPU_DETECT_JSON
 
@@ -215,23 +256,21 @@ echo2 "`/hive/opt/octofan/watchdog-octofan.sh`"
 echo2 "> Applying crontab"
 crontab /hive/etc/crontab.root
 
-
-echo2 "> Caching host resolve"
-cache-hive-ip
-
 echo2 "> Saying hello to server"
 hello boot
 [[ -e $RIG_CONF ]] &&
-	. $RIG_CONF #will be needed to start WD later
+	. $RIG_CONF
 
+# cache host only if network is online to reduce boot time. it will be run by cron anyway
+if networkctl list | grep -q routable; then
+	echo2 "> Caching host resolve"
+	cache-hive-ip
+fi
 
 # Setup locale maybe on the very first run
 [[ ! -z $SYSTEM_LANG ]] &&
 	locale-setup "$SYSTEM_LANG" &&
 	export $SYSTEM_LANG
-
-#AMD OC in hivex now
-#Nvidia OC will be run by xinit
 
 
 echo2 "> Starting agent screen"
@@ -244,7 +283,8 @@ agent-screen dontattach
 [[ -e /root/nvidia-oc ]] && rm /root/nvidia-oc
 
 
-if [[ $X_DISABLED != 1 && $DISKLESS != 1 ]]; then
+# Nvidia OC will be run by xinit
+if [[ $X_DISABLED != 1 && $DISKLESS != 1 && $MAINTENANCE != 2 ]]; then
 	echo2 "> Starting HiveX"
 	systemctl start hivex
 
@@ -253,11 +293,11 @@ if [[ $X_DISABLED != 1 && $DISKLESS != 1 ]]; then
 
 	#Apply Nvidia OC before miner or it can hang on 13+ GPUs
 	eval `cat $NVIDIA_OC_CONF | grep '^RUNNING_DELAY'` #import only 1 variable
-	if [[ $GPU_COUNT_NVIDIA > 0 && -e $NVIDIA_OC_CONF && -z $RUNNING_DELAY ]]; then
+	if [[ $GPU_COUNT_NVIDIA -gt 0 && -e $NVIDIA_OC_CONF && -z $RUNNING_DELAY ]]; then
 		#wait for oc only if RUNNING_DELAY is empty, otherwise we count on manual waiting delay
 		if [[ -z `pidof xinit` ]]; then
 			echo2 "xinit process not found, will not wait for Nvidia OC"
-			break
+			#break
 		else
 			for i in {1..30}; do #wait for nvidia-oc-log to start at least and create a file
 				[[ -e /var/log/nvidia-oc.log ]] && break #file exists already
@@ -276,16 +316,14 @@ if [[ $X_DISABLED != 1 && $DISKLESS != 1 ]]; then
 			done
 		fi
 	fi
-	# Apply amd-oc before miner start
-	amd-oc-safe	
 else
-	# Apply amd-oc before miner start
-	amd-oc-safe
 	systemctl restart hive-console
 fi
 
+# Apply amd-oc before miner start
+[[ $MAINTENANCE != 2 ]] && amd-oc-safe
 
-if [[ $MAINTENANCE -eq 1 ]]; then
+if [[ $MAINTENANCE == 1 || $MAINTENANCE == 2 ]]; then
 	echo2 "> Maintenance mode. Miner and software watchdog are disabled"
 else
 	if [[ $MINER_DELAY -gt 0 ]]; then
@@ -307,10 +345,9 @@ else
 	fi
 fi
 
-
-
-echo2 "> Starting autofan"
-autofan
+[[ $MAINTENANCE != 2 ]] &&
+	echo2 "> Starting autofan" &&
+	autofan
 
 echo2 "> Starting octofan"
 $OCTOFAN
@@ -325,11 +362,5 @@ fi
 
 
 echo2 "> Hive Start Finished"
-
-
-#if [[ $X_DISABLED = 1 ]]; then
-#	amd-oc-safe
-#	systemctl restart hive-console
-#fi
 
 exit 0

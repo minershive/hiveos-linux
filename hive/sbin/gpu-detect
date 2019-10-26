@@ -8,6 +8,9 @@ fi
 [ -t 1 ] && . colors
 #[[ -t 1 || $2 == "--colors" ]] && . colors
 
+NV_OFF=0
+[[ -f "/run/hive/NV_OFF" ]] && read NV_OFF < "/run/hive/NV_OFF"
+
 NVIDIA_FAN_COUNT=
 
 # Wait 4 sec for another amdmeminfo process to finish
@@ -100,23 +103,25 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 				fi
 			fi
 		elif [[ $gputype == "NVIDIA" ]]; then
-			if [[ ! -f $NVIDIASMI_FILE ]]; then
-				nvidia-smi --query-gpu=gpu_bus_id,gpu_name,memory.total,power.min_limit,power.default_limit,power.max_limit,vbios_version --format=csv,noheader > $NVIDIASMI_FILE
-				# report error
-				grep -q -i "insufficiently powered" $NVIDIASMI_FILE &&
-					cat $NVIDIASMI_FILE | message error "Nvidia insufficient power" payload > /dev/null
+			if [[ $NV_OFF -ne 1 ]]; then
+				if [[ ! -f $NVIDIASMI_FILE ]]; then
+					nvidia-smi --query-gpu=gpu_bus_id,gpu_name,memory.total,power.min_limit,power.default_limit,power.max_limit,vbios_version --format=csv,noheader > $NVIDIASMI_FILE
+					# report error
+					grep -q -i "insufficiently powered" $NVIDIASMI_FILE &&
+						cat $NVIDIASMI_FILE | message error "Nvidia insufficient power" payload > /dev/null
 
+				fi
+
+				#00000000:05:00.0, GeForce GTX 1080 Ti, 11172 MiB, 300.00 W
+				#00000000:06:00.0, GeForce GTX 1060 6GB, 6072 MiB, 140.00 W
+				#00000000:0C:00.0, GeForce GTX 1080, 8114 MiB, 326.00 W
+				#00000000:01:00.0, GeForce GTX 1050 Ti, 4038 MiB, 52.50 W, 120.00 W, 130.00 W
+
+				[[ -z $NVIDIA_FAN_COUNT ]] &&
+					NVIDIA_FAN_COUNT=`nvtool -quiet -csv -busid -fancount 2>/dev/null`
+
+				nvidiainfo=`grep -i "00000000:$busid, " $NVIDIASMI_FILE` #ignore busid case
 			fi
-
-			#00000000:05:00.0, GeForce GTX 1080 Ti, 11172 MiB, 300.00 W
-			#00000000:06:00.0, GeForce GTX 1060 6GB, 6072 MiB, 140.00 W
-			#00000000:0C:00.0, GeForce GTX 1080, 8114 MiB, 326.00 W
-			#00000000:01:00.0, GeForce GTX 1050 Ti, 4038 MiB, 52.50 W, 120.00 W, 130.00 W
-
-			[[ -z $NVIDIA_FAN_COUNT ]] &&
-				NVIDIA_FAN_COUNT=`nvtool -quiet -csv -busid -fancount 2>/dev/null`
-
-			nvidiainfo=`grep -i "00000000:$busid, " $NVIDIASMI_FILE` #ignore busid case
 			if [[ ! -z $nvidiainfo ]]; then
 				#shity fucking bash array, just get line by number. ebis ono provalis
 				#nvidiainfo=`echo $nvidiainfo | sed -e 's/,\s/\n/g'` #split by ", "

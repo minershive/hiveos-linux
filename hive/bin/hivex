@@ -2,6 +2,13 @@
 #Runs nvidia-oc in X
 #Supposed to be run with service
 
+source /etc/environment
+[[ -f $RIG_CONF ]] && . $RIG_CONF
+
+[[ $X_DISABLED == 1 || $MAINTENANCE == 2 ]] && 
+	echo "X Server is disabled, exiting" && 
+	exit 0
+
 
 #don't know why by this fixes amdgpu 17.40 bug
 #xf86OpenConsole: Switching VT failed

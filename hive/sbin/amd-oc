@@ -6,6 +6,12 @@
 date
 echo ""
 
+[[ -f $RIG_CONF ]] && . $RIG_CONF
+
+[[ $MAINTENANCE == 2 ]] &&
+	echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
+	exit 1
+
 DEFAULT_CORE_STATE=5
 
 n=`gpu-detect AMD`

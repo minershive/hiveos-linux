@@ -8,6 +8,18 @@
 date
 echo ""
 
+[[ -f $RIG_CONF ]] && . $RIG_CONF
+
+[[ $MAINTENANCE == 2 ]] &&
+	echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
+	exit 1
+
+#Preventing nvidia-smi from running if necessary
+NV_OFF=0
+[[ -f "/run/hive/NV_OFF" ]] && read NV_OFF < "/run/hive/NV_OFF"
+[[ $NV_OFF == 1 ]] && exit 0
+
+
 systemctl status hivex > /dev/null
 [[ $? -ne 0 ]] && echo -e "${YELLOW}WARNING: X Server is not running! Some settings will not be applied!${NOCOLOR}"
 
