@@ -7,7 +7,7 @@ MINER_LOGS_BASE_DIR=/var/log/miner
 
 function usage() {
 	bname=`basename $0`
-	echo -e "Usage: ${CYAN}$bname start|stop|restart|log|logrotate|logtruncate${NOCOLOR}"
+	echo -e "Usage: ${CYAN}$bname start|stop|restart|status|log|logrotate|logtruncate${NOCOLOR}"
 	echo -e "If you run ${CYAN}$bname${NOCOLOR} without parameters miner screen will be tried to resume."
 }
 
@@ -70,7 +70,7 @@ function start() {
 
 	session_count=`screen -ls miner | grep miner | wc -l`
 	if [[ $session_count > 0 ]]; then
-		echo -e "${RED}Miner screen is already running${NOCOLOR}"
+		echo -e "${YELLOW}Miner screen is already running${NOCOLOR}"
 		echo -e "Run ${CYAN}miner${NOCOLOR} or ${CYAN}screen -r${NOCOLOR} to resume screen"
 		return
 	fi
@@ -218,7 +218,14 @@ function log_tail {
 		suffix=$1
 
 	tail -n $TAIL_LINE /run/hive/miner.$suffix
-	return
+	exitcode=$?
+
+	echo ""
+	title=`screen -S miner -p $suffix -Q title` &&
+		echo -e "${GREEN}> Miner screen is running${NOCOLOR}" ||
+		echo -e "${RED}> Miner screen is not running${NOCOLOR}"
+
+	return $exitcode
 
 	#-----------------------------------------------------------
 	log_basename=`miner_log_basename $MINER`
@@ -341,6 +348,17 @@ function bench_check (){
 }
 
 
+function status {
+	scr=`screen -S miner -Q windows`
+	[[ $? -ne 0 ]] && echo -e "${YELLOW}No miner screens are running${NOCOLOR}" && return 1
+	echo "Running miner screens:"
+	#echo -e "${CYAN}$scr${NOCOLOR}"
+	for((i=0;i<10;i++)); do
+		title=`screen -S miner -p $i -Q title` && echo -e "[$i] ${CYAN}$title${NOCOLOR}"
+	done
+	return 0
+}
+
 ########################################################################################################################
 
 case $1 in
@@ -398,6 +416,12 @@ case $1 in
 #			mkdir -p $MINER_LOGS_BASE_DIR/$minername
 #		done
 #	;;
+	status)
+		status
+	;;
+	help)
+		usage
+	;;
 	*)
 		screen -x -S miner
 		[[ $? != 0 ]] && usage
