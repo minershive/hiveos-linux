@@ -101,7 +101,11 @@ if [[ "$(echo $bootpart | grep -c nvme)" -gt 0 ]]; then
 else
 	bootdisk=${bootpart::-1} #cutoff partnumber
 fi
-disk_model=`parted -ml | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
+#disk_model=`parted -ml | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
+disk_info=`parted -ml 2>/dev/null | grep "/dev/"`
+# root disk first
+disk_model=`grep -m1 "$bootdisk:" <<< "$disk_info" | awk -F ':' '{print $7 " " $2}'`
+disk_model+=`grep -v "$bootdisk:" <<< "$disk_info" | awk -F ':' '{print ", " $7 " " $2}'`
 
 kernel=`uname --kernel-release`
 amd_version=`dpkg -s amdgpu-pro 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`
