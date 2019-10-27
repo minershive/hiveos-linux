@@ -182,7 +182,7 @@ get_fan_speed () {
 		
 	fi
 	
-	if [[ $cur_temp -ge $VERY_HIGH_TEMP && $cur_fan_speed -lt $VERY_HIGH_FAN ]]; then
+	if [[ $cur_temp -ge $VERY_HIGH_TEMP && $cur_fan_speed -lt $(( $VERY_HIGH_FAN - 2 ))  ]]; then
 		target_fan_speed=$VERY_HIGH_FAN
 #		echo_temp="${RED}$cur_temp°C${NOCOLOR}"
 	fi
@@ -412,7 +412,7 @@ amd_auto_fan_control () {
 				[[ $(wolfamdctrl -i ${cardnum[index]} --show-fanspeed | tr -d %) -ge $target_fan_speed ]] && break
 			done
 		fi
-		if [[ $target_fan_speed -lt $gpu_fan_speed ]]; then
+		if [[ $target_fan_speed -lt $gpu_fan_speed && $target_fan_speed -lt $MAX_FAN ]]; then
 			for (( i=0; i <= 10; i++ ))
 			do
 				wolfamdctrl -i ${cardnum[index]} --set-fanspeed $(( $target_fan_speed - $i )) 1>/dev/null
