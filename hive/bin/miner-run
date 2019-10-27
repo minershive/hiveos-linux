@@ -171,12 +171,12 @@ while true; do
 	
 	#Drop TIME_WAIT sockets
 	if [[ ! -z $MINER_API_PORT && $(lsmod | grep droptcpsock) ]]; then
+		echo ""
 		while true; do
-			socket=$(netstat -n | grep ":$MINER_API_PORT " | grep WAIT | head -n 1)
-			[[ -z $socket ]] && break
-			echo "Try to release TIME_WAIT sockets"
-			echo -e $socket"\n"
-			echo $socket | awk '{print $4"\t"$5}' >/proc/net/tcpdropsock
+			sockets=$(netstat -n | grep ":$MINER_API_PORT " | grep WAIT)
+			[[ -z $sockets ]] && break
+			echo -e "${WHITE}Trying to release TIME_WAIT sockets:${NOCOLOR}\n$sockets\n"
+			echo "$sockets" | awk '{print $4"\t"$5}' >/proc/net/tcpdropsock
 			sleep 1
 		done
 	fi
