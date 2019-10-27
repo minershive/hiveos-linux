@@ -153,18 +153,22 @@ for (( i=0; i < $n; ++i )); do
 	if [[ "${PREV_PLIMIT[$i]}" == "${PLIMIT[$i]}" ]]; then
 		echo "PLIMIT was already set to ${PLIMIT[$i]}"
 	else
+		pldef=${PLDEF[$i]%%[!0-9]*}
 		if [[ ! -z $PLIMIT && ${PLIMIT[$i]} -gt 0 ]]; then
 			# check limits
-			#plmax=${PLMAX[$i]%%[!0-9]*}
-			#plmin=${PLMIN[$i]%%[!0-9]*}
-			#[[ ${PLIMIT[$i]} -gt $plmax ]] && PLIMIT[$i]=$plmax
-			#[[ ${PLIMIT[$i]} -lt $plmin ]] && PLIMIT[$i]=$plmin
+			#if [[ $pldef -gt 0 ]]; then
+			#	plmax=${PLMAX[$i]%%[!0-9]*}
+			#	plmin=${PLMIN[$i]%%[!0-9]*}
+			#	[[ $plmax -gt $pldef && ${PLIMIT[$i]} -gt $plmax ]] && PLIMIT[$i]=${PLMAX[$i]%%[!0-9\.]*} && echo -e "${RED}Power limit was set to MAX value${NOCOLOR}"
+			#	[[ $plmin -lt $pldef && ${PLIMIT[$i]} -lt $plmin ]] && PLIMIT[$i]=${PLMIN[$i]%%[!0-9\.]*} && echo -e "${RED}Power limit was set to MIN value${NOCOLOR}"
+			#fi
 			nvresult=`nvidia-smi -i $i -pl ${PLIMIT[$i]}`
-			[[ $? -ne 0 ]] && color=$RED || color=$NOCOLOR
+			nvcode=$?
+			[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
 			nvresult=`echo "$nvresult" | grep -v "^$"`
 			echo -e "${color}$nvresult${NOCOLOR}"
+			[[ $nvcode -ne 0 ]] && exitcode=$nvcode
 		else
-			pldef=${PLDEF[$i]%%[!0-9]*}
 			#if [[ $plcur != $pldef ]]; then
 				echo "Restoring default power limit ${pldef}"
 				nvidia-smi -i $i -pl $pldef | grep -v "^$"
