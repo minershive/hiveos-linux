@@ -4,4 +4,4 @@ Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - WildRig-Multi v0.20.0
+Description: Hive miner - WildRig-Multi v0.20.0.2
