@@ -120,6 +120,8 @@ function start() {
 	screen -S miner -X title $MINER #set nice title
 	# close bash window #0
 	screen -S miner -p bash -X stuff 'exit\n'
+
+	return 0
 }
 
 
@@ -167,6 +169,7 @@ function stop() {
 	#remove khs so no confusing for watchdog
 	#[[ -e /run/hive/khs ]] && rm /run/hive/khs
 	#wd gets mtime of file, no problem
+	return 0
 }
 
 
@@ -364,13 +367,14 @@ function status {
 case $1 in
 	start)
 		bench_check
+		# start WD before miner to return miner start exit code not WD
+		wd start
 		start
-		[[ $WD_ENABLED == 1 ]] && wd start
 	;;
 	stop)
 		bench_check
-		stop
 		wd stop
+		stop
 	;;
 	bench_start)
 		start
@@ -379,8 +383,9 @@ case $1 in
 		stop
 	;;
 	restart)
+		# we do not touch WD here or it will be reset and never reboot worker
 		bench_check
-#		echo -e "Restarting ${CYAN}$MINER${NOCOLOR}"
+		#echo -e "Restarting ${CYAN}$MINER${NOCOLOR}"
 		echo -e "${YELLOW}Restarting miner${NOCOLOR}" #can be different on miner change
 		stop
 		#need some time to finish it seems
