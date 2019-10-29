@@ -48,7 +48,10 @@ fi
 
 echo "Detected $n NVIDIA cards"
 
-if [[ ! -z $RUNNING_DELAY ]]; then
+if [[ ! -z $RUNNING_DELAY && $RUNNING_DELAY -gt 0 ]]; then
+	[[ ! -z $MAX_RUNNING_DELAY && $RUNNING_DELAY -gt $MAX_RUNNING_DELAY ]] &&
+		echo -e "${YELLOW}Limiting delay to ${MAX_RUNNING_DELAY} seconds${NOCOLOR}" &&
+		RUNNING_DELAY=$MAX_RUNNING_DELAY
 	echo -e "${CYAN}Sleeping $RUNNING_DELAY seconds...${NOCOLOR}"
 	sleep $RUNNING_DELAY
 fi
