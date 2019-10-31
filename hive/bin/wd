@@ -73,12 +73,12 @@ function check_la() {
 	# reboot immediately if LA (5 min) >= maxLA
 	if [ $la5 -ge $max_la ]; then
 		echo -e "${RED}LA is more than $max_la: $la5, rebooting ${NOCOLOR}"
-		local top=`top -bHn 1 | head -n 20`
+		local top=`COLUMNS=110 top -bHn 1 | head -n 20`
 		message error "LA > $max_la, rebooting" payload <<< "$top" >/dev/null
 		sreboot
 	# reboot if LA (1 min) >= maxLA * 2
 	elif [ $la1 -ge $max_la2x ]; then
-		local top=`top -bHn 1 | head -n 20`
+		local top=`COLUMNS=110 top -bHn 1 | head -n 20`
 		# check few times to avoid short peaks
 		if [[ $high_la_count -ge 2 ]]; then
 			echo -e "${RED}LA is more than $max_la2x: $la1, rebooting ${NOCOLOR}"
