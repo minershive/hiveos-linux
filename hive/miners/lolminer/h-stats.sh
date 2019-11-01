@@ -24,6 +24,9 @@ else
 		BEAM-II)
 			algo="equihash 150/5/3"
 			;;
+		EXCC)
+			algo="equihash 144/5"
+			;;
 		GRIN-AD29)
 			algo="cuckoo"
 			;;
