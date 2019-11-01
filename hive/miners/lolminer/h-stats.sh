@@ -37,12 +37,15 @@ else
 			algo=$(echo $stats_raw | jq -r '.Mining.Algorithm')
 			;;
 	esac
+	local Rejected=`echo $stats_raw | jq -c -r ".Session.Submitted - .Session.Accepted"`
+	[[ $Rejected -lt 0 ]] && Rejected=0
 	stats=$(jq 	--argjson temp "$temp" \
 			--argjson fan "$fan" \
 			--arg ver "$ver" \
 			--argjson bus_numbers "$bus_numbers" \
 			--arg algo "$algo" \
-			'{hs: [.GPUs[].Performance], hs_units: "hs", $temp, $fan, uptime: .Session.Uptime, ar: [.Session.Accepted, .Session.Submitted - .Session.Accepted ], $bus_numbers, algo: $algo, ver: $ver}' <<< "$stats_raw")
+			--arg rej "$Rejected" \
+			'{hs: [.GPUs[].Performance], hs_units: "hs", $temp, $fan, uptime: .Session.Uptime, ar: [.Session.Accepted, $rej ], $bus_numbers, algo: $algo, ver: $ver}' <<< "$stats_raw")
 fi
 
 [[ -z $khs ]] && khs=0
