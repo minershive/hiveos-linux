@@ -101,6 +101,7 @@ The script MUST define 2 variables.
 Example of `$stats` var:
 ```javascript
 {
+	"total_khs": 346.3, //total hashrate, same as $khs
 	"hs": [123, 223.3], //array of hashes
 	"hs_units": "khs", //Optional: units that are uses for hashes array, "hs", "khs", "mhs", ... Default "khs".   
 	"temp": [60, 63], //array of miner temps
@@ -118,5 +119,39 @@ Example of `$stats` var:
 
 	//Pci buses array in decimal format. E.g. 0a:00.0 is 10
 	"bus_numbers": [0, 1, 12, 13]
+}
+```
+
+For miners with several algorithms fields of JSON stats data should have algorighm number in their names, number 1 is not specifying.
+
+Example of `$stats` var for three algorithms:
+```javascript
+{
+	"total_khs": 346.3,
+	"hs": [123, 223.3],
+	"hs_units": "khs",
+	"temp": [60, 63],
+	"fan": [80, 100],
+	"uptime": 12313232,
+	"ver": "1.2.3.4-beta",
+	"ar": [123, 3],
+	"algo": "customalgo",
+	"bus_numbers": [0, 1, 12, 13],
+	"total_khs2": 0.5039,
+	"hs2": [101.2, 102.3, 100.3, 99.8, 100.3],
+	"hs_units2": "hs",
+	"temp2": [65, 65, 64, 65, 64],
+	"fan2": [100, 100, 80, 100, 82],
+	"ar2": [12, 0],
+	"algo2": "secondcustomalgo",
+	"bus_numbers2": [2, 3, 5, 6, 7],
+	"total_khs3": 806800,
+	"hs3": [203.2, 202.3, 200.3, 201],
+	"hs_units3": "mhs",
+	"temp3": [55, 55, 54, 55],
+	"fan3": [30, 30, 30, 30],
+	"ar3": [12312, 35],
+	"algo3": "thirdcustomalgo",
+	"bus_numbers3": [8, 9, 10, 11]
 }
 ```
