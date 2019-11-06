@@ -40,14 +40,23 @@ else
 		hs[$i]=`echo ${hashes_val[$i]} | awk -v koef=$koef '{print $1*koef}' | awk '{ printf("%.f",$1) }'`
 		total_hs=$(($total_hs+${hs[$i]}))
 		# Get CPU temp from stats and if we get 0 then get it from sysfs
-		local tcore=`echo "$summary" | tr ';' '\n' | grep -m1 'TEMP=' | sed -e 's/.*=//' | awk '{printf("%.0f",$1)}'`
-		if [[ -z $tcore || $tcore -eq 0 ]]; then
-			local coretemp0=`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input 2>/dev/null`
-			[[ ! -z $coretemp0 ]] && #may not work with AMD cpous
-				tcore=$((`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input | head -n 1`/1000)) ||
-				tcore=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n 1 | awk '{print $1/1000}'` #maybe we will need to detect AMD cores
+#
+		set -x
+		for HWMON in $(ls /sys/class/hwmon); do 
+		   local test=$(cat /sys/class/hwmon/${HWMON}/name | grep -c -E 'coretemp|k10temp') 
+		   if [[ $test -gt 0 ]]; 
+		       then HWMON_DIR=/sys/class/hwmon/$HWMON 
+		       break 
+		   fi 
+		done 
+		if [[ -z $HWMON_DIR ]]; then 
+		    local tcore=`echo "$summary" | tr ';' '\n' | grep -m1 'TEMP=' | sed -e 's/.*=//' | awk '{printf("%.0f",$1)}'`
+		else
+			local tcore=`cat $HWMON_DIR/temp*_input | head -n 1 | awk '{print $1/1000}'`
 		fi
 		temps[$i]=$tcore
+		set +x
+#
 	done
 	# Convert total H/s to kH/s
 	khs=`echo $total_hs | awk -F';' '{print $1/1000}'` #hashes to khs
