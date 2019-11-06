@@ -110,14 +110,16 @@ function start() {
 	#	screen -S miner -X screen 2 $MINER2
 	for mindex in {32..2}; do
 		eval minerval=\$MINER$mindex
-		[[ ! -z $minerval ]] &&
-			sleep 0.2 && #to allow to grab dpkg lock
+		if [[ ! -z $minerval ]]; then
 			screen -S miner -X screen $mindex miner-run $minerval &&
-			screen -S miner -X title $minerval #set nice title
+				screen -S miner -X title $minerval #set nice title
+			sleep 1 #to allow to grab dpkg lock
+		fi
 	done
 
 	screen -S miner -X screen 1 miner-run $MINER &&
-	screen -S miner -X title $MINER #set nice title
+		screen -S miner -X title $MINER #set nice title
+
 	# close bash window #0
 	screen -S miner -p bash -X stuff 'exit\n'
 
