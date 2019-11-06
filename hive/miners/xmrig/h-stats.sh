@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 
 function get_cpu_temp(){
-    local HWMON_DIR=`ls -l /sys/class/hwmon | grep coretemp | awk '{ print $9 }'`
+    for HWMON in $(ls /sys/class/hwmon) 
+    do
+       local test=$(cat /sys/class/hwmon/${HWMON}/name | grep -c -E 'coretemp|k10temp')
+       if [[ $test -gt 0 ]]; then
+           HWMON_DIR=/sys/class/hwmon/$HWMON
+           break
+       fi
+    done
     if [[ -z $HWMON_DIR ]]; then
-	HWMON_DIR="/sys/class/hwmon/hwmon0"
-    else
-	HWMON_DIR="/sys/class/hwmon/$HWMON_DIR"
+       HWMON_DIR="/sys/class/hwmon/hwmon0"
     fi
     cat $HWMON_DIR/temp*_input
 }

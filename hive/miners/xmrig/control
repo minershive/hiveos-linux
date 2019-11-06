@@ -1,7 +1,7 @@
 Package: hive-miners-xmrig
-Version: 0.6-31
+Version: 0.6-32
 Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - XMRig CPU miner for CN-family algo
+Description: Hive miner - XMRig CPU miner for Argon2/RandomX/Cryptonight based algos
