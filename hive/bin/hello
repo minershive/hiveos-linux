@@ -215,7 +215,7 @@ elif [[ ! -z $SET_WORKER_NAME ]]; then
 fi
 
 
-echo "$request" | jq -c '.'
+echo "$request" | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'
 
 response=$(echo $request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=hello" -H "Content-Type: application/json")
 exitcode=$?

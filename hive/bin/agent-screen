@@ -11,41 +11,107 @@ fi
 . http_proxy.sh
 
 
-# Check for screen
-#screen -ls agent | grep -q agent && running=1 || running=0
-
-# As we have several processes in screen need to check for actual agent, not just for screen
-ps aux | grep -q 'bash /hive/bin/agent$' && running=1 || running=0
-
-
-[[ $1 != "dontattach" ]] &&
-	screen -x -S agent #attach to screen
-
-if [[ $running -ne 1 ]]; then
-
+function stop_agent() {
 	# We have checked for the agent process, but maybe there is a screen with dead agent
-	screen -ls agent | grep -q agent &&
-		echo "Quiting previous screen" &&
-		screen -S agent -X quit
+	screens=`screen -ls agent | grep -Po "\K[0-9]+(?=\.agent)"`
+	if [[ ! -z $screens ]]; then
+		echo "Quiting previous screen"
+		for pid in $screens; do
+			screen -S $pid -X quit
+		done
+		return 0
+	fi
+	return 1
+}
 
+
+function restart_agent() {
+	stop_agent && sleep 0.5
 
 	echo "Starting new agent screen session"
-
-	#screen -dm -S agent "agent"
-
 	screen -dm -S agent
+
 	for i in {1..25}; do
 		sleep 0.2 #it needs some time? it happens that you'll have "No screen session found" without sleep
-		session_count=`screen -ls agent | grep agent | wc -l`
-		[[ $session_count > 0 ]] && break
+		session_count=`screen -ls agent | grep -c agent`
+		[[ $session_count -gt 0 ]] && break
 		[[ $i == 25 ]] && echo -e "${RED}screen agent not found in 25 iterations, check logs and maybe flash drive speed${NOCOLOR}"
 	done
 
-	screen -S agent -X screen 2 agent.gpu-stats
-	screen -S agent -X screen 1 agent
+	screen -S agent -X screen 2 agent.gpu-stats &&
+		screen -S agent -X title "gpu-stats" #set nice title
+	sleep 0.2
+	screen -S agent -X screen 1 agent &&
+		screen -S agent -X title "agent" #set nice title
+	sleep 0.2
+	# close bash window #0
+	screen -S agent -p bash -X stuff 'exit\n'
 
-	exit 1 #was not running, starting
-fi
+	return 1 #was not running, started
+}
+
+
+function start_agent() {
+	# As we have several processes in screen need to check for actual agent, not just for screen
+	running=$(pgrep -cf '/agent run$')
+	if [[ $running -eq 0 ]]; then
+		screen -ls agent >/dev/null && echo "Screen is running but agent is not"
+		restart_agent
+		return
+	fi
+	return 0
+}
+
+
+function log_agent() { # log_window
+	local log="/tmp/agent$1.log"
+	[[ -f $log ]] && rm $log
+	screen -S agent -X at $1 hardcopy $log &&
+		cat $log
+	return
+}
+
+case $1 in
+	start|dontattach)
+		start_agent
+		exit
+	;;
+
+	restart)
+		restart_agent
+		exit
+	;;
+
+	stop)
+		stop_agent
+		exit
+	;;
+
+	log)
+		tail -n 20 /var/log/hive-agent.log
+		exit
+	;;
+	
+	log1)
+		log_agent 1
+		exit
+	;;
+	log2)
+		log_agent 2
+		exit
+	;;
+
+	*)
+		start_agent || exit
+		screen -x -S agent >/dev/null # attach to screen
+		if [[ $? -ne 0 ]]; then
+			echo "Restarting agent"
+			restart_agent
+			screen -x -S agent >/dev/null # attach to screen again
+			exit 1
+		fi
+	;;
+esac
 
 
 exit 0 #all was running

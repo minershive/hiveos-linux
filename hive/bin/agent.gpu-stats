@@ -18,7 +18,7 @@ while true; do
 	time_start=`date +%s`
 	gpu_stats=`timeout -s9 60 gpu-stats`
 	if [[ ! -z $gpu_stats ]]; then
-		echo "$gpu_stats" #| jq -c
+		echo "$gpu_stats" | jq -c
 		echo "$gpu_stats" > $GPU_STATS_JSON
 	else
 		echo -e "${YELLOW}gpu-stats is empty${NOCOLOR}"

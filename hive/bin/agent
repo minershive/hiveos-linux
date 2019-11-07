@@ -19,15 +19,22 @@ RESPONSE_TIME=300 #timeout in seconds to reduce push interval
 
 [ -t 1 ] && . colors
 
-#$PPID - might be parent screen pid
-screen_count=`screen -ls | grep "\.agent" | grep -v $PPID | wc -l`
+if [[ $1 != "run" ]]; then
+	#$PPID - might be parent screen pid
+	screen_count=`screen -ls | grep "\.agent" | grep -v $PPID | wc -l`
 
-#there will be still 1 process for subshell
-#[[ `ps aux | grep "./agent" | grep -vE "grep|screen|SCREEN|$$" | wc -l` > 1 ]] &&
-[[ $screen_count > 0 ]] &&
-	echo -e "${RED}Agent screen is already running${NOCOLOR}\nRun ${CYAN}agent-screen${NOCOLOR} to resume screen" &&
-	exit 1
+	#there will be still 1 process for subshell
+	#[[ `ps aux | grep "./agent" | grep -vE "grep|screen|SCREEN|$$" | wc -l` > 1 ]] &&
+	[[ $screen_count > 0 ]] &&
+		echo -e "${RED}Agent screen is already running${NOCOLOR}\nRun ${CYAN}agent-screen${NOCOLOR} to resume screen" &&
+		exit 1
 
+	while true; do
+	$0 run
+	sleep 1
+	echo "Restarting..."
+	done
+fi
 
 #check curl version and SSl session file
 curl --help | grep -q ssl-session-file && [[ ! -z $SSL_SESSION_FILE ]] &&
@@ -247,8 +254,11 @@ function loop {
 		stats="null"
 	fi
 
-	#echo $stats
-	#uptime: load averages for the past 1, 5, and 15 minutes
+	request=`jq -c -n --arg rig_id "$RIG_ID" --arg passwd "$RIG_PASSWD" '{ "method": "stats", "params": { "v":1, $rig_id, $passwd }}' 2>/dev/null`
+	if [[ $? -ne 0 ]]; then
+		echo -e "${RED}Request json creating error${NOCOLOR}"
+		return
+	fi
 
 	temp=$(sanitize_temp $temp)
 	fan=$(sanitize_fan $fan)
@@ -257,35 +267,52 @@ function loop {
 	stats=$(sanitize_miner_stats $stats)
 
 	[[ ! -z $META ]] && meta="$META" || meta='null'
-	request=$(
-	jq -c -n \
-	--arg rig_id "$RIG_ID" \
-	--arg passwd "$RIG_PASSWD" \
-	--arg miner "$MINER" \
-	--argjson meta "$meta" \
-	--argjson miner_stats "$stats" \
-	--argjson temp "$temp" \
-	--argjson fan "$fan" \
-	--argjson power "$power" \
-	--arg df "`df -h / | awk '{ print $4 }' | tail -n 1 | sed 's/%//'`" \
-	--argjson mem "`free -m | grep 'Mem' | awk '{print "["$2","$4"]"}'`" \
-	--argjson cpuavg "[`uptime | awk -F': ' '{print $2}'`]" \
-	'{
-		"method": "stats",
-		"params": {"v":1,
-			"rig_id":'$RIG_ID', $passwd, $miner, $meta, $miner_stats, "total_khs":'$khs',
-			$temp, $fan, $power, $df, $mem, $cpuavg
-		}
-	}'
+	
+	mem=`free -m | grep 'Mem' | awk '{print $2", "$4}'`
+	df=`df -h / | awk '{ print $4 }' | tail -n 1 | sed 's/%//'`
+	cpuavg=`cat /proc/loadavg | awk '{print $1", "$2", "$3}'`
+	
+	stats_json=$(
+		jq -n \
+		--arg miner "$MINER" \
+		--argjson meta "$meta" \
+		--argjson miner_stats "$stats" \
+		--argjson temp "$temp" \
+		--argjson fan "$fan" \
+		--argjson power "$power" \
+		--arg df "$df" \
+		--argjson mem "[$mem]" \
+		--argjson cpuavg "[$cpuavg]" \
+		'{ "params": { $meta, $temp, $fan, $power, $df, $mem, $cpuavg }}'
+		2>/dev/null
 	)
 
-	# Add other miners stats to json
-	for mindex in {2..32}; do
-		#[[ ! -z $miner2_json ]] && #add miner2 stats to json
-		#	request=`echo "$request" "$miner2_json" | jq -s '.[0] * .[1]'`
-		eval miner_json="\$miner${mindex}_json"
-		[[ ! -z $miner_json ]] && #add miner2 stats to json
-			request=`echo "$request" "$miner_json" | jq -s -c '.[0] * .[1]'`
+	if [[ $? -ne 0 ]]; then
+		echo -e "${RED}Stats json creating error${NOCOLOR}"
+	else
+		json=`echo "$request" "$stats_json" | jq -s -c '.[0] * .[1]' 2>/dev/null` &&
+			request="$json" ||
+			echo -e "${RED}Stats json parsing error${NOCOLOR}"
+	fi
+
+	# Add miners stats to json
+	for mindex in {1..32}; do
+		if [[ $mindex -eq 1 ]]; then
+			miner_json=$(
+				jq -n \
+				--arg miner "$MINER" \
+				--argjson miner_stats "$stats" \
+				'{ "params": { $miner, $miner_stats, "total_khs":'$khs' }}'
+				2>/dev/null
+			) || echo -e "${RED}Miner#$mindex json creating error${NOCOLOR}"
+		else
+			eval miner_json="\$miner${mindex}_json"
+		fi
+		if [[ ! -z $miner_json ]]; then
+			json=`echo "$request" "$miner_json" | jq -s -c '.[0] * .[1]' 2>/dev/null` &&
+				request="$json" ||
+				echo -e "${RED}Miner#$mindex json parsing error${NOCOLOR}"
+		fi
 	done
 
 	# Add ROH Fan controller stats to json
@@ -293,29 +320,32 @@ function loop {
 		casefan=`$OCTOFAN get_fan_json`
 		thermosensors=`$OCTOFAN get_temp_json`
 		psu=`$OCTOFAN get_psu_json`
-
 		octofan_stats=$(
-		jq -n \
-		--argjson casefan "$casefan" \
-		--argjson thermosensors $thermosensors \
-		--argjson psu $psu \
-		'{
-			$casefan, $thermosensors, $psu
-		}'
+			jq -n \
+			--argjson casefan "$casefan" \
+			--argjson thermosensors $thermosensors \
+			--argjson psu $psu \
+			'{
+				$casefan, $thermosensors, $psu
+			}'
+			2>/dev/null
 		)
 
 		octofan_stats=`sanitize_fan_controller_stats $octofan_stats`
-
 		octofan_stats=$(
 			jq -n \
 			--argjson octofan_stats "$octofan_stats" \
 			'{
 				"params": { $octofan_stats }
 			}'
+			2>/dev/null
 		)
 
-		[[ ! -z $octofan_stats ]] &&
-			request=`echo "$request" "$octofan_stats" | jq -s -c '.[0] * .[1]'`
+		if [[ ! -z $octofan_stats ]]; then
+			json=`echo "$request" "$octofan_stats" | jq -s -c '.[0] * .[1]' 2>/dev/null` &&
+				request="$json" ||
+				echo -e "${RED}Octofan json parsing error${NOCOLOR}"
+		fi
 	fi
 
 	# Add Coolbox Autofan controller stats to json
@@ -329,16 +359,19 @@ function loop {
 				'{
 					"params": {$coolbox_stats}
 				}'
+				2>/dev/null
 			)
 
-			[[ ! -z $coolbox_stats ]] &&
-				request=`echo "$request" "$coolbox_stats" | jq -s -c '.[0] * .[1]'`
+			if [[ ! -z $coolbox_stats ]]; then
+				json=`echo "$request" "$coolbox_stats" | jq -s -c '.[0] * .[1]' 2>/dev/null` &&
+					request="$json" ||
+					echo -e "${RED}Coolbox json parsing error${NOCOLOR}"
+			fi
 		fi
 	fi
 
-
 	[[ $AGENT_GZIP == 1 ]] && echo -n  "Z "
-	echo $request | jq '.' -c
+	echo $request | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'
 
 	if [[ -z $RIG_ID ]]; then
 		echo -e "${YELLOW}No RIG_ID, skipping sending stats${NOCOLOR}"
@@ -440,7 +473,7 @@ function loop {
 echo -e "\n\n[`date`] Started" >> $LOG
 
 while true; do
-	time_start=`date +%s`
+#	time_start=`date +%s`
 	loop
 	sleep 2 #to make sure we will not grab the same gpu-stats file
 	continue
