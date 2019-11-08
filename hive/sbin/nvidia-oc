@@ -227,7 +227,7 @@ for (( i=0; i < $n; ++i )); do
 	if [[ "${PREV_MEM[$i]}" == "${MEM[$i]}" ]]; then
 		echo "MEM CLOCK was already set to ${MEM[$i]}"
 	else
-		[[ ! -z $MEM ]]
+		[[ ! -z $MEM ]] &&
 			args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]}"
 	fi
 
