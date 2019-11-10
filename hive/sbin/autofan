@@ -36,7 +36,8 @@ DEF_CRITICAL_TEMP_ACTION=
 DEF_NO_AMD=0
 #Reboot rig if GPU error (enable-1/disable-0)
 DEF_REBOOT_ON_ERROR=0
-
+#Speed for switch to autocontrol
+DEF_AUTO_SPEED=25
 #######################################################################
 
 
@@ -84,7 +85,7 @@ while true; do
 		do
 			min_fan_array[$i]=0
 			prev_fan_array[$i]=0
-			prev_set_array[$i]=-100
+			prev_set_array[$i]=1000
 			pprev_set_array[$i]=-1000
 		done
 
@@ -151,6 +152,8 @@ get_fan_speed () {
 	local gpu_bus_id=$4
 	local i=$5
 	local min_fan=$7
+	local prev_fan=$8
+	local pprev_fan=$9
 	#checking var is natural number
 	if [[ -z "${cur_temp##*[!0-9]*}" || -z "${cur_fan_speed##*[!0-9]*}" ]]; then
 		if [[ $REBOOT_ON_ERROR == 1 ]]; then
@@ -182,6 +185,15 @@ get_fan_speed () {
 		
 	fi
 	
+	if [[ $6 == "Nvidia" && ! -z $prev_fan ]]; then
+			if [[ $cur_fan_speed -eq 0 && $target_fan_speed -gt 0 ]]; then
+				target_fan_speed=$(( $prev_fan + 5 ))
+				[[ $target_fan_speed -lt $AUTO_SPEED ]] && target_fan_speed=$AUTO_SPEED
+			fi
+	fi
+	
+	
+	
 	if [[ $cur_temp -ge $VERY_HIGH_TEMP && $cur_fan_speed -lt $(( $VERY_HIGH_FAN - 2 ))  ]]; then
 		target_fan_speed=$VERY_HIGH_FAN
 #		echo_temp="${RED}$cur_temp°C${NOCOLOR}"
@@ -196,7 +208,18 @@ get_fan_speed () {
 		echo_temp="${CYAN}$cur_temp°C${NOCOLOR}"
 	fi
 
+	if [[ $6 == "Nvidia" && ! -z $prev_fan && ! -z $pprev_fan ]]; then
+		if [[ $cur_temp -le $HIGH_TEMP && $cur_temp -le $prev_temp ]]; then 
+				[[ $cur_fan_speed -gt $prev_fan ]] && target_fan_speed=$(( $target_fan_speed - 1 ))
+				[[ $target_fan_speed -lt 0 ]] && target_fan_speed=0
+				[[ $cur_fan_speed -gt $prev_fan && $cur_fan_speed -gt $pprev_fan ]] && target_fan_speed=0
+				#[[ $gpu_fan_speed -eq 0 || ${prev_set_array[index]} -eq 0 ]] && target_fan_speed=0
+		fi
+	fi
+
 	#set MIN_FAN & MAX_FAN speed if needed
+	[[ $MIN_FAN -eq 1 ]] && MIN_FAN=0
+	
 	[[ $target_fan_speed -lt $MIN_FAN && $cur_fan_speed -ne 0 ]] && target_fan_speed=$MIN_FAN
 	if [[ ! -z $min_fan ]]; then
 		[[ $target_fan_speed -lt $min_fan ]] && target_fan_speed=$min_fan
@@ -206,8 +229,8 @@ get_fan_speed () {
 	[[ $target_fan_speed -gt $MAX_FAN ]] && target_fan_speed=$MAX_FAN
 		#Just to make sure
 	[[ $target_fan_speed -gt 100 ]] && target_fan_speed=100
-
-
+	
+	
 	#if GPU disabled
 	[[ -z $cur_temp ]] && target_fan_speed=$MAX_FAN
 
@@ -348,21 +371,24 @@ nvidia_auto_fan_control () {
 		[[ -z $fan_count || $fan_count == "null" ]] && fan_count=1
 		#event_by_temperature $gpu_temperature
 		#echo "get_fan_speed \"$gpu_temperature\" \"$gpu_temperature_previous\" \"$gpu_fan_speed\" \"$card_bus_id\" $gpu_idx $brand"
-		get_fan_speed "$gpu_temperature" "$gpu_temperature_previous" "$gpu_fan_speed" "$card_bus_id" $index $brand ${min_fan_array[index]}
+		get_fan_speed "$gpu_temperature" "$gpu_temperature_previous" "$gpu_fan_speed" "$card_bus_id" $index $brand ${min_fan_array[index]} ${prev_set_array[index]} ${pprev_set_array[index]}
 		
 		[[ $gpu_fan_speed -gt ${min_fan_array[index]}  || $gpu_fan_speed -eq 0 ]] && min_fan_array[index]=0
-		if [[ $gpu_temperature -le $HIGH_TEMP && $gpu_temperature -le $gpu_temperature_previous ]]; then 
-				[[ $gpu_fan_speed -gt ${prev_set_array[index]} ]] && target_fan_speed=$(( $target_fan_speed - 5 ))
-				[[ $target_fan_speed -lt 0 ]] && target_fan_speed=0
-				[[ $gpu_fan_speed -eq 0 || prev_fan_array[index] -eq 0 ]] && target_fan_speed=0
-		fi
+		
+		
 		#not set fan_speed if not changed
+		#echo "GPU"$gpu_idx $gpu_fan_speed $target_fan_speed ${prev_set_array[index]} ${pprev_set_array[index]}
 		if [[ -n $target_fan_speed && $target_fan_speed -ne $gpu_fan_speed ]]; then
-			args+=" -a [gpu:$gpu_idx]/GPUFanControlState=1"
-			for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
-				args+=" -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
-			done
-			[[ $gpu_fan_speed -gt $target_fan_speed && $target_fan_speed -eq ${prev_set_array[index]} && $target_fan_speed -eq ${pprev_set_array[index]} ]] && min_fan_array[index]=$(( $gpu_fan_speed ))
+			#if [[ $target_fan_speed -lt $gpu_fan_speed && $target_fan_speed -ne 0 && $target_fan_speed -lt $AUTO_SPEED ]]; then
+			#	args+=" -a [gpu:$gpu_idx]/GPUFanControlState=0"
+			#	echo "GPU"$gpu_idx "set to auto"
+			#else
+				args+=" -a [gpu:$gpu_idx]/GPUFanControlState=1"
+				for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
+					args+=" -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
+				done
+				[[ $gpu_fan_speed -gt $target_fan_speed && $target_fan_speed -eq ${prev_set_array[index]} && $target_fan_speed -eq ${pprev_set_array[index]} ]] && min_fan_array[index]=$(( $gpu_fan_speed ))
+			#fi
 			pprev_set_array[index]=${prev_set_array[index]}
 			prev_set_array[index]=$target_fan_speed
 			
@@ -435,6 +461,7 @@ auto_fan_control() {
 		REBOOT_ON_ERROR=
 		VERY_HIGH_TEMP=
 		VERY_HIGH_FAN=
+		AUTO_SPEED=
 		READ_COUNT=0
 		
 		[[ -f $AUTOFAN_CONF ]] && source $AUTOFAN_CONF
@@ -452,7 +479,8 @@ auto_fan_control() {
 		[[ -z $VERY_HIGH_TEMP ]] && VERY_HIGH_TEMP=$(( $TARGET_TEMP + 6 ))
 		[[ $VERY_HIGH_TEMP -gt $CRITICAL_TEMP ]] && VERY_HIGH_TEMP=$CRITICAL_TEMP
 		[[ -z $VERY_HIGH_FAN ]] && VERY_HIGH_FAN=$(( $MAX_FAN - 10 ))
-		
+		[[ -z $AUTO_SPEED ]] && AUTO_SPEED=$DEF_AUTO_SPEED
+				
 		SLEEP_TIME=$DEF_SLEEP_TIME
 		
 		
