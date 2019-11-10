@@ -70,12 +70,12 @@ for bdir in $busids_dirs; do
 	corev=`wolfamdctrl -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
 	[[ -z $corev ]] && corev=`vegatool -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
 
-	gtemp=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/temp1_input`
-	jtemp=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/temp2_input`
-	mtemp=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/temp3_input`
+	gtemp=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/temp1_input 2>/dev/null`
+	jtemp=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/temp2_input 2>/dev/null`
+	mtemp=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/temp3_input 2>/dev/null`
 	[[ ! -z $jtemp ]] && [[ ! -z $mtemp ]] &&
-	echo -e  "  Temps :  GPU: $(($gtemp/1000))C   HotSpot: $(($jtemp/1000))C   Mem: $(($mtemp/1000))C "
-		
+		echo -e  "  Temps :  GPU: $(($gtemp/1000))C   HotSpot: $(($jtemp/1000))C   Mem: $(($mtemp/1000))C "
+
 
 	pwr='n/a'
 	[[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]] &&
