@@ -4,8 +4,25 @@
 # Functions
 #######################
 
-get_hs(){
+get_hs_old(){
+  #2019-03-17 01:10:40 Gpu0 (Ellesmere): 744.7 | Gpu1 (Ellesmere): 743.4 | Gpu2 (Ellesmere): 746.8 | Gpu3 (Ellesmere): 666.0 | Gpu4 (Ellesmere): 633.1 |  (MH/s)
   echo \$$2 | tr "|" "\n" | grep Gpu$1 | awk 'NF>1{print $NF}'
+}
+
+get_cards_hashes_old(){
+  local str=
+  local mhs=0
+  hs=(0)
+  for (( i=0; i < ${gpu_count}; i++ )); do
+    str=`cat $log_name | tail -n 50 | grep "Gpu$i " | tail -n 1`
+    mhs=`get_hs_old $i "$str"`
+    hs[$i]=`echo $mhs | awk '{ printf("%.d",$1*1000) }'`
+  done
+}
+
+get_hs(){
+  # | GPU0: 444.01 MH/s, GPU1: 450.86 MH/s,
+  echo \$$2 | tr "|" "\n" | tr "," "\n" | grep "GPU$1:" | cut -d " " -f 3
 }
 
 get_cards_hashes(){
@@ -14,8 +31,7 @@ get_cards_hashes(){
   hs=(0)
   for (( i=0; i < ${gpu_count}; i++ )); do
     let "pos= 5 + ($i * 3)"
-    #2019-03-17 01:10:40 Gpu0 (Ellesmere): 744.7 | Gpu1 (Ellesmere): 743.4 | Gpu2 (Ellesmere): 746.8 | Gpu3 (Ellesmere): 666.0 | Gpu4 (Ellesmere): 633.1 |  (MH/s)
-    str=`cat $log_name | tail -n 50 | grep "Gpu$i " | tail -n 1`
+    str=`cat $log_name | tail -n 50 | grep "GPU$i:" | tail -n 1`
     mhs=`get_hs $i "$str"`
     hs[$i]=`echo $mhs | awk '{ printf("%.d",$1*1000) }'`
   done
@@ -27,9 +43,14 @@ get_miner_uptime(){
   echo $a
 }
 
-get_total_hashes(){
+get_total_hashes_old(){
   #2019-03-17 01:18:41 [STATUS] Total HashRate: 3.53 GH/s - Uptime 00:26:18. Ver 4.0.100L
   cat ${log_name} | tail -n 50 | grep "Total HashRate:" | tail -n 1 | cut -d " " -f6 | awk '{printf "%.f",$1*1000000}'
+}
+
+get_total_hashes(){
+  # > Total 0.89 GH/s
+  cat ${log_name} | tail -n 50 | grep " > Total" | tail -n 1 | cut -d " " -f4 | awk '{printf "%.f",$1*1000000}'
 }
 
 get_miner_ver(){
@@ -56,7 +77,6 @@ gpu_count=`expr $GPU_COUNT_NVIDIA + $GPU_COUNT_AMD`
 
 log_name="$MINER_LOG_BASENAME.log"
 conf_name="/run/hive/miners/eggminergpu/miner.cfg"
-echo $conf_name
 
 diffTime=$(get_log_time_diff)
 maxDelay=250
@@ -64,7 +84,18 @@ maxDelay=250
 # If log is fresh the calc miner stats or set to null if not
 # if [ "$diffTime" -lt "$maxDelay" ]; then
 if [ "$diffTime" -lt "$maxDelay" ]; then
-  get_cards_hashes
+  local ver=`miner_ver`
+  dpkg --compare-versions "$ver" "lt" "4.0.200"
+  if [ $? -eq "0" ]; then
+    get_cards_hashes_old
+    #total hashrate in khs
+    khs=`get_total_hashes_old`
+  else
+    get_cards_hashes
+    #total hashrate in khs
+    khs=`get_total_hashes`
+  fi
+
   local hs_units='khs'
 
   local uptime=$(get_miner_uptime)
@@ -92,10 +123,8 @@ if [ "$diffTime" -lt "$maxDelay" ]; then
             --arg uptime "$uptime" \
             --arg ac "$ac" --arg rj "$rj" \
             --arg algo "$algo" \
-            --arg ver `get_miner_ver` \
+            --arg ver "$ver" \
             '{$hs, $hs_units, $temp, $fan, $uptime, ar: [$ac, $rj], $algo, $ver}')
-  #total hashrate in khs
-  khs=$(get_total_hashes)
 else
   stats=""
   khs=0
