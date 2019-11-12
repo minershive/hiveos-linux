@@ -70,6 +70,28 @@ function miner_config_gen() {
 		conf=$(jq -s '.[0] * .[1]' <<< "$conf $opencl")
 	fi
 
+	if [[ $XMRIG_NEW_CUDA -eq 1 ]]; then
+		#merge GPU settings into main config
+		if [[ -z $XMRIG_NEW_CUDA_CONFIG || $XMRIG_NEW_CUDA_CONFIG == '[]' || $XMRIG_NEW_CUDA_CONFIG == 'null' ]]; then
+			echo -e "${YELLOW}XMRIG_NEW_CUDA_CONFIG is empty, useing autoconfig${NOCOLOR}"
+			local cuda='{"cuda": {"loader": "'$MINER_DIR/$MINER_FORK/$MINER_VER/libxmrig-cuda.so'"}}'
+			cuda=`jq --null-input --argjson cuda "$cuda" '$cuda'`
+			conf=$(jq -s '.[0] * .[1]' <<< "$conf $cuda")
+		else
+			local cuda="{$XMRIG_NEW_CUDA_CONFIG}"
+			cuda=`jq --null-input --argjson cuda "$cuda" '$cuda'`
+			conf=$(jq -s '.[0] * .[1]' <<< "$conf $cuda")
+			local cuda='{"cuda": {"loader": "'$MINER_DIR/$MINER_FORK/$MINER_VER/libxmrig-cuda.so'"}}'
+			cuda=`jq --null-input --argjson cuda "$cuda" '$cuda'`
+			conf=$(jq -s '.[0] * .[1]' <<< "$conf $cuda")
+		fi
+	else
+		echo -e "${YELLOW}CUDA is disabled${NOCOLOR}"
+		local cuda='{"cuda": {"enabled": false}}'
+		cuda=`jq --null-input --argjson cuda "$cuda" '$cuda'`
+		conf=$(jq -s '.[0] * .[1]' <<< "$conf $cuda")
+	fi
+
 	#merge pools into main config
 	local pools='[]'
 	[[ $XMRIG_NEW_TLS -eq 1 ]] && local tls="true" || tls="false"
@@ -90,7 +112,7 @@ function miner_config_gen() {
 	for url in $XMRIG_NEW_URL; do
 		[[ ${nicehash,,} = "true" || ${url,,} = *"nicehash"* ]] && c_nicehash='true' || c_nicehash='false'
 		pool=$(cat <<EOF
-				{"algo": "$XMRIG_NEW_ALGO", "coin": null, "url": "$url", "user": "$XMRIG_NEW_TEMPLATE", 
+				{"algo": "$XMRIG_NEW_ALGO", "coin": null, "url": "$url", "user": "$XMRIG_NEW_TEMPLATE",
 				"pass": "$XMRIG_NEW_PASS", "rig_id": "$XMRIG_NEW_WORKER", "nicehash": $c_nicehash,
 				"keepalive": true, "enabled": true, "tls": $tls, "tls-fingerprint": $tls_fp, "daemon": false,
 				"self-select": $self_select}
