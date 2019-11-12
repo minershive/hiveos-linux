@@ -51,6 +51,7 @@ temperature_is_unreal=0
 #unparsable data
 error_in_temp_readings=0
 
+
 ###
 # Log write
 function echo2 {
@@ -81,10 +82,11 @@ while true; do
 		declare -a prev_fan_array
 		declare -a prev_set_array
 		declare -a pprev_set_array
+		
 		for (( i=0; i < $all_card_number; i++ ))
 		do
 			min_fan_array[$i]=0
-			prev_fan_array[$i]=0
+			prev_fan_array[$i]=100
 			prev_set_array[$i]=1000
 			pprev_set_array[$i]=-1000
 		done
@@ -212,11 +214,12 @@ get_fan_speed () {
 		if [[ $cur_temp -le $HIGH_TEMP && $cur_temp -le $prev_temp ]]; then 
 				[[ $cur_fan_speed -gt $prev_fan ]] && target_fan_speed=$(( $target_fan_speed - 1 ))
 				[[ $target_fan_speed -lt 0 ]] && target_fan_speed=0
-				[[ $cur_fan_speed -gt $prev_fan && $cur_fan_speed -gt $pprev_fan ]] && target_fan_speed=0
+				
+				[[ $cur_fan_speed -gt $prev_fan && $cur_fan_speed -gt $pprev_fan && $cur_fan_speed -lt $AUTO_SPEED ]] && target_fan_speed=0
 				#[[ $gpu_fan_speed -eq 0 || ${prev_set_array[index]} -eq 0 ]] && target_fan_speed=0
 		fi
 	fi
-	#echo $cur_fan_speed $prev_fan $pprev_fan
+	#echo "GPU "$i $cur_fan_speed $prev_fan $pprev_fan $NV_PREV_FAN
 	#set MIN_FAN & MAX_FAN speed if needed
 	[[ $MIN_FAN -eq 1 ]] && MIN_FAN=0
 	
@@ -229,7 +232,7 @@ get_fan_speed () {
 	[[ $target_fan_speed -gt $MAX_FAN ]] && target_fan_speed=$MAX_FAN
 		#Just to make sure
 	[[ $target_fan_speed -gt 100 ]] && target_fan_speed=100
-	
+	[[ $6 == "Nvidia" && $target_fan_speed -gt 99 ]] && target_fan_speed=99
 	
 	#if GPU disabled
 	[[ -z $cur_temp ]] && target_fan_speed=$MAX_FAN
@@ -398,6 +401,7 @@ nvidia_auto_fan_control () {
 			
 		fi
 		#echo "gpu $gpu_idx, fan $fan_idx, count $fan_count, index $index"
+		
 		gpu_idx=$(( $gpu_idx+1 ))
 		fan_idx=$(( $fan_idx+$fan_count ))
 		prev_fan_array[index]=$gpu_fan_speed
