@@ -27,5 +27,10 @@ function miner_config_gen() {
   conf="-server $pool -wallet $SMINE_TEMPLATE"
   [[ ! -z $SMINE_USER_CONFIG ]] && conf+=" $SMINE_USER_CONFIG"
 
+  dpkg --compare-versions `miner_ver` "ge" "0.4.0"
+  if [ $? -eq "0" ]; then
+    conf+=" -api 127.0.0.1:${MINER_API_PORT}"
+  fi
+
   echo $conf > $MINER_CONFIG
 }
