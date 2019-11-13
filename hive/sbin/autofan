@@ -390,11 +390,8 @@ nvidia_auto_fan_control () {
 				for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
 					args+=" -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
 				done
-				if [[ $MIN_FAN -gt 1 ]]; then
-					[[ $gpu_fan_speed -gt $target_fan_speed && $target_fan_speed -eq ${prev_set_array[index]} && $target_fan_speed -eq ${pprev_set_array[index]} ]] && min_fan_array[index]=$(( $gpu_fan_speed ))
-				else
-					[[ $gpu_fan_speed -gt $target_fan_speed && $target_fan_speed -eq 0 && ${prev_set_array[index]} -eq 0 ]] && min_fan_array[index]=$(( $gpu_fan_speed ))
-				fi
+				[[ $gpu_fan_speed -gt $target_fan_speed && $target_fan_speed -eq ${prev_set_array[index]} && $target_fan_speed -eq ${pprev_set_array[index]} ]] && min_fan_array[index]=$(( $gpu_fan_speed ))
+				
 			#fi
 			pprev_set_array[index]=${prev_set_array[index]}
 			prev_set_array[index]=$target_fan_speed
