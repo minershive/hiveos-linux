@@ -14,10 +14,10 @@ fi
 
 HIVE_URL="$HIVE_HOST_URL/worker/api"
 LOG="/var/log/hive-agent.log"
-echo $#
+#echo $#
 if [[ $# < 2 ]]; then
-	echo "Usage: $0 success|danger|warning|info|default \"message\" [payload] [-i|--id=msgid]"
-	echo "Aliases: ok|error|err|warn|default|file"
+	echo "Usage: $0 success|danger|warning|info|file \"message\" [payload] [-i|--id=msgid] [-f|--file=path/name]"
+	echo "Aliases: ok|error|err|warn|default"
 	echo "payload is read from stdin"
 	exit 1
 fi
@@ -29,7 +29,6 @@ MSGCOLOR=$CYAN
 [[ $type == "error" || $type == "err" ]] && type="danger" && MSGCOLOR=$RED
 [[ $type == "warn" ]] && type="warning" && MSGCOLOR=$YELLOW
 [[ $type == "ok" ]] && type="success" && MSGCOLOR=$GREEN
-
 
 
 #sending blink command to octofan in case of errors
@@ -66,8 +65,17 @@ for i in "$@"; do
 			shift
 		;;
 		payload)
-			echo "With payload"
+			#echo "With payload"
 			payload=$(cat)
+			payload_json=`echo -n "$payload" | jq -R -s '{"params": {"payload": .}}'`
+			request=`echo "$request $payload_json" | jq -sc '.[0] * .[1]'`
+			shift # past argument with no value
+		;;
+		-f=*|--file=*)
+			[[ $type != "file" ]] && echo "Type \"file\" must be used" && exit 2
+			file="${i#*=}"
+			[[ ! -e $file ]] && echo "File not found: \"$file\"" && exit 1
+			payload=`cat "$file" | gzip -9 --stdout | base64 -w 0`
 			payload_json=`echo -n "$payload" | jq -R -s '{"params": {"payload": .}}'`
 			request=`echo "$request $payload_json" | jq -sc '.[0] * .[1]'`
 			shift # past argument with no value
@@ -80,13 +88,13 @@ done
 
 
 #date
-echo -e "> Sending \"$type\": ${MSGCOLOR}$data${NOCOLOR}"
-echo $request
+echo -e "> Sending ${payload:+with payload }\"$type\": ${MSGCOLOR}$data${NOCOLOR}"
+#echo $request
+echo "$request" | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass | if .params.payload then .params.payload |= "[\(.|length) bytes]" else . end'
 #Show output and exit for debug
 #echo $request | jq . && exit
 
-[ $? -ne 0 ] && echo "Error formatting JSON message" && exit 1
-
+#[ $? -ne 0 ] && echo "Error formatting JSON message" && exit 1
 
 echo "[`date`] > `echo $request | jq . -c`" >> $LOG
 #echo "[`date`] > $request" >> $LOG
