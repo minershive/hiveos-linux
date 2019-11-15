@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-
-stats_raw=`curl -s "http://localhost:${MINER_API_PORT}/api"`
+stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://localhost:${MINER_API_PORT}/api`
 if [[ $? -ne 0  || -z $stats_raw ]]; then
   echo -e "${YELLOW}Failed to read $miner stats from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
