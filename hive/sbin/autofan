@@ -181,19 +181,11 @@ get_fan_speed () {
 	if [[ ! -z $prev_temp && $prev_temp != 0 ]]; then
 			chg_temp=$(( $cur_temp - $prev_temp ))
 			[[ $chg_temp -ge 0 && $cur_temp -gt $HIGH_TEMP  ]] && target_fan_speed=$(( $cur_fan_speed + 2 ))
-			[[ $chg_temp -gt 2 ]] && target_fan_speed=$(( $cur_fan_speed + $(( $(( $MAX_FAN - $cur_fan_speed )) / 3 )) ))
+			[[ $chg_temp -gt 2 ]] && target_fan_speed=$(( $cur_fan_speed + $(( $(( $MAX_FAN - $cur_fan_speed )) / 10 )) ))
 			[[ $chg_temp -le 0 && $cur_temp -lt $LOW_TEMP ]] && target_fan_speed=$(( $cur_fan_speed - 1 ))
-			[[ $chg_temp -lt -2 && $cur_temp -lt $LOW_TEMP ]] && target_fan_speed=$(( $cur_fan_speed - $(( $(( $cur_fan_speed - $MIN_FAN )) / 3 )) ))
+			[[ $chg_temp -lt -2 && $cur_temp -lt $LOW_TEMP ]] && target_fan_speed=$(( $cur_fan_speed - $(( $(( $cur_fan_speed - $MIN_FAN )) / 5 )) ))
 		
 	fi
-	
-	if [[ $6 == "Nvidia" && ! -z $prev_fan ]]; then
-			if [[ $cur_fan_speed -eq 0 && $target_fan_speed -gt 0 ]]; then
-				target_fan_speed=$(( $prev_fan + 5 ))
-				[[ $target_fan_speed -lt $AUTO_SPEED ]] && target_fan_speed=$AUTO_SPEED
-			fi
-	fi
-	
 	
 	
 	if [[ $cur_temp -ge $VERY_HIGH_TEMP && $cur_fan_speed -lt $(( $VERY_HIGH_FAN - 2 ))  ]]; then
@@ -219,11 +211,11 @@ get_fan_speed () {
 				#[[ $gpu_fan_speed -eq 0 || ${prev_set_array[index]} -eq 0 ]] && target_fan_speed=0
 		fi
 	fi
-	#echo "GPU "$i $cur_fan_speed $prev_fan $pprev_fan $NV_PREV_FAN
+	
 	#set MIN_FAN & MAX_FAN speed if needed
 	[[ $MIN_FAN -eq 1 ]] && MIN_FAN=0
 	
-	[[ $target_fan_speed -lt $MIN_FAN && $cur_fan_speed -ne 0 ]] && target_fan_speed=$MIN_FAN
+	[[ $target_fan_speed -lt $MIN_FAN ]] && target_fan_speed=$MIN_FAN
 	if [[ ! -z $min_fan ]]; then
 		[[ $target_fan_speed -lt $min_fan ]] && target_fan_speed=$min_fan
 	fi
@@ -232,7 +224,12 @@ get_fan_speed () {
 	[[ $target_fan_speed -gt $MAX_FAN ]] && target_fan_speed=$MAX_FAN
 		#Just to make sure
 	[[ $target_fan_speed -gt 100 ]] && target_fan_speed=100
-	[[ $6 == "Nvidia" && $target_fan_speed -gt 99 ]] && target_fan_speed=99
+	if [[ $6 == "Nvidia" ]]; then
+		[[ $target_fan_speed -gt 99 ]] && target_fan_speed=99
+		[[ $target_fan_speed -gt $cur_fan_speed && $target_fan_speed -lt $AUTO_SPEED ]] && target_fan_speed=$AUTO_SPEED
+	fi
+	
+	#echo "GPU "$i $cur_fan_speed $(( $cur_fan_speed + $(( $(( $MAX_FAN - $cur_fan_speed )) / 10 )) )) $min_fan $AUTO_SPEED
 	
 	#if GPU disabled
 	[[ -z $cur_temp ]] && target_fan_speed=$MAX_FAN
@@ -390,15 +387,13 @@ nvidia_auto_fan_control () {
 				for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
 					args+=" -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
 				done
-				[[ $gpu_fan_speed -gt $target_fan_speed && $target_fan_speed -eq ${prev_set_array[index]} && $target_fan_speed -eq ${pprev_set_array[index]} ]] && min_fan_array[index]=$(( $gpu_fan_speed ))
+				[[ $gpu_fan_speed -gt $target_fan_speed && $target_fan_speed -eq ${prev_set_array[index]} && $target_fan_speed -eq ${pprev_set_array[index]} ]] && min_fan_array[index]=$gpu_fan_speed
 				
 			#fi
-			pprev_set_array[index]=${prev_set_array[index]}
-			prev_set_array[index]=$target_fan_speed
-			
 		fi
 		#echo "gpu $gpu_idx, fan $fan_idx, count $fan_count, index $index"
-		
+		pprev_set_array[index]=${prev_set_array[index]}
+		prev_set_array[index]=$target_fan_speed
 		gpu_idx=$(( $gpu_idx+1 ))
 		fan_idx=$(( $fan_idx+$fan_count ))
 		prev_fan_array[index]=$gpu_fan_speed
