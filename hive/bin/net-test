@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-
-
 . colors
 
+[[ -e $RIG_CONF ]] && . $RIG_CONF
+
+API_HOSTS=("api.hiveos.farm" "paris.hiveos.farm" "amster.hiveos.farm" "helsinki.hiveos.farm" "msk.hiveos.farm")
+OTHER_DNS=("8.8.8.8" "1.1.1.1" "114.114.114.114")
 
 HEADER_COLOR=$YELLOW
 CASE_COLOR=$BCYAN
@@ -18,13 +20,33 @@ GOODTIME=1000
 
 unset GREP_OPTIONS
 
+CASE_WIDTH='%-64s'
+
+
 LOCAL_IP=`hostname -I | awk '{print $1}'`
 LOCAL_GW=`ip route | awk '/default/ { print $3 }'`
 
 #LOCAL_DNS=`nslookup server | grep Server | cut -d ":" -f 2 | sed -e 's/^[ \t]*//'`
-LOCAL_DNS=`cat /run/systemd/resolve/resolv.conf | grep -m1 ^nameserver | awk '{print $2}'`
+LOCAL_DNS=(`cat /run/systemd/resolve/resolv.conf | grep ^nameserver | awk '{print $2}'`)
 
-CASE_WIDTH='%-64s'
+
+function merge_all_dns {
+	ALL_DNS=()
+	local dns=("${LOCAL_DNS[@]}")
+	# merge all servers
+	dns+=("${OTHER_DNS[@]}")
+	
+	# remove duplicates, empty and localhost
+	for((i=0; i<${#dns[@]}; i++))
+	do
+		[[ ${dns[$i]} =~ ^127\.0\.0\.[0-9]+$ || ! ${dns[$i]} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] && continue;
+		for((x=0; x<$i; x++))
+		do
+			[[ ${ALL_DNS[$x]} == ${dns[$i]} ]] && break
+		done
+		[[ $x == $i ]] && ALL_DNS[$i]=${dns[$i]}
+	done
+}
 
 
 function PrintCase {
@@ -72,9 +94,9 @@ function Curl {
 
 	PrintCase "curl $1"
 	if [[ $checkApi != "api" ]]; then
-		response=`curl --insecure --connect-timeout 4 --max-time 10 --silent $IP -w "\n%{time_total}"` #> /dev/null 2>&1
+		response=`curl --insecure --connect-timeout 7 --max-time 15 --silent $IP -w "\n%{time_total}"` #> /dev/null 2>&1
 	else
-		response=`curl --insecure --connect-timeout 4 --max-time 10 --silent -w "\n%{time_total}"\
+		response=`curl --insecure --connect-timeout 7 --max-time 15 --silent -w "\n%{time_total}"\
 				-H "Content-Type: application/json" \
 				-X POST -d '{"method":"stats", "params": {"rig_id":"-1", "passwd": "1"}}' \
 				$IP/worker/api`
@@ -108,9 +130,10 @@ function NSLookup {
 	[ -z ${IP} ] && IP=$1
 
 	PrintCase "nslookup $1"
-	nslookup $IP > /dev/null 2>&1
+	#`nslookup $IP > /dev/null 2>&1`
+	res=(`dig -4 +noall +answer +retry=0 +time=15 $IP | grep -oP ".*\sA\s\K[^\s]+$"`)
 	LAST_RESULT=$?
-	[[ $LAST_RESULT == 0 ]] && echo -e $OK || echo -e $FAIL
+	[[ $LAST_RESULT == 0 ]] && echo -e "$OK   ${CYAN}${res[@]}$NOCOLOR" || echo -e $FAIL
 	return $LAST_RESULT
 }
 
@@ -129,10 +152,10 @@ function Connection {
 	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Please check your connection settings"$NOCOLOR
 
 	Curl "http://$1" $checkApi
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"HTTP connection failed. Please check Firewall rules or connection setup."$NOCOLOR
+	[ $? -ne 0 ] && echo -e $ERROR_COLOR"HTTP connection failed. Please check Firewall rules or connection setup"$NOCOLOR
 
 	Curl "https://$1" $checkApi
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"HTTPS (SSL) connection failed. Please check Firewall rules or connection setup."$NOCOLOR
+	[ $? -ne 0 ] && echo -e $ERROR_COLOR"HTTPS (SSL) connection failed. Please check Firewall rules or connection setup"$NOCOLOR
 
 	return $LAST_RESULT
 }
@@ -140,49 +163,45 @@ function Connection {
 
 # connections test cases
 function Connections {
-	echo -e "${YELLOW}Checking network connection:${NOCOLOR}"
+	echo -e "${YELLOW}> Checking network connection:${NOCOLOR}"
 	Ping "$LOCAL_GW (Gateway)" $LOCAL_GW
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping router. Please check your router and physical connection."$NOCOLOR
+	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping router. Please check your router and physical connection"$NOCOLOR
 
-	Ping "$LOCAL_DNS (DNS)" $LOCAL_DNS
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Please check your DNS server $LOCAL_DNS"$NOCOLOR
+	for host in "${ALL_DNS[@]}"
+	do
+		[[ $host == $LOCAL_GW ]] && continue;
+		Ping "$host (DNS)" "$host"
+		[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping DNS. Please check your internet connection"$NOCOLOR
+	done
 
-	Ping "1.1.1.1 (Cloudflare)" "1.1.1.1"
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping Cloudflare DNS. Please check your internet connection"$NOCOLOR
-
-
-	API_HOST="api.hiveos.farm"
-	[[ -e $RIG_CONF ]] && . $RIG_CONF
-	[[ ! -z $HIVE_HOST_URL ]] && API_HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
+	[[ ! -z $HIVE_HOST_URL ]] && API_HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'` || API_HOST=
+	[[ -z $API_HOST ]] && echo -e $ERROR_COLOR"No API server defined in rig.conf"$NOCOLOR && exit 1
 
 	if (echo "$API_HOST" | grep -q "hiveos.farm"); then
+		echo
 		Connection "hiveos.farm"
-		echo
-		echo -e "${YELLOW}Checking connection to worker API servers:${NOCOLOR}"
-		echo
-		echo -e "${WHITE}>>> api.hiveos.farm${NOCOLOR}"
-		Connection "api.hiveos.farm" api
-		Curl "https://api.hiveos.farm:8443" $2
-		[[ $? -ne 0 ]] && echo -e "${ERROR_COLOR}HTTPS (SSL) on port 8443 connection failed. Please check Firewall rules or connection setup.${NOCOLOR}"
-		echo
+	fi
 
-		echo -e "${WHITE}>>> paris.hiveos.farm${NOCOLOR}"
-		Connection "paris.hiveos.farm" api
-		echo
+	echo
+	echo -e "${YELLOW}> Checking connection to worker API servers:${NOCOLOR}"
+	echo
 
-		echo -e "${WHITE}>>> amster.hiveos.farm${NOCOLOR}"
-		Connection "amster.hiveos.farm" api
-		echo
+	if (echo "$API_HOST" | grep -q "hiveos.farm"); then
+		[[ ! " ${API_HOSTS[@]} " =~ " ${API_HOST} " ]] &&
+			API_HOSTS+=($API_HOST)
 
-		echo -e "${WHITE}>>> helsinki.hiveos.farm${NOCOLOR}"
-		Connection "helsinki.hiveos.farm" api
-		echo
-
-		echo -e "${WHITE}>>> msk.hiveos.farm${NOCOLOR}"
-		Connection "msk.hiveos.farm" api
+		for host in "${API_HOSTS[@]}"
+		do
+			[[ $host == $API_HOST ]] && echo -e "${WHITE}>>> $host (CURRENT)${NOCOLOR}" || echo -e "${WHITE}>>> $host${NOCOLOR}"
+			Connection "$host" api
+			if [[ $host == "api.hiveos.farm" ]]; then
+				Curl "https://api.hiveos.farm:8443"
+				[[ $? -ne 0 ]] && echo -e "${ERROR_COLOR}HTTPS (SSL) on port 8443 connection failed. Please check Firewall rules or connection setup.${NOCOLOR}"
+			fi
+			echo
+		done
 	else
-		echo
-		echo -e "${WHITE}>>> $API_HOST${NOCOLOR}"
+		echo -e "${WHITE}>>> $API_HOST (CURRENT)${NOCOLOR}"
 		Connection "$API_HOST" api
 	fi
 }
@@ -216,13 +235,15 @@ function Connections {
 # header
 #echo -e "$HEADER_COLOR=== Hive Network Test ===$NOCOLOR"
 
-echo -e "${YELLOW}Local Network Configuration:${NOCOLOR}"
+echo -e "${YELLOW}> Local Network Configuration:${NOCOLOR}"
 
-echo -e "IP:        ${PURPLE}$LOCAL_IP${NOCOLOR}"
-echo -e "Gateway:   $LOCAL_GW"
-echo -e "DNS:       $LOCAL_DNS"
+#echo -e "IP:        ${PURPLE}$LOCAL_IP${NOCOLOR}"
+#echo -e "Gateway:   $LOCAL_GW"
+#echo -e "DNS:       ${LOCAL_DNS[@]}"
+networkctl status
 echo
 
+merge_all_dns
 
 # test connections to hive hosts
 Connections
