@@ -4,8 +4,8 @@
 function stop-everything() {
 	miner stop
 	wd stop
-	screen -S autofan -X quit
-	screen -S agent -X quit
+	autofan stop
+	agent-screen stop
 	systemctl stop hivex
 }
 

@@ -13,7 +13,7 @@ do
 	autoswitch stop > /dev/null 2>&1
 	miner stop > /dev/null 2>&1
 	wd stop > /dev/null 2>&1
-	screen -S autofan -X quit > /dev/null 2>&1
+	autofan stop > /dev/null 2>&1
 	systemctl stop hivex > /dev/null 2>&1
 	killall -9 xinit > /dev/null 2>&1
 	rmmod -f nvidia_uvm > /dev/null 2>&1

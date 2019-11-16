@@ -25,7 +25,7 @@ function do_nvstart () {
 	sleep 10
 	[[ $nv_wd -ne 0 ]] && wd start > /dev/null 2>&1
 	[[ $nv_mn -ne 0 ]] && miner start > /dev/null 2>&1
-	[[ $nv_af -ne 0 ]] && autofan > /dev/null 2>&1
+	[[ $nv_af -ne 0 ]] && autofan start> /dev/null 2>&1
 	[[ $nv_as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 }
 
@@ -305,7 +305,7 @@ function do_command () {
 			local wd=$(wd status | grep -c running)
 			local af=$(screen -ls | grep -c autofan)
 			[[ $wd -ne 0 ]] && wd stop > /dev/null 2>&1
-			[[ $af -ne 0 ]] && screen -S autofan -X quit > /dev/null 2>&1
+			[[ $af -ne 0 ]] && autofan stop > /dev/null 2>&1
 
 			# Batch mode
 			if [ $(echo $body | jq --raw-output '.batch != null') == 'true' ]; then
@@ -400,7 +400,7 @@ function do_command () {
 
 			# restart watchdog and autofan
 			[[ $wd -ne 0 ]] && wd start > /dev/null 2>&1
-			[[ $af -ne 0 ]] && autofan > /dev/null 2>&1
+			[[ $af -ne 0 ]] && autofan start> /dev/null 2>&1
 		;;
 
 		nvidia_download)

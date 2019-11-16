@@ -274,7 +274,7 @@ fi
 
 
 echo2 "> Starting agent screen"
-agent-screen dontattach
+agent-screen start
 
 
 #remove previous log file for Nvidia OC

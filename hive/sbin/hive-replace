@@ -249,11 +249,11 @@ function prepare {
 		####################
 		#There must be a watchdog stop
 		##################
-		
+
+		autoswitch stop > /dev/null 2>&1
 		miner stop > /dev/null 2>&1
 		wd stop > /dev/null 2>&1
-		autoswitch stop > /dev/null 2>&1
-		screen -S autofan -X quit > /dev/null 2>&1
+		autofan stop > /dev/null 2>&1
 		systemctl stop hivex > /dev/null 2>&1
 		[[ ! -z `pidof xinit` ]] && kill -9 `pidof xinit` > /dev/null 2>&1
 	fi

@@ -203,7 +203,7 @@ if [[ "$DEBUG" != "1" ]]; then
 	wd stop
 
 	echo -e "> Stopping autofan"
-	screen -S autofan -X quit
+	autofan stop
 fi 
 
 echo -e "> Stopping Fans"
@@ -228,7 +228,8 @@ if [[ "$DEBUG" != "1" ]]; then
 	[[ ! -z ${NVIDIA_BUSID[*]} ]] && nvidia-oc 1>/dev/null
 	[[ ! -z ${AMD_BUSID[*]} ]] && amd-oc 1>/dev/null
 
-	autofan
+	echo -e "> Starting autofan"
+	autofan start
 
 	echo -e "> Starting hashrate watchdog"
 	wd start
