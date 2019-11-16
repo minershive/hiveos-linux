@@ -121,7 +121,7 @@ function get {
 	echo -e "\n${CYAN}> Downloading image file${NOCOLOR}"
 	if [[ "$url" == *http* ||  "$url" == *ftp* ]]; then
 		echo ""
-		wget -t 5 --show-progress $url
+		wget -t 0 -T 20 --show-progress $url
 		[[ $? -ne 0 ]] && echo -e "${RED}Download Hive OS image failed. Check url${NOCOLOR}" && return 1
 	else
 		[[ ! -f $url ]] && echo -e "${RED}Hive OS image not found. Check path${NOCOLOR}" && return 1
