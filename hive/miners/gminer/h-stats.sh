@@ -4,7 +4,7 @@ stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '
 if [[ $? -ne 0  || -z $stats_raw ]]; then
   echo -e "${YELLOW}Failed to read $miner stats_raw from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
-  khs=`echo $stats_raw | jq -r '.devices[].speed' | awk '{s+=$1} END {print s/1000}'` #sum up and convert to khs
+  khs=`echo $stats_raw | jq -r '.devices[].speed' | awk '{s+=$1} END {printf("%.4f",s/1000)}'` #sum up and convert to khs
   if [ $GMINER_ALGO == "150_5" ]; then
     local ac=$(jq -r '.total_accepted_shares' <<< "$stats_raw")
     local rj=$(jq -r '.total_rejected_shares' <<< "$stats_raw")
@@ -12,28 +12,31 @@ else
     local ac=$(jq '[.devices[].accepted_shares] | add' <<< "$stats_raw")
     local rj=$(jq '[.devices[].rejected_shares] | add' <<< "$stats_raw")
   fi
-
+  # set -x
   #All fans speed array
   local fan=$(jq -r ".fan | .[]" <<< $gpu_stats)
-
   #All temp array
   local temp=$(jq -r ".temp | .[]" <<< $gpu_stats)
 
-  #gminer's busid array
-  local bus_id_array=$(jq -r '[.devices[].bus_id[5:7]] | .[]' <<< "$stats_raw")
-  local bus_numbers=$(echo "$bus_id_array" | awk '{printf("%d\n", "0x"$1)}' | jq -sc .)
   #All busid array
   local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
-
   #Formating arrays
-#  bus_id_array=`sed 's/\n/ /' <<< $bus_id_array`
-#  fan=`sed 's/\n/ /' <<< $fan`
-  bus_id_array=`tr '\n' ' ' <<< $bus_id_array`
+  
+  #gminer's busid array
+  local bus_id_array=(`jq -r '.devices[].bus_id[5:7]' <<< "$stats_raw"`)
+  local bus_numbers=()
+  local idx=0
+  for gpu in ${bus_id_array[@]}; do
+     bus_numbers[idx]=$((16#$gpu))
+     idx=$((idx+1))
+  done
+
   fan=`tr '\n' ' ' <<< $fan`
   temp=`tr '\n' ' ' <<< $temp`
-  IFS=' ' read -r -a bus_id_array <<< "$bus_id_array"
+  #IFS=' ' read -r -a bus_id_array <<< "$bus_id_array"
   IFS=' ' read -r -a fan <<< "$fan"
   IFS=' ' read -r -a temp <<< "$temp"
+  
   #busid equality
   local fans_array=
   local temp_array=
@@ -57,9 +60,9 @@ else
         --argjson temp "`echo "${temp_array[@]}" | jq -s . | jq -c .`" \
         --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
         --arg ac "$ac" --arg rj "$rj" \
-        --argjson bus_numbers "$bus_numbers" --arg algo "$GMINER_ALGO"  \
+        --argjson bus_numbers "`echo "${bus_numbers[@]}" | jq -sc .`" \
+        --arg algo "$GMINER_ALGO"  \
         --arg ver `miner_ver` \
-        '{hs: [.devices[].speed], hs_units: "hs", $temp, $fan,
-        uptime: .uptime, ar: [$ac, $rj], $bus_numbers, $algo, $ver}' <<< "$stats_raw")
+        '{hs: [.devices[].speed], hs_units: "hs", $temp, $fan, uptime: .uptime, ar: [$ac, $rj], $bus_numbers, $algo, $ver}' <<< "$stats_raw")
 fi
 
