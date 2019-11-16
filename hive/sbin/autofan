@@ -611,6 +611,13 @@ function usage() {
 }
 
 case $1 in
+	log)
+		log=/tmp/autofan.log
+		[[ -f $log ]] && rm $log
+		screen -S autofan -X hardcopy $log &&
+			#iconv -f ISO-8859-1 -t UTF-8 $log # needed to convert some symbols
+			sed "s/\xB0/°/g; s/\x91/↑/g; s/\x93/↓/g" $log # needed to convert some symbols
+	;;
 	run)
 		#check running
 #		process_count=`ps aux | grep "autofan" | grep -v grep | grep -v $$ | wc -l`
@@ -634,7 +641,6 @@ case $1 in
 		start
 	;;
 	*)
-	
 		screen -x -S autofan
 		[[ $? != 0 ]] && usage
 	;;
