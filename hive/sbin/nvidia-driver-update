@@ -311,21 +311,17 @@ function install_driver() { # @url or @file
 
 	local exitcode=
 
-	for i in {1..2}; do
-		nvstop
-		exitcode=$?
-		[[ $exitcode -ne 0 ]] && break
+	nvstop
+	exitcode=$?
+	if [[ $exitcode -eq 0 ]]; then
 		echo -e ""
 		echo -e "${CYAN}> Installing driver. ${WHITE}PLEASE WAIT!${NOCOLOR}"
 		${DRVPATH}$basename --accept-license --no-questions --ui=none --dkms --no-opengl-files #--install-libglvnd #--tmpdir=/hive-drivers-pack
 		exitcode=$?
-		[[ $exitcode -eq 0 ]] && echo -e "${GREEN}> Done${NOCOLOR}" && break
-		# code 2 is integrity check, do not try again
-		[[ $exitcode -eq 2 ]] && break
-		# need more info 
-		#[[ $exitcode -eq 1 ]] && break
-		[[ $i -ne 2 ]] && echo -e "${YELLOW}> Failed ($exitcode). Trying again${NOCOLOR}"
-	done
+		[[ $exitcode -eq 0 ]] &&
+			echo -e "${GREEN}> Done${NOCOLOR}" ||
+			echo -e "${YELLOW}> Failed ($exitcode)${NOCOLOR}"
+	fi
 
 	install_nvs || exitcode=$?
 
@@ -338,7 +334,7 @@ function install_driver() { # @url or @file
 
 	[[ $wd -ne 0 ]] && wd start
 	[[ $mn -ne 0 ]] && miner start
-	[[ $af -ne 0 ]] && autofan dontattach
+	[[ $af -ne 0 ]] && autofan start
 	[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 
 	[[ $exitcode -ne 0 ]] && echo -e "${RED}> Driver installation failed ($exitcode)${NOCOLOR}" && return 1
@@ -363,24 +359,19 @@ case $1 in
   nvidia-driver-update  -l | --list	list available driver versions
   nvidia-driver-update  -n | --nvs	reinstall nvidia-settings only
   nvidia-driver-update  -r | --remove	remove downloaded driver packages except currently installed
-  nvidia-driver-update  -h | --help	display help
-	"
-		exit 0
+  nvidia-driver-update  -h | --help	display help"
 	;;
 
 	-l|--list)
 		list_packages
-		exit $?
 	;;
 
 	-n|--nvs)
 		install_nvs 1
-		exit $?
 	;;
 
 	-r|--remove)
 		remove_packages
-		exit $?
 	;;
 
 	*)
@@ -389,6 +380,5 @@ case $1 in
 		#123.45
 		#url/path
 		install_driver $1
-		exit $?
 	;;
 esac
