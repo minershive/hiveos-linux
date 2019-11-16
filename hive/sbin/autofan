@@ -635,7 +635,7 @@ case $1 in
 		auto_fan_control
 	;;
 
-	start)
+	start|dontattach)
 		start
 	;;
 
