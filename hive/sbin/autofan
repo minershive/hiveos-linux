@@ -187,7 +187,7 @@ get_fan_speed () {
 		
 	fi
 	
-	
+#	echo "GPU"$i $chg_temp $cur_fan_speed $target_fan_speed
 	if [[ $cur_temp -ge $VERY_HIGH_TEMP && $cur_fan_speed -lt $(( $VERY_HIGH_FAN - 2 ))  ]]; then
 		target_fan_speed=$VERY_HIGH_FAN
 #		echo_temp="${RED}$cur_temp°C${NOCOLOR}"
@@ -204,7 +204,7 @@ get_fan_speed () {
 
 	if [[ $6 == "Nvidia" && ! -z $prev_fan && ! -z $pprev_fan ]]; then
 		if [[ $cur_temp -le $HIGH_TEMP && $cur_temp -le $prev_temp ]]; then 
-				[[ $cur_fan_speed -gt $prev_fan ]] && target_fan_speed=$(( $target_fan_speed - 1 ))
+				#[[ $cur_fan_speed -gt $prev_fan ]] && target_fan_speed=$(( $target_fan_speed - 1 ))
 				[[ $target_fan_speed -lt 0 ]] && target_fan_speed=0
 				
 				[[ $cur_fan_speed -gt $prev_fan && $cur_fan_speed -gt $pprev_fan && $cur_fan_speed -lt $AUTO_SPEED ]] && target_fan_speed=0
@@ -387,7 +387,7 @@ nvidia_auto_fan_control () {
 				for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
 					args+=" -a [fan:$i]/GPUTargetFanSpeed=$target_fan_speed"
 				done
-				[[ $gpu_fan_speed -gt $target_fan_speed && $target_fan_speed -eq ${prev_set_array[index]} && $target_fan_speed -eq ${pprev_set_array[index]} ]] && min_fan_array[index]=$gpu_fan_speed
+				[[ $gpu_fan_speed -gt $target_fan_speed && $target_fan_speed -eq ${prev_set_array[index]} && $target_fan_speed -eq ${pprev_set_array[index]} && $target_fan_speed -lt $(( $MAX_FAN - 10 )) ]] && min_fan_array[index]=$gpu_fan_speed
 				
 			#fi
 		fi
@@ -580,7 +580,35 @@ auto_fan_control() {
 	done
 }
 
+function start() {
+	session_count=`screen -ls autofan | grep autofan | wc -l`
+	if [[ $session_count > 0 ]]; then
+		echo -e "${RED}Autofan screen is already running${NOCOLOR}"
+		echo -e "Run ${CYAN}autofan${NOCOLOR} or ${CYAN}screen -r ${CYAN}benchmark${NOCOLOR} to resume screen"
+		return
+	fi
+	screen -dm -S autofan $0 run
+	echo2 "Autofan screen started"
+}
 
+function stop() {
+	screens=`screen -ls autofan | grep -E "[0-9]+\.autofan" | cut -d. -f1 | awk '{print $1}'`
+	if [[ -z $screens ]]; then
+		echo "No autofan screens found"
+	else
+		for pid in $screens; do
+			echo "Stopping autofan screen session $pid"
+			screen -S $pid -X quit
+		done
+	fi
+}
+
+
+function usage() {
+	bname=`basename $0`
+	echo -e "Usage: ${CYAN}$bname start|stop|restart${NOCOLOR}"
+	echo -e "If you run ${CYAN}$bname${NOCOLOR} without parameters $bname screen will be tried to resume."
+}
 
 case $1 in
 	run)
@@ -594,16 +622,21 @@ case $1 in
 		check_gpu
 		auto_fan_control
 	;;
-
+	start)
+		start
+	;;
+	stop)
+		stop
+	;;
+	restart)
+		stop
+		sleep 1
+		start
+	;;
 	*)
-		session_count=`screen -ls autofan | grep autofan | wc -l`
-		if [[ $session_count > 0 ]]; then
-			[[ $1 != "dontattach" ]] &&
-				screen -x -S autofan
-		else #start new screen
-			screen -dm -S autofan $0 run
-			echo2 "Autofan screen started"
-		fi
+	
+		screen -x -S autofan
+		[[ $? != 0 ]] && usage
 	;;
 
 esac

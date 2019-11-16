@@ -347,7 +347,7 @@ fi
 
 [[ $MAINTENANCE != 2 ]] &&
 	echo2 "> Starting autofan" &&
-	autofan
+	autofan start
 
 echo2 "> Starting octofan"
 $OCTOFAN
