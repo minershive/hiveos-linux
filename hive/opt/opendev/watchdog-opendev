@@ -42,12 +42,12 @@ watchdog_query() {
 	stty -F $PORT 115200 raw -echo
 	for (( i=1; i <= 10; i++ ))
 	do
-		exec 9< $PORT
-		cat <&9 > $DMPLOG &
+		exec {fd}< $PORT
+		cat <&${fd} > $DMPLOG &
 		echo -n $1 > $PORT
 		sleep 0.1s
 		kill -INT $!
-		exec 9<&-
+		exec {fd}<&-
 		reply=`cat $DMPLOG | cut -d"~" -f 2`
 		if [ ! -z "$reply" ]; then
 			break
@@ -74,10 +74,20 @@ fi
 #should be ping here, but will work with any
 #if port 22 (ssh) responds then
 #send ping signal to WD, if WD does not receive it for a while, then WD RESET the MB.
-
+pinging=1
 while true
 do
-	echo "Pinging watchdog"
-	[[ `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]] && echo -n "~U" > $PORT
+	t1=`date +%s` || t1=0
+	#if [[ $pinging -eq 1 && `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]]; then
+	if [[ $pinging -eq 1 ]] && nc -w 1 -z localhost 22 2>&1; then
+		echo "Pinging watchdog"
+		echo -n "~U" > $PORT || break;
+	else
+		echo "NOT pinging watchdog"
+	fi
 	sleep 5
+	t2=`date +%s` || t2=0
+	[[ $t2 -eq 0 || $t1 -eq 0 || $(( t2 - t1 )) -ge 10 ]] && pinging=0 || pinging=1
 done
+
+message error "opendev wd error"
