@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 
+[ -t 1 ] && . colors
+
 # !!!using only IPv4 addresses and interfaces!!!
 
-query_timeout=10
+# use Google DNS over HTTPS
+use_tls=0
+
+query_timeout=15
 
 # name servers for queries
 dns_srv=("8.8.8.8" "1.1.1.1" "114.114.114.114")
@@ -24,31 +29,74 @@ ff02::2 ip6-allrouters
 "
 
 
-function add_host { # global $resolve
+function dns_servers {
+	# get system dns servers
+	local dns=(`cat /run/systemd/resolve/resolv.conf | grep ^nameserver | awk '{print $2}'`)
 
-	# adding only first address
-	addr=`grep -m 1 -oP "$1.*\sA\s\K[^\s]+$" <<< "$resolve"`
-	if [[ -z $addr ]]; then
-		# check for CNAME
-		cname=`grep -m 1 -oP "$1.*\sCNAME\s\K[^\s]+$" <<< "$resolve"`
-		[[ ! -z $cname ]] && addr=`grep -m 1 -oP "$cname.*\sA\s\K[^\s]+$" <<< "$resolve"`
-		[[ -z $addr ]] && echo "> Unable to resolve: $1" && return 4
+	# merge all servers
+	dns+=("${dns_srv[@]}")
+
+	query_servers=
+	local dns_servers=()
+	# remove duplicates, empty and localhost
+	for((i=0; i<${#dns[@]}; i++))
+	do
+		[[ ${dns[$i]} =~ ^127\.0\.0\.[0-9]+$ || ! ${dns[$i]} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ || " ${dns_servers[@]} " =~ " ${dns[$i]} " ]] &&
+			continue
+		dns_servers[$i]=${dns[$i]}
+		query_servers+=" @${dns[$i]}"
+	done
+	echo -e $CYAN"> Using DNS servers: ${YELLOW}${dns_servers[@]}"$NOCOLOR
+}
+
+
+function resolve_host {
+	if [[ $use_tls -eq 1 ]]; then
+		echo -en $CYAN"> Resolving: ${WHITE}$1 ${YELLOW}[Google DoH]"$NOCOLOR
+		#resolve=`tls_resolve $1` && return 0
+		query=`curl -L --connect-timeout $query_timeout --max-time $query_timeout --silent --resolve "dns.google:443:8.8.8.8" https://dns.google/resolve?name=$1&type=A 2>/dev/null`
+		if [[ $? -eq 0 ]]; then
+			#echo "$query" | jq  .
+			jqs='if .Status != 0 then empty else .Answer[] | if .type != 1 then empty else .data end end'
+			resolve=(`jq -c -r "$jqs" <<< "$query" 2>/dev/null`)
+			[[ $? -eq 0 && ! -z $resolve ]] && echo -e $GREEN" - ${resolve[@]}"$NOCOLOR && return 0
+		else
+			# disable for next resolves
+			use_tls=0
+		fi
+		echo -e $RED" - FAILED"$NOCOLOR
 	fi
+	
+	# prepare dns servers array for query
+	[[ -z $query_servers ]] && dns_servers
+	# using dig to query multiple dns servers at once
+	echo -en $CYAN"> Resolving: ${WHITE}$1"$NOCOLOR
+	resolve=(`dig -4 +noall +answer +retry=0 +time=$query_timeout $query_servers $1 | grep -oP ".*\sA\s\K[^\s]+$"`)
+	[[ $? -eq 0 ]] && echo -e $GREEN" - ${resolve[@]}"$NOCOLOR && return 0
+	echo -e $RED" - FAILED"$NOCOLOR
+	return 1
+}
+
+
+function add_host {
+	resolve_host $1 || return 4
+	# adding only first address
+	addr=${resolve[0]}
+	[[ -z $addr ]] && return 4
 
 	# IPv4 only!
 	if [[ $addr =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-		echo "> Adding to cache \"$addr $1\""
+		echo -e $GREEN"> Adding to cache ${NOCOLOR}\"$addr $1\""
 		newhosts+="$addr $1"$'\n'
 		return 0
 	fi
 
-	echo "> Unable to extract IP address: $addr"
+	echo -e $RED"> Unable to extract IP address: ${WHITE}$addr"$NOCOLOR
 	return 5
 }
 
 
-function update_hosts () {
-
+function update_hosts {
 	[ ! -e $RIG_CONF ] && echo "> No $RIG_CONF" && return 1
 	. $RIG_CONF
 	[[ -z $HIVE_HOST_URL ]] && echo "> HIVE_HOST_URL is empty" && return 2
@@ -63,43 +111,16 @@ function update_hosts () {
 
 	newhosts+=$'\n'"# HIVEOS CACHE BEGIN"$'\n'
 
-	# get system dns servers
-	local dns=(`networkctl status 2>/dev/null | grep -Pazo "DNS: \K[0-9\.\s]+" | tr -d "[:blank:]" | tr -d "\0"`)
-
-	# merge all servers
-	dns+=("${dns_srv[@]}")
-
-	local query_servers=""
-	local dns_servers=()
-	# remove duplicates, empty and localhost
-	for((i=0; i<${#dns[@]}; i++))
-	do
-		[[ -z ${dns[$i]} || ${dns[$i]} =~ ^127\.0\.0\.[0-9]+$ || ! ${dns[$i]} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] && continue;
-		for((x=0; x<$i; x++))
-		do
-			[[ ${dns_servers[$x]} == ${dns[$i]} ]] && break
-		done
-		[[ $x == $i ]] && dns_servers[$i]=${dns[$i]} && query_servers+=" @${dns[$i]}"
-	done
-	echo "> Using DNS servers: ${dns_servers[@]}"
-
-	echo "> Resolving: $HOST"
-	# using dig to query multiple dns servers at once
-	resolve=`dig -4 +noall +answer +retry=0 +time=$query_timeout $query_servers $HOST`
-	echo "$resolve"
-
-	# parse Hive API host and exit on error
+	# add Hive API host and exit on error
 	add_host $HOST || return $?
 
-	echo "> Resolving: ${upd_srv[@]}"
-	resolve=`dig -4 +noall +answer +retry=0 +time=$query_timeout $query_servers ${upd_srv[@]}`
-	echo "$resolve"
-
-	# parse update hosts
+	local code=0
+	# add update hosts
 	for host in "${upd_srv[@]}"
 	do
-		add_host $host
+		add_host $host || code=$?
 	done
+	return $code
 }
 
 exitcode=0
@@ -113,10 +134,10 @@ fi
 # update only if needed
 if [[ "$oldhosts" != "$newhosts" ]]; then
 	echo "$newhosts" > /etc/hosts
-	echo "> Hosts update done"
+	echo -e $GREEN"> Hosts update done"$NOCOLOR
 	sync
 else
-	echo "> Hosts is up to date"
+	echo -e $GREEN"> Hosts is up to date"$NOCOLOR
 fi
 
 exit $exitcode
