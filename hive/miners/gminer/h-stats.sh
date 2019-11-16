@@ -15,13 +15,16 @@ else
 
   #All fans speed array
   local fan=$(jq -r ".fan | .[]" <<< $gpu_stats)
+
   #All temp array
   local temp=$(jq -r ".temp | .[]" <<< $gpu_stats)
+
   #gminer's busid array
   local bus_id_array=$(jq -r '[.devices[].bus_id[5:7]] | .[]' <<< "$stats_raw")
   local bus_numbers=$(echo "$bus_id_array" | awk '{printf("%d\n", "0x"$1)}' | jq -sc .)
   #All busid array
   local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
+
   #Formating arrays
 #  bus_id_array=`sed 's/\n/ /' <<< $bus_id_array`
 #  fan=`sed 's/\n/ /' <<< $fan`
@@ -60,34 +63,3 @@ else
         uptime: .uptime, ar: [$ac, $rj], $bus_numbers, $algo, $ver}' <<< "$stats_raw")
 fi
 
-# {
-#   "uptime": 376,
-#   "server": "stratum://us-east.equihash-hub.miningpoolhub.com:20595",
-#   "user": "HaloGenius.RIG-2",
-#   "devices": [
-#     {
-#       "gpu_id": 0,
-#       "cuda_id": 0,
-#       "bus_id": "0000:01:00.0",
-#       "name": "COLORFUL GeForce GTX 1050 Ti 4GB",
-#       "speed": 17,
-#       "accepted_shares": 3,
-#       "rejected_shares": 0,
-#       "temperature": 47,
-#       "temperature_limit": 90,
-#       "power_usage": 0
-#     },
-#     {
-#       "gpu_id": 1,
-#       "cuda_id": 1,
-#       "bus_id": "0000:02:00.0",
-#       "name": "COLORFUL GeForce GTX 1050 Ti 4GB",
-#       "speed": 19,
-#       "accepted_shares": 1,
-#       "rejected_shares": 0,
-#       "temperature": 55,
-#       "temperature_limit": 90,
-#       "power_usage": 0
-#     }
-#   ]
-# }
