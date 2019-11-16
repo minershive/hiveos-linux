@@ -6,6 +6,9 @@
 API_HOSTS=("api.hiveos.farm" "paris.hiveos.farm" "amster.hiveos.farm" "helsinki.hiveos.farm" "msk.hiveos.farm")
 OTHER_DNS=("8.8.8.8" "1.1.1.1" "114.114.114.114")
 
+[[ $1 == "-a" || $1 == "--advanced" ]] &&
+	CYCLES=3
+
 HEADER_COLOR=$YELLOW
 CASE_COLOR=$BCYAN
 WARN_COLOR=$LGREEN
@@ -32,19 +35,14 @@ LOCAL_DNS=(`cat /run/systemd/resolve/resolv.conf | grep ^nameserver | awk '{prin
 
 function merge_all_dns {
 	ALL_DNS=()
-	local dns=("${LOCAL_DNS[@]}")
+	local DNS=("${LOCAL_DNS[@]}")
 	# merge all servers
-	dns+=("${OTHER_DNS[@]}")
-	
+	DNS+=("${OTHER_DNS[@]}")
 	# remove duplicates, empty and localhost
-	for((i=0; i<${#dns[@]}; i++))
+	for ip in "${DNS[@]}"
 	do
-		[[ ${dns[$i]} =~ ^127\.0\.0\.[0-9]+$ || ! ${dns[$i]} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] && continue;
-		for((x=0; x<$i; x++))
-		do
-			[[ ${ALL_DNS[$x]} == ${dns[$i]} ]] && break
-		done
-		[[ $x == $i ]] && ALL_DNS[$i]=${dns[$i]}
+		[[ ! $ip =~ ^127\.0\.0\.[0-9]+$ && $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ && ! " ${ALL_DNS[@]} " =~ " $ip " ]] &&
+			ALL_DNS+=($ip)
 	done
 }
 
@@ -55,7 +53,7 @@ function PrintCase {
 
 
 function TimeColor {
-	[[ $1 -le $GOODTIME ]] && echo "${WHITE} $1 ms ${NOCOLOR}" || echo "${RED} $1 ms ${NOCOLOR}"
+	[[ $1 -le $GOODTIME ]] && echo "${WHITE}$1 ms${NOCOLOR}" || echo "${RED}$1 ms${NOCOLOR}"
 }
 
 
@@ -67,19 +65,22 @@ function Ping {
 	[ -z ${IP} ] && IP=$1
 
 	PrintCase "ping $1"
-	response=`ping -i 0 -q -c 1 -w 4 $IP 2>&1`
-	
-	LAST_RESULT=$?
-
-	if [[ $LAST_RESULT == 0 ]]; then
-		local totaltime=`echo "$response" | awk -F '/' 'END {print $5}'`
-		totaltime=`bc <<< "scale=0;($totaltime+0.99)/1"`
-		totaltime=`TimeColor $totaltime`
-		echo -e "$OK  $totaltime"
-	else
-		echo -e $FAIL
-	fi
-	
+	for((i=0; i<${CYCLES:-1}; i++))
+	do
+		response=`ping -i 0 -q -c 1 -w 4 $IP 2>&1`
+		LAST_RESULT=$?
+		if [[ $LAST_RESULT -eq 0 ]]; then
+			local totaltime=`echo "$response" | awk -F '/' 'END {print $5}'`
+			totaltime=`bc <<< "scale=0;($totaltime+0.99)/1"`
+			total=`TimeColor $totaltime`
+			[[ $i -eq 0 ]] && echo -en "$OK\t$total\t" || echo -en "$total\t"
+			[[ $totaltime -ge $((GOODTIME*2)) ]] && break
+		else
+			#echo -en "$FAIL\t" && break
+			[[ $i -eq 0 && $CYCLES -gt 1 ]] && echo -en $YELLOW"[???]\t$FAIL\t" || echo -en "$FAIL\t"
+		fi
+	done
+	echo
 	return $LAST_RESULT
 }
 
@@ -93,32 +94,30 @@ function Curl {
 	[ -z ${IP} ] && IP=$1
 
 	PrintCase "curl $1"
-	if [[ $checkApi != "api" ]]; then
-		response=`curl --insecure --connect-timeout 7 --max-time 15 --silent $IP -w "\n%{time_total}"` #> /dev/null 2>&1
-	else
-		response=`curl --insecure --connect-timeout 7 --max-time 15 --silent -w "\n%{time_total}"\
+
+	for((i=0; i<${CYCLES:-1}; i++))
+	do
+		if [[ $checkApi != "api" ]]; then
+			response=`curl --insecure --connect-timeout 7 --max-time 15 --silent $IP -w "\n%{time_total}"`
+		else
+			response=`curl --insecure --connect-timeout 7 --max-time 15 --silent -w "\n%{time_total}"\
 				-H "Content-Type: application/json" \
 				-X POST -d '{"method":"stats", "params": {"rig_id":"-1", "passwd": "1"}}' \
 				$IP/worker/api`
-	fi
-	
-	LAST_RESULT=$?
-
-	if [[ $LAST_RESULT == 0 ]]; then
-		local totaltime=`echo "$response" | tail -1`
-		totaltime=`bc <<< "scale=0;$totaltime*1000/1"`
-		totaltime=`TimeColor $totaltime`
-
-		if [[ $checkApi != "api" ]]; then
-			echo -e "$OK  $totaltime"
-		else
-			local respCheck=`echo "$response" | jq .error.code 2>/dev/null`
-			[[ $respCheck == '' || $respCheck == 'null' ]] && echo -e $FAIL || echo -e "$OK  $totaltime"
 		fi
-	else
-		echo -e $FAIL
-	fi
-
+		LAST_RESULT=$?
+		if [[ $LAST_RESULT -eq 0 ]] && [[ $checkApi != "api" || ! -z $(jq -c "if .error.code then . else empty end" 2>/dev/null <<< "$response") ]]; then
+			local totaltime=`echo "$response" | tail -1`
+			totaltime=`bc <<< "scale=0;$totaltime*1000/1"`
+			total=`TimeColor $totaltime`
+			[[ $i -eq 0 ]] && echo -en "$OK\t$total\t" || echo -en "$total\t"
+			[[ $totaltime -ge $((GOODTIME*2)) ]] && break
+		else
+			#echo -en "$FAIL\t" && break
+			[[ $i -eq 0 && $CYCLES -gt 1 ]] && echo -en $YELLOW"[???]\t$FAIL\t" || echo -en "$FAIL\t"
+		fi
+	done
+	echo
 	return $LAST_RESULT
 }
 
@@ -133,7 +132,7 @@ function NSLookup {
 	#`nslookup $IP > /dev/null 2>&1`
 	res=(`dig -4 +noall +answer +retry=0 +time=15 $IP | grep -oP ".*\sA\s\K[^\s]+$"`)
 	LAST_RESULT=$?
-	[[ $LAST_RESULT == 0 ]] && echo -e "$OK   ${CYAN}${res[@]}$NOCOLOR" || echo -e $FAIL
+	[[ $LAST_RESULT -eq  0 ]] && echo -e "$OK\t${CYAN}${res[@]}$NOCOLOR" || echo -e $FAIL
 	return $LAST_RESULT
 }
 
@@ -146,7 +145,7 @@ function Connection {
 	local checkApi=$2
 
 	NSLookup $1
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Please check your DNS server $DNS"$NOCOLOR
+	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Please check your DNS server $DNS"$NOCOLOR && return $LAST_RESULT
 
 	Ping $1
 	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Please check your connection settings"$NOCOLOR
