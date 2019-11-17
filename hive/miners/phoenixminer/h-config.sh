@@ -21,6 +21,8 @@ function miner_config_gen() {
 	local MINER_EPOOLS="$MINER_DIR/$MINER_VER/epools.txt"
 	mkfile_from_symlink $MINER_EPOOLS
 
+	echo "" > $MINER_CONFIG
+
 	# coin=`echo $META | jq -r '.phoenixminer.coin' | awk '{print tolower($0)}'`
 	# grep -q "nicehash" <<< $coin
 	# [[ $? -eq 0 || -z ${coin} ]] && coin="auto"
@@ -36,7 +38,7 @@ function miner_config_gen() {
 		echo "$PHOENIXMINER_USER_CONFIG" >> $MINER_CONFIG
 	fi
 
-	echo "-mport $MINER_API_PORT" > $MINER_CONFIG
+	echo "-mport $MINER_API_PORT" >> $MINER_CONFIG
 	echo "-rmode 2" >> $MINER_CONFIG
 	echo "-logfile ${MINER_LOG_BASENAME}.log" >> $MINER_CONFIG
 	# echo "-allpools 1" >> $MINER_CONFIG
