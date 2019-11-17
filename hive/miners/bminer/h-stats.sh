@@ -10,7 +10,7 @@
 		#fucking bminer sorts it's keys as numerics, not natual, e.g. "1", "10", "11", "2", fix that with sed hack by replacing "1": with "01":
 		stats_raw=$(echo "$stats_raw" | sed -E 's/"([0-9])":\s*\{/"0\1":\{/g' | jq -c --sort-keys .) #"
 
-		khs=`echo $stats_raw | jq '.miners[].solver.solution_rate' | awk '{s+=$1} END {print s/1000}'` #"
+		khs=`echo $stats_raw | jq '.miners[].solver.solution_rate' | awk '{s+=$1} END {printf("%.4f",s/1000)}'` #"
 
 		local uptime=$(( `date +%s` - $(jq '.start_time' <<< "$stats_raw") ))
 		local hs_units="hs"
