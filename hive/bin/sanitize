@@ -147,7 +147,8 @@ function sanitize_hashrate() {
 }
 
 function sanitize_total_hashrate() {
-  local i_value=`sanitize_value $1 $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX`
+  i_value=`echo $1 | awk '{ printf "%.4f", $1 }'`
+  local i_value=`sanitize_value $i_value $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX`
   echo $i_value
 }
 
@@ -289,6 +290,7 @@ function sanitize_fan_controller_stats() {
   echo $stats
 }
 
+#sanitize_total_hashrate $1
 #sanitize_miner_stats '{"hs":[8.5,7.4],"hs_units":"hs","temp":["48","53"],"fan":[80,80],"uptime":150399,"ar":["2151","0"],"bus_numbers":[1,2],"algo":"150_5","ver":"1.42"}'
 #sanitize_miner_stats '{ "total_khs": "0.143", "hs": [ 0.0715, 0.0715 ], "algo": "randomhash", "temp": [ 44, 44 ], "uptime": 11204, "ar": [ 23, 0, 0 ], "ver": "1.5.1-oldgencpu" }'
 #sanitize_fan_controller_stats '{ "casefan": [ 100, 100, 100 ], "thermosensors": [ 16, 24, 855.9, 849.5 ], "psu": { "power_ac": "17245.0" } }'
