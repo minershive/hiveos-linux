@@ -4,8 +4,8 @@
   if [[ $? -ne 0 || -z $stats_raw ]]; then
     echo -e "${YELLOW}Failed to read $miner from 127.0.0.1:{$MINER_API_PORT}${NOCOLOR}"
   else
-    khs=`echo $stats_raw | jq '.miner.total_hashrate_raw' | awk '{s+=$1} END {print s/1000}'` #"
-    khs2=`echo $stats_raw | jq '.miner.total_hashrate2_raw' | awk '{s+=$1} END {print s/1000}'` #"
+    khs=`echo $stats_raw | jq '.miner.total_hashrate_raw' | awk '{s+=$1} END {printf("%.4f",s/1000)}'` #"
+    khs2=`echo $stats_raw | jq '.miner.total_hashrate2_raw' | awk '{s+=$1} END {printf("%.4f",s/1000)}'` #"
 
     local uptime=$(( `date +%s` - $(jq '.start_time' <<< "$stats_raw") ))
     local hs_units="hs"
