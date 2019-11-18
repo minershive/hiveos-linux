@@ -18,6 +18,8 @@ check_count=0
 gpu_err_count=0
 high_la_count=0
 
+LAST_STAT="/run/hive/last_stat.json"
+
 
 function loadconf() {
 	WD_ENABLED=
@@ -42,9 +44,34 @@ function loadconf() {
 		echo -e "${YELLOW}No miner is set in config, exiting${NOCOLOR}" &&
 		exit 1
 
-	minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
+	
+	
+	if [[ $WD_MINHASHES_ALGO != "{}" ]]; then
+		minhash=
+		miner_algo=
+		wd_algo=
+		map_algo=
+		[[ -e $LAST_STAT ]] && miner_algo=$(cat $LAST_STAT | jq -r ".params.miner_stats.algo")
+		if [[ ! -z $miner_algo && $miner_algo != "null" ]]; then
+			map="/hive/opt/algomap/"$MINER".json"
+			[[ -e $map ]] && map_algo=$(cat $map | jq -r ".algomap.\"${miner_algo}\"")
+			if [[ ! -z $map_algo && $map_algo != "null" ]];then
+				wd_algo=$map_algo
+			else 
+				wd_algo=$miner_algo
+			fi
+			minhash=$(echo $WD_MINHASHES_ALGO | jq ".\"${wd_algo}\"")
+		fi
+		[[ -z $minhash || $minhash == "null" ]] && minhash=0.001
+	else
+		minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
+	fi
+		
+	log_algo="(any algo)"
+	[[ ! -z $wd_algo ]] && log_algo="(${wd_algo})"
+	
 	[[ -z $minhash || $minhash == "null" ]] &&
-		message warn "Minimal hashrate for $MINER is not set" &&
+		message warn "Minimal hashrate for $MINER and for algorithm is not set" &&
 		echo -e "${RED}Minimal hashrate for $MINER is not set in config, exiting${NOCOLOR}" &&
 		exit 1
 }
@@ -91,7 +118,7 @@ function check_la() {
 		((high_la_count++))
 	else
 		high_la_count=0
-		[[ $check_count == 0 ]] && echo "${GREEN}OK${NOCOLOR} LA(5m): $la5.0 < $max_la.0, LA(1m): $la1.0 < $max_la2x.0"
+		[[ $check_count == 0 ]] && echo -e "${GREEN}OK${NOCOLOR} LA(5m): $la5.0 < $max_la.0, LA(1m): $la1.0 < $max_la2x.0"
 	fi
 }
 
@@ -131,6 +158,8 @@ function loop() {
 	khs=
 	[[ -e $HASHRATE_KHS ]] && khs=`cat $HASHRATE_KHS`
 	[[ -z $khs ]] && khs=0
+	
+	
 
 	local hashok=`echo $khs $minhash | awk '{ print ($1 >= $2) ? 1 : 0 }'` #float comparison
 
@@ -154,7 +183,7 @@ function loop() {
 	if [[ $hashok == 1 ]]; then
 		set_lastgood
 		[[ $ok_count == 0 ]] &&
-			echo -e "${GREEN}OK${NOCOLOR} ${CYAN}$MINER${NOCOLOR} $khs kHs >= $minhash kHs"
+			echo -e "${GREEN}OK${NOCOLOR} ${CYAN}$MINER $log_algo${NOCOLOR} $khs kHs >= $minhash kHs"
 
 		((ok_count++))
 		[[ $ok_count -ge $OK_MESSAGE_REDUCE ]] && ok_count=0
@@ -165,13 +194,13 @@ function loop() {
 	local elapsed=$(( $now - $lastgood ))
 	#echo Elapsed $elapsed seconds
 
-	echo -e "${RED}BARK${NOCOLOR} ${CYAN}$MINER${NOCOLOR} $khs kHs < $minhash kHs for $elapsed seconds"
+	echo -e "${RED}BARK${NOCOLOR} ${CYAN}$MINER $log_algo${NOCOLOR} $khs kHs < $minhash kHs for $elapsed seconds"
 
 	# check to reboot first
 	if [[ ! -z $WD_REBOOT ]]; then
 		reboot_timeout=`echo $WD_REBOOT 60 | awk '{print $1 * $2}'`
 		if [[ $elapsed -ge $reboot_timeout ]]; then
-			miner log | message danger "$MINER low hashrate ($khs kH/s), rebooting" payload
+			miner log | message danger "$MINER $log_algo low hashrate ($khs kH/s), rebooting" payload
 			echo -e "---"
 			echo -e "${RED}Rebooting after $WD_REBOOT minutes${NOCOLOR}"
 			echo -e "---"
@@ -185,9 +214,9 @@ function loop() {
 	if [[ ! -z $WD_MINER ]]; then
 		miner_restart_timeout=`echo $WD_MINER 60 | awk '{print $1 * $2}'`
 		if [[ $miner_restart_count == 0 && $elapsed -ge $miner_restart_timeout ]]; then
-			miner log | message warn "$MINER low hashrate ($khs kH/s), restarting" payload
+			miner log | message warn "$MINER $log_algo low hashrate ($khs kH/s), restarting" payload
 			echo -e "---"
-			echo -e "${YELLOW}Restarting ${CYAN}$MINER${NOCOLOR} ${YELLOW}after $WD_MINER minutes${NOCOLOR}"
+			echo -e "${YELLOW}Restarting ${CYAN}$MINER $log_algo${NOCOLOR} ${YELLOW}after $WD_MINER minutes${NOCOLOR}"
 			echo -e "---"
 			miner_restart_count=1
 			miner restart
