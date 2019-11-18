@@ -4,6 +4,7 @@
 
 INTERVAL=10
 LOG="/var/log/hive-agent.log"
+LAST_STAT="/run/hive/last_stat.json"
 
 API_TIMEOUT=15 #timeout to wait for miner API response, can take very long time on 13+ gpus
 
@@ -110,7 +111,6 @@ function reset_miner_vars() {
 		eval unset MINER$i
 	done
 }
-
 
 
 # Waits for new stats to appear in file
@@ -266,6 +266,7 @@ function loop {
 	khs=$(sanitize_total_hashrate $khs)
 	stats=$(sanitize_miner_stats $stats)
 
+
 	[[ ! -z $META ]] && meta="$META" || meta='null'
 	
 	mem=`free -m | grep 'Mem' | awk '{print $2", "$4}'`
@@ -369,6 +370,8 @@ function loop {
 			fi
 		fi
 	fi
+	
+	echo $request > $LAST_STAT
 
 	[[ $AGENT_GZIP == 1 ]] && echo -n  "Z "
 	echo $request | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'
@@ -380,10 +383,11 @@ function loop {
 
 	#log request
 	#echo "[`date`] > `echo $request | jq '.'`" >> $LOG
-
+	
 	if [[ $AGENT_GZIP == 1 ]]; then
 		echo "[`date`] > Z $request" >> $LOG
-
+		
+		
 		response=$(echo $request | gzip -9 -c -f | curl --insecure -L --data-binary @- ${ssl_session} \
 		--connect-timeout 7 --max-time 15 --silent \
 		-H "Content-Encoding: gzip" \
