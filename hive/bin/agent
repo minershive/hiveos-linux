@@ -186,6 +186,7 @@ function loop {
 
 	#each time read config again
 	AGENT_GZIP=0
+	PUSH_INTERVAL=10
 	. $RIG_CONF
 	. $WALLET_CONF
 
