@@ -3,13 +3,13 @@ Please find below the available parameter and arguments, arguments in [] are not
 -a, -A, -algo		ALGONAME	select the algorithm to use for mining
 			ETHASH		Ethash (ETH, ETC, Music, Callisto, etc)
 			UBQHASH		Ubiq version of Ethash (UBIQ)
-			TETHASHV1	Teo version of Ethash (TEO)
 			PROGPOW		ProgPoW (BitcoinInterest)
 			PROGPOWZ	ProgPoWZ (Zano)
 			PROGPOW092	ProgPoW-Rev.0.9.2 (Hydnora, Sero, Abassian)
 			MTP		MTP (Zcoin)
-			MYRGR		Myriad-Groestl (Myriad, DigiByte, Verge, etc)
 			LYRA2V3		Lyra2 Revision 3 (Vertcoin)
+			EAGLESONG	EagleSong (Nervos-CKB)
+
 
 -AALT			ALGONAME	select the algorithm to use for mining the alternate coin
 
@@ -34,7 +34,6 @@ CUDA 9.2.148		>= 396.37	>= 398.26
 			HORA		Hora (https://www.hydnora.org/)
 			EPIC		Epic (https://https://epic.tech)
 			SERO		Sero (https://sero.cash)
-			BNA		Abassian (https://abassian.com/)
 			EPIC		Epic
 			ZANO
 			ETC		Ethereum Classic
@@ -43,6 +42,7 @@ CUDA 9.2.148		>= 396.37	>= 398.26
 			PIRL
 			MUSIC		Musicoin 
 			EXP		Expanse
+			CKB		Nervos CKB
 
 -work-timeout		NOT supported (ignored)
 
