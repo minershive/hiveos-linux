@@ -3,7 +3,11 @@
 
 [[ -e $RIG_CONF ]] && . $RIG_CONF
 
-API_HOSTS=("api.hiveos.farm" "paris.hiveos.farm" "amster.hiveos.farm" "helsinki.hiveos.farm" "msk.hiveos.farm")
+# hosts on ports 80 and 443
+API_HOSTS=("api.hiveos.farm" "helsinki.hiveos.farm" "msk.hiveos.farm" "paris.hiveos.farm" "amster.hiveos.farm")
+# urls for other ports
+API_URLS=("https://api.hiveos.farm:8443" "http://helsinki.hiveos.farm:8000")
+# just to check connection
 OTHER_DNS=("8.8.8.8" "1.1.1.1" "114.114.114.114")
 
 [[ $1 == "-a" || $1 == "--advanced" ]] &&
@@ -93,7 +97,9 @@ function Curl {
 	local response=
 	[ -z ${IP} ] && IP=$1
 
-	PrintCase "curl $1"
+	[[ "$1" == "$HIVE_HOST_URL" ]] &&
+		PrintCase "curl $1 (CURRENT)" ||
+		PrintCase "curl $1"
 
 	for((i=0; i<${CYCLES:-1}; i++))
 	do
@@ -173,7 +179,8 @@ function Connections {
 		[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping DNS. Please check your internet connection"$NOCOLOR
 	done
 
-	[[ ! -z $HIVE_HOST_URL ]] && API_HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'` || API_HOST=
+	#[[ ! -z $HIVE_HOST_URL ]] && API_HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'` || API_HOST=
+	API_HOST=`grep -oP "://\K[^:]+" <<< "$HIVE_HOST_URL"`
 	[[ -z $API_HOST ]] && echo -e $ERROR_COLOR"No API server defined in rig.conf"$NOCOLOR && exit 1
 
 	if (echo "$API_HOST" | grep -q "hiveos.farm"); then
@@ -193,9 +200,12 @@ function Connections {
 		do
 			[[ $host == $API_HOST ]] && echo -e "${WHITE}>>> $host (CURRENT)${NOCOLOR}" || echo -e "${WHITE}>>> $host${NOCOLOR}"
 			Connection "$host" api
-			if [[ $host == "api.hiveos.farm" ]]; then
-				Curl "https://api.hiveos.farm:8443"
-				[[ $? -ne 0 ]] && echo -e "${ERROR_COLOR}HTTPS (SSL) on port 8443 connection failed. Please check Firewall rules or connection setup.${NOCOLOR}"
+			if [[ "${API_URLS[@]}" =~ /$host ]]; then
+				for url in "${API_URLS[@]}"
+				do
+					[[ ! $url =~ /$host ]] && continue
+					Curl $url api
+				done
 			fi
 			echo
 		done
