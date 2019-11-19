@@ -61,6 +61,25 @@ function sanitize_value() {
   echo $v
 }
 
+sanitize_hash_value() {
+  local v=$1
+  if (( $(echo "$v < 0" | bc -l) )); then
+    v=`echo $v | awk '{ printf "%f", $1 }'`
+  elif (( $(echo "$v < 10000" | bc -l) )); then
+    v=`echo $v | awk '{ printf "%.4f", $1 }'`
+  else
+    v=`echo $v | awk '{ printf "%.0f", $1 }'`
+  fi
+
+  if (( $(echo "$v * $2 < $3" | bc -l) )); then
+    echo "$5 * $2" | bc
+  elif (( $(echo "$v * $2 > $4" | bc -l) )); then
+    echo "$6 * $2" | bc
+  else
+    echo $v
+  fi
+}
+
 function sanitize_temp() {
   local t_json=$@
   local s_values=
@@ -135,21 +154,36 @@ function sanitize_octofan_power_dc() {
   echo $i_value
 }
 
+get_hs_multiplier(){
+  case $1 in
+    "hs" )
+      echo 0.001
+      ;;
+    "mhs" )
+      echo 1000
+      ;;
+    "ghs" )
+      echo 1000000
+      ;;
+    * )
+      echo 1
+  esac
+}
+
 function sanitize_hashrate() {
-  local t_json=$@
+  local hs_multiplier=`get_hs_multiplier $2`
+  local t_json=$1
   local s_values=
   local a_values=`echo $t_json | jq -r .[]`
   for i_value in $a_values; do
     [[ ! -z "$s_values" ]] && s_values+=","
-    s_values+=`sanitize_value $i_value $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX`
+    s_values+=`sanitize_hash_value $i_value $hs_multiplier $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX`
   done
   echo "[$s_values]"
 }
 
 function sanitize_total_hashrate() {
-  i_value=`echo $1 | awk '{ printf "%.4f", $1 }'`
-  local i_value=`sanitize_value $i_value $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX`
-  echo $i_value
+  sanitize_hash_value $1 1 $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX
 }
 
 function sanitize_ar() {
@@ -174,9 +208,16 @@ function sanitize_miner_stats() {
   for (( i = 1; i <= 32; i++ )); do
     [[ $i -eq 1 ]] && n='' || n=$i
 
+    eval 'local value=`echo $stats | jq -r .hs_units$n`'
+    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
+      hs_units=$value
+    else
+      hs_units="khs"
+    fi
+
     eval 'local value=`echo $stats | jq .hs$n`'
     if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-      value=`sanitize_hashrate $value`
+      value=`sanitize_hashrate "$value" $hs_units`
       value='"hs'$n'":'$value
       stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
     else
@@ -291,6 +332,7 @@ function sanitize_fan_controller_stats() {
 }
 
 #sanitize_total_hashrate $1
+# sanitize_miner_stats $@
 #sanitize_miner_stats '{"hs":[8.5,7.4],"hs_units":"hs","temp":["48","53"],"fan":[80,80],"uptime":150399,"ar":["2151","0"],"bus_numbers":[1,2],"algo":"150_5","ver":"1.42"}'
 #sanitize_miner_stats '{ "total_khs": "0.143", "hs": [ 0.0715, 0.0715 ], "algo": "randomhash", "temp": [ 44, 44 ], "uptime": 11204, "ar": [ 23, 0, 0 ], "ver": "1.5.1-oldgencpu" }'
 #sanitize_fan_controller_stats '{ "casefan": [ 100, 100, 100 ], "thermosensors": [ 16, 24, 855.9, 849.5 ], "psu": { "power_ac": "17245.0" } }'
