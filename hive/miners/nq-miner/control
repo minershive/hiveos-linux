@@ -1,8 +1,8 @@
 Package: hive-miners-nq-miner
-Version: 0.6-03
+Version: 0.6-04
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-nq-miner-0.99.5
+Depends: hive-miners-nq-miner-0.99.6
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - nq-miner
