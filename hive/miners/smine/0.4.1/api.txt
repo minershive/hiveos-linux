@@ -1,0 +1,19 @@
+# Example
+
+```
+$ curl http://127.0.0.1:9876
+
+{
+  "hash_rates": [ 806.98, 202.45 ],
+  "total_rate": 1009.43,
+  "accept": 15,
+  "reject": 0,
+  "uptime": 10240
+}
+```
+
+* hash_rates: Hashrate per card, MH/s
+* total_rate: Total hash rate, MH/s
+* accept: Number of accepted shares
+* reject: Number of rejected shares
+* uptime: Miner uptime in seconds
