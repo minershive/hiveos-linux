@@ -54,7 +54,7 @@ function loadconf() {
 		[[ -e $LAST_STAT ]] && miner_algo=$(cat $LAST_STAT | jq -r ".params.miner_stats.algo")
 		if [[ ! -z $miner_algo && $miner_algo != "null" ]]; then
 			map="/hive/opt/algomap/"$MINER".json"
-			[[ -e $map ]] && map_algo=$(cat $map | jq -r ".algomap.\"${miner_algo}\"")
+			[[ -e $map ]] && map_algo=$(cat $map | jq -r ".algomap.\"${miner_algo,,}\"")
 			if [[ ! -z $map_algo && $map_algo != "null" ]];then
 				wd_algo=$map_algo
 			else 

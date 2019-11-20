@@ -122,7 +122,7 @@ if [[ $exitcode -eq 0 ]]; then
 			hive_extra_packages="hive-lib-dotnet $hive_extra_packages"
 
 		#Here should be listed all non-miner packages so that versions check will work
-		apt-get install -y --only-upgrade hive hive-lib hive-opt $hive_extra_packages
+		apt-get install -y --only-upgrade hive hive-lib hive-opt hive-opt-algomap $hive_extra_packages
 		aexitcode=$?
 		[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 
