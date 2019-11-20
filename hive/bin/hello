@@ -169,7 +169,7 @@ jq -n \
 )
 
 #ROH case fan
-if [[ `lsusb | grep -c 16c0:05dc` -eq 1 ]]; then
+if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
 	 octofan=`$OCTOFAN get_max_rpm_json`
 	 if [[ ! -z $octofan && $octofan != '[]' ]]; then
 		 octofan_json=$(

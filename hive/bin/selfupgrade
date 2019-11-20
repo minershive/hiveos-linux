@@ -201,7 +201,7 @@ miner start
 [[ $as -ne 0 ]] && echo -e "${YELLOW}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 
 # Restarting ROH Fan controller
-if [[ `lsusb | grep -c 16c0:05dc` -eq 1 ]]; then
+if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
   screen -S octofan -X quit > /dev/null
 	$OCTOFAN dontattach
 fi

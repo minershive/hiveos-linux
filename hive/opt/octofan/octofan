@@ -5,9 +5,12 @@ DEBUG_COMMANDS=
 
 ################################################################################
 # Firmware info
-FW_VERSION="1.1"
-FW_FILENAME="/hive/opt/octofan/firmware.hex"
-FIRMWARE_MD5="46392f7827d482586768afb34ca02322"
+FW_VERSION_07="1.1"
+FW_VERSION_09="1.6"
+FW_FILENAME_07="/hive/opt/octofan/firmware_07.hex"
+FW_FILENAME_09="/hive/opt/octofan/firmware_09.hex"
+FIRMWARE_07_MD5="46392f7827d482586768afb34ca02322"
+FIRMWARE_09_MD5="4b39fb3797d6c956d44284c6e71defd6"
 MAINTENANCE_SEM_NAME="/tmp/octofan_fw_update"
 ################################################################################
 
@@ -580,15 +583,19 @@ calc_fan_pwm_factor () {
     eval "FAN_ID=\$FAN$i"
     fan_target_speed=${prev_fan_calc_speeds[$i]}
     fan_current_speed=`cat $CLI_OUTPUT | grep "FAN No. $FAN_ID RPM in percent:" | cut -d " " -f 7`
+    [[ $DEBUG_COMMANDS -ge 2 ]] && echo "FAN_ID=$FAN_ID | fan_target_speed=$fan_target_speed | fan_current_speed=$fan_current_speed"
     if [ $fan_target_speed -eq 100 ]; then
       FAN_PWN_FACTORS[$i]=0
       echo2 "Reseting FAN$i PWM factor"
-    elif [[ $fan_target_speed -gt 0 && $fan_current_speed -gt 0 ]]; then
+    # elif [[ $fan_target_speed -gt 0 && $fan_current_speed -gt 0 ]]; then
+    elif [[ $fan_target_speed -gt 0 || $fan_curent_speed -gt 0 ]]; then
       [[ $fan_current_speed -lt $fan_target_speed ]] && ((FAN_PWN_FACTORS[$i]+=$fan_target_speed-$fan_current_speed)) && echo2 "Increasing FAN$i PWM factor"
       [[ $fan_current_speed -gt $fan_target_speed ]] && ((FAN_PWN_FACTORS[$i]+=$fan_target_speed-$fan_current_speed)) && echo2 "Decreasing FAN$i PWM factor"
     fi
     [[ ${FAN_PWN_FACTORS[$i]} -lt -100 || ${FAN_PWN_FACTORS[$i]} -gt 100 ]] && FAN_PWN_FACTORS[$i]=0 && echo2 "Reseting FAN$i PWM factor"
   done
+
+  [[ $DEBUG_COMMANDS -ge 1 ]] && echo "FAN_PWN_FACTORS: ${FAN_PWN_FACTORS[@]}"
 }
 
 get_file_time_diff () {
@@ -641,6 +648,7 @@ get_psu_json () {
   else
     echo $power_ac > $PSU_LAST_POWER_FILENAME
   fi
+  [[ -z $power_ac ]] && power_ac=0
 
   # jq -cns \
   #    --arg voltage_ac $voltage_ac \
@@ -651,9 +659,7 @@ get_psu_json () {
   #    --arg power_dc $power_dc \
   #    '{$voltage_ac, $amperage_ac, $power_ac, $voltage_dc, $amperage_dc, $power_dc}'
 
-  jq -cns \
-    --arg power_ac $power_ac \
-    '{$power_ac}'
+  jq -cns --arg power_ac $power_ac '{$power_ac}'
 }
 
 # get_fan_json_calc () {
@@ -948,16 +954,31 @@ check_firmware () {
   local hw_cur_ver=`$OCTOFAN_BIN -r | grep "VERSION-HW:" | cut -f 2 -d " "`
   echo2 "Current HW version is: $hw_cur_ver"
 
-  dpkg --compare-versions "$FW_VERSION" "le" "$fw_cur_ver"
-  if [ $? -ne "0" ]; then
-    check_avrdude
-
-    dpkg --compare-versions "0.7" "gt" "$hw_cur_ver"
+  dpkg --compare-versions "0.9" "eq" "$hw_cur_ver"
+  if [ $? -eq "0" ]; then
+    #HW verison 0.9
+    FW_VERSION=$FW_VERSION_09
+    dpkg --compare-versions "$FW_VERSION" "le" "$fw_cur_ver"
     if [ $? -ne "0" ]; then
-      #HW verison 0.7+
-      update_fw $FW_FILENAME
+      check_avrdude
+      FW_FILENAME$FW_FILENAME_09
+      FIRMWARE_MD5=$FIRMWARE_MD5_09
+      update_fw
+    fi
+  else
+    dpkg --compare-versions "0.7" "eq" "$hw_cur_ver"
+    if [ $? -eq "0" ]; then
+      #HW verison 0.7
+      FW_VERSION=$FW_VERSION_07
+      dpkg --compare-versions "$FW_VERSION" "le" "$fw_cur_ver"
+      if [ $? -ne "0" ]; then
+        check_avrdude
+        FW_FILENAME$FW_FILENAME_07
+        FIRMWARE_MD5=$FIRMWARE_MD5_07
+        update_fw
+      fi
     else
-      echo2 "No firmware updates for hardware lower than 0.7"
+      echo2 "No firmware updates for your hardware"
     fi
   fi
 }
@@ -982,7 +1003,7 @@ fi
 
 load_def_values
 
-if [[ `lsusb | grep -c 16c0:05dc` -eq 1 ]]; then
+if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
   if [[ $1 == "update_text" || $1 == "-ut" ]];  then
     update_text $2 $3
   elif [[ $1 == "get_fan_json" || $1 == "-f" ]]; then

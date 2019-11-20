@@ -269,11 +269,11 @@ function loop {
 
 
 	[[ ! -z $META ]] && meta="$META" || meta='null'
-	
+
 	mem=`free -m | grep 'Mem' | awk '{print $2", "$4}'`
 	df=`df -h / | awk '{ print $4 }' | tail -n 1 | sed 's/%//'`
 	cpuavg=`cat /proc/loadavg | awk '{print $1", "$2", "$3}'`
-	
+
 	stats_json=$(
 		jq -n \
 		--arg miner "$MINER" \
@@ -318,7 +318,7 @@ function loop {
 	done
 
 	# Add ROH Fan controller stats to json
-	if [[ `lsusb | grep -c 16c0:05dc` -eq 1 ]]; then
+	if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
 		casefan=`$OCTOFAN get_fan_json`
 		thermosensors=`$OCTOFAN get_temp_json`
 		psu=`$OCTOFAN get_psu_json`
@@ -371,7 +371,7 @@ function loop {
 			fi
 		fi
 	fi
-	
+
 	echo $request > $LAST_STAT
 
 	[[ $AGENT_GZIP == 1 ]] && echo -n  "Z "
@@ -384,11 +384,11 @@ function loop {
 
 	#log request
 	#echo "[`date`] > `echo $request | jq '.'`" >> $LOG
-	
+
 	if [[ $AGENT_GZIP == 1 ]]; then
 		echo "[`date`] > Z $request" >> $LOG
-		
-		
+
+
 		response=$(echo $request | gzip -9 -c -f | curl --insecure -L --data-binary @- ${ssl_session} \
 		--connect-timeout 7 --max-time 15 --silent \
 		-H "Content-Encoding: gzip" \
@@ -455,7 +455,7 @@ function loop {
 	fi
 
 	# ROH Fan controller blink error state
-	if [[ `lsusb | grep -c 16c0:05dc` -eq 1 ]]; then
+	if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
 		#update text to OLED screen
 		miner_algo=`echo $stats | jq -r '.algo'`
 		$OCTOFAN update_text $miner_algo $khs
