@@ -14,6 +14,8 @@ echo ""
 
 DEFAULT_CORE_STATE=5
 
+GPU_NAVI="1002:7310|1002:7312|1002:7318|1002:7319|1002:731A|1002:731B|1002:731F"
+
 n=`gpu-detect AMD`
 if [[ $n == 0 ]]; then
 	echo "No AMD cards detected, exiting"
@@ -142,7 +144,7 @@ for bdir in $busids_dirs; do
 
 	##Start introducing VEGA
 	VEGAS_COUNT=$( lspci -vnns $busid | grep VGA -A 2 | grep AMD -A 2 | grep Vega -A 2 | grep -v "Vega 8" | wc -l )
-	NAVI_COUNT=$( lspci -vnns $busid | grep Navi | wc -l )
+	NAVI_COUNT=$( lspci -vnns $busid | grep -Ei "$GPU_NAVI" | wc -l )
 	
 	if [[ $VEGAS_COUNT -ne 0 || $NAVI_COUNT -ne 0 ]]; then
 		. /hive/sbin/amd-oc.vega.sh
