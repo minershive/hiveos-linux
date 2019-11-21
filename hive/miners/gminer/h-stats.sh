@@ -21,7 +21,7 @@ else
   #All busid array
   local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
   #Formating arrays
-  
+
   #gminer's busid array
   local bus_id_array=(`jq -r '.devices[].bus_id[5:7]' <<< "$stats_raw"`)
   local bus_numbers=()
@@ -36,7 +36,7 @@ else
   #IFS=' ' read -r -a bus_id_array <<< "$bus_id_array"
   IFS=' ' read -r -a fan <<< "$fan"
   IFS=' ' read -r -a temp <<< "$temp"
-  
+
   #busid equality
   local fans_array=
   local temp_array=
@@ -54,15 +54,33 @@ else
   [[ "$GMINER_ALGO" == "beamhash" ]] && GMINER_ALGO="equihash 150/5"
   [[ "$GMINER_ALGO" == "beamhashII" ]] && GMINER_ALGO="equihash 150/5/3"
 
-  #local temp=$(jq -c "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
+  if [[ "$GMINER_ALGO2" == "eaglesong" ]]; then
+    local total_khs2=`echo $stats_raw | jq -r '.devices[].speed2' | awk '{s+=$1} END {printf("%.4f",s/1000)}'` #sum up and convert to khs
 
-  stats=$(jq -c \
-        --argjson temp "`echo "${temp_array[@]}" | jq -s . | jq -c .`" \
-        --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
-        --arg ac "$ac" --arg rj "$rj" \
-        --argjson bus_numbers "`echo "${bus_numbers[@]}" | jq -sc .`" \
-        --arg algo "$GMINER_ALGO"  \
-        --arg ver `miner_ver` \
-        '{hs: [.devices[].speed], hs_units: "hs", $temp, $fan, uptime: .uptime, ar: [$ac, $rj], $bus_numbers, $algo, $ver}' <<< "$stats_raw")
+    local algo2="eaglesong"
+    local ac2=$(jq '[.devices[].accepted_shares2] | add' <<< "$stats_raw")
+    local rj2=$(jq '[.devices[].rejected_shares2] | add' <<< "$stats_raw")
+    stats=$(jq -c \
+          --argjson temp "`echo "${temp_array[@]}" | jq -s . | jq -c .`" \
+          --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
+          --arg ac "$ac" --arg rj "$rj" \
+          --arg ac2 "$ac2" --arg rj2 "$rj2" \
+          --argjson bus_numbers "`echo "${bus_numbers[@]}" | jq -sc .`" \
+          --arg algo "$GMINER_ALGO" --arg algo2 "$GMINER_ALGO2" \
+          --arg ver `miner_ver` \
+          --arg total_khs "$khs" --arg total_khs2 "$total_khs2" \
+          '{hs: [.devices[].speed], hs_units: "hs", ar: [$ac, $rj], $algo, $total_khs,
+            hs2: [.devices[].speed2], hs_units2: "hs", ar2: [$ac2, $rj2], $algo2, $total_khs2,
+            $bus_numbers, $temp, $fan, uptime: .uptime, $ver}' <<< "$stats_raw")
+  else
+    stats=$(jq -c \
+          --argjson temp "`echo "${temp_array[@]}" | jq -s . | jq -c .`" \
+          --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
+          --arg ac "$ac" --arg rj "$rj" \
+          --argjson bus_numbers "`echo "${bus_numbers[@]}" | jq -sc .`" \
+          --arg algo "$GMINER_ALGO"  \
+          --arg ver `miner_ver` \
+          '{hs: [.devices[].speed], hs_units: "hs", ar: [$ac, $rj], $algo,
+            $bus_numbers, $temp, $fan, uptime: .uptime, $ver}' <<< "$stats_raw")
+  fi
 fi
-
