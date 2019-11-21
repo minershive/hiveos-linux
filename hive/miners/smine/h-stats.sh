@@ -53,8 +53,9 @@ if [ $? -eq "0" ]; then #use api for ver 0.4.0 and newer
                   --arg hs_units "mhs" \
                   --arg ver "$ver" \
                   --argjson gpu_stats "$gpu_stats" \
+                  --argjson temp "$temp" --argjson fan "$fan" \
                   '{ total_khs: (.total_rate * 1000), hs: (.hash_rates), hs_units: "mhs",
-                  temp: $gpu_stats.temp, fan: $gpu_stats.fan, uptime, $ver, ar: [.accept, .reject], $algo}' <<< "$stats_raw")
+                  $temp, $fan, uptime, $ver, ar: [.accept, .reject], $algo}' <<< "$stats_raw")
     khs=$(jq -r '.total_khs' <<< "$stats")
   fi
 else #log parser for ver lower than 0.4.0
