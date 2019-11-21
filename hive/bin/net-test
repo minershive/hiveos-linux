@@ -59,11 +59,11 @@ function PrintCase {
 
 
 function PrintCase2 {
-	local str="${WHITE}[$1] ${CASE_COLOR}$2"
-	# colored string length correction
-	local char=\033
-	local colors="${str//${char}}"
-	local len=$(( $CASE_WIDTH + 7 * (${#str} - ${#colors}) / ${#char} ))
+	local str="[$1] ${CASE_COLOR}$2"
+	# colored string length correction for printf formatting
+	local wcolors=`echo -e "$str" | wc -c`
+	local nocolors=`echo -e "$str" | sed 's/\x1b\[[0-9;]*m//g' | wc -c`
+	local len=$(( CASE_WIDTH + wcolors - nocolors ))
 	printf "%-${len}b" "$str"
 }
 
@@ -193,13 +193,13 @@ function Connections {
 	local RESULT=0
 
 	echo -e "${YELLOW}> Checking network connection:${NOCOLOR}"
-	Ping "$LOCAL_GW" "$LOCAL_GW ${WHITE}(Gateway)"
+	Ping "$LOCAL_GW" "$LOCAL_GW ${NOCOLOR}(Gateway)"
 	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping router. Please check your router and physical connection"$NOCOLOR
 
 	for host in "${ALL_DNS[@]}"
 	do
 		[[ $host == $LOCAL_GW ]] && continue;
-		Ping "$host" "$host ${WHITE}(DNS)"
+		Ping "$host" "$host ${NOCOLOR}(DNS)"
 		[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping DNS. Please check your internet connection"$NOCOLOR
 	done
 
