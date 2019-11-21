@@ -4,7 +4,7 @@
 
 [[ ! -z $1 ]] &&
 	driverVersion=$1 ||
-	driverVersion="3.4.2.4"
+	driverVersion="3.6.0"
 
 
 archName="e1000e-$driverVersion.tar.gz"
