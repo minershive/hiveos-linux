@@ -11,7 +11,11 @@ API_URLS=("https://api.hiveos.farm:8443" "http://helsinki.hiveos.farm:8000")
 OTHER_DNS=("8.8.8.8" "1.1.1.1" "114.114.114.114")
 
 [[ $1 == "-a" || $1 == "--advanced" ]] &&
-	CYCLES=3
+	ADV=1 && CYCLES=3
+
+GOODTIME=1000
+
+CASE_WIDTH=64
 
 HEADER_COLOR=$YELLOW
 CASE_COLOR=$BCYAN
@@ -21,13 +25,11 @@ ERROR_COLOR=$BRED
 OK=$GREEN"[OK]"$NOCOLOR
 
 FAIL=$RED"[FAIL]"$NOCOLOR
-LAST_RESULT=0
-
-GOODTIME=1000
 
 unset GREP_OPTIONS
 
-CASE_WIDTH='%-64s'
+# exit handler
+trap 'echo -e $NOCOLOR; exit 1' 2
 
 
 LOCAL_IP=`hostname -I | awk '{print $1}'`
@@ -52,7 +54,17 @@ function merge_all_dns {
 
 
 function PrintCase {
-	printf "$CASE_COLOR%-64s" "$1"
+	printf "$CASE_COLOR%-${CASE_WIDTH}s" "$1"
+}
+
+
+function PrintCase2 {
+	local str="${WHITE}[$1] ${CASE_COLOR}$2"
+	# colored string length correction
+	local char=\033
+	local colors="${str//${char}}"
+	local len=$(( $CASE_WIDTH + 7 * (${#str} - ${#colors}) / ${#char} ))
+	printf "%-${len}b" "$str"
 }
 
 
@@ -63,17 +75,18 @@ function TimeColor {
 
 # ping wrapper
 function Ping {
-	local LAST_RESULT=0
-	local IP=$2
+	local host=$1
+	local name=$2
+	local RESULT=0
 	local response=
-	[ -z ${IP} ] && IP=$1
+	[[ -z $name ]] && name=$host
 
-	PrintCase "ping $1"
+	PrintCase2 "PING" "$name"
 	for((i=0; i<${CYCLES:-1}; i++))
 	do
-		response=`ping -i 0 -q -c 1 -w 4 $IP 2>&1`
-		LAST_RESULT=$?
-		if [[ $LAST_RESULT -eq 0 ]]; then
+		response=`ping -i 0 -q -c 1 -w 4 $host 2>&1`
+		RESULT=$?
+		if [[ $RESULT -eq 0 ]]; then
 			local totaltime=`echo "$response" | awk -F '/' 'END {print $5}'`
 			totaltime=`bc <<< "scale=0;($totaltime+0.99)/1"`
 			total=`TimeColor $totaltime`
@@ -85,34 +98,36 @@ function Ping {
 		fi
 	done
 	echo
-	return $LAST_RESULT
+	return $RESULT
 }
 
 
 # curl wrapper
 function Curl {
-	local LAST_RESULT=0
+	local host=$1
 	local checkApi=$2
-	local IP=
+	local RESULT=0
 	local response=
-	[ -z ${IP} ] && IP=$1
 
-	[[ "$1" == "$HIVE_HOST_URL" ]] &&
-		PrintCase "curl $1 (CURRENT)" ||
-		PrintCase "curl $1"
+	if [[ $checkApi != "api" ]]; then
+		PrintCase2 "WEB" "$host"
+	elif [[ "$host" == "$HIVE_HOST_URL" ]]; then
+		PrintCase2 "API" "$host ${WHITE}(CURRENT)"
+	else
+		PrintCase2 "API" "$host"
+	fi
 
 	for((i=0; i<${CYCLES:-1}; i++))
 	do
 		if [[ $checkApi != "api" ]]; then
-			response=`curl --insecure --connect-timeout 7 --max-time 15 --silent $IP -w "\n%{time_total}"`
+			response=`curl --insecure --connect-timeout 7 --max-time 15 --silent $host -w "\n%{time_total}"`
 		else
 			response=`curl --insecure --connect-timeout 7 --max-time 15 --silent -w "\n%{time_total}"\
 				-H "Content-Type: application/json" \
 				-X POST -d '{"method":"stats", "params": {"rig_id":"-1", "passwd": "1"}}' \
-				$IP/worker/api`
+				${host}/worker/api`
 		fi
-		LAST_RESULT=$?
-		if [[ $LAST_RESULT -eq 0 ]] && [[ $checkApi != "api" || ! -z $(jq -c "if .error.code then . else empty end" 2>/dev/null <<< "$response") ]]; then
+		if [[ $? -eq 0 ]] && [[ $checkApi != "api" || ! -z $(jq -c "if .error.code then . else empty end" 2>/dev/null <<< "$response") ]]; then
 			local totaltime=`echo "$response" | tail -1`
 			totaltime=`bc <<< "scale=0;$totaltime*1000/1"`
 			total=`TimeColor $totaltime`
@@ -121,61 +136,70 @@ function Curl {
 		else
 			#echo -en "$FAIL\t" && break
 			[[ $i -eq 0 && $CYCLES -gt 1 ]] && echo -en $YELLOW"[???]\t$FAIL\t" || echo -en "$FAIL\t"
+			((RESULT++))
 		fi
 	done
 	echo
-	return $LAST_RESULT
+	return $RESULT
 }
 
 
 # nslookup wrapper
 function NSLookup {
-	local LAST_RESULT=0
-	local IP=
-	[ -z ${IP} ] && IP=$1
+	local host=$1
+	local RESULT=0
+	PrintCase2 "DNS" "$host"
+	#`nslookup $1 > /dev/null 2>&1`
+	res=(`dig -4 +noall +answer +retry=0 +time=15 $host | grep -oP ".*\sA\s\K[^\s]+$"`)
+	RESULT=$?
+	[[ $RESULT -eq  0 ]] && echo -e "$OK\t${CYAN}${res[@]}$NOCOLOR" || echo -e $FAIL
+	return $RESULT
+}
 
-	PrintCase "nslookup $1"
-	#`nslookup $IP > /dev/null 2>&1`
-	res=(`dig -4 +noall +answer +retry=0 +time=15 $IP | grep -oP ".*\sA\s\K[^\s]+$"`)
-	LAST_RESULT=$?
-	[[ $LAST_RESULT -eq  0 ]] && echo -e "$OK\t${CYAN}${res[@]}$NOCOLOR" || echo -e $FAIL
-	return $LAST_RESULT
+
+# traceroute wrapper
+function Trace {
+	local host=$1
+	echo -en $WHITE
+	traceroute --resolve-hostnames --max-hop=32 $host
+	echo -en $NOCOLOR
 }
 
 
 # check host with dns resolving, ip, http, https cases
 function Connection {
-	local LAST_RESULT=0
-	local RESULT=0
 	local host=$1
 	local checkApi=$2
+	local RESULT=0
 
-	NSLookup $1
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Please check your DNS server $DNS"$NOCOLOR && return $LAST_RESULT
+	NSLookup "$host"
+	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Please check your DNS server or connection settings$DNS"$NOCOLOR && return 4
 
-	Ping $1
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Please check your connection settings"$NOCOLOR
+	Ping "$host"
+	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Please check your Firewall rules or connection settings"$NOCOLOR && ((RESULT++))
 
-	Curl "http://$1" $checkApi
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"HTTP connection failed. Please check Firewall rules or connection setup"$NOCOLOR
+	Curl "http://$host" $checkApi
+	[ $? -ne 0 ] && echo -e $ERROR_COLOR"HTTP connection failed. Please check Firewall rules"$NOCOLOR && ((RESULT++))
 
-	Curl "https://$1" $checkApi
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"HTTPS (SSL) connection failed. Please check Firewall rules or connection setup"$NOCOLOR
+	Curl "https://$host" $checkApi
+	[ $? -ne 0 ] && echo -e $ERROR_COLOR"HTTPS (SSL) connection failed. Please check Firewall rules"$NOCOLOR && ((RESULT++))
 
-	return $LAST_RESULT
+	return $RESULT
 }
 
 
 # connections test cases
 function Connections {
+	local RESULT=0
+
 	echo -e "${YELLOW}> Checking network connection:${NOCOLOR}"
-	Ping "$LOCAL_GW (Gateway)" $LOCAL_GW
+	Ping "$LOCAL_GW" "$LOCAL_GW ${WHITE}(Gateway)"
 	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping router. Please check your router and physical connection"$NOCOLOR
 
 	for host in "${ALL_DNS[@]}"
 	do
 		[[ $host == $LOCAL_GW ]] && continue;
-		Ping "$host (DNS)" "$host"
+		Ping "$host" "$host ${WHITE}(DNS)"
 		[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping DNS. Please check your internet connection"$NOCOLOR
 	done
 
@@ -190,7 +214,6 @@ function Connections {
 
 	echo
 	echo -e "${YELLOW}> Checking connection to worker API servers:${NOCOLOR}"
-	echo
 
 	if (echo "$API_HOST" | grep -q "hiveos.farm"); then
 		[[ ! " ${API_HOSTS[@]} " =~ " ${API_HOST} " ]] &&
@@ -200,6 +223,9 @@ function Connections {
 		do
 			[[ $host == $API_HOST ]] && echo -e "${WHITE}>>> $host (CURRENT)${NOCOLOR}" || echo -e "${WHITE}>>> $host${NOCOLOR}"
 			Connection "$host" api
+			exitcode=$?
+			# return exicode only for current API server
+			[[ $host == $API_HOST ]] && RESULT=$exitcode
 			if [[ "${API_URLS[@]}" =~ /$host ]]; then
 				for url in "${API_URLS[@]}"
 				do
@@ -212,15 +238,17 @@ function Connections {
 	else
 		echo -e "${WHITE}>>> $API_HOST (CURRENT)${NOCOLOR}"
 		Connection "$API_HOST" api
+		RESULT=$?
+		echo
 	fi
+
+	if [[ $RESULT -eq 3 || $ADV -eq 1 ]]; then
+		echo -e "${YELLOW}> Trace route to current API server:${NOCOLOR}"
+		Trace "$API_HOST"
+	fi
+
+	return $RESULT
 }
-
-
-# traceroute wrapper
-#function Trace {
-#    IP=$1
-#	traceroute $IP
-#}
 
 
 # restarting network interfaces
@@ -257,8 +285,6 @@ merge_all_dns
 # test connections to hive hosts
 Connections
 
-
-
 # if connections was fail try restart network interfaces
 #RestartNetworking
 # test connections again
@@ -279,5 +305,4 @@ Connections
 #fi
 
 
-
-exit $LAST_RESULT
+exit
