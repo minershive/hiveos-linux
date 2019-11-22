@@ -5,12 +5,13 @@ DEBUG_COMMANDS=
 
 ################################################################################
 # Firmware info
+FIRMWARE_UPDATE_LOG="/hive/opt/octofan/fw_update.log"
 FW_VERSION_07="1.1"
 FW_VERSION_09="1.6"
 FW_FILENAME_07="/hive/opt/octofan/firmware_07.hex"
 FW_FILENAME_09="/hive/opt/octofan/firmware_09.hex"
-FIRMWARE_07_MD5="46392f7827d482586768afb34ca02322"
-FIRMWARE_09_MD5="4b39fb3797d6c956d44284c6e71defd6"
+FIRMWARE_MD5_07="46392f7827d482586768afb34ca02322"
+FIRMWARE_MD5_09="4b39fb3797d6c956d44284c6e71defd6"
 MAINTENANCE_SEM_NAME="/tmp/octofan_fw_update"
 ################################################################################
 
@@ -738,19 +739,26 @@ get_fan_json () {
 
 check_avrdude () {
   if [[ `dpkg -s avrdude 2>/dev/null | grep -c "ok installed"` -eq 0 ]]; then
+    [[ -f "/etc/avrdude.conf" ]] && rm -f "/etc/avrdude.conf"
     apt-get install -y avrdude
 #    cp /hive/opt/octofan/avrdude.conf   /etc/avrdude.conf
   fi
 }
 
 update_fw () {
+  #check settings
+  [[ -z $FW_FILENAME ]] && echo "FW_FILENAME is empty" && return 1
+  [[ -z $FIRMWARE_MD5 ]] && echo "FIRMWARE_MD5 is empty" && return 1
+  [[ -z $FW_VERSION ]] && echo "FW_VERSION is empty" && return 1
+
   echo "$(date +"%Y-%m-%d %T") - update firmware" > $MAINTENANCE_SEM_NAME
 
   echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
-  echo2 "Updating fan controller firmware to version $FW_VERSION"
+  echo2 "Updating fan controller firmware | FW_FILENAME=$FW_FILENAME | FW_VERSION=$FW_VERSION | FIRMWARE_MD5=$FIRMWARE_MD5 |"
   echo2 "Checking firmware MD5 sum"
 
-  local fw_sum=`md5sum $FW_FILENAME | cut -f 1 -d " "`
+  local fw_sum="null"
+  fw_sum=`md5sum $FW_FILENAME | cut -f 1 -d " "`
   if [[ ! $FIRMWARE_MD5 == $fw_sum ]]; then
     echo2 "Firmware MD5 sum mismatch. ${RED}Firmware update aborted.${NOCOLOR}"
     rm -f ${MAINTENANCE_SEM_NAME}
@@ -784,17 +792,17 @@ update_fw () {
     if [[ $bl_enter == 1 ]]; then
       cp /hive/opt/octofan/avrdude.conf /etc/avrdude.conf
       echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
-      echo2 "Flashing the firmware $1"
+      echo2 "Flashing the firmware $FW_FILENAME"
 
-      #echo2 "/usr/bin/avrdude -pm328pb -cusbasp -Uflash:w:$1:a"
-      #t_error_txt=`/usr/bin/avrdude -pm328pb -cusbasp -Uflash:w:$1:a 2>&1`
-      #echo2 "/usr/bin/avrdude -pm324pb -cusbasp -U lfuse:w:0xff:m -U hfuse:w:0xd8:m -U efuse:w:0xfd:m -U flash:w:$1:a"
-      #t_error_txt=`/usr/bin/avrdude -pm324pb -cusbasp -U lfuse:w:0xff:m -U hfuse:w:0xd8:m -U efuse:w:0xfd:m -U flash:w:$1:a 2>&1`
-      echo2 "/usr/bin/avrdude -pm324pb -cusbasp -U flash:w:$1:a"
-      t_error_txt=`/usr/bin/avrdude -pm324pb -cusbasp -U flash:w:$1:a 2>&1`
+      #echo2 "/usr/bin/avrdude -pm328pb -cusbasp -Uflash:w:$FW_FILENAME:a"
+      #t_error_txt=`/usr/bin/avrdude -pm328pb -cusbasp -Uflash:w:$FW_FILENAME:a 2>&1`
+      #echo2 "/usr/bin/avrdude -pm324pb -cusbasp -U lfuse:w:0xff:m -U hfuse:w:0xd8:m -U efuse:w:0xfd:m -U flash:w:$FW_FILENAME:a"
+      #t_error_txt=`/usr/bin/avrdude -pm324pb -cusbasp -U lfuse:w:0xff:m -U hfuse:w:0xd8:m -U efuse:w:0xfd:m -U flash:w:$FW_FILENAME:a 2>&1`
+      echo2 "/usr/bin/avrdude -pm324pb -cusbasp -U flash:w:$FW_FILENAME:a"
+      t_error_txt=`/usr/bin/avrdude -pm324pb -cusbasp -U flash:w:$FW_FILENAME:a 2>&1`
       if [[ $? -ne 0 ]]; then
         #one more try
-        t_error_txt=`/usr/bin/avrdude -pm324pb -cusbasp -U flash:w:$1:a 2>&1`
+        t_error_txt=`/usr/bin/avrdude -pm324pb -cusbasp -U flash:w:$FW_FILENAME:a 2>&1`
         if [[ $? -ne 0 ]]; then
           error=1
           error_txt+="$(date +"%Y-%m-%d %T") Error on flashing firmware: $t_error_txt "
@@ -954,33 +962,31 @@ check_firmware () {
   local hw_cur_ver=`$OCTOFAN_BIN -r | grep "VERSION-HW:" | cut -f 2 -d " "`
   echo2 "Current HW version is: $hw_cur_ver"
 
-  dpkg --compare-versions "0.9" "eq" "$hw_cur_ver"
-  if [ $? -eq "0" ]; then
-    #HW verison 0.9
-    FW_VERSION=$FW_VERSION_09
-    dpkg --compare-versions "$FW_VERSION" "le" "$fw_cur_ver"
-    if [ $? -ne "0" ]; then
-      check_avrdude
-      FW_FILENAME$FW_FILENAME_09
-      FIRMWARE_MD5=$FIRMWARE_MD5_09
-      update_fw
-    fi
-  else
-    dpkg --compare-versions "0.7" "eq" "$hw_cur_ver"
-    if [ $? -eq "0" ]; then
-      #HW verison 0.7
-      FW_VERSION=$FW_VERSION_07
-      dpkg --compare-versions "$FW_VERSION" "le" "$fw_cur_ver"
-      if [ $? -ne "0" ]; then
-        check_avrdude
-        FW_FILENAME$FW_FILENAME_07
-        FIRMWARE_MD5=$FIRMWARE_MD5_07
-        update_fw
-      fi
-    else
-      echo2 "No firmware updates for your hardware"
-    fi
-  fi
+  case $hw_cur_ver in
+    "0.9" )
+        FW_VERSION=$FW_VERSION_09
+        dpkg --compare-versions "$FW_VERSION" "le" "$fw_cur_ver"
+        if [ $? -ne "0" ]; then
+          check_avrdude
+          FW_FILENAME=$FW_FILENAME_09
+          FIRMWARE_MD5=$FIRMWARE_MD5_09
+          update_fw
+        fi
+      ;;
+    "0.7" )
+        FW_VERSION=$FW_VERSION_07
+        dpkg --compare-versions "$FW_VERSION" "le" "$fw_cur_ver"
+        if [ $? -ne "0" ]; then
+          check_avrdude
+          FW_FILENAME=$FW_FILENAME_07
+          FIRMWARE_MD5=$FIRMWARE_MD5_07
+          update_fw
+        fi
+      ;;
+    * )
+        echo2 "No firmware updates for your hardware"
+      ;;
+  esac
 }
 
 check_sem () {
@@ -1020,7 +1026,6 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
     blink_off
   elif [[ $1 == "run" ]]; then
     check_config
-    check_firmware
     octo_fan_control
   elif [[ $1 == "save_text_to_EEPROM" ]]; then
     save_text_to_EEPROM
@@ -1033,6 +1038,9 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
   elif [[ $1 == "dontattach" ]]; then
     session_count=`screen -ls octofan | grep octofan | wc -l`
     if [[ $session_count -eq 0 ]]; then
+      check_config
+      check_firmware | tee "$FIRMWARE_UPDATE_LOG"
+
       #start new screen
       screen -dm -S octofan $0 run
       echo2 "Octofan screen started"
@@ -1044,6 +1052,9 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
     if [[ $session_count -gt 0 ]]; then
       screen -x -S octofan
     else #start new screen
+      check_config
+      check_firmware | tee "$FIRMWARE_UPDATE_LOG"
+
       screen -dm -S octofan $0 run
       echo2 "Octofan screen started"
     fi
