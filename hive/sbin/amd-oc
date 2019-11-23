@@ -101,6 +101,9 @@ if [[ -z $dirs ]]; then
 	exit 1
 fi
 
+[[ -f $GPU_DETECT_JSON ]] &&
+	gpu_names=`cat $GPU_DETECT_JSON | jq -r -c '.[] | select(.brand == "amd") | (.busid+"\""+.name+" "+.mem+"\"")'`
+
 #cardno and busid can be unsorted, like card1=>03:00, card2=>05:00
 busids_dirs=()
 for dir in $dirs; do
@@ -136,8 +139,13 @@ for bdir in $busids_dirs; do
 	#busid=`realpath /sys/class/drm/card$cardno/device | awk -F/ '{print $NF}'`
 	busid=`echo $bdir | awk -F\; '{print $1}'`
 	busid=${busid#0000:} #trim prefix
+	
+	#03:00.0"Radeon RX 570 8192 MB"
+	[[ $gpu_names =~ $busid\"([^\"]+) ]] &&
+		name="${RED}${BASH_REMATCH[1]}${NOCOLOR} #$cardno" ||
+		name=/sys/class/drm/card$cardno
 
-	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${PURPLE}$busid${NOCOLOR} /sys/class/drm/card$cardno ${YELLOW}===${NOCOLOR}"
+	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${PURPLE}$busid${NOCOLOR} $name ${YELLOW}=== `date +"%T"`${NOCOLOR}"
 	savedpp=/tmp/pp_tables/card$cardno/pp_table
 
 	[[ ! -e $savedpp ]] && echo -e "ERROR: $savedpp not found, try to reboot" && continue
@@ -154,10 +162,7 @@ for bdir in $busids_dirs; do
 		else
 			. /hive/sbin/amd-oc.classic.sh
 		fi
-	fi
 
-
-	if [[ $VEGAS_COUNT -eq 0 ]] ; then
 		if [[ ! -z $coreState || ! -z $memoryState ]]; then
 			echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
 
@@ -169,10 +174,6 @@ for bdir in $busids_dirs; do
 				echo $memoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
 		fi
 	fi
-
-	#wolfamdctrl -i $i --mem-clock 2000 --mem-state 1
-	#wolfamdctrl -i $i --core-clock 1100 --core-state 7
-	#wolfamdctrl -i 0 --core-vddc-idx 4 --core-state 7
 done
 
 sync
