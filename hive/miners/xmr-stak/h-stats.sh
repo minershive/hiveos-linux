@@ -5,7 +5,7 @@ get_cpu_temp () {
   [[ ! -z $coretemp0 ]] && #may not work with AMD cpous
     local tcore=$((`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input | head -n 1`/1000)) ||
     tcore=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n 1 | awk '{print $1/1000}'` #maybe we will need to detect AMD cores
-  echo $tcore
+  [[ ! -z $tcore ]] && echo $tcore || echo null
 }
 
 stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:${MINER_API_PORT}/api.json`
