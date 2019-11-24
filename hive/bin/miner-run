@@ -38,6 +38,7 @@ function hive-package-install () {
 		# stop watchdog while installing packages
 		local wd=$(wd status | grep -c running)
 		[[ $wd -ne 0 ]] && wd stop
+		dpkg --configure -a
 		hpkg update
 		hive-package-install-do $package_name
 		if [[ $? -ne 0 ]]; then
