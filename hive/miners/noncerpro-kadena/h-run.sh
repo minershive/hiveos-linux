@@ -10,4 +10,4 @@ cd $MINER_DIR/$MINER_VER
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${MINER_DIR}/${MINER_VER}
 
-./noncerpro-kadena $(< ./miner.conf) 2>&1
+./noncerpro-kadena $(< ./miner.conf) --api=true --apiport=${MINER_API_PORT} 2>&1
