@@ -1,93 +1,356 @@
 #!/usr/bin/env bash
 
-[[ -z $1 ]] &&
-	echo "Usage: `basename $0` ping|reset|power|fw|read [port]" &&
-	exit 1
-
+# default port
 PORT=/dev/ttyACM0
 
-if [ ! -z $2 ]; then
-	if [[ $2 == "/dev/sg0" || $2 == "/dev/hidraw0" ]]; then
-		echo "Skipping buggy detected port $2"
-		exit 1;
+# buggy devices to skip
+buggy=("/dev/sg0" "/dev/hidraw0")
+
+
+check_port() {
+	[[ ! -z $1 ]] && PORT=$1
+	if [[ " ${buggy[@]} " =~ " $PORT " ]]; then
+		echo "Skipping buggy detected device: $PORT"
+		exit 3
 	fi
-	PORT=$2
+	[[ ! -c $PORT ]] && echo "$PORT is not a character device" && exit 2
 	echo "Using $PORT"
-else
-	echo "Using $PORT by default"
-fi
+}
 
-[[ ! -c $PORT ]] &&
-	echo "$PORT is not a character device" &&
-	exit 1
-
-
-if [[ $1 == "reset" ]]; then
-	echo "Pushing Reset"
-	echo -n "~T1" > $PORT
-	exit 0
-fi
-
-
-if [[ $1 == "power" ]]; then
-	echo "Pushing Power"
-	echo -n "~T2" > $PORT
-	exit 0
-fi
-
-
-DMPLOG=/tmp/owdump.log
 
 watchdog_query() {
-	stty -F $PORT 115200 raw -echo
+	local DMPLOG=/tmp/owdump.log
+	stty -F $PORT 9600 raw -echo || return 1
 	for (( i=1; i <= 10; i++ ))
 	do
 		exec {fd}< $PORT
 		cat <&${fd} > $DMPLOG &
-		echo -n $1 > $PORT
+		echo -n $1 > $PORT || return 2
 		sleep 0.1s
 		kill -INT $!
 		exec {fd}<&-
 		reply=`cat $DMPLOG | cut -d"~" -f 2`
-		if [ ! -z "$reply" ]; then
-			break
-		fi
+		[[ ! -z $reply && "$reply" != "A" ]] && echo $reply && return 0
+		sleep 0.2s
 	done
-	echo $reply
+	return 3
 }
 
 
-if [[ $1 == "fw" ]]; then
-	echo "Reading firmware version"
-	watchdog_query "~I"
-	exit 0
-fi
+watchdog_ping() {
+	#if port 22 (ssh) responds then
+	#send ping signal to WD, if WD does not receive it for a while, then WD RESET the MB.
+	pinging=1
+	while true
+	do
+		t1=`date +%s` || t1=0
+		#if [[ $pinging -eq 1 && `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]]; then
+		if [[ $pinging -eq 1 ]] && nc -w 1 -z localhost 22 2>&1; then
+			echo "Pinging watchdog"
+			echo -n "~U" > $PORT || break;
+		else
+			echo "NOT pinging watchdog"
+		fi
+		sleep 5
+		t2=`date +%s` || t2=0
+		[[ $t2 -eq 0 || $t1 -eq 0 || $(( t2 - t1 )) -ge 10 ]] && pinging=0 || pinging=1
+	done
+
+	message error "opendev wd error"
+	exit 1
+}
 
 
-if [[ $1 == "read" ]]; then
-	echo "Reading settings"
-	watchdog_query "~F"
-	exit 0
-fi
+watchdog_settings_decode() {
+	#
+	# Configuration string deserialization
+	#
+	# Watchdog Lite
+	#
+	# #		unit		desc
+	# --------------------------------------------------------------------------------------------
+	# 1		1 мин*		Ожидания сигнала перезагрузки (t1).
+	# 2		100 мс*		Длительность импульса сигнала «Reset» (t2). Для версии выпуском позднее 07.2017.
+	#					*значения параметров могут быть в диапазоне 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A(10), B(11), C(12), D(13), E(14), F(15).
+	#
+	# Watchdog Pro2
+	#
+	# #		unit		desc
+	# --------------------------------------------------------------------------------------------
+	# 1		1 мин*		Ожидания сигнала перезагрузки (t1).
+	# 2		100 мс*		Длительность импульса сигнала «Reset» (t2).
+	# 3		1 с*		Длительность импульса сигнала «Power» (t3).
+	# 4		1 с*		Длительность ожидания (t4).
+	# 5		100 мс*		Длительность импульса сигнала «Power» (t5).
+	# 6					Режим канала 1: 0 - выкл, 1 - RESET, 2 - POWER, 3 - управляемый (нач. сост. - открыт), 4 - управляемый (нач. сост. - закрыт).
+	# 7					Режим канала 2: 0 - выкл, 1 - RESET, 2 - POWER, 3 - управляемый (нач. сост. - открыт), 4 - управляемый (нач. сост. - закрыт).
+	# 8					Ограничение количества перезагрузок. 0 - нет ограничений.
+	# 9					Режим канала 3 (Вх/In): 0 - выкл, 1 - дискретный вход, 3 - вход датчика температуры ds18b20.
+	# 10				Пороговое значение температуры для автоматического перезапуска. Актуально при канале 3 (Вх/In), установленном в режим опроса датчика температуры. Задаётся значением пороговой температуры в шестнадцатеричном формате, например: 32 градуса - 20, 80 градусов - 50, 00 - отключено.
+	#					*значения параметров 1-5 могут быть в диапазоне 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A(10), B(11), C(12), D(13), E(14), F(15).
 
 
-#should be ping here, but will work with any
-#if port 22 (ssh) responds then
-#send ping signal to WD, if WD does not receive it for a while, then WD RESET the MB.
-pinging=1
-while true
-do
-	t1=`date +%s` || t1=0
-	#if [[ $pinging -eq 1 && `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]]; then
-	if [[ $pinging -eq 1 ]] && nc -w 1 -z localhost 22 2>&1; then
-		echo "Pinging watchdog"
-		echo -n "~U" > $PORT || break;
+	# args
+
+	local -r settings_string_raw="${1-}"
+
+
+	# consts
+
+	local -r -i settings_string_size=${#settings_string_raw}
+	local -r long_line='--------------------------------------------------------------------------------------------------------'
+
+
+	# defaults
+
+	local -r watchdog_version_DEFAULT='unknown'
+	local -r -i chunk_size_DEFAULT=1
+	local -r title_DEFAULT='default title'
+	local -r -i unit_multiplier_DEFAULT=1
+
+
+	# dicts
+
+	local -r -a watchdog_version_dictionary=(
+		[2]='Lite, before 07.2017'
+		[3]='Lite'
+		[12]='Pro2'
+	)
+
+	local -r -A settings_dictionary=(
+		# A simple associative dictionary with [offset.entity] structure. Entities are:
+		# title
+		# size (default: 1 char)
+		# unit (default: empty)
+		# unit_multiplier (default: 1)
+		# valueN (default: none)
+
+		['0.title']='Always 15 (0x0F)'
+
+		['1.title']="Time interval before RESET signal (t1)"
+		['1.unit']='min'
+
+		['2.title']='RESET signal duration (t2)'
+		['2.unit']='ms'
+		['2.unit_multiplier']='100'
+
+		['3.title']='POWER-OFF signal duration (t3)'
+		['3.unit']='sec'
+
+		['4.title']='Pause between POWER signals (t4)'
+		['4.unit']='sec'
+
+		['5.title']='POWER-ON signal duration (t5)'
+		['5.unit']='ms'
+		['5.unit_multiplier']='100'
+
+		['6.title']='Channel 1 (Output)'
+		['6.value0']='<not used>'
+		['6.value1']='RESET'
+		['6.value2']='POWER'
+		['6.value3']='managed (initial state: OPENED)'
+		['6.value4']='managed (initial state: CLOSED)'
+
+		['7.title']='Channel 2 (Output)'
+		['7.value0']='<not used>'
+		['7.value1']='RESET'
+		['7.value2']='POWER'
+		['7.value3']='managed (initial state: OPENED)'
+		['7.value4']='managed (initial state: CLOSED)'
+
+		['8.title']='Limit RESET attempts'
+		['8.unit']='times'
+		['8.value0']='no limit'
+
+		['9.title']='Channel 3 (Input)'
+		['9.value0']='<not used>'
+		['9.value1']='Digital input'
+		['9.value3']='Temperature sensor (ds18b20)'
+
+		['10.title']='Temperature threshold for RESET'
+		['10.size']=2
+		['10.unit']='C'
+		['10.value0']='<not used>'
+	)
+
+
+	# code
+
+	printf 'Watchdog version: %s (%d chars)\n' "${watchdog_version_dictionary[settings_string_size]:-${watchdog_version_DEFAULT}}" "$settings_string_size"
+	printf "Raw configuration: '%q', decoding:\n" "$settings_string_raw"
+	printf '%s\n' "$long_line"
+	printf '| %2.2s | %40.40s | %-40.40s | %3.3s | %3.3s |\n' '#' 'Description' 'Decoded value' 'DEC' 'HEX'
+	printf '%s\n' "$long_line"
+
+	# let's deserialize
+	for (( offset=0; offset < settings_string_size; )); do
+
+		# get the chunk
+		chunk_size="${settings_dictionary[${offset}.size]:-${chunk_size_DEFAULT}}"
+		chunk_raw="${settings_string_raw:${offset}:${chunk_size}}"
+
+		title="${settings_dictionary[${offset}.title]:-${title_DEFAULT}}"
+
+		# let's validate for hex numbers (regex: only hexes, at least one)
+		if [[ $chunk_raw =~ ^[[:xdigit:]]{1,}$ ]]; then
+			char_in_hex="${chunk_raw^^}"
+			char_in_dec="$(( 16#${char_in_hex} ))"
+
+			# first we'll go for enums, then for units
+			# are there enum values in the dictionary?
+			if [ -n "${settings_dictionary[${offset}.value${char_in_dec}]}" ]; then
+				# yes, we've got enums, let's use them
+				decoded_value="${settings_dictionary[${offset}.value${char_in_dec}]}"
+			else
+				# no enums. are there units in the dictionary?
+				if [ -n "${settings_dictionary[${offset}.unit]}" ]; then
+					# yes, we've got units, let's use them
+					unit_name="${settings_dictionary[${offset}.unit]}"
+					unit_multiplier="${settings_dictionary[${offset}.unit_multiplier]:-${unit_multiplier_DEFAULT}}"
+					value=$(( char_in_dec * unit_multiplier ))
+					decoded_value="$value $unit_name"
+				else
+					# enums: none, units: none. nothing to decode.
+					decoded_value='-'
+				fi
+			fi
+			printf '| %2.2s | %40.40s | %-40.40s | %3d |  %2.2s |\n' "$offset" "$title" "$decoded_value" "$char_in_dec" "$char_in_hex"
+		else
+			# didn't validated, print some diagnostic info
+			chunk_raw_ascii="$( printf '%d' "'$chunk_raw" )" # get the ascii-code of the symbol
+			#                                ^ and yes it's fully legit, trust me
+			printf '| %2.2s | %40.40s | %-40.40s | %3.3s |  %2.2s |\n' "$offset" "$title" "ERR: '$chunk_raw' (ASCII $chunk_raw_ascii) is not a hex number" '-' '-'
+		fi
+		(( offset += chunk_size ))
+	done
+
+	printf '%s\n' "$long_line"
+}
+
+
+watchdog_decode_temperature() {
+	raw_answer_string="$1"
+	# check for valid temperature. not sure there're negative numbers, but why not?
+	# regex is: 1st=digit or '-'; 2nd=digit; 3rd=digit; 4th=digit
+	if [[ "$raw_answer_string" == "G0000"  ]]; then
+		echo "0°C or temperature sensor is not attached"
+	elif [[ "$raw_answer_string" == 'GEEEE' ]]; then
+		echo "Error or temperature sensor is not attached"
+	elif [[ $raw_answer_string =~ ^G(-|[[:digit:]])[[:digit:]]{3}$ ]]; then
+		# watchdog gives us 5 chars: 'G' + temperature multiplied by 10. let's decompose:
+		temperature_with_sign="${raw_answer_string:1}" # strip 'G'
+		# decouple number and its sign
+		if [[ "${temperature_with_sign:0:1}" == '-' ]]; then
+			sign='-'; unsigned_temperature="${temperature_with_sign:1}" # strip sign
+		else
+			sign='+'; unsigned_temperature="${temperature_with_sign}" # do nothing
+		fi
+		printf '%.1f °C\n' "$((10**9 * ${sign}10#${unsigned_temperature}/10))e-9"
 	else
-		echo "NOT pinging watchdog"
+		echo "Unknown error, answer is '$raw_answer_string'"
 	fi
-	sleep 5
-	t2=`date +%s` || t2=0
-	[[ $t2 -eq 0 || $t1 -eq 0 || $(( t2 - t1 )) -ge 10 ]] && pinging=0 || pinging=1
-done
+}
 
-message error "opendev wd error"
+
+case $1 in
+	reset)
+		check_port $2
+		echo "Pushing Reset"
+		echo -n "~T1" > $PORT
+	;;
+
+	power)
+		check_port $2
+		echo "Pushing Power"
+		echo -n "~T2" > $PORT
+	;;
+
+	poweroff)
+		check_port $2
+		echo "Turning power off completely"
+		echo -n "~T3" > $PORT
+	;;
+
+	ping)
+		check_port $2
+		watchdog_ping
+	;;
+
+	fw|firmware)
+		check_port $2
+		echo "Reading firmware version"
+		query="$( watchdog_query '~I' )" || exit
+		[[ $query =~ ^I[0-9]{3}$ ]] &&
+			echo "${query/I/v} - Bitroleum watchdog (Red PCB)" ||
+			echo "${query/I/v} - Opendev watchdog (Black PCB)"
+	;;
+
+	read)
+		check_port $2
+		echo "Reading settings"
+		watchdog_query "~F" || exit
+	;;
+
+	settings)
+		check_port $2
+		echo "Reading settings"
+		query="$( watchdog_query '~F' )" || exit
+		watchdog_settings_decode "$query"
+	;;
+
+	temp|temperature)
+		check_port $2
+		echo "Reading temperature"
+		query="$( watchdog_query '~G' )" || exit
+		watchdog_decode_temperature "$query"
+	;;
+
+	decode)
+		watchdog_settings_decode "$2"
+	;;
+
+	write)
+		check_port $3
+		query="$(watchdog_query "~F")" || exit
+		[[ ! $2 =~ ^F[0-9A-Fa-f]{$(( ${#query} - 1 ))}$ ]] && echo "Settings format is wrong. It has to be like '$query'" && exit 1
+		[[ "$2" == "$query" ]] && echo "These settings are already written: '$query'" && exit 0
+		echo "Writing settings"
+		echo "Old settings: '$query'"
+		echo "New settings: '$2'"
+		query=`watchdog_query "~W${2/F}"` || exit
+		[[ "$query" == "$2" ]] &&
+			echo "Done" ||
+			echo "Now settings: '$query' - incorrect parameter or firmware limitation"
+	;;
+
+	disable|pause)
+		check_port $2
+		echo "Disabling watchdog"
+		query="$( watchdog_query '~P1' )" || exit
+		[[ $query == "P1" ]] &&
+			echo "Done" ||
+			echo "Unexpected response: $query"
+	;;
+
+	enable|resume)
+		check_port $2
+		echo "Enabling watchdog"
+		query="$( watchdog_query '~P0' )" || exit
+		[[ $query == "P0" ]] &&
+			echo "Done" ||
+			echo "Unexpected response: $query"
+		
+	;;
+
+	*)
+		name=`basename $0`
+		echo "Usage: $name  ping|reset|power [port]"
+		echo "       $name  fw|read|settings [port]"
+		echo "       $name  temp|temperature [port]"
+		echo "       $name  write <settings> [port]"
+		echo "       $name  decode <settings>"
+		echo "       $name  enable|disable [port]"
+		echo "       $name  poweroff [port]"
+		exit 1
+	;;
+esac
