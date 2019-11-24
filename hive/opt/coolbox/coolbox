@@ -66,17 +66,13 @@ get_stats(){
   temp_array=
 
   #check $GPU_STATS_JSON and do nothing while not exist
-  while true; do
-    if [ -f $GPU_STATS_JSON ]; then
-      temp_array=`cat $GPU_STATS_JSON | tail -1 | jq -c ".temp"`
-      break
-    fi
-    sleep 10
-  done
+  if [ -f $GPU_STATS_JSON ]; then
+    temp_array=`cat $GPU_STATS_JSON | tail -1 | jq -c ".temp"`
 
-  #remove Internal Gpus
-  [[ $cpu_indexes_array != '[]' && ! -z $cpu_indexes_array ]] &&
-      temp_array=$(jq -c "del(.$cpu_indexes_array)" <<< $temp_array) #"
+    #remove Internal Gpus
+    [[ $cpu_indexes_array != '[]' && ! -z $cpu_indexes_array ]] &&
+        temp_array=$(jq -c "del(.$cpu_indexes_array)" <<< $temp_array) #"
+  fi
 
   temp_array=`echo $temp_array | jq -rc '.[]'`
   local request_str=''
@@ -87,14 +83,21 @@ get_stats(){
   done
   request_str="^"$(printf "%02d" $i)"$request_str"$(printf "%02d" $TARGET_TEMP)$(printf "%03d" $MANUAL_FAN)${FAN_MODE}${WATCHDOG}$(printf "%02d" $WD_RESET_INTERVAL)"\$"
 
+  #{"temp": [null, 0, 9, 65, 66, 64], "target_temp": 65, "manual_fan_speed": 50, "fan_mode": 1, "watchdog": 1, "wd_reser_interval": 120}
+
   local answer_str=`send_request $request_str`
-  echo $answer_str > $CLI_OUTPUT
-  echo $answer_str
+
+  #j6dhnD9A3/gDLAnyU8W3HFOWWWJJdSRMA4lXqN62HR6Xy6aglnJx9ISSBM1yOgDMWamERZF2y6qVW82oqEZ5rQ==^{"casefan": [85,85,0,85], "thermosensors": [25,37]}$
+
+  if [[ ${answer_str:88:1} == "^" ]]; then
+    echo $answer_str > $CLI_OUTPUT
+    echo $answer_str
+  fi
 }
 
 get_serial(){
-  coolbox_stats=`get_stats`
-  echo ${coolbox_stats:0:$SERIAL_LENGTH}
+  [[ `get_file_time_diff` -lt 5 ]] && coolbox_stats=`cat $CLI_OUTPUT` || coolbox_stats=`send_request '^00000000000$'`
+  [[ ${coolbox_stats:88:1} == "^" ]] && echo ${coolbox_stats:0:$SERIAL_LENGTH}
 }
 
 get_json(){
@@ -124,6 +127,8 @@ if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
 else
   if [[ $1 == "--get_json" ]]; then
     echo "{}"
+  elif [[ $1 == "--get_serial" ]]; then
+    echo ""
   else
     echo "No Coolbox hardware found"
   fi

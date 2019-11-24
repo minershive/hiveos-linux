@@ -351,9 +351,9 @@ function loop {
 	fi
 
 	# Add Coolbox Autofan controller stats to json
-	if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
-		if [[ ! -z `$COOLBOX --get_serial` ]]; then
-			local coolbox=`$COOLBOX --get_json`
+	if [[ -f $COOLBOX_AVAILABLE_FILE ]]; then
+		local coolbox=`$COOLBOX --get_json`
+		if [[ ! -z $coolbox ]]; then
 			coolbox=`sanitize_fan_controller_stats "$coolbox"`
 			coolbox_stats=$(
 				jq -n \

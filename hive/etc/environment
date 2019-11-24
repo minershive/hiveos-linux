@@ -21,7 +21,8 @@ OCTOFAN_CONF=/hive-config/octofan.conf
 OCTOFAN=/hive/opt/octofan/octofan
 
 COOLBOX_CONF=/hive-config/coolbox.conf
-COOLBOX=/hive/opt/coolbox/coolbox 
+COOLBOX=/hive/opt/coolbox/coolbox
+COOLBOX_AVAILABLE_FILE=/run/hive/coolbox_avaible
 
 GPU_DETECT_JSON=/run/hive/gpu-detect.json
 GPU_STATS_JSON=/run/hive/gpu-stats.json

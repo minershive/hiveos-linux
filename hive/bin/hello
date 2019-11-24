@@ -202,6 +202,10 @@ if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
 
 		[[ ! -z $coolbox_json ]] &&
 			request=`echo "$request" "$coolbox_json" | jq -s '.[0] * .[1]'`
+
+    touch $COOLBOX_AVAILABLE_FILE
+  else
+    rm -f $COOLBOX_AVAILABLE_FILE
 	fi
 fi
 
