@@ -44,6 +44,11 @@ for param in $@; do
 			echo -e "${YELLOW}> Cleaning Hive apt lists${NOCOLOR}"
 			# force HiveOS lists download
 			rm -f /var/lib/apt/lists/*hiveos*
+			# remove apt/dpkg lock files
+			echo -e "${YELLOW}> Removing apt/dpkg lock files${NOCOLOR}"
+			rm -f /var/lib/dpkg/lock*
+			rm -f /var/lib/apt/lists/lock*
+			rm -f /var/cache/apt/archives/lock*
 		;;
 
 		http*) #Set user repository
@@ -202,7 +207,7 @@ miner start
 
 # Restarting ROH Fan controller
 if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
-  screen -S octofan -X quit > /dev/null
+	screen -S octofan -X quit > /dev/null
 	$OCTOFAN dontattach
 fi
 
@@ -210,6 +215,8 @@ current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 [[ -e /hive-config/RepoVer ]] &&
 	repover=`cat /hive-config/RepoVer` ||
 	repover=0
+
 echo -e "${GREEN}Upgrade to ${YELLOW}$current_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
+[[ ! -z $VERSION ]] && echo -e "${WHITE}Reboot is highly recommended after downgrade.${NOCOLOR}"
 
 exit $dexitcode
