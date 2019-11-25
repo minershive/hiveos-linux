@@ -78,11 +78,11 @@ ips_json=`echo "${ips[@]}" | jq -R . | jq -s -c .`
 net_interfaces=`ip -o link | grep -vE 'LOOPBACK|POINTOPOINT|sit0|can0|docker|sonm|ifb' | awk '{  printf "{\"iface\": \"%s\", \"mac\": \"%s\"}\n", substr($2, 1, length($2)-1), $(NF-2)  }' | jq -sc .`
 [ -f $VPN_INSTALLED ] && openvpn=1 || openvpn=0
 #taken from netconf
-lan_address=`ip -o -f inet addr show | grep eth0 | awk '/scope global/ {print $4}'`
+lan_addresses=(`ip -o -f inet addr show | grep eth0 | awk '/scope global/ {print $4}'`)
 lan_gateway=`ip route | awk '/default/ && /eth0/ { print $3 }' | head -1`
 lan_dns=`cat /run/systemd/resolve/resolv.conf | grep -m1 ^nameserver | awk '{print $2}'`
 cat /etc/systemd/network/20-ethernet.network | grep -q '^DHCP=yes' && lan_dhcp=1 || lan_dhcp=0
-lan_config="{\"dhcp\": $lan_dhcp, \"address\": \"$lan_address\", \"gateway\": \"$lan_gateway\", \"dns\": \"$lan_dns\"}"
+lan_config="{\"dhcp\": $lan_dhcp, \"address\": \"${lan_addresses[@]}\", \"gateway\": \"$lan_gateway\", \"dns\": \"$lan_dns\"}"
 
 mb_manufacturer=`dmidecode | grep -A4 '^Base Board Information' | grep "Manufacturer:" | sed -E 's/\sManufacturer:\s+(.*)/\1/'`
 mb_product=`dmidecode | grep -A4 '^Base Board Information' | grep "Product Name:" | sed -E 's/\sProduct Name:\s+(.*)/\1/'`
@@ -203,9 +203,9 @@ if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
 		[[ ! -z $coolbox_json ]] &&
 			request=`echo "$request" "$coolbox_json" | jq -s '.[0] * .[1]'`
 
-    touch $COOLBOX_AVAILABLE_FILE
-  else
-    rm -f $COOLBOX_AVAILABLE_FILE
+		touch $COOLBOX_AVAILABLE_FILE
+	else
+		rm -f $COOLBOX_AVAILABLE_FILE
 	fi
 fi
 
