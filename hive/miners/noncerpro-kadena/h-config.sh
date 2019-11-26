@@ -16,9 +16,13 @@ function miner_config_gen() {
   echo $MINER_CONFIG
   mkfile_from_symlink $MINER_CONFIG
 
-  local conf="--address=`echo ${NONCERPRO_KADENA_TEMPLATE} | tr -d ' '` \
-              --server=${NONCERPRO_KADENA_HOST} \
-              --port=${NONCERPRO_KADENA_PORT} \
-              ${NONCERPRO_KADENA_USER_CONFIG}"
+  [[ $NONCERPRO_KADENA_CUDA -eq 1 ]] && local platform="nvidia" || local platform="amd"
+
+  local conf=--address=`echo $NONCERPRO_KADENA_TEMPLATE | tr -d ' '`
+  conf+=" --server=$NONCERPRO_KADENA_HOST"
+  conf+=" --port=$NONCERPRO_KADENA_PORT"
+  conf+=" --platform $platform"
+  [[ ! -z $NONCERPRO_KADENA_USER_CONFIG ]] && conf+=${NONCERPRO_KADENA_USER_CONFIG}
+
   echo "$conf" > $MINER_CONFIG
 }
