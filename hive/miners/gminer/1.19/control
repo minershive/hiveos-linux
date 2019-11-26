@@ -1,7 +1,0 @@
-Package: hive-miners-gminer-1.19
-Version: 0.6-02
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner. Gminer v1.19
