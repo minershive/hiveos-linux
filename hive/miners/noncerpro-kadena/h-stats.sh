@@ -19,7 +19,7 @@ else
 
   local uptime=`get_miner_uptime`
 
-  local algo="Blake2s_256"
+  local algo="blake2s_256"
 
   local temp=$(jq "[.temp$nvidia_indexes_array]" <<< $gpu_stats)
   local fan=$(jq "[.fan$nvidia_indexes_array]" <<< $gpu_stats)
