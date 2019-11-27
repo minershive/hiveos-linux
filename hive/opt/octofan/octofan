@@ -472,6 +472,22 @@ blink_to_find () {
   fi
 }
 
+fan_autodetect () {
+  check_cli_output
+
+  local i=0
+  local fan_no=
+  local line=
+
+  while read -r line ; do
+    [[ `echo $line | cut -d " " -f 5` -eq 0 ]] && continue
+    fan_no=`echo $line | cut -d " " -f 3`
+
+    eval "FAN$i=\$fan_no"
+    ((i++))
+  done < <(cat $CLI_OUTPUT | grep "FAN No." | grep "RPM:" | grep -v "max")
+}
+
 load_def_values () {
   [[ -f $OCTOFAN_CONF ]] && source $OCTOFAN_CONF
 
@@ -482,9 +498,14 @@ load_def_values () {
   [[ -z $MIN_FAN ]] && MIN_FAN=$DEF_MIN_FAN
   [[ -z $MAX_FAN ]] && MAX_FAN=$DEF_MAX_FAN
   [[ -z $TARGET_TEMP ]] && TARGET_TEMP=$DEF_TARGET_TEMP
-  [[ -z $FAN1_PORT ]] && FAN0=$DEF_FAN0 || FAN0=$FAN1_PORT
-  [[ -z $FAN2_PORT ]] && FAN1=$DEF_FAN1 || FAN1=$FAN2_PORT
-  [[ -z $FAN3_PORT ]] && FAN2=$DEF_FAN2 || FAN2=$FAN3_PORT
+
+  if [[ -z $FAN1_PORT && -z $FAN2_PORT && -z $FAN3_PORT ]]; then
+    [[ -z $FAN0 || -z $FAN1 || -z $FAN2 ]] && fan_autodetect
+  else
+    [[ -z $FAN1_PORT ]] && FAN0=$DEF_FAN0 || FAN0=$FAN1_PORT
+    [[ -z $FAN2_PORT ]] && FAN1=$DEF_FAN1 || FAN1=$FAN2_PORT
+    [[ -z $FAN3_PORT ]] && FAN2=$DEF_FAN2 || FAN2=$FAN3_PORT
+  fi
 
   [[ -z $BLINK_ON_ERRORS_LED ]] && BLINK_ON_ERRORS_LED=$DEF_BLINK_ON_ERRORS_LED
   [[ -z $BLINK_ON_ERRORS_TYPE ]] && BLINK_ON_ERRORS_TYPE=$DEF_BLINK_ON_ERRORS_TYPE
@@ -877,21 +898,45 @@ check_fan_max_rpm () {
     local f2_max_rpm=`cat $CLI_OUTPUT | grep "FAN No. $FAN2 max RPM:" | cut -f 6 -d " "`
     [[ $DEBUG_COMMANDS -ge 1 ]] && echo "f${FAN2}_max_rpm=$f2_max_rpm"
 
-    if [[ $FAN1_MAX_RPM -gt 0 && $FAN1_MAX_RPM -ne $f0_max_rpm ]]; then
-      echo2 "Setting FAN 0 max PRM to ${PURPLE}$FAN1_MAX_RPM${NOCOLOR}"
-      $OCTOFAN_BIN -m $FAN0 -v $FAN1_MAX_RPM
-      sleep 0.1
+    b_recalibrate=0
+    if [[ $FAN1_MAX_RPM -gt 0 ]]; then
+      if [[ $FAN1_MAX_RPM -ne $f0_max_rpm ]]; then
+        echo2 "Setting FAN 0 max PRM to ${PURPLE}$FAN1_MAX_RPM${NOCOLOR}"
+        $OCTOFAN_BIN -m $FAN0 -v $FAN1_MAX_RPM
+        sleep 0.1
+      fi
+    else
+      if [[ $f0_max_rpm -eq 65535 ]]; then
+        echo2 "Fan$FAN0 need recalibration"
+        ((b_recalibrate++))
+      fi
     fi
-    if [[ $FAN2_MAX_RPM -gt 0 && $FAN2_MAX_RPM -ne $f1_max_rpm ]]; then
-      echo2 "Setting FAN 1 max PRM to ${PURPLE}$FAN2_MAX_RPM${NOCOLOR}"
-      $OCTOFAN_BIN -m $FAN1 -v $FAN2_MAX_RPM
-      sleep 0.1
+    if [[ $FAN2_MAX_RPM -gt 0 ]]; then
+      if [[ $FAN2_MAX_RPM -ne $f1_max_rpm ]]; then
+        echo2 "Setting FAN 1 max PRM to ${PURPLE}$FAN2_MAX_RPM${NOCOLOR}"
+        $OCTOFAN_BIN -m $FAN1 -v $FAN2_MAX_RPM
+        sleep 0.1
+      fi
+    else
+      if [[ $f1_max_rpm -eq 65535 ]]; then
+        echo2 "Fan$FAN1 need recalibration"
+        ((b_recalibrate++))
+      fi
     fi
-    if [[ $FAN3_MAX_RPM -gt 0 && $FAN3_MAX_RPM -ne $f2_max_rpm ]]; then
-      echo2 "Setting FAN 2 max PRM to ${PURPLE}$FAN3_MAX_RPM${NOCOLOR}"
-      $OCTOFAN_BIN -m $FAN2 -v $FAN3_MAX_RPM
-      sleep 0.1
+    if [[ $FAN3_MAX_RPM -gt 0 ]]; then
+      if [[ $FAN3_MAX_RPM -ne $f2_max_rpm ]]; then
+        echo2 "Setting FAN 2 max PRM to ${PURPLE}$FAN3_MAX_RPM${NOCOLOR}"
+        $OCTOFAN_BIN -m $FAN2 -v $FAN3_MAX_RPM
+        sleep 0.1
+      fi
+    else
+      if [[ $f2_max_rpm -eq 65535 ]]; then
+        echo2 "Fan$FAN2 need recalibration"
+        ((b_recalibrate++))
+      fi
     fi
+
+    [[ $b_recalibrate -gt 0 ]] && recalibrate_fans
   fi
 }
 
@@ -914,6 +959,8 @@ recalibrate_fans () { #native recalibration (-t) takes too much time this functi
 
   #remove manual max rpm from config
   sed -i 's/.*MAX_RPM.*//' $OCTOFAN_CONF
+
+  load_def_values
 
   echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
   echo2 "Setting fans speed to max"
@@ -941,9 +988,10 @@ recalibrate_fans () { #native recalibration (-t) takes too much time this functi
   done
 
   echo2 "${GREEN}$(date +"%Y-%m-%d %T")${NOCOLOR}"
-  echo2 "Saving max values: ${fans_max_rpm[$@]}"
+  echo2 "Saving max values: ${fans_max_rpm[@]}"
   for i in $FAN0 $FAN1 $FAN2; do
-    [[ ${fans_max_rpm[$i]} -ge 0 ]] && $OCTOFAN_BIN -m $i -v ${fans_max_rpm[$i]}
+    [[ ! -z ${fans_max_rpm[$i]} ]] && t_rpm=${fans_max_rpm[$i]} || t_rpm=0
+    $OCTOFAN_BIN -m $i -v $t_rpm
     sleep 0.1
   done
 
