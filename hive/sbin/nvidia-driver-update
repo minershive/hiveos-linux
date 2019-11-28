@@ -278,7 +278,7 @@ function install_nvs() { # @force_install
 			echo -e "${RED}> Nvidia-settings reinstall failed ($exitcode)${NOCOLOR}" ||
 			echo -e "${GREEN}> Nvidia-settings reinstall successful${NOCOLOR}"
 	fi
-	#apt-mark hold nvidia-settings > /dev/null 2>&1
+	apt-mark hold nvidia-settings > /dev/null 2>&1
 	return $exitcode
 }
 
