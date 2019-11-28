@@ -22,7 +22,7 @@ function miner_config_gen() {
   conf+=" --server=$NONCERPRO_KADENA_HOST"
   conf+=" --port=$NONCERPRO_KADENA_PORT"
   conf+=" --platform $platform"
-  [[ ! -z $NONCERPRO_KADENA_USER_CONFIG ]] && conf+=${NONCERPRO_KADENA_USER_CONFIG}
+  [[ ! -z $NONCERPRO_KADENA_USER_CONFIG ]] && conf+=" ${NONCERPRO_KADENA_USER_CONFIG}"
 
   echo "$conf" > $MINER_CONFIG
 }
