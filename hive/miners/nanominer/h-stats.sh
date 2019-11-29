@@ -29,6 +29,14 @@ get_cpu_temps(){
   fi
 }
 
+get_cpu_bus_ids () {
+  local i=0
+  local l_bus_ids=
+  for (( i=0; i < $1; i++ )); do
+    l_bus_ids+="null "
+  done
+  echo $l_bus_ids
+}
 
 local temp=()
 local fan=()
@@ -86,6 +94,7 @@ else
        num_cores=`cat ${MINER_LOG_BASENAME}_head.log | grep "<info> Using CPU threads:" | awk '{print $7}'`
        hs=`get_cores_hs "$t_khs" "$num_cores"`
        temp=`get_cpu_temps "$num_cores"`
+       bus_ids=`get_cpu_bus_ids "$num_cores"`
      else
        gpu_count=`echo $stats_raw | jq -r '."Algorithms"[].'$algo' | length'`
        let "gpu_count = gpu_count - 3"
@@ -94,11 +103,11 @@ else
          #gpu element name = echo $stats_raw | jq -rc '."Algorithms"[].'$algo' | keys' | jq .[1]
          t_hs=`echo $stats_raw | jq -rc '."Algorithms"[].'$algo'."GPU '$j'"."Hashrate"'`
          t_hs=`printf "%f\n" $t_hs`
-         hs+=$t_hs" "
+         hs+="$t_hs "
          #fan+=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Fan"'`" "
          #temp+=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Temperature"'`" "
          bus_id=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Pci"' | awk '{printf("%d\n", "0x"$1)}'`
-         bus_ids+=$bus_id" "
+         bus_ids+="$bus_id "
          local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
          for ((k = 0; k < ${#all_bus_ids_array[@]}; k++)); do
            if [[ "$(( 0x${all_bus_ids_array[$k]} ))" -eq "$bus_id" ]]; then
