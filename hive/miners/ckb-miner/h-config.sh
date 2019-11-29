@@ -35,7 +35,7 @@ function miner_config_gen() {
     sed -i "s/.*$param_name.*/$line/g" "$MINER_CONFIG_F"
   done
 
-  if [[ `echo $CKB_MINER_USER_CONFIG | grep -c "gpus"` -eq 0 ]]; then
+  if [[ `echo $CKB_MINER_USER_CONFIG | grep -c "gpu_ids"` -eq 0 ]]; then
     if [[ $CKB_MINER_OPENCL -eq 1 ]]; then
       gpus="gpu_ids="`cat $GPU_DETECT_JSON | jq -c '[ . | to_entries[] | select(.value.brand == "amd" or .value.brand == "nvidia") | .key ]'`
     else

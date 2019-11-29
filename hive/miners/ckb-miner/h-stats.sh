@@ -18,6 +18,7 @@ get_hashes(){
       t_hs=`cat $log_name | tail -n 100 | grep "\-GPU\-${platform}\-$t_gpu" | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | tr -cd "[:print:]\n" | egrep -o '*hash\ rate: ([0-9\.])+' | awk '{ print $3 }'`
       hs+="$t_hs "
       khs=`echo $khs $t_hs | awk '{ printf("%.6f", $1 + $2/1000) }'`
+      bus_numbers+=`echo $gpu_detect_json | jq -r '.['$t_gpu'].busid' | awk '{printf("%d\n", "0x"$1)}'`" "
     done
   fi
   #get cpu hashes
@@ -26,6 +27,7 @@ get_hashes(){
       t_hs=`cat $log_name | tail -n 100 | grep "\-Worker\-CPU\-$t_cpu" | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | tr -cd "[:print:]\n" | egrep -o '*hash\ rate: ([0-9\.])+' | awk '{ print $3 }'`
       hs+="$t_hs "
       khs=`echo $khs $t_hs | awk '{ printf("%.6f", $1 + $2/1000) }'`
+      bus_numbers+="null "
     done
   fi
 }
@@ -70,6 +72,8 @@ index=${rig_conf_str:5:1}
 
 local log_name="/run/hive/miner.$index"
 local ver=`miner_ver`
+
+local bus_numbers=
 
 local conf_name="/run/hive/miners/$MINER_NAME/$MINER_NAME.toml"
 
@@ -132,7 +136,8 @@ if [ "$diffTime" -lt "$maxDelay" ]; then
         --arg acc "$acc" \
         --arg algo "$algo" \
         --arg ver "$ver" \
-       '{$hs, $hs_units, ar: [$acc,0], $temp, $fan, $uptime, $algo, $ver}')
+        --argjson bus_numbers "`echo ${bus_numbers[@]} | tr " " "\n" | jq -cs '.'`" \
+       '{$hs, $hs_units, ar: [$acc,0], $temp, $fan, $uptime, $algo, $bus_numbers, $ver}')
 else
   stats=""
   khs=0
