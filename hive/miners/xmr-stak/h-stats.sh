@@ -28,7 +28,7 @@ if [[ $? -ne 0 || -z $stats_raw ]]; then
 	echo -e "${YELLOW}Failed to read $miner from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
 	# [[ -z $XMR_STAK_ALGO ]] && XMR_STAK_ALGO="cryptonight"
-	[[ `echo $stats_raw | jq -r '.connection.uptime'` -lt 260 ]] && head -n 150 ${MINER_LOG_BASENAME}.log > ${MINER_LOG_BASENAME}_head.log
+	[[ `echo $stats_raw | jq -r '.connection.uptime'` -lt 260 ]] && head -n 250 ${MINER_LOG_BASENAME}.log > ${MINER_LOG_BASENAME}_head.log
 
 	khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 
@@ -39,8 +39,8 @@ else
 	local a_temp=
 
 	local gpus_disabled=
-	(head -n 50 ${MINER_LOG_BASENAME}_head.log | grep -q "WARNING: backend AMD (OpenCL) disabled") && #AMD disabled found
-	(head -n 50 ${MINER_LOG_BASENAME}_head.log | grep -q "WARNING: backend NVIDIA disabled") && #and nvidia disabled
+	(cat ${MINER_LOG_BASENAME}_head.log | grep -q "WARNING: backend AMD (OpenCL) disabled") && #AMD disabled found
+	(cat ${MINER_LOG_BASENAME}_head.log | grep -q "WARNING: backend NVIDIA disabled") && #and nvidia disabled
 	gpus_disabled=1
 
 	if [[ $gpus_disabled == 1 ]]; then #gpus disabled
@@ -55,7 +55,7 @@ else
 
 		local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
 
-		head -n 50 ${MINER_LOG_BASENAME}_head.log | grep -q "WARNING: backend AMD (OpenCL) disabled"
+		cat ${MINER_LOG_BASENAME}_head.log | grep -q "WARNING: backend AMD (OpenCL) disabled"
 		if [ $? -ne 0 ]; then
 		  local ocl_devices=`cat ${MINER_LOG_BASENAME}_head.log | grep "] : Device " | grep " work size " | cut -d " " -f 5`
 			local ocl_busids=`echo $gpu_detect_json | jq -r '. | to_entries[] | select(.value.brand == "amd") | .value.busid' | cut -d ":" -f 1`
@@ -73,7 +73,7 @@ else
 			done
 		fi
 
-		head -n 50 ${MINER_LOG_BASENAME}_head.log | grep -q "WARNING: backend NVIDIA disabled"
+		cat ${MINER_LOG_BASENAME}_head.log | grep -q "WARNING: backend NVIDIA disabled"
 		if [ $? -ne 0 ]; then
 			cuda_devices=`cat ${MINER_LOG_BASENAME}_head.log | grep "Starting NVIDIA GPU thread " | cut -d " " -f 8 | tr -d ,`
 			local cuda_busids=`echo $gpu_detect_json | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.busid' | cut -d ":" -f 1`
