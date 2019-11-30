@@ -84,6 +84,9 @@ function start() {
 		echo -e "${YELLOW}No miner is set in config, exiting ${NOCOLOR}" &&
 		exit 1
 
+	
+	[[ -f /run/hive/cur_miner ]] && rm /run/hive/cur_miner
+	
 	echo -en "Starting ${CYAN}$MINER${NOCOLOR}"
 	#[[ ! -z $MINER2 ]] &&
 	#	echo -en " and ${CYAN}$MINER2${NOCOLOR}"
@@ -113,13 +116,15 @@ function start() {
 		if [[ ! -z $minerval ]]; then
 			screen -S miner -X screen $mindex miner-run $minerval &&
 				screen -S miner -X title $minerval #set nice title
+			echo $minerval >> /run/hive/cur_miner ##add miner-name to the list of working miners
 			sleep 1 #to allow to grab dpkg lock
 		fi
 	done
 
 	screen -S miner -X screen 1 miner-run $MINER &&
 		screen -S miner -X title $MINER #set nice title
-
+	echo $MINER >> /run/hive/cur_miner ##add miner-name to the list of working miners
+	
 	# close bash window #0
 	screen -S miner -p bash -X stuff 'exit\n'
 
@@ -167,7 +172,17 @@ function stop() {
 
 	# remove stop file
 	[[ -f $MINER_STOP ]] && rm $MINER_STOP
-
+	
+	# run h-stop from miner dir
+	if [[ -f /run/hive/cur_miner ]]; then
+		for CUR_MINER in `cat /run/hive/cur_miner`
+		do
+			CUR_MINER_DIR=/hive/miners/$CUR_MINER
+			[[ -f $CUR_MINER_DIR/h-stop.sh ]] && bash $CUR_MINER_DIR/h-stop.sh
+		done
+		rm /run/hive/cur_miner
+	fi
+	
 	#remove khs so no confusing for watchdog
 	#[[ -e /run/hive/khs ]] && rm /run/hive/khs
 	#wd gets mtime of file, no problem
