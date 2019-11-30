@@ -5,5 +5,5 @@
 	exit 1
 
 cd $MINER_DIR/$MINER_FORK/$MINER_VER
-
+[[ ! -z $XMRIG_NEW_HUGEPAGES ]] && hugepages $XMRIG_NEW_HUGEPAGES
 ./xmrig
