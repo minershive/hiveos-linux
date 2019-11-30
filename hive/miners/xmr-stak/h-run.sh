@@ -16,6 +16,9 @@ while true; do
 		break
 done
 
+# Hugepages tunning
+[[ ! -z $XMR_STAK_HUGEPAGES ]] && hugepages $XMR_STAK_HUGEPAGES
+
 # Miner run here
 cd $MINER_DIR/$MINER_FORK/$MINER_VER
 
