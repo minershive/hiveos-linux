@@ -1,0 +1,87 @@
+#!/bin/bash
+
+. colors
+
+VERS="0.1"
+
+HPAGES_REQ=$1                                                                   # Requested number of HugePages
+
+MEM_AVAIL=`cat /proc/meminfo | grep "MemFree" | awk '{ print $2 }'`             # Memory available
+MEM_RES_PERC=90                                                                 # % of available memory for reservation
+HPAGE_SIZE=`cat /proc/meminfo | grep "Hugepagesize" | awk '{ print $2 }'`       # HugePage size usually 2M
+HPAGES_CUR=`cat /proc/meminfo | grep "HugePages_Total" | awk '{ print $2 }'`    # Number of HugePages (current value)
+HPAGES_MAX=$(($HPAGES_CUR+$MEM_AVAIL/$HPAGE_SIZE*$MEM_RES_PERC/100))            # Number of HugePages (max calculated)
+
+huge_pages_set(){
+    echo $1 > /proc/sys/vm/nr_hugepages
+}
+
+huge_cur_print(){
+    echo -e "${YELLOW}HugePages (current): ${GREEN}$HPAGES_CUR${NOCOLOR}"
+}
+
+huge_max_print(){
+    echo -e "${YELLOW}HugePages (maximum): ${RED}$HPAGES_MAX${NOCOLOR}"
+}
+
+print_banner(){
+    echo -e "${CYAN}Hive HugePages Helper v${VERS}${NOCOLOR}"
+}
+
+print_help(){
+    print_banner
+    echo -e "This tool allows you to set the desired value for hugepages."
+    echo -e "${DGRAY}The suggested value for CN-based algorithms is 128"
+    echo -e "The suggested value for RandomX is 1280"
+    echo
+    echo -e "${YELLOW}Usage: \n\t${CYAN}hugepages value${NOCOLOR}"
+    echo
+    echo -e "${YELLOW}Other example of usage:${NOCOLOR}"
+    echo -e "\t${CYAN}hugepages -r${NOCOLOR}  - ${LGRAY}restoring system defaults"
+    echo -e "\t${CYAN}hugepages -rx${NOCOLOR} - ${LGRAY}try set suggested value (1280) for RandomX"
+    echo -e "\t${CYAN}hugepages -cn${NOCOLOR} - ${LGRAY}try set suggested value (128) for CN-based "
+    echo -e "\t${CYAN}hugepages -h${NOCOLOR}  - ${LGRAY}this help "
+}
+
+huge_get_def(){
+    echo `cat /etc/sysctl.conf | grep vm.nr_hugepages | tr '=' ' ' | awk '{ print $2 }'`
+}
+
+################################################################################
+# MAIN SCRIPT BODY
+################################################################################
+[[ -z $HPAGES_REQ ]] && print_banner && huge_cur_print && huge_max_print && exit 0
+case $1 in
+    -h|--help)
+        print_help
+        exit 0
+        ;;
+    -r|--restore)
+        HPAGES_REQ=`huge_get_def`
+        echo -e "${CYAN}Try restore to system default HugePages value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
+        ;;
+    -rx)
+        HPAGES_REQ=1280
+        echo -e "${CYAN}Try set HugePages to suggested for RandomX algorithm value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
+        ;;
+    -cn)
+        HPAGES_REQ=128
+        echo -e "${CYAN}Try set HugePages to suggested for CN-based algorithms value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
+        ;;
+     *)
+esac
+
+
+if [[ $HPAGES_REQ -le $HPAGES_MAX ]]; then
+    huge_pages_set $HPAGES_REQ
+else
+    echo -e "${RED}[WARN] ${YELLOW}HugePages requested ($HPAGES_REQ) more then maximum suggested ($HPAGES_MAX)."
+    huge_pages_set $HPAGES_MAX
+fi
+
+HPAGES_SET=`cat /proc/sys/vm/nr_hugepages`
+
+echo -e "${GREEN}New HugePages value set: ${YELLOW}$HPAGES_SET${NOCOLOR}"
+
+exit 0
+
