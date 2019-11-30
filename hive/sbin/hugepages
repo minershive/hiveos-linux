@@ -36,7 +36,7 @@ print_help(){
     echo
     echo -e "${YELLOW}Usage: \n\t${CYAN}hugepages value${NOCOLOR}"
     echo
-    echo -e "${YELLOW}Other example of usage:${NOCOLOR}"
+    echo -e "${YELLOW}Other examples of usage:${NOCOLOR}"
     echo -e "\t${CYAN}hugepages -r${NOCOLOR}  - ${LGRAY}restoring system defaults"
     echo -e "\t${CYAN}hugepages -rx${NOCOLOR} - ${LGRAY}try set suggested value (1280) for RandomX"
     echo -e "\t${CYAN}hugepages -cn${NOCOLOR} - ${LGRAY}try set suggested value (128) for CN-based "
@@ -69,6 +69,11 @@ case $1 in
         echo -e "${CYAN}Try set HugePages to suggested for CN-based algorithms value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
         ;;
      *)
+        re='^[0-9]+$'
+        if ! [[ $HPAGES_REQ =~ $re ]] ; then
+            print_banner
+            echo -e "${RED}[ERR] ${YELLOW}Invalid value given${NOCOLOR}" >&2; exit 1
+        fi
 esac
 
 
