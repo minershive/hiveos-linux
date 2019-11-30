@@ -4,6 +4,10 @@
 	echo -e "${RED}$MINER_NAME miner is already running${NOCOLOR}" &&
 	exit 1
 
-cd $MINER_DIR/$MINER_FORK/$MINER_VER
+# HugePages tunning
 [[ ! -z $XMRIG_NEW_HUGEPAGES ]] && hugepages $XMRIG_NEW_HUGEPAGES
+
+# Miner run here
+cd $MINER_DIR/$MINER_FORK/$MINER_VER
+
 ./xmrig
