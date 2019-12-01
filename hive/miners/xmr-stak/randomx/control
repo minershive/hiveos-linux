@@ -1,8 +1,8 @@
 Package: hive-miners-xmr-stak-randomx
-Version: 0.6-03
+Version: 0.6-04
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-xmr-stak-randomx-1.0.1
+Depends: hive-miners-xmr-stak-randomx-1.0.2
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - xmr-stak fork for RandomX and variants
+Description: Hive miner - xmr-stak-rx (fork for RandomX and variants)
