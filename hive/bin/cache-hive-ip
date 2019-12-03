@@ -4,8 +4,8 @@
 
 # !!!using only IPv4 addresses and interfaces!!!
 
-# use Google DNS over HTTPS
-use_tls=0
+# use DNS over HTTPS (only Google and CloudFlare supported)
+#use_DoH=("google" "cf")
 
 query_timeout=15
 
@@ -28,52 +28,98 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 "
 
+skip_local_dns=0
+
 
 function dns_servers {
-	# get system dns servers
-	local dns=(`cat /run/systemd/resolve/resolv.conf | grep ^nameserver | awk '{print $2}'`)
-
-	# merge all servers
-	dns+=("${dns_srv[@]}")
-
+	if [[ $skip_local_dns -ne 1 ]]; then
+		# get system dns servers
+		local dns=(`cat /run/systemd/resolve/resolv.conf | grep ^nameserver | awk '{print $2}'`)
+		# merge all servers
+		dns+=("${dns_srv[@]}")
+	else
+		local dns=("${dns_srv[@]}")
+	fi
 	query_servers=
 	local dns_servers=()
 	# remove duplicates, empty and localhost
-	for((i=0; i<${#dns[@]}; i++))
+	for addr in "${dns[@]}"
 	do
-		[[ ${dns[$i]} =~ ^127\.0\.0\.[0-9]+$ || ! ${dns[$i]} =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ || " ${dns_servers[@]} " =~ " ${dns[$i]} " ]] &&
+		[[ $addr =~ ^127\.0\.0\.[0-9]+$ || ! $addr =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ || " ${dns_servers[@]} " =~ " $addr " ]] &&
 			continue
-		dns_servers[$i]=${dns[$i]}
-		query_servers+=" @${dns[$i]}"
+		dns_servers+=($addr)
+		query_servers+=" @$addr"
 	done
 	echo -e $CYAN"> Using DNS servers: ${YELLOW}${dns_servers[@]}"$NOCOLOR
 }
 
 
-function resolve_host {
-	if [[ $use_tls -eq 1 ]]; then
-		echo -en $CYAN"> Resolving: ${WHITE}$1 ${YELLOW}[Google DoH]"$NOCOLOR
-		#resolve=`tls_resolve $1` && return 0
-		query=`curl -L --connect-timeout $query_timeout --max-time $query_timeout --silent --resolve "dns.google:443:8.8.8.8" https://dns.google/resolve?name=$1&type=A 2>/dev/null`
-		if [[ $? -eq 0 ]]; then
-			#echo "$query" | jq  .
-			jqs='if .Status != 0 then empty else .Answer[] | if .type != 1 then empty else .data end end'
-			resolve=(`jq -c -r "$jqs" <<< "$query" 2>/dev/null`)
-			[[ $? -eq 0 && ! -z $resolve ]] && echo -e $GREEN" - ${resolve[@]}"$NOCOLOR && return 0
-		else
-			# disable for next resolves
-			use_tls=0
-		fi
-		echo -e $RED" - FAILED"$NOCOLOR
+function check_host {
+	# checking only first address!
+
+	[[ ! $1 =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] &&
+		echo -e $RED" - $1 - IP address has incorrect format"$NOCOLOR &&
+		return 1
+
+	[[ $1 =~ ^127\. || $1 =~ ^192\.168\. || $1 =~ ^10\. || $1 =~ ^169\.254\. ]] &&
+		echo -e $RED" - $1 - IP address has local/reserved address range"$NOCOLOR &&
+		return 2
+
+	[[ -z $local_gws ]] && local_gws=(`ip route | grep "via" | awk '{print $3}'`)
+	[[ " ${local_gws[@]} " =~ " $1 " ]] &&
+		echo -e $RED" $1 - IP address of gateway"$NOCOLOR &&
+		return 3
+
+	echo -e $GREEN" - $@"$NOCOLOR
+	return 0
+}
+
+
+function resolve_DoH { # @url, @mode [ cf | google(default) ]
+	echo -en $CYAN"> Resolving: ${WHITE}$1"$NOCOLOR
+	local query=
+	if [[ "$2" == "cf" ]]; then
+		echo -en " ${YELLOW}[CloudFlare DoH]"$NOCOLOR
+		query=`curl -L --connect-timeout $query_timeout --max-time $query_timeout --silent --resolve "cloudflare-dns.com:443:1.1.1.1" "https://cloudflare-dns.com/dns-query?ct=application/dns-json&name=$1&type=A" 2>/dev/null`
+	else
+		echo -en " ${YELLOW}[Google DoH]"$NOCOLOR
+		query=`curl -L --connect-timeout $query_timeout --max-time $query_timeout --silent --resolve "dns.google:443:8.8.8.8" "https://dns.google/resolve?name=$1&type=A" 2>/dev/null`
 	fi
-	
+	if [[ $? -eq 0 ]]; then
+		#echo "$query" | jq  .
+		jqs='if .Status != 0 then empty else .Answer[] | if .type != 1 then empty else .data end end'
+		resolve=(`jq -c -r "$jqs" <<< "$query" 2>/dev/null`)
+		if [[ $? -eq 0 && ! -z $resolve ]]; then
+			check_host "${resolve[@]}"
+			return
+		fi
+	fi
+	echo -e $RED" - FAILED"$NOCOLOR
+	return 1
+}
+
+
+function resolve_host {
+	for doh in "${use_DoH[@]}"; do
+		resolve_DoH "$1" "$doh" && return 0
+	done
 	# prepare dns servers array for query
 	[[ -z $query_servers ]] && dns_servers
 	# using dig to query multiple dns servers at once
-	echo -en $CYAN"> Resolving: ${WHITE}$1"$NOCOLOR
-	resolve=(`dig -4 +noall +answer +retry=0 +time=$query_timeout $query_servers $1 | grep -oP ".*\sA\s\K[^\s]+$"`)
-	[[ $? -eq 0 ]] && echo -e $GREEN" - ${resolve[@]}"$NOCOLOR && return 0
-	echo -e $RED" - FAILED"$NOCOLOR
+	for try in {1..2}; do
+		echo -en $CYAN"> Resolving: ${WHITE}$1"$NOCOLOR
+		resolve=(`dig -4 +noall +answer +retry=0 +time=$query_timeout $query_servers $1 | grep -oP ".*\sA\s\K[^\s]+$"`)
+		if [[ $? -eq 0 ]]; then
+			check_host "${resolve[@]}" && return 0
+		else
+			echo -e $RED" - FAILED"$NOCOLOR
+			break
+		fi
+		# trying again without local dns
+		[[ $skip_local_dns -eq 1 ]] && break
+		skip_local_dns=1
+		dns_servers
+	done
 	return 1
 }
 
@@ -81,7 +127,7 @@ function resolve_host {
 function add_host {
 	resolve_host $1 || return 4
 	# adding only first address
-	addr=${resolve[0]}
+	local addr=${resolve[0]}
 	[[ -z $addr ]] && return 4
 
 	# IPv4 only!
