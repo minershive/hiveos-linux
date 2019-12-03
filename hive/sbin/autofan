@@ -263,8 +263,12 @@ check_overheat() {
 #	if [[ true ]]; then
 		local t
 		local allisok=1
+		local resume_temp=$(( CRITICAL_TEMP - 20 ))
+		# resume at least at target temp+1
+		[[ $resume_temp -lt $(( TARGET_TEMP + 1 )) ]] && resume_temp=$(( TARGET_TEMP + 1 ))
 		for t in ${temperatures_array[@]}; do
-			if [[ $t -ge $(( $CRITICAL_TEMP-20 )) ]]; then #cold enough to start miner again
+			if [[ $t -gt $resume_temp ]]; then
+			#cold enough to start miner again
 				allisok=0
 				break
 			fi
@@ -588,7 +592,7 @@ function start() {
 		echo -e "Run ${CYAN}autofan${NOCOLOR} or ${CYAN}screen -r autofan${NOCOLOR} to resume screen"
 		return
 	fi
-	screen -dm -S autofan $0 run
+	screen -dm -S autofan $0 loop
 	echo2 "Autofan screen started"
 }
 
@@ -614,23 +618,29 @@ function usage() {
 }
 
 
+function get_log() {
+	local log=/tmp/autofan.log
+	[[ -f $log ]] && rm $log
+	screen -S autofan -X hardcopy $log &&
+		#iconv -f ISO-8859-1 -t UTF-8 $log # needed to convert some symbols
+		cat -s $log | sed "s/\xB0/°/g; s/\x91/↑/g; s/\x93/↓/g" # needed to convert some symbols
+}
+
 case $1 in
 	log)
-		log=/tmp/autofan.log
-		[[ -f $log ]] && rm $log
-		screen -S autofan -X hardcopy $log &&
-			#iconv -f ISO-8859-1 -t UTF-8 $log # needed to convert some symbols
-			sed "s/\xB0/°/g; s/\x91/↑/g; s/\x93/↓/g" $log # needed to convert some symbols
+		get_log
+	;;
+
+	loop)
+		while true; do
+			$0 run
+			#echo "$(get_log)" | message warn "Autofan restarted after error" payload
+			sleep 1
+			echo "Restarting..."
+		done
 	;;
 
 	run)
-		#check running
-#		process_count=`ps aux | grep "autofan" | grep -v grep | grep -v $$ | wc -l`
-#		if [[ $process_count -gt 1 ]]; then #this process and another
-#			echo -e "${RED}Autofan is already running${NOCOLOR}\nRun ${CYAN}autofan screen${NOCOLOR} to open it"
-#			exit 1
-#		fi
-
 		check_gpu
 		auto_fan_control
 	;;
