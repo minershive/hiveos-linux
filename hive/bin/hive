@@ -158,7 +158,7 @@ if [[ ! -z $RIG_ID && ! -z $RIG_PASSWD && ! -z $HIVE_HOST_URL ]]; then
 	# check and waiting for online. rigs with ssd can boot faster than network is configured.
 	# systemd-networkd-wait-online is broken on Ubuntu 18 image
 	for((i=1; i<10; i++))
-	do 
+	do
 		networkctl list | grep -q routable && break
 		networkctl list | grep -q configuring || break
 		echo2 "> Waiting for network ($i)"
@@ -349,7 +349,7 @@ fi
 	echo2 "> Starting autofan" &&
 	autofan start
 
-echo2 "> Starting octofan"
+#echo2 "> Starting octofan"
 $OCTOFAN
 
 #k10temp for cpu temp

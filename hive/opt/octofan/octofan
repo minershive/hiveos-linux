@@ -1086,6 +1086,7 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
   elif [[ $1 == "dontattach" ]]; then
     session_count=`screen -ls octofan | grep octofan | wc -l`
     if [[ $session_count -eq 0 ]]; then
+      echo2 "> Starting octofan"
       check_config
       check_firmware | tee "$FIRMWARE_UPDATE_LOG"
 
@@ -1100,6 +1101,7 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
     if [[ $session_count -gt 0 ]]; then
       screen -x -S octofan
     else #start new screen
+      echo2 "> Starting octofan"
       check_config
       check_firmware | tee "$FIRMWARE_UPDATE_LOG"
 
