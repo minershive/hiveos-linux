@@ -19,31 +19,40 @@ function _SetcoreClock {
 	local vdd=$2
 	if [[ $VEGA20 -ne 0 || $NAVI_COUNT -ne 0 ]]; then
 		echo "s 1 $1" > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
-		[[  -z $vdd  ]] && vdd="1050"
+		[[  -z $vdd  ]] && vdd="1000"
 		[[  -z $vdd  && $NAVI_COUNT -ne 0 ]] && vdd="0"
 		 
 		echo "vc 2 $1 $vdd" > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
 		echo c > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
 
 	else
-		vegatool -i $cardno  --core-state 4 --core-clock $(($1-30))
-		vegatool -i $cardno  --core-state 5 --core-clock $(($1-20))
-		vegatool -i $cardno  --core-state 6 --core-clock $(($1-10))
-		vegatool -i $cardno  --core-state 7 --core-clock $1
+	#	vegatool -i $cardno  --core-state 4 --core-clock $(($1-30))
+	#	vegatool -i $cardno  --core-state 5 --core-clock $(($1-20))
+	#	vegatool -i $cardno  --core-state 6 --core-clock $(($1-10))
+	#	vegatool -i $cardno  --core-state 7 --core-clock $1
+		echo "s 4 $(($1-30)) $vdd"  > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
+		echo "s 5 $(($1-20)) $vdd"  > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
+		echo "s 6 $(($1-10)) $vdd"  > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
+		echo "s 7 $1 $vdd"  > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
+		echo c > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
 	fi
 }	
 
 function _SetmemClock {
+	local vdd=$2
+	[[  -z $vdd  ]] && vdd="1000"
 	if [[ $VEGA20 -ne 0 || $NAVI_COUNT -ne 0 ]]; then
 		echo "m 1 $1" > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
 		echo c > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
 	else
-		vegatool -i $cardno --mem-state 3 --mem-clock $1
+	#	vegatool -i $cardno --mem-state 3 --mem-clock $1
+		echo "m 3 $1 $vdd" > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
+		echo c > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
 	fi
 }	
 
 if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} > 0 ]]; then
-	_SetmemClock ${MEM_CLOCK[$i]}
+	_SetmemClock ${MEM_CLOCK[$i]} ${MEM_STATE[$i]}
 fi
 
 if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} > 0 ]]; then
