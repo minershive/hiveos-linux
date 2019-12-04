@@ -19,7 +19,7 @@ if [[ $1 == "wakealarm" && ! -e /sys/class/rtc/rtc0/wakealarm ]]; then
 	exit 1
 fi
 
-#Do not try to stop miner here. Sometimes it hangs and prevents rig from rebooting  
+#Do not try to stop miner here. Sometimes it hangs and prevents rig from rebooting
 #screen -S agent -X quit
 #miner stop
 
@@ -54,3 +54,11 @@ else
 	echo "Rebooting"
 	echo b > /proc/sysrq-trigger
 fi
+
+# just in case sysrq does not work
+watchdogs=("watchdog-opendev" "hl340" "watchdoginua" "watchdog-octofan" "srrv2" "WatchDogUtility/src/utility.py")
+for wd in "${watchdogs[@]}"; do
+	pkill -9 -f $wd #&& echo "$wd stopped"
+done
+
+reboot
