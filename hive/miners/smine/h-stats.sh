@@ -33,6 +33,7 @@ local fan="[]"
 
 local temp=`jq -c "[.temp$amd_indexes_array]" <<< $gpu_stats`
 local fan=`jq -c "[.fan$amd_indexes_array]" <<< $gpu_stats`
+local bus_numbers=`echo $gpu_detect_json | jq -r ".$amd_indexes_array.busid" |  awk '{printf("%d\n", "0x"$1)}' | jq -cs '.'`
 
 #if [[ ! -z $gpu_indexes_array ]]; then
 #  temp=`jq -c "[.$gpu_indexes_array]" <<< $temp`
@@ -54,8 +55,9 @@ if [ $? -eq "0" ]; then #use api for ver 0.4.0 and newer
                   --arg ver "$ver" \
                   --argjson gpu_stats "$gpu_stats" \
                   --argjson temp "$temp" --argjson fan "$fan" \
+                  --argjson bus_numbers $bus_numbers \
                   '{ total_khs: (.total_rate * 1000), hs: (.hash_rates), hs_units: "mhs",
-                  $temp, $fan, uptime, $ver, ar: [.accept, .reject], $algo}' <<< "$stats_raw")
+                  $temp, $fan, uptime, ar: [.accept, .reject], $algo, $bus_numbers, $ver}' <<< "$stats_raw")
     khs=$(jq -r '.total_khs' <<< "$stats")
   fi
 else #log parser for ver lower than 0.4.0
@@ -84,7 +86,8 @@ else #log parser for ver lower than 0.4.0
           --argjson ar "$acc_rej" \
           --arg algo "$algo" \
           --arg ver "$ver" \
-          '{$hs, $hs_units, $ar, $temp, $fan, $uptime, $algo, $ver}')
+          --argjson bus_numbers $bus_numbers \
+          '{$hs, $hs_units, $ar, $temp, $fan, $uptime, $algo, $bus_numbers, $ver}')
   fi
 fi
 
