@@ -2,32 +2,225 @@
 #ln -s /hive/bin/motd /etc/update-motd.d/00-my-motd
 . colors
 
-echo -en `uname -sr`
-echo -e "   ${YELLOW}H `dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`${NOCOLOR}"
+# old "classic" motd
+if [[ $1 == "old" ]]; then
+	echo -en `uname -sr`
+	echo -e "   ${YELLOW}H `dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`${NOCOLOR}"
 
-echo -e ${CYAN}`hostname`${NOCOLOR}
+	echo -e ${CYAN}`hostname`${NOCOLOR}
 
-echo -ne ${PURPLE}
-#ifconfig | grep -v "127.0.0.1" | grep "inet addr" | sed -E 's/^[[:space:]]+//'
-ip addr show | grep -v "127.0.0.1" | grep "inet .*/" | sed -E 's/^[[:space:]]+//'
-echo -e "${NOCOLOR}"
+	echo -ne ${PURPLE}
+	#ifconfig | grep -v "127.0.0.1" | grep "inet addr" | sed -E 's/^[[:space:]]+//'
+	ip addr show | grep -v "127.0.0.1" | grep "inet .*/" | sed -E 's/^[[:space:]]+//'
+	echo -e "${NOCOLOR}"
 
-df -h /
+	df -h /
 
-echo ""
+	echo ""
 
-uptime
+	uptime
 
-echo  ""
+	echo  ""
 
-#echo "AMD GPU: `/hive/sbin/gpu-detect AMD`"
-#echo "NVIDIA GPU: `/hive/sbin/gpu-detect NVIDIA`"
-#echo ""
+	#echo "AMD GPU: `/hive/sbin/gpu-detect AMD`"
+	#echo "NVIDIA GPU: `/hive/sbin/gpu-detect NVIDIA`"
+	#echo ""
 
-/hive/sbin/gpu-detect list
+	/hive/sbin/gpu-detect list
 
-echo ""
+	echo ""
 
+	helpme
+
+	echo ""
+	exit
+fi
+
+
+SEP=" · "
+
+# 1/4 of 4GB
+LOW_RAM=1000
+# 1/8 of 4GB
+VERY_LOW_RAM=500
+
+LOW_DISK=2000
+VERY_LOW_DISK=1000
+
+[[ -f $RIG_CONF ]] && . $RIG_CONF
+
+
+pretty_uptime() {
+	local t=`cat /proc/uptime | awk '{print int($1)}'`
+	local d=$((t/60/60/24))
+	local h=$((t/60/60%24))
+	local m=$((t/60%60))
+	local s=$((t%60))
+	local u=
+	if [[ $d -gt 0 ]]; then
+		[[ $d -eq 1 ]] && u+="$d day " || u+="$d days "
+	fi
+	if [[ $h -gt 0 ]]; then
+		[[ $h -eq 1 ]] && u+="$h hour " || u+="$h hours "
+	fi
+	if [[ $m -gt 0 ]]; then
+		[[ $m -eq 1 ]] && u+="$m minute " || u+="$m minutes "
+	fi
+	if [[ $d -eq 0 && $h -eq 0 ]]; then
+		[[ $s -eq 1 ]] && u+="$s second" || u+="$s seconds"
+	fi
+	echo $u
+}
+
+
+sys_info() {
+	echo -en "$BPURPLE$(uname -sr)$NOCOLOR"
+	echo -en "$SEP${BGREEN}H $(dpkg -s hive | grep -oP "^Version: \K.*$")$NOCOLOR"
+
+	# uptime without secs
+	#local upt=$(uptime -p)
+	#echo -e "$SEP$WHITE${upt//,}$NOCOLOR"
+
+	# uptime with secs
+	echo -e "${SEP}up $(pretty_uptime)$NOCOLOR"
+
+	# short uptime with secs
+	#local upt=`cat /proc/uptime | awk '{printf "%dd %02dh %02dm %02ds", $1/24/3600, $1/3600%24, $1/60%60, $1%60}'`
+	#echo -e "$SEP${WHITE}uptime $upt$NOCOLOR"
+
+	echo -en "$BCYAN$(hostname)$NOCOLOR"
+	echo -en "${SEP}ID ${RIG_ID:-n/a}$NOCOLOR"
+
+	local cpus=`nproc --all`
+	local lavg=(`cat /proc/loadavg | awk '{printf $1" "$2" "$3}'`)
+	local color=
+	echo -en "${SEP}LA"
+	for la in "${lavg[@]}"; do
+		local val=`awk '{printf int($1)}' <<< $la`
+		if [[ $val -le $cpus ]]; then
+			color=$WHITE
+		elif [[ $val -gt $(( cpus*2 )) ]]; then
+			color=$BRED
+		else
+			color=$BYELLOW
+		fi
+		echo -en " $color$la$NOCOLOR"
+	done
+
+	local mem=()
+	#mem=(`free -b | grep 'Mem' | awk '{pcent=int(100*$7/$2+0.5); total=int(10*$2/2^30+0.5)/10; avail_gb=int(10*$7/2^30+0.5)/10; avail_mb=int($7/2^20); printf "%.1fG %.1fG %d %d", total, avail_gb, avail_mb, pcent}'`)
+	mem=(`free -h | grep 'Mem' | awk '{print $2" "$7}'`)
+	mem+=(`free -b | grep 'Mem' | awk '{pcent=int(100*$7/$2+0.5); avail=int($7/2^20); print avail" "pcent}'`)
+	echo -en "${SEP}RAM $WHITE${mem[0]}$NOCOLOR"
+	local color=$WHITE
+	if [[ ${mem[2]} -lt $VERY_LOW_RAM ]]; then
+		color=$BRED
+	elif [[ ${mem[2]} -lt $LOW_RAM ]]; then
+		color=$BYELLOW
+	fi
+	echo -e "  available $color${mem[1]}$NOCOLOR ($color${mem[3]}%$NOCOLOR)"
+}
+
+
+net_info() {
+	local networks=(`networkctl --no-legend | grep -v "loopback" | awk '{print $2}'`)
+	for net in "${networks[@]}"; do
+		local nstat=`networkctl status $net`
+		echo -en "$WHITE$net$NOCOLOR"
+		#state=`grep " State:" <<< "$nstat" | awk -F ': ' '{print $2}'`
+		state=`grep -oP " State: \K.*(?= \()" <<< "$nstat"`
+		local color=
+		if [[ $state =~ routable ]]; then
+			color=$BGREEN
+		elif [[ $state =~ no-carrier ]]; then
+			color=$BRED
+		elif [[ $state =~ carrier ]]; then
+			color=$BYELLOW
+		elif [[ $state =~ dormant ]]; then
+			color-$BPURPLE
+		fi
+		echo -en "  $color$state$NOCOLOR"
+		dns=`grep -Pazo "DNS: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | awk '{$1=$1};1'`
+		ips=`grep -Pazo "  Address: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | awk '{$1=$1};1'`
+		gw=`grep -Pazo " Gateway: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | awk '{$1=$1};1'`
+		[[ ! -z $ips ]] && echo -en "  ip $WHITE$ips$NOCOLOR"
+		[[ ! -z $gw ]] && echo -en "  gw $WHITE$gw$NOCOLOR"
+		[[ ! -z $dns ]] && echo -en "  dns $WHITE$dns$NOCOLOR"
+		driver=`grep "Driver:" <<< "$nstat" | awk -F ': ' '{print $2}'`
+		echo -e "$SEP$driver"
+	done
+
+#● 2: eth0
+#       Link File: /lib/systemd/network/99-default.link
+#    Network File: /etc/systemd/network/20-ethernet.network
+#            Type: ether
+#           State: routable (configured)
+#            Path: pci-0000:00:1f.6
+#          Driver: e1000e
+#          Vendor: Intel Corporation
+#           Model: Ethernet Connection (2) I219-V
+#      HW Address: 70:85:c2:71:3b:84 (ASRock Incorporation)
+#         Address: 192.168.1.6
+#         Gateway: 192.168.1.1
+#             DNS: 192.168.1.1
+#                  1.1.1.1
+}
+
+
+disk_info() {
+	local disk=()
+	disk=(`df -h --output=source,size,used,avail / | tail -n 1`)
+	disk+=(`df / --output=size,avail / | tail -n 1 | awk '{pcent=int(100*$2/$1+0.5); avail=int($2/1024); print pcent" "avail}'`)
+	echo -en "$WHITE${disk[0]/\/dev\/}$NOCOLOR  total $WHITE${disk[1]}$NOCOLOR  used $WHITE${disk[2]}$NOCOLOR"
+	local color=$WHITE
+	if [[ ${disk[5]} -le $VERY_LOW_DISK ]]; then
+		color=$BRED
+	elif [[ ${disk[5]} -le $LOW_DISK ]]; then
+		color=$BYELLOW
+	fi
+	echo -en "  free $color${disk[3]}$NOCOLOR ($color${disk[4]}%$NOCOLOR)"
+	local disk_dev=`lsblk -no PKNAME /dev/block/$(mountpoint -d /)`
+	local disk_model=`lsblk -no VENDOR,MODEL,SIZE /dev/$disk_dev | head -n 1 | awk '{$1=$1};1'`
+	echo -e "$SEP$disk_model"
+}
+
+
+sys_check() {
+	local MSG=()
+	#if [[ ! -f $RIG_CONF ]]; then
+	#	MSG+=("${BRED}Warning: $RIG_CONF not found$NOCOLOR")
+	#else
+	#	[[ -z $RIG_ID ]] && MSG+=("${BRED}Error: no RIG_ID in rig.conf$NOCOLOR")
+	#	[[ -z $RIG_PASSWD ]] &&  MSG+=("${BRED}Error: no RIG_PASSWD in rig.conf$NOCOLOR")
+	#	[[ -z $HIVE_HOST_URL ]] &&  MSG+=("${BRED}Error: no HIVE_HOST_URL in rig.conf$NOCOLOR")
+	#	[[ -z $WORKER_NAME ]] &&  MSG+=("${BRED}Error: no WORKER_NAME in rig.conf$NOCOLOR")
+	#fi
+
+	[[ $MAINTENANCE -eq 1 ]] && MSG+=("${BYELLOW}Warning: Maintenance mode is enabled (with drivers loading)$NOCOLOR")
+	[[ $MAINTENANCE -eq 2 ]] && MSG+=("${BYELLOW}Warning: Maintenance mode is enabled (without drivers loading)$NOCOLOR")
+
+	if [[ ! $MAINTENANCE -gt 0 ]]; then
+		local nvidia=$(gpu-detect NVIDIA)
+		local amd=$(gpu-detect AMD)
+		[[ $X_DISABLED -eq 1 && $nvidia -gt 0 ]] && MSG+=("${BYELLOW}Warning: X Server (GUI) is disabled. NVIDIA overclocking will not function properly$NOCOLOR")
+		[[ $X_DISABLED -ne 1 && $nvidia -eq 0 && $amd -gt 0 ]] && MSG+=("${BYELLOW}Warning: X Server (GUI) is enabled. It is only needed for NVIDIA $NOCOLOR")
+	fi
+
+	for msg in "${MSG[@]}"; do
+		echo -e "$msg"
+	done
+}
+
+
+sys_info
+disk_info
+net_info
+sys_check
+
+echo
+gpu-detect list
+
+echo
 helpme
 
-echo ""
+echo
