@@ -11,7 +11,7 @@ function _SetcoreVDDC {
 	if [[ $VEGA20 -ne 0 || $NAVI_COUNT -ne 0  ]]; then
 		echo "Noop"
 	else
-	vegatool -i $cardno --volt-state 7 --vddc-table-set $1 --vddc-mem-table-set $1
+	#vegatool -i $cardno --volt-state 7 --vddc-table-set $1 --vddc-mem-table-set $1
 	fi
 }	
 
