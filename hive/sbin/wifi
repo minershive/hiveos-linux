@@ -13,9 +13,18 @@ echo -e "${CYAN}=== WiFi setup ===${NOCOLOR}"
 WIFI_SSID=$1
 WIFI_PASSWORD=$2
 
+wificonfig=/hive-config/network/wifi.txt
 
-#Check packages
+# check string `$0$!:^[]{}.*?\\a\/b//c|()%#@~'&\0;"
+function backslash() {
+        local var="${1//\\/\\\\}"
+        var="${var//\"/\\\"}"
+        var="${var//\`/\\\`}"
+        var="${var//\$/\\\$}"
+        echo "$var"
+}
 
+# Check packages
 installed=`dpkg -s wireless-tools | grep 'Status: .* ok installed' | wc -l`
 if [[ $installed == 0 ]]; then
 	apt-get install -y wireless-tools wpasupplicant
@@ -37,7 +46,7 @@ fi
 
 
 #Wifi setup from config
-function setup_wifi {
+if [[ $1 == "setup" && -z $2 ]]; then
 #	echo "..."
 #	iwconfig
 #	echo -e "...\n"
@@ -46,8 +55,8 @@ function setup_wifi {
 
 
 	#If no config, then leave things as the are, maybe broken fs, then service and supplicant file will remain
-	[[ ! -e /hive-config/network/wifi.txt ]] &&
-		echo "No config found at /hive-config/network/wifi.txt" &&
+	[[ ! -e $wificonfig ]] &&
+		echo "No config found at $wificonfig" &&
 		exit 1
 
 
@@ -59,8 +68,8 @@ function setup_wifi {
 
 
 
-	echo "### Found /hive-config/network/wifi.txt"
-	eval "`cat /hive-config/network/wifi.txt | tr -d '\r'`"
+	echo "### Found $wificonfig"
+	eval "`cat $wificonfig | tr -d '\r'`"
 
 	[[ -z $WIFI_SSID || -z $WIFI_PASSWORD ]] &&
 		echo "No SSID and password in WiFi config, exiting" &&
@@ -71,20 +80,7 @@ function setup_wifi {
 	interactive=0
 	#wifi $WIFI_SSID $WIFI_PASSWORD
 	#just continue
-}
-
-
-[[ $1 == "setup" && -z $2 ]] &&
-	setup_wifi
-
-
-
-
-
-
-
-
-
+fi
 
 
 #just to display
@@ -98,18 +94,44 @@ wlanCount=`iwconfig 2>&1 | grep $wlandev | wc -l`
 	exit 1
 
 
-
 [[ -z $WIFI_SSID || -z $WIFI_PASSWORD ]] &&
 while true; do
-	echo -e "${YELLOW}Enter your Access Point details${NOCOLOR}"
-	echo -n "SSID: "
-	read WIFI_SSID
-	[[ -z $WIFI_SSID ]] && echo "Empty value" && continue
+	rescan=0
+	ssids=("[CUSTOM SSID]" "[RESCAN NETWORKS]")
+	echo -en "${CYAN}Scanning networks...$NOCOLOR"
+	ssids+=(`iw $wlandev scan 2>/dev/null | grep "SSID:" | awk -F ": " '{print $2}' | sort -u `)
+	echo -e "$CYAN found $(( ${#ssids[@]} - 2 )) $NOCOLOR"
+	if [[ ${#ssids[@]} -gt 2 ]]; then
+		# convert \xNN codes to symbols
+		for((i=2; i < ${#ssids[@]}; i++)); do
+			ssids[$i]=`echo -e "${ssids[$i]}"`
+		done
+		echo -e "${YELLOW}Select Access Point:${NOCOLOR}"
+		select WIFI_SSID in "${ssids[@]}"; do
+			[[ -z $WIFI_SSID ]] && continue
+			if [[ $WIFI_SSID == ${ssids[1]} ]]; then
+				rescan=1
+			elif [[ $WIFI_SSID == ${ssids[0]} ]]; then
+				WIFI_SSID=
+			else
+				echo -e "SSID: $WHITE$WIFI_SSID$NOCOLOR"
+			fi
+			break
+		done
+		[[ $rescan -eq 1 ]] && continue
+	fi
+
+	if [[ -z $WIFI_SSID ]]; then
+		echo -e "${YELLOW}Enter your Access Point details${NOCOLOR}"
+		echo -n "SSID: "
+		read -r WIFI_SSID
+		[[ -z $WIFI_SSID ]] && echo "Empty value" && continue
+	fi
 
 	echo -n "Password: "
-	read WIFI_PASSWORD
+	read -r WIFI_PASSWORD
 	[[ -z $WIFI_PASSWORD ]] && echo "Empty value" && continue
-
+	[[ ${#WIFI_PASSWORD} -lt 8 ]] && echo "Must be at least 8 characters" && continue
 	break
 done
 
@@ -126,18 +148,35 @@ if [[ $interactive == 1 ]]; then
 
 	#Create config file from input
 	mkdir -p /hive-config/network
-	cp -f /hive/etc/hive-config.stub/network/wifi.txt /hive-config/network/wifi.txt
-	sed -i "s/^WIFI_SSID=.*/WIFI_SSID=\"$WIFI_SSID\"\r/g" /hive-config/network/wifi.txt;
-	sed -i "s/^WIFI_PASSWORD=.*/WIFI_PASSWORD=\"$WIFI_PASSWORD\"\r/g" /hive-config/network/wifi.txt;
+	cp -f /hive/etc/hive-config.stub/network/wifi.txt $wificonfig
 
+	#sed -i "s/^WIFI_SSID=.*/WIFI_SSID=\"$WIFI_SSID\"\r/g" $wificonfig
+	#sed -i "s/^WIFI_PASSWORD=.*/WIFI_PASSWORD=\"$WIFI_PASSWORD\"\r/g" $wificonfig
 
-	sleep 4 #to wait for dhcp
+	# remove ssid and password
+	sed -i "/^WIFI_/d" $wificonfig
+
+	# add backslashed
+	echo "WIFI_SSID=\"$(backslash "$WIFI_SSID")\"" >> $wificonfig
+	echo "WIFI_PASSWORD=\"$(backslash "$WIFI_PASSWORD")\"" >> $wificonfig
+
+	#sleep 4 #to wait for dhcp
 	#ifconfig | grep -m1 -A1 $wlandev
-	ip addr show $wlandev
+	#ip addr show $wlandev
+	echo -n "State:"
+	for((i=0;i<10;i++)); do
+		state=`networkctl status $wlandev | grep -oP "State: \K.*(?= \()"`
+		echo -n " $state"
+		[[ $state == "routable" ]] && break
+		sleep 1
+	done
+	echo
+	networkctl status $wlandev
 
 	echo ""
 	echo -e "${GREEN}WiFi setup done${NOCOLOR}"
 	echo -e "If you will not use WiFi please disable service later with command ${CYAN}wifi-disable${NOCOLOR}"
+
 fi
 
 
