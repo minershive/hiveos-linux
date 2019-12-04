@@ -121,8 +121,27 @@ read_passwd () {
 }
 
 
+ask_yn () {
+	read yn
+	if [[ -z $yn ]]; then
+		yn="$1"
+	else
+		#Unify the answer
+		yn=${yn,}
+		yn=${yn:0:1}
+	fi
+	[[ $yn == "y" ]] && return 0
+	return 1
+}
+
 
 while true; do
+
+	if ! networkctl list | grep -q routable; then
+		echo -en "Setup WiFi? ${YELLOW}(y/N)${NOCOLOR} "
+		ask_yn "n" && wifi
+	fi
+	
 	echo -e "Server URL: ${YELLOW}$HIVE_HOST_URL${NOCOLOR}"
 	echo "Press ENTER to continue with this URL or type a new one"
 	read_url
@@ -142,16 +161,7 @@ FILEEOF
 	echo -e "\n${CYAN}Default password for \"user\" is \"1\".${NOCOLOR}"
 	echo -e "We recommend to change default password on rigs exposed to Internet."
 	echo -en "Set rig password as system? ${YELLOW}(Y/n)${NOCOLOR} "
-	read chpsw
-	if [[ -z $chpsw ]]; then
-		chpsw="y"
-	else
-		#Unify the answer
-		chpsw=${chpsw,}
-		chpsw=${chpsw:0:1}
-	fi
-
-	[[ $chpsw == "y" ]] && hive-passwd $passwd #Change password
+	ask_yn "y" && hive-passwd $passwd #Change password
 	
 	#try to connect
 	hello restartminer
@@ -167,7 +177,9 @@ FILEEOF
 	 	exit 0
 	fi
 
-	echo -e "${RED}Sorry, id and password did not work, check and try again${NOCOLOR}\n"
+	echo -e "${RED}Sorry, id and password did not work.${NOCOLOR}\n"
+	echo -en "Try again? ${YELLOW}(Y/n)${NOCOLOR} "
+	ask_yn "y" || break
 done
 
 
