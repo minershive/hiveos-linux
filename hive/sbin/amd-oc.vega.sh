@@ -12,6 +12,7 @@ function _SetcoreVDDC {
 		echo "Noop"
 	else
 	#vegatool -i $cardno --volt-state 7 --vddc-table-set $1 --vddc-mem-table-set $1
+		echo "Noop"
 	fi
 }	
 
