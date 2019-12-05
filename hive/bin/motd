@@ -47,6 +47,10 @@ VERY_LOW_RAM=500
 LOW_DISK=2000
 VERY_LOW_DISK=1000
 
+HIGH_TEMP=70
+VERY_HIGH_TEMP=80
+
+
 [[ -f $RIG_CONF ]] && . $RIG_CONF
 
 
@@ -137,7 +141,7 @@ net_info() {
 		elif [[ $state =~ carrier ]]; then
 			color=$BYELLOW
 		elif [[ $state =~ dormant ]]; then
-			color-$BPURPLE
+			color=$BPURPLE
 		fi
 		echo -en "  $color$state$NOCOLOR"
 		dns=`grep -Pazo "DNS: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | awk '{$1=$1};1'`
@@ -212,13 +216,82 @@ sys_check() {
 }
 
 
+function color_printf {
+	local pad=$1
+	local str="$2"
+	# colored string length correction for printf formatting
+	local wcolors=`echo -e "$str" | wc -c`
+	local nocolors=`echo -e "$str" | sed 's/\x1b\[[0-9;]*m//g' | wc -c`
+	local len=$(( $pad + wcolors - nocolors ))
+	printf "%-${len}b" "$str"
+}
+
+
+gpu_info() {
+	[[ ! -f $GPU_DETECT_JSON ]] && return 1
+
+	local all_stats=
+	[[ -f $GPU_STATS_JSON && `stat --printf %Y $GPU_STATS_JSON` -gt $(( `date +%s` - 30 )) ]] &&
+		all_stats=(`cat $GPU_STATS_JSON | jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i ([]; . + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+";"+.[1]+";"+.[2]+";"+.[3]' 2>/dev/null`)
+
+	_IFS=$IFS; IFS=$'\n'
+	local all_info=(`cat $GPU_DETECT_JSON | jq -r -c '.[] | (.busid+";"+.brand+";"+.name+";"+.mem+";"+.vbios)' 2>/dev/null`)
+	[[ ${#all_info[@]} -eq 0 ]] && return 1
+
+	# get max string length
+	local maxline=0
+	for line in "${all_info[@]}"; do
+		[[ ${#line} -gt $maxline ]] && maxline=${#line}
+	done
+
+	local amd_idx=0
+	local nv_idx=0
+	local count=0
+	for gpu in "${all_info[@]}"; do
+		local info=(`awk -F ";" '{print $1"\n"$2"\n"$3"\n"$4"\n"$5}' <<< $gpu`)
+		local busid=${info[0]}
+		local brand=${info[1]}
+		local name=${info[2]}
+		local mem=${info[3]}
+		local vbios=${info[4]}
+		local output=
+		[[ ! -z $vbios ]] && vbios=" ($vbios)"
+		if [[ $brand == "nvidia" || ($name =~ "NVIDIA" && ! $name =~ "nForce") ]]; then
+			output=`printf "%b%2s%b" $BBLUE $nv_idx "$NOCOLOR $busid $GREEN$name$NOCOLOR $mem$vbios"`
+			((nv_idx++))
+		elif [[ $brand == "amd" || ($name =~ "Advanced Micro Devices" && ! $name =~ "RS880" && ! $name =~ "Stoney") ]]; then
+			output=`printf "%b%2s%b" $BBLUE $amd_idx "$NOCOLOR $busid $RED$name$NOCOLOR $mem$vbios"`
+			((amd_idx++))
+		else
+			output=`printf "%2s%b" " " "$NOCOLOR $busid $YELLOW$name$NOCOLOR"`
+		fi
+		color_printf $maxline "$output"
+		local stats=(`awk -F ";" '{print $1"\n"$2"\n"$3"\n"$4}' <<< ${all_stats[$count]}`)
+		((count++))
+		local temp=${stats[1]}
+		local fan=${stats[2]}
+		local power=${stats[3]}
+		[[ "${stats[0]}" != "$busid" || $power -eq 0 ]] && echo && continue
+		local color=$WHITE
+		if [[ $temp -ge $VERY_HIGH_TEMP ]]; then
+			color=$BRED
+		elif [[ $temp -ge $HIGH_TEMP ]]; then
+			color=$BYELLOW
+		fi
+		printf "%b%3s%b°C %b%4s %b%% %b%4s %bW\n" $color $temp $NOCOLOR $WHITE $fan $NOCOLOR $WHITE $power $NOCOLOR
+	done
+	IFS=$_IFS
+	return 0
+}
+
+
 sys_info
 disk_info
 net_info
 sys_check
 
 echo
-gpu-detect list
+gpu_info || gpu-detect list
 
 echo
 helpme
