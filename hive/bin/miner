@@ -114,15 +114,17 @@ function start() {
 	for mindex in {32..2}; do
 		eval minerval=\$MINER$mindex
 		if [[ ! -z $minerval ]]; then
-			screen -S miner -X screen $mindex miner-run $minerval &&
-				screen -S miner -X title $minerval #set nice title
+			screen -S miner -X screen $mindex miner-run $minerval
+			sleep 0.2
+			screen -S miner -X title $minerval #set nice title
 			echo $minerval >> /run/hive/cur_miner ##add miner-name to the list of working miners
 			sleep 1 #to allow to grab dpkg lock
 		fi
 	done
 
-	screen -S miner -X screen 1 miner-run $MINER &&
-		screen -S miner -X title $MINER #set nice title
+	screen -S miner -X screen 1 miner-run $MINER
+	sleep 0.2
+	screen -S miner -X title $MINER #set nice title
 	echo $MINER >> /run/hive/cur_miner ##add miner-name to the list of working miners
 	
 	# close bash window #0
