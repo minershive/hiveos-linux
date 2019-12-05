@@ -168,3 +168,10 @@ CUDA 9.2.148		>= 396.37	>= 398.26
 					-PRS 25 -PRT 6
 				- You do not want to see any performance report:
 					-PRT 0
+
+-cid INT		Defines a constant chain ID for KADENA Node mining, valid values are 0 to 9
+-tbr INT		Defines the timw between two work requests from a KADENA node. Time is in 100ms:
+				-tbr 5 means that beween two requests will be a 500ms pause
+				default = 5 -> 500ms
+
+
