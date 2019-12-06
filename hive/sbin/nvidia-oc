@@ -33,6 +33,14 @@ fi
 
 source $NVIDIA_OC_CONF
 
+n=`gpu-detect NVIDIA`
+if [[ $n == 0 ]]; then
+	echo "No NVIDIA cards detected, exiting"
+	exit
+fi
+
+echo "Detected $n NVIDIA cards"
+
 if [ ! -f $GPU_DETECT_JSON ]; then
 	gpu_detect_json=`gpu-detect listjson`
 else
@@ -41,12 +49,7 @@ fi
 
 n=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ] | length'`
 
-if [[ $n == 0 ]]; then
-	echo "No NVIDIA cards detected, exiting"
-	exit
-fi
-
-echo "Detected $n NVIDIA cards"
+[[ $n -eq 0 ]] && echo "No cards available for OC" && exit 1
 
 if [[ ! -z $RUNNING_DELAY && $RUNNING_DELAY -gt 0 ]]; then
 	[[ ! -z $MAX_RUNNING_DELAY && $RUNNING_DELAY -gt $MAX_RUNNING_DELAY ]] &&
@@ -133,8 +136,8 @@ pgrep --full nvidia-persistenced > /dev/null
 if [[ $? -ne 0 ]]; then
 	nvidia-persistenced --persistence-mode
 	#nvidia-smi -pm 1
-else
-	nvidia-smi -pm 1
+#else
+#	nvidia-smi -pm 1
 fi
 
 _IFS=$IFS && IFS=$'\n'
