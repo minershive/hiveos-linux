@@ -8,13 +8,26 @@ cd $SCRIPT_PATH
 mydir=`pwd`
 myself="$mydir/$SCRIPT_NAME"
 
+# direct urls to images
+STABLE_URL=http://download.hiveos.farm/latest/
+VEGA_URL=http://download.hiveos.farm/vega/
+BETA_URL=http://download.hiveos.farm/beta/
+URL_MASK="^http.*hiveos-.*\.zip$"
+
+# images archive
+ARCHIVE_URL=http://download.hiveos.farm/history/
+ARCHIVE_REGEX="\"\Khiveos-[^\"]+.zip(?=\")"
+
+# download timeout
+TIMEOUT=20
+
 TMPDIR="/tmp/tmphive"
 md5_url=
 url=
 root_dev=""
 farm_hash=""
 farm=""
-force=0
+force=1 # we do not need md5 as archive integrity is checked anyway
 no_confirm=0
 smb=0
 smbuser=
@@ -29,7 +42,6 @@ if [[ $(id -u) -ne 0 ]]; then
 	sudo chmod +x $0
 	exec sudo $myself $*
 fi
-
 
 
 BLACK='\033[0;30m'
@@ -51,30 +63,112 @@ WHITE='\033[1;37m'
 NOCOLOR='\033[0m'
 
 
+function get_image_from_url { # return $url
+	local from_url=$1
+	local name=$2
+	set -o pipefail
+	url=`curl --connect-timeout $TIMEOUT --retry 2 -sL --head -w '%{url_effective}' $from_url 2>/dev/null | tail -n 1`
+	if [[ $? -eq 0 ]]; then
+		[[ "$url" =~ $URL_MASK ]] && return 0
+		echo -e "$RED> Got bad url for $name image - $url$NOCOLOR"
+		return 1
+	fi
+	echo -e "$RED> Unable to get url for $name image$NOCOLOR"
+	return 2
+}
 
 
+function get_image_from_list {
+	echo -e "${CYAN}> Loading Hive OS images list${NOCOLOR}"
+
+	local versions=()
+	local urls=()
+
+	get_image_from_url $STABLE_URL "Stable" && urls+=("$url") && versions+=("$(basename $url) (Latest Stable)")
+	get_image_from_url $BETA_URL "Beta" && urls+=("$url") && versions+=("$(basename $url) (Latest Beta)")
+	get_image_from_url $VEGA_URL "Vega" && urls+=("$url") && versions+=("$(basename $url) (Latest Vega)")
+
+	list=`curl -sLk --connect-timeout $TIMEOUT --retry 2 $ARCHIVE_URL 2>/dev/null`
+	if [[ $? -eq 0 ]]; then
+		local arr=(`echo "$list" | grep -oP "$ARCHIVE_REGEX" | sed 's/%40/@/g'`)
+		for img in "${arr[@]}"; do
+			urls+=("$ARCHIVE_URL$img")
+			versions+=("$img")
+		done
+	else
+		echo -e "$RED> Unable to get urls for archive images$NOCOLOR"
+	fi
+
+	[[ ${#versions[@]} -eq 0 ]] &&  echo -e "${RED}> List is empty$NOCOLOR" && return 1
+	echo -e "${YELLOW}Select version to install:$NOCOLOR  0 - exit"
+	select ver in "${versions[@]}"; do
+		[[ $REPLY -eq 0 ]] && return 1
+		[[ ! -z $ver ]] && break
+	done
+	url="${urls[$((REPLY-1))]}"
+	return 0
+}
 
 
 function usage {
 	echo -e "${CYAN}Usage: hive-replace [option] <Path or URL to ZIP file with Hive OS image>${NOCOLOR}"
 	echo -e
 	echo -e "Options:"
-	echo -e "${GREEN}  -y|--yes                    ${NOCOLOR}Do not ask for confirmation, answer yes to all questions"
-	echo -e "${GREEN}  -f|--force                  ${NOCOLOR}Forced replace. Do not check the MD5 checksum of ZIP archive"
-	echo -e "${GREEN}  --nfs                       ${NOCOLOR}To use NFS Shared resource. e.g.: ${GREEN}IP_NFS_server:/shared_dir/hive_zip${NOCOLOR}"
-	echo -e "${GREEN}  --smb                       ${NOCOLOR}To use Windows Shared resource. e.g.: ${GREEN}//IP_Windows_comp/shared_folder/hive_zip${NOCOLOR}"
-	echo -e "${GREEN}  --smbuser=Windows user      ${NOCOLOR}UserName for Windows Shared resource. Do not set this option for guest/anonymous access"
-	echo -e "${GREEN}  --smbpass=Windows password  ${NOCOLOR}Password for Windows Shared resource. Do not set this option for guest/anonymous access"
-	echo -e "${GREEN}  --hash=FARM_HASH            ${NOCOLOR}FARM_HASH from Web-interface"
-	echo -e "${GREEN}  -h|--help                   ${NOCOLOR}Show this message"
+	echo -e "${GREEN}  -l|--list               ${NOCOLOR}List images from Hive server and select for install"
+	echo -e "${GREEN}  -s|--stable             ${NOCOLOR}Download and install latest ${BCYAN}Stable$NOCOLOR image from Hive server"
+	echo -e "${GREEN}  --vega                  ${NOCOLOR}Download and install latest ${CYAN}Vega$NOCOLOR image from Hive server"
+	echo -e "${GREEN}  --beta                  ${NOCOLOR}Download and install latest ${CYAN}Beta$NOCOLOR image from Hive server"
+	echo -e "${GREEN}  -y|--yes                ${NOCOLOR}Do not ask for confirmation, answer yes to all questions"
+#	echo -e "${GREEN}  -f|--force              ${NOCOLOR}Forced replace. Do not check the MD5 checksum of ZIP archive"
+	echo -e "${GREEN}  --nfs                   ${NOCOLOR}To use NFS Shared resource. e.g.: ${GREEN}IP_NFS_server:/shared_dir/hive_zip${NOCOLOR}"
+	echo -e "${GREEN}  --smb                   ${NOCOLOR}To use Windows Shared resource. e.g.: ${GREEN}//IP_Windows_comp/shared_folder/hive_zip${NOCOLOR}"
+	echo -e "${GREEN}  --smbuser=Windows user  ${NOCOLOR}UserName for Windows Shared resource. Do not set this option for guest/anonymous access"
+	echo -e "${GREEN}  --smbpass=Windows pass  ${NOCOLOR}Password for Windows Shared resource. Do not set this option for guest/anonymous access"
+	echo -e "${GREEN}  --hash=FARM_HASH        ${NOCOLOR}FARM_HASH from Web-interface"
+	echo -e "${GREEN}  -h|--help               ${NOCOLOR}Show this message"
 	echo -e
 	echo -e "Example:"
+	echo -e "${GREEN}  hive-replace -y --list${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y --stable${NOCOLOR}"
 	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 http://mylocalserver/hiveos-0.6-01@181121.zip${NOCOLOR}"
-	echo -e "${GREEN}  hive-replace -y -f --hash=46e9602837d0bda99f0 --nfs 192.168.10.100:/home/john/hive/hiveos-0.6-01@181121.zip${NOCOLOR}"
-	echo -e "${GREEN}  hive-replace -y -f --hash=46e9602837d0bda99f0 --smb --smbuser=winuser --smbpass=secret //192.168.0.1/shared_folder/hiveos-0.6-01@181121.zip${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 --nfs 192.168.10.100:/home/john/hive/hiveos-0.6-01@181121.zip${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 --smb --smbuser=winuser --smbpass=secret //192.168.0.1/shared_folder/hiveos-0.6-01@181121.zip${NOCOLOR}"
 
 	exit
 }
+
+
+function check_packages {
+	local programs=0
+	local need_install=
+	
+	dpkg -s lsof > /dev/null 2>&1
+	[[ $? -ne 0 ]] && programs=1 && need_install="lsof"
+	#dpkg -s curl > /dev/null 2>&1
+	#[[ $? -ne 0 ]] && programs=1 && need_install="$need_install curl"
+	dpkg -s wget > /dev/null 2>&1
+	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install wget"
+	dpkg -s unzip > /dev/null 2>&1
+	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install unzip"
+	dpkg -s gdisk > /dev/null 2>&1
+	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install gdisk"
+	if [[ smb -eq 1 ]]; then
+		dpkg -s smbclient > /dev/null 2>&1
+		[[ $? -ne 0 ]] && programs=1 && need_install="$need_install smbclient"
+	fi
+	if [[ nfs -eq 1 ]]; then
+		dpkg -s nfs-common > /dev/null 2>&1
+		[[ $? -ne 0 ]] && programs=1 && need_install="$need_install nfs-common"
+	fi
+	if [[ $programs -ne 0 ]]; then
+		echo -e "${CYAN}> Installing required packages${NOCOLOR}"
+		apt-get update
+		apt-get install -y $need_install
+		[[ $? -ne 0 ]] && echo -e "${RED}Failed to install required packages${NOCOLOR}" && exit
+		echo -e "${GREEN}> Installed required packages successfully${NOCOLOR}"
+	fi
+}
+
 
 # Gets/downloads image
 function get {
@@ -102,8 +196,8 @@ function get {
 		[[ $mnt_flag -ne 0 ]] && echo -e "${RED}Сan't mount network shared resource.${NOCOLOR}" && return 1
 		url="$TMPDIR/share/$archname"
 	fi
-	
-	
+
+
 	#download VERSIONS.txt to get md5 later
 	if [[ $force -ne 1 ]]; then
 		#default is "http://download.hiveos.farm/VERSIONS.txt"
@@ -115,27 +209,25 @@ function get {
 		[[ -z $mdsum ]] && echo -e "${RED}Сan't get md5sum from $md5_url to check MD5 checksum. Use -f to ignore this.${NOCOLOR}" && return 1
 	fi
 
-	
-
 	#Copy|download hive image to tmmfs
 	echo -e "\n${CYAN}> Downloading image file${NOCOLOR}"
 	if [[ "$url" == *http* ||  "$url" == *ftp* ]]; then
 		echo ""
-		wget -t 0 -T 20 --show-progress $url
+		wget -t 0 -T $TIMEOUT --show-progress $url
 		[[ $? -ne 0 ]] && echo -e "${RED}Download Hive OS image failed. Check url${NOCOLOR}" && return 1
 	else
 		[[ ! -f $url ]] && echo -e "${RED}Hive OS image not found. Check path${NOCOLOR}" && return 1
 		cp -v $url $TMPDIR
 		[[ $? -ne 0 ]] && echo -e "${RED}Copy Hive OS image failed${NOCOLOR}" && return 1
 	fi
-	
+
 	#check md5
 	if [[ $force -ne 1 ]]; then
 		echo -e "\n${CYAN}> Checking MD5 summ of image file${NOCOLOR}"
 		mdsum_hive=$(md5sum $TMPDIR/$archname | awk '{printf$1}')
 		[[ $mdsum != $mdsum_hive ]] && echo -e "${RED}MD5 checksum of image file does not match${NOCOLOR}\nGot $mdsum_hive, expected $mdsum" && return 1
 	fi
-	
+
 	#check zip integrity
 	echo -e "\n${CYAN}> Checking ZIP file integrity${NOCOLOR}"
 	unzip -t $TMPDIR/$archname > /dev/null
@@ -150,12 +242,14 @@ function get {
 function prepare {
 	#Prevent start from local console
 	[[ $(tty) == *tty* || ! -z $DISPLAY ]] && echo "This script does not work in the local console. Exit" && exit
-	
+
 	mem=$(free -m | awk 'NR == 2{print$2}')
 	clear
 	echo -e "${CYAN}***********************************${NOCOLOR}"
-	echo -e "${YELLOW}Hive OS Image Installation${NOCOLOR}"
+	echo -e "${YELLOW}    Hive OS Image Installation${NOCOLOR}"
 	echo -e "${CYAN}***********************************${NOCOLOR}"
+	echo
+	echo -e "$WHITE$url$NOCOLOR"
 	echo
 	echo "Total RAM=$mem Mb"
 	echo
@@ -166,7 +260,6 @@ function prepare {
 	DISK_NAME=`echo ${DISK_PART} | sed 's/\([[:digit:]]\)//'`
 	DISK_SIZE=`cat /proc/partitions | grep -w "${DISK_NAME}" | awk '{ printf("%.f",$3/1024)}'`
 	PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
-
 
 	echo -e "Current OS booted from ${GREEN}$DISK_NAME${NOCOLOR} and whole drive size is ${WHITE}$DISK_SIZE${NOCOLOR} Mb"
 	[[ $DISK_SIZE -lt 7300 ]] && echo -e "\n${YELLOW}The minimum disk size for Hive OS is 8 Gb${NOCOLOR}" && exit
@@ -179,34 +272,7 @@ function prepare {
 	fi
 
 	##check programs
-	programs=0
-	need_install=
-	
-	dpkg -s lsof > /dev/null 2>&1
-	[[ $? -ne 0 ]] && programs=1 && need_install="lsof"
-	#dpkg -s curl > /dev/null 2>&1
-	#[[ $? -ne 0 ]] && programs=1 && need_install="$need_install curl"
-	dpkg -s wget > /dev/null 2>&1
-	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install wget"
-	dpkg -s unzip > /dev/null 2>&1
-	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install unzip"
-	dpkg -s gdisk > /dev/null 2>&1
-	[[ $? -ne 0 ]] && programs=1 && need_install="$need_install gdisk"
-	if [[ smb -eq 1 ]]; then
-		dpkg -s smbclient > /dev/null 2>&1
-		[[ $? -ne 0 ]] && programs=1 && need_install="$need_install smbclient"
-	fi
-	if [[ nfs -eq 1 ]]; then
-		dpkg -s nfs-common > /dev/null 2>&1
-		[[ $? -ne 0 ]] && programs=1 && need_install="$need_install nfs-common"
-	fi
-	if [[ $programs -ne 0 ]]; then
-		echo -e "${CYAN}> Installing required packages${NOCOLOR}"
-		apt-get update
-		apt-get install -y $need_install
-		[[ $? -ne 0 ]] && echo -e "${RED}Failed to install required packages${NOCOLOR}" && exit
-		echo -e "${GREEN}> Installed required packages successfully${NOCOLOR}"
-	fi
+	check_packages
 
 	#create tmpfs
 	cat /proc/mounts | grep $TMPDIR > /dev/null 2>&1
@@ -227,19 +293,17 @@ function prepare {
 	[[ $thishive -eq 1 && -d /hive-config/network ]] && cp -R /hive-config/network $TMPDIR/old-config/
 	[[ $thishive -eq 1 && -d /hive-config/openvpn ]] && cp -R /hive-config/openvpn $TMPDIR/old-config/
 	[[ $thishive -eq 1 && -d /hive-config/watchdog ]] && cp -R /hive-config/watchdog $TMPDIR/old-config/
-	
-	
+
+
 	#get hive zip
 	get
 	[[ $? -ne 0 ]] && exit
-		
-	
+
 	#Disable kernel message to tty
 	echo 0 > /proc/sys/kernel/printk
 	echo 1 > /proc/sys/kernel/sysrq
 	echo 0 > /proc/sysrq-trigger
 
-	
 
 	#stop services and remount RO
 	swapoff -a
@@ -269,9 +333,9 @@ function prepare {
 	#skip self, telec, hssh, watchdog!
 	pid="1"
 	while [[ ! -z $pid ]]; do
-		pid=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | grep -v -e hssh | grep -v -e watchdog | sed '2!d' | awk '{print $2}')
+		pid=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec -e hssh -e watchdog -e hl340 -e srrv2 | sed '2!d' | awk '{print $2}') #'
 		[[ -z $pid ]] && continue
-		process=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec | grep -v -e hssh | grep -v -e watchdog | sed '2!d' | awk '{print $1}')
+		process=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec -e hssh -e watchdog -e hl340 -e srrv2 | sed '2!d' | awk '{print $1}') #'
 		echo -e "> kill $process"
 		kill $pid
 		sleep 1
@@ -406,16 +470,32 @@ for param in "$@"; do
 			smb=1
 		;;
 		--smbuser=*)
-			smbuser="${param#*=}"	
+			smbuser="${param#*=}"
 		;;
 		--smbpass=*)
-			smbpasswd="${param#*=}"	
+			smbpasswd="${param#*=}"
 		;;
 		--hash=*)
 			farm="${param#*=}"
 		;;
 		*hive*zip)
 			url=$param
+		;;
+		-l|--list)
+			check_packages
+			get_image_from_list || exit
+		;;
+		-s|--stable)
+			check_packages
+			get_image_from_url $STABLE_URL "Stable" || exit
+		;;
+		--beta)
+			check_packages
+			get_image_from_url $BETA_URL "Beta" || exit
+		;;
+		--vega)
+			check_packages
+			get_image_from_url $VEGA_URL "Vega" || exit
 		;;
 		*)
 			#none
