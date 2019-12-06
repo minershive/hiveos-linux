@@ -20,7 +20,7 @@ mkdir -p $tmpDir
 cd $tmpDir
 echo -e "${WHITE}> Downloading $downloadUrl${NOCOLOR}"
 [[ -f $archpath ]] && echo -e "> $archpath found locally, maybe incomplete, trying to recover"
-wget -c $downloadUrl
+wget --no-check-certificate -c $downloadUrl
 [ $? -ne 0 ] && echo -e "${RED}Error downloading $downloadUrl${NOCOLOR}" && exit 1
 
 ## Unpack
