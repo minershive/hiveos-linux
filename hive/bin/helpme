@@ -3,12 +3,13 @@
 [ -t 1 ] && . colors
 
 echo -e "${YELLOW}=== Commands FAQ ===
-${CYAN}miner$NOCOLOR - shows running miner screen. ${BCYAN}Ctrl+A+D$NOCOLOR to exit, ${BCYAN}Ctrl+A+A$NOCOLOR to switch between
+${CYAN}helpme$NOCOLOR - shows this FAQ, ${CYAN}motd$NOCOLOR - shows summary info (like after boot)
+${CYAN}miner$NOCOLOR - shows running miner screen, ${BCYAN}Ctrl${CYAN}+${BCYAN}a d$NOCOLOR to exit, ${BCYAN}Ctrl${CYAN}+${BCYAN}a${CYAN}+${BCYAN}a$NOCOLOR to switch between
 ${CYAN}miner start $NOCOLOR|$CYAN stop$NOCOLOR - starts or stops miner obviously
-${CYAN}agent-screen$NOCOLOR - shows hive client agent. ${BCYAN}Ctrl+A+D${NOCOLOR} to exit, ${BCYAN}Ctrl+A+A${NOCOLOR} to switch between
-${CYAN}selfupgrade $NOCOLOR[$CYAN--force$NOCOLOR] [${CYAN}VERSION$NOCOLOR] - upgrade hive to latest or specified version (like 0.6-65)
-${CYAN}firstrun -f $NOCOLOR[${CYAN}URL$NOCOLOR] - force rig setup, you will enter ID and password again, URL is optional
-${CYAN}wifi $NOCOLOR[${CYAN}SSID PASS$NOCOLOR] - to setup WiFi if you have one
+${CYAN}agent-screen$NOCOLOR - shows hive client agent, ${BCYAN}Ctrl${CYAN}+${BCYAN}a d$NOCOLOR to exit, ${BCYAN}Ctrl${CYAN}+${BCYAN}a${CYAN}+${BCYAN}a$NOCOLOR to switch between
+${CYAN}selfupgrade $NOCOLOR[$CYAN--force$NOCOLOR] [${CYAN}version$NOCOLOR] - upgrade hive to latest or specified version (like 0.6-65)
+${CYAN}firstrun -f $NOCOLOR[${CYAN}url$NOCOLOR] - force rig setup, you will enter ID and password again, url is optional
+${CYAN}wifi $NOCOLOR[${CYAN}ssid pass$NOCOLOR] - to setup WiFi if you have one
 ${BCYAN}net-test${NOCOLOR} - check your network connection
 ${PURPLE}hive-passwd${NOCOLOR} - change system password
 ${PURPLE}logs-on${NOCOLOR} | ${PURPLE}logs-off${NOCOLOR} - keep logs on disk / in RAM (for USB Flash drives)
@@ -16,5 +17,5 @@ ${PURPLE}gpu-fans-find${NOCOLOR} - find GPU by spinning fans
 ${PURPLE}disk-expand${NOCOLOR} - enlarge disk to use all space
 ${PURPLE}hpkg${NOCOLOR} - Hive package manager
 ${PURPLE}hive-replace${NOCOLOR} - system image replacement tool
-${GREEN}nvidia-driver-update $NOCOLOR[${GREEN}VERSION$NOCOLOR] - update to latest or specified version (like 418 or 418.88)
+${GREEN}nvidia-driver-update $NOCOLOR[${GREEN}version$NOCOLOR] - update to latest or specified version (like 418 or 418.88)
 ${BRED}amd-info${NOCOLOR} | ${BGREEN}nvidia-info${NOCOLOR} - GPU information"

@@ -1,5 +1,5 @@
 hardstatus             alwayslastline
-hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{= kw}%?%-Lw%?%{r}(%{W}%n*%f%t%?(%u)%?%{r})%{w}%?%+Lw%?%?%= %{g}][%{B} %d/%m %{W}%c %{g}]'
+hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{= kw}%?%-w%?%{r}[ %{W}%t%?(%u)%?%{r} ]%{w}%?%+w%?%?%= %{g}]%{y}[ Exit: %{Y}Ctrl%{y}+%{Y}a d%{y}  Switch: %{Y}Ctrl%{y}+%{Y}a%{y}+%{Y}a%{y} ]%{g}[%{B} %d/%m %{W}%c %{g}]'
 
 defshell /bin/bash
 
