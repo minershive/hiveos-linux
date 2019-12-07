@@ -2,26 +2,44 @@
 
 . colors
 
-VERS="0.1"
+VERS="0.2"
+
+HUGES_RX=1168
+HUGES_CN=128
+MEM_RES_PERC=90                                                                 # % of available memory for reservation
 
 HPAGES_REQ=$1                                                                   # Requested number of HugePages
 
 MEM_AVAIL=`cat /proc/meminfo | grep "MemFree" | awk '{ print $2 }'`             # Memory available
-MEM_RES_PERC=90                                                                 # % of available memory for reservation
 HPAGE_SIZE=`cat /proc/meminfo | grep "Hugepagesize" | awk '{ print $2 }'`       # HugePage size usually 2M
 HPAGES_CUR=`cat /proc/meminfo | grep "HugePages_Total" | awk '{ print $2 }'`    # Number of HugePages (current value)
 HPAGES_MAX=$(($HPAGES_CUR+$MEM_AVAIL/$HPAGE_SIZE*$MEM_RES_PERC/100))            # Number of HugePages (max calculated)
+
+CPU_NUMA=`lscpu | grep "NUMA node(s)" | awk '{ print $3 }'`
+CPU_CORE=`lscpu | grep "^CPU(s):" | awk '{ print $2 }'`
+
+HUGES_RX_CALC=$(( $HUGES_RX * $CPU_NUMA + $CPU_CORE ))
 
 huge_pages_set(){
     echo $1 > /proc/sys/vm/nr_hugepages
 }
 
 huge_cur_print(){
-    echo -e "${YELLOW}HugePages (current): ${GREEN}$HPAGES_CUR${NOCOLOR}"
+    echo -e "HugePages (current): ${GREEN}$HPAGES_CUR${NOCOLOR}"
+}
+
+huge_cpu_print(){
+    local AES=`lscpu | grep -c "aes"`
+    echo -n -e "Your system has ${YELLOW}$CPU_NUMA${NOCOLOR} NUMA node(s) and ${YELLOW}$CPU_CORE${NOCOLOR} CPUs cores with "
+    [[ $AES == 1 ]] && echo -e "${GREEN}with AES support${NOCOLOR}" || echo -e "${RED}no AES support${NOCOLOR}"
 }
 
 huge_max_print(){
-    echo -e "${YELLOW}HugePages (maximum): ${RED}$HPAGES_MAX${NOCOLOR}"
+    echo -e "HugePages (maximum): ${RED}$HPAGES_MAX${NOCOLOR}"
+}
+
+huge_rx_print(){
+    echo -e "HugePages (randomx): ${YELLOW}$HUGES_RX_CALC${NOCOLOR}"
 }
 
 print_banner(){
@@ -31,15 +49,15 @@ print_banner(){
 print_help(){
     print_banner
     echo -e "This tool allows you to set the desired value for hugepages."
-    echo -e "${DGRAY}The suggested value for CN-based algorithms is 128"
-    echo -e "The suggested value for RandomX is 1280"
+    echo -e "${DGRAY}The suggested value for CN-based algorithms is ${HUGES_CN}"
+    echo -e "The suggested value for RandomX is $HUGES_RX_CALC"
     echo
     echo -e "${YELLOW}Usage: \n\t${CYAN}hugepages value${NOCOLOR}"
     echo
     echo -e "${YELLOW}Other examples of usage:${NOCOLOR}"
     echo -e "\t${CYAN}hugepages -r${NOCOLOR}  - ${LGRAY}restoring system defaults"
-    echo -e "\t${CYAN}hugepages -rx${NOCOLOR} - ${LGRAY}try set suggested value (1280) for RandomX"
-    echo -e "\t${CYAN}hugepages -cn${NOCOLOR} - ${LGRAY}try set suggested value (128) for CN-based "
+    echo -e "\t${CYAN}hugepages -rx${NOCOLOR} - ${LGRAY}try set suggested value ($HUGES_RX_CALC) for RandomX"
+    echo -e "\t${CYAN}hugepages -cn${NOCOLOR} - ${LGRAY}try set suggested value ($HUGES_CN) for CN-based "
     echo -e "\t${CYAN}hugepages -h${NOCOLOR}  - ${LGRAY}this help "
 }
 
@@ -50,7 +68,7 @@ huge_get_def(){
 ################################################################################
 # MAIN SCRIPT BODY
 ################################################################################
-[[ -z $HPAGES_REQ ]] && print_banner && huge_cur_print && huge_max_print && exit 0
+[[ -z $HPAGES_REQ ]] && print_banner && huge_cpu_print && huge_cur_print && huge_max_print && huge_rx_print && exit 0
 case $1 in
     -h|--help)
         print_help
@@ -61,7 +79,7 @@ case $1 in
         echo -e "${CYAN}Try restore to system default HugePages value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
         ;;
     -rx)
-        HPAGES_REQ=1280
+        HPAGES_REQ=$HUGES_RX_CALC
         echo -e "${CYAN}Try set HugePages to suggested for RandomX algorithm value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
         ;;
     -cn)
