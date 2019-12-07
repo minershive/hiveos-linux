@@ -5,7 +5,15 @@
 	exit 1
 
 # HugePages tunning
-[[ ! -z $XMRIG_NEW_HUGEPAGES ]] && hugepages $XMRIG_NEW_HUGEPAGES
+if [[ ! -z $XMRIG_NEW_HUGEPAGES ]];
+then
+    hugepages $XMRIG_NEW_HUGEPAGES
+else
+   if [[ `echo $XMRIG_NEW_ALGO | grep -c "^rx\/"` -gt 0 ]];
+   then
+       hugepages -rx $XMRIG_NEW_HUGEPAGES
+   fi
+fi
 
 # Miner run here
 cd $MINER_DIR/$MINER_FORK/$MINER_VER
