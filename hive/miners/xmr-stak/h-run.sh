@@ -16,10 +16,23 @@ while true; do
 		break
 done
 
-# Hugepages tunning
-[[ ! -z $XMR_STAK_HUGEPAGES ]] && hugepages $XMR_STAK_HUGEPAGES
+
 
 # Miner run here
 cd $MINER_DIR/$MINER_FORK/$MINER_VER
 
+# Hugepages tunning
+if [[ ! -z $XMR_STAK_HUGEPAGES ]];
+then
+    hugepages $XMR_STAK_HUGEPAGES
+else
+   config=`cat config.txt`
+   algo=`echo "{ $config }"| jq -r '.currency' | grep -c "^random"`
+   if [[ "$algo" -gt 0 ]];
+   then
+       hugepages -rx
+   fi
+fi
+
 ./xmr-stak
+
