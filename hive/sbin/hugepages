@@ -2,7 +2,7 @@
 
 . colors
 
-VERS="0.2"
+VERS="0.3"
 
 HUGES_RX=1168
 HUGES_CN=128
@@ -19,6 +19,21 @@ CPU_NUMA=`lscpu | grep "NUMA node(s)" | awk '{ print $3 }'`
 CPU_CORE=`lscpu | grep "^CPU(s):" | awk '{ print $2 }'`
 
 HUGES_RX_CALC=$(( $HUGES_RX * $CPU_NUMA + $CPU_CORE ))
+
+huge_intel_boost(){
+    cpu_check=`lscpu | grep "Model name" | grep -c "Intel"`
+    msr_check=`lscpu | grep "^Flags" | grep -c "msr"`
+    if [[ "$cpu_check" -gt 0 && "$msr_check" -gt 0 ]]; then
+        pkg_check=`dpkg -l | grep -c "msr-tools"`
+        if [[ "$pkg_check" -eq 0 ]]; then
+            echo "Installing msr-tools package ..."
+            apt install -y msr-tools
+        fi
+        [[ `lsmod | grep msr` == "" ]] && modprobe msr
+        wrmsr -a 0x1a4 6
+        echo -e "${GREEN}[NOTIFY]${NOCOLOR} Intel CPU RandomX boost applied"
+    fi
+}
 
 huge_pages_set(){
     echo $1 > /proc/sys/vm/nr_hugepages
@@ -68,7 +83,8 @@ huge_get_def(){
 ################################################################################
 # MAIN SCRIPT BODY
 ################################################################################
-[[ -z $HPAGES_REQ ]] && print_banner && huge_cpu_print && huge_cur_print && huge_max_print && huge_rx_print && exit 0
+print_banner
+[[ -z $HPAGES_REQ ]] && huge_cpu_print && huge_cur_print && huge_max_print && huge_rx_print && exit 0
 case $1 in
     -h|--help)
         print_help
@@ -89,11 +105,13 @@ case $1 in
      *)
         re='^[0-9]+$'
         if ! [[ $HPAGES_REQ =~ $re ]] ; then
-            print_banner
             echo -e "${RED}[ERR] ${YELLOW}Invalid value given${NOCOLOR}" >&2; exit 1
         fi
 esac
 
+if [[ $HPAGES_REQ -gt $HUGES_CN ]]; then
+    huge_intel_boost
+fi
 
 if [[ $HPAGES_REQ -le $HPAGES_MAX ]]; then
     huge_pages_set $HPAGES_REQ
