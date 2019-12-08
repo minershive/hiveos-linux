@@ -10,6 +10,10 @@ echo -e "${CYAN}=== WiFi setup ===${NOCOLOR}"
 	interactive=1 ||
 	interactive=0
 
+[[ ! -t 1 && $interactive -eq 1 ]] &&
+	echo "Specify SSID and Password like 'wifi ssid pass' or run from shell for interactive mode" &&
+	exit 1
+
 WIFI_SSID=$1
 WIFI_PASSWORD=$2
 
@@ -23,6 +27,14 @@ function backslash() {
         var="${var//\$/\\\$}"
         echo "$var"
 }
+
+
+function wifi_info() {
+	iwconfig 2>&1 | grep -v "no wireless extensions" | grep -v -e '^$'
+	networkctl status $wlandev
+	echo
+}
+
 
 # Check packages
 installed=`dpkg -s wireless-tools | grep 'Status: .* ok installed' | wc -l`
@@ -83,10 +95,6 @@ if [[ $1 == "setup" && -z $2 ]]; then
 fi
 
 
-#just to display
-iwconfig 2>&1 | grep -v "no wireless extensions" | grep -v -e '^$'
-
-
 wlanCount=`iwconfig 2>&1 | grep $wlandev | wc -l`
 [[ -z $wlanCount || $wlanCount = 0 ]] &&
 		echo -e "No ${YELLOW}$wlandev${NOCOLOR} interface found" &&
@@ -94,14 +102,26 @@ wlanCount=`iwconfig 2>&1 | grep $wlandev | wc -l`
 	exit 1
 
 
+# bring up interface if it is down
+up=`ifconfig $wlandev up 2>&1`
+[[ $? -ne 0 ]] && echo -e "${RED}Failed to bring up $wlandev:$NOCOLOR $up\n"
+
+
+# just to display
+wifi_info
+
+
 [[ -z $WIFI_SSID || -z $WIFI_PASSWORD ]] &&
 while true; do
 	rescan=0
 	ssids=("[CUSTOM SSID]" "[RESCAN NETWORKS]")
 	echo -en "${CYAN}Scanning networks...$NOCOLOR"
-	ssids+=(`iw $wlandev scan 2>/dev/null | grep "SSID:" | awk -F ": " '{print $2}' | sort -u `)
+	_IFS=$IFS; IFS=$'\n'
+	#ssids+=(`iw $wlandev scan 2>/dev/null | grep "SSID:" | awk -F ": " '{print $2}' | sort -u `)
+	ssids+=(`iwlist $wlandev scanning 2>/dev/null | grep -oP "ESSID:\"\K[^\"]+(?=\")" | sort -u `)
+	IFS=$_IFS
 	echo -e "$CYAN found $(( ${#ssids[@]} - 2 )) $NOCOLOR"
-	if [[ ${#ssids[@]} -gt 2 ]]; then
+	#if [[ ${#ssids[@]} -gt 2 ]]; then
 		# convert \xNN codes to symbols
 		for((i=2; i < ${#ssids[@]}; i++)); do
 			ssids[$i]=`echo -e "${ssids[$i]}"`
@@ -109,17 +129,17 @@ while true; do
 		echo -e "${YELLOW}Select Access Point:${NOCOLOR}"
 		select WIFI_SSID in "${ssids[@]}"; do
 			[[ -z $WIFI_SSID ]] && continue
-			if [[ $WIFI_SSID == ${ssids[1]} ]]; then
-				rescan=1
-			elif [[ $WIFI_SSID == ${ssids[0]} ]]; then
+			if [[ $REPLY -eq 1 ]]; then
 				WIFI_SSID=
+			elif [[ $REPLY -eq 2 ]]; then
+				rescan=1
 			else
 				echo -e "SSID: $WHITE$WIFI_SSID$NOCOLOR"
 			fi
 			break
 		done
 		[[ $rescan -eq 1 ]] && continue
-	fi
+	#fi
 
 	if [[ -z $WIFI_SSID ]]; then
 		echo -e "${YELLOW}Enter your Access Point details${NOCOLOR}"
@@ -170,11 +190,14 @@ if [[ $interactive == 1 ]]; then
 		[[ $state == "routable" ]] && break
 		sleep 1
 	done
-	echo
-	networkctl status $wlandev
 
-	echo ""
-	echo -e "${GREEN}WiFi setup done${NOCOLOR}"
+	echo
+	wifi_info
+	
+	[[ $state == "routable" ]] &&
+		echo -e "${GREEN}WiFi setup done. Connected to network${NOCOLOR}" ||
+		echo -e "${RED}WiFi setup done. No connection. Check settings and try again${NOCOLOR}"
+
 	echo -e "If you will not use WiFi please disable service later with command ${CYAN}wifi-disable${NOCOLOR}"
 
 fi
