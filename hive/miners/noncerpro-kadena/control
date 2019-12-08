@@ -1,8 +1,8 @@
 Package: hive-miners-noncerpro-kadena
-Version: 0.6-04
+Version: 0.6-05
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-noncerpro-kadena-1.3.1
+Depends: hive-miners-noncerpro-kadena-2.01
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner
+Description: Hive miner - NoncerPro Kadena Miner
