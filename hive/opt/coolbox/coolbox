@@ -69,21 +69,35 @@ get_stats(){
   if [ -f $GPU_STATS_JSON ]; then
     temp_array=`cat $GPU_STATS_JSON | tail -1 | jq -c ".temp"`
 
+	local cpu_indexes_array=`cat $GPU_DETECT_JSON | jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'` #'
+
     #remove Internal Gpus
     [[ $cpu_indexes_array != '[]' && ! -z $cpu_indexes_array ]] &&
         temp_array=$(jq -c "del(.$cpu_indexes_array)" <<< $temp_array) #"
   fi
+  temp_array=${temp_array//\"}
 
-  temp_array=`echo $temp_array | jq -rc '.[]'`
-  local request_str=''
-  i=0
-  for t in $temp_array; do
-    ((i++))
-    request_str+=`printf "%02d" $t`
-  done
-  request_str="^"$(printf "%02d" $i)"$request_str"$(printf "%02d" $TARGET_TEMP)$(printf "%03d" $MANUAL_FAN)${FAN_MODE}${WATCHDOG}$(printf "%02d" $WD_RESET_INTERVAL)"\$"
+  # temp_array=`echo $temp_array | jq -rc '.[]'`
+  # local request_str=''
+  # i=0
+  # for t in $temp_array; do
+  #   ((i++))
+  #   request_str+=`printf "%02d" $t`
+  # done
+  # request_str="^"$(printf "%02d" $i)"$request_str"$(printf "%02d" $TARGET_TEMP)$(printf "%03d" $MANUAL_FAN)${FAN_MODE}${WATCHDOG}$(printf "%02d" $WD_RESET_INTERVAL)"\$"
 
-  #{"temp": [null, 0, 9, 65, 66, 64], "target_temp": 65, "manual_fan_speed": 50, "fan_mode": 1, "watchdog": 1, "wd_reser_interval": 120}
+  #{"gpu_temp":[null,0,9,65,66,64],"target_temp":65,"manual_fan_speed":50,"fan_mode":1,"watchdog":1,"wd_reset_interval":2}
+
+  #temp_array=[`echo ${temp_array[@]} | tr " " ","`]
+
+  [[ -z $TARGET_TEMP ]] && TARGET_TEMP=60
+  [[ -z $MANUAL_FAN ]] && MANUAL_FAN=50
+  [[ -z $FAN_MODE ]] && FAN_MODE=1
+  [[ -z $WATCHDOG ]] && WATCHDOG=0
+  [[ -z $WD_RESET_INTERVAL ]] && WD_RESET_INTERVAL=0
+
+
+  request_str='{"gpu_temp":'$temp_array',"target_temp":'$TARGET_TEMP',"manual_fan_speed":'$MANUAL_FAN',"fan_mode":'$FAN_MODE',"watchdog":'$WATCHDOG',"wd_reset_interval":'$WD_RESET_INTERVAL'}'
 
   local answer_str=`send_request $request_str`
 
@@ -96,7 +110,8 @@ get_stats(){
 }
 
 get_serial(){
-  [[ `get_file_time_diff` -lt 5 ]] && coolbox_stats=`cat $CLI_OUTPUT` || coolbox_stats=`send_request '^00000000000$'`
+  #[[ `get_file_time_diff` -lt 5 ]] && coolbox_stats=`cat $CLI_OUTPUT` || coolbox_stats=`send_request '^00000000000$'`
+  [[ `get_file_time_diff` -lt 5 ]] && coolbox_stats=`cat $CLI_OUTPUT` || coolbox_stats=`send_request '{}'`
   [[ ${coolbox_stats:88:1} == "^" ]] && echo ${coolbox_stats:0:$SERIAL_LENGTH}
 }
 
