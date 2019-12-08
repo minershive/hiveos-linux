@@ -13,9 +13,9 @@ ${CYAN}wifi $NOCOLOR[${CYAN}ssid pass$NOCOLOR] - to setup WiFi if you have one
 ${BCYAN}net-test${NOCOLOR} - check your network connection
 ${PURPLE}hive-passwd${NOCOLOR} - change system password
 ${PURPLE}logs-on${NOCOLOR} | ${PURPLE}logs-off${NOCOLOR} - keep logs on disk / in RAM (for USB Flash drives)
-${PURPLE}gpu-fans-find${NOCOLOR} - find GPU by spinning fans
+${PURPLE}gpu-fans-find ${NOCOLOR}[${PURPLE}index${NOCOLOR}] - find GPU by spinning fans, index can specified to find particular GPU (like 10)
 ${PURPLE}disk-expand${NOCOLOR} - enlarge disk to use all space
 ${PURPLE}hpkg${NOCOLOR} - Hive package manager
-${PURPLE}hive-replace${NOCOLOR} - system image replacement tool
+${PURPLE}hive-replace ${NOCOLOR}[${PURPLE}--list${NOCOLOR}] - system image replacement tool. Image can be selected from list
 ${GREEN}nvidia-driver-update $NOCOLOR[${GREEN}version$NOCOLOR] - update to latest or specified version (like 418 or 418.88)
 ${BRED}amd-info${NOCOLOR} | ${BGREEN}nvidia-info${NOCOLOR} - GPU information"

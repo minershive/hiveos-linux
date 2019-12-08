@@ -240,12 +240,16 @@ gpu_info() {
 
 	# get max string length
 	local maxline=0
+	local len=0
 	for line in "${all_info[@]}"; do
-		[[ ${#line} -gt $maxline ]] && maxline=${#line}
+		# skip intel integrated graphics
+		[[ $line =~ "Intel" ]] && continue
+		# do not count type amd;nvidia;cpu
+		[[ $line =~ "\;nvidia\;" ]] && len=$(( ${#line} + 1 )) || len=$(( ${#line} + 3 ))
+		[[ $len -gt $maxline ]] && maxline=$len
 	done
 
-	local amd_idx=0
-	local nv_idx=0
+	local idx=0
 	local count=0
 	for gpu in "${all_info[@]}"; do
 		local info=(`awk -F ";" '{print $1"\n"$2"\n"$3"\n"$4"\n"$5}' <<< $gpu`)
@@ -257,11 +261,11 @@ gpu_info() {
 		local output=
 		[[ ! -z $vbios ]] && vbios=" ($vbios)"
 		if [[ $brand == "nvidia" || ($name =~ "NVIDIA" && ! $name =~ "nForce") ]]; then
-			output=`printf "%b%2s%b" $BBLUE $nv_idx "$NOCOLOR $busid $GREEN$name$NOCOLOR $mem$vbios"`
-			((nv_idx++))
+			output=`printf "%b%2s%b" $BBLUE $idx "$NOCOLOR $busid $GREEN$name$NOCOLOR $mem$vbios"`
+			((idx++))
 		elif [[ $brand == "amd" || ($name =~ "Advanced Micro Devices" && ! $name =~ "RS880" && ! $name =~ "Stoney") ]]; then
-			output=`printf "%b%2s%b" $BBLUE $amd_idx "$NOCOLOR $busid $RED$name$NOCOLOR $mem$vbios"`
-			((amd_idx++))
+			output=`printf "%b%2s%b" $BBLUE $idx "$NOCOLOR $busid $RED$name$NOCOLOR $mem$vbios"`
+			((idx++))
 		else
 			output=`printf "%2s%b" " " "$NOCOLOR $busid $YELLOW$name$NOCOLOR"`
 		fi
