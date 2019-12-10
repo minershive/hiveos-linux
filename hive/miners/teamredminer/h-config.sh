@@ -17,14 +17,22 @@ function miner_config_gen() {
   mkfile_from_symlink $MINER_CONFIG
 
   [[ -z $TEAMREDMINER_ALGO ]] && TEAMREDMINER_ALGO=lyra2z
-  local pool=`head -n 1 <<< "$TEAMREDMINER_URL"`
-  grep -q "://" <<< $pool
-  [[ $? -ne 0 ]] && pool="stratum+tcp://${pool}"
 
-  local pass=
-  [[ ! -z ${TEAMREDMINER_PASS} ]] && pass=" -p ${TEAMREDMINER_PASS}"
+  conf="-a ${TEAMREDMINER_ALGO}"
 
-  conf="-a ${TEAMREDMINER_ALGO} -o $pool -u ${TEAMREDMINER_TEMPLATE}${pass} ${TEAMREDMINER_USER_CONFIG}"
+  for pool in $TEAMREDMINER_URL; do
+    grep -q "://" <<< $pool
+    [[ $? -ne 0 ]] && pool="stratum+tcp://${pool}"
+
+    local pass=
+    [[ ! -z ${TEAMREDMINER_PASS} ]] && pass=" -p ${TEAMREDMINER_PASS}"
+
+  	conf+=" -o $pool -u ${TEAMREDMINER_TEMPLATE}${pass}"
+
+	done
+
+
+  [[ ! -z $TEAMREDMINER_USER_CONFIG ]] && conf+=" ${TEAMREDMINER_USER_CONFIG}"
 
   echo "$conf" > $MINER_CONFIG
 }
