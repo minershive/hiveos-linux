@@ -49,7 +49,7 @@ fi
 
 n=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ] | length'`
 
-[[ $n -eq 0 ]] && echo "No cards available for OC" && exit 1
+[[ $n -eq 0 ]] && echo -e "No cards available for OC! \nPlease check BIOS settings, risers, connectors and PSU. \nTry to update Nvidia drivers." && exit 1
 
 if [[ ! -z $RUNNING_DELAY && $RUNNING_DELAY -gt 0 ]]; then
 	[[ ! -z $MAX_RUNNING_DELAY && $RUNNING_DELAY -gt $MAX_RUNNING_DELAY ]] &&
