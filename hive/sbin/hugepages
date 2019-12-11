@@ -2,7 +2,7 @@
 
 . colors
 
-VERS="0.3"
+VERS="0.3.1"
 
 HUGES_RX=1168
 HUGES_CN=128
@@ -31,7 +31,7 @@ huge_intel_boost(){
         fi
         [[ `lsmod | grep msr` == "" ]] && modprobe msr
         wrmsr -a 0x1a4 6
-        echo -e "${GREEN}[NOTIFY]${NOCOLOR} Intel CPU RandomX boost applied"
+        echo -e "${GREEN}[INFO]${NOCOLOR} Intel CPU RandomX boost applied"
     fi
 }
 
@@ -92,15 +92,15 @@ case $1 in
         ;;
     -r|--restore)
         HPAGES_REQ=`huge_get_def`
-        echo -e "${CYAN}Try restore to system default HugePages value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
+        echo -e "${GREEN}[INFO]${NOCOLOR} Try restore to system default HugePages value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
         ;;
     -rx)
         HPAGES_REQ=$HUGES_RX_CALC
-        echo -e "${CYAN}Try set HugePages to suggested for RandomX algorithm value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
+        echo -e "${GREEN}[INFO]${NOCOLOR} Try set HugePages to suggested for RandomX algorithm value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
         ;;
     -cn)
         HPAGES_REQ=128
-        echo -e "${CYAN}Try set HugePages to suggested for CN-based algorithms value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
+        echo -e "${GREEN}[INFO]${NOCOLOR} Try set HugePages to suggested for CN-based algorithms value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
         ;;
      *)
         re='^[0-9]+$'
@@ -116,13 +116,13 @@ fi
 if [[ $HPAGES_REQ -le $HPAGES_MAX ]]; then
     huge_pages_set $HPAGES_REQ
 else
-    echo -e "${RED}[WARN] ${YELLOW}HugePages requested ($HPAGES_REQ) more then maximum suggested ($HPAGES_MAX)."
+    echo -e "${YELLOW}[WARN]${NOCOLOR} HugePages requested ($HPAGES_REQ) more then maximum suggested ($HPAGES_MAX)."
     huge_pages_set $HPAGES_MAX
 fi
 
 HPAGES_SET=`cat /proc/sys/vm/nr_hugepages`
 
-echo -e "${GREEN}New HugePages value set: ${YELLOW}$HPAGES_SET${NOCOLOR}"
+echo -e "${GREEN}[INFO]${NOCOLOR} New HugePages value set: ${GREEN}$HPAGES_SET${NOCOLOR}"
 
 exit 0
 
