@@ -108,7 +108,9 @@ function get_image_from_list {
 	# works for ftp also
 	list=`curl -fskL --list --connect-timeout $TIMEOUT --retry 2 "$URL" 2>/dev/null`
 	if [[ $? -eq 0 ]]; then
+		_IFS=$IFS; IFS=$'\n'
 		local arr=(`echo "$list" | grep -oP "$ARCHIVE_REGEX" | sed 's/%40/@/g' | sort -n -r -t "@" -k1`)
+		IFS=$_IFS
 		for img in "${arr[@]}"; do
 			urls+=("$URL$img")
 		done
