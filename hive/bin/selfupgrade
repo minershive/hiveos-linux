@@ -79,6 +79,9 @@ fi
 #remove stupid rep file for smaller updates
 [[ -f /etc/apt/sources.list.d/amdgpu-pro.list ]] && rm /etc/apt/sources.list.d/amdgpu-pro.list
 
+#remove avrdude conf file to exclude overwrite request
+[[ -f /etc/avrdude.conf ]] && rm /etc/avrdude.conf
+
 #Sometimes Ubuntu fails to update repos
 dpkg --configure -a
 dexitcode=$? # we do not check it here. only return on exit to show a problem
