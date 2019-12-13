@@ -21,8 +21,8 @@ high_la_count=0
 LAST_STAT="/run/hive/last_stat.json"
 
 old_modify_conf=0
-
-
+old_miner_algo=
+minhash=
 
 function loadconf() {
 	WD_ENABLED=
@@ -49,7 +49,7 @@ function loadconf() {
 	#	exit 1
 
 	
-	minhash=
+	
 	
 	if [[ ! -z $WD_MINHASHES_ALGO && $WD_MINHASHES_ALGO != "{}" ]]; then
 		miner_algo=
@@ -65,22 +65,25 @@ function loadconf() {
 				wd_algo=$miner_algo
 			fi
 			minhash=$(echo $WD_MINHASHES_ALGO | jq ".\"${wd_algo}\"")
+			if [[ -z $minhash || $minhash == "null" ]]; then
+				if [[ old_miner_algo != $miner_algo ]]; then
+					message warn "Minimal hashrate for ${wd_algo} is not set" > /dev/null 2>&1
+					echo -e "${RED}Minimal hashrate for ${wd_algo} is not set${NOCOLOR}"
+				fi
+			fi
+			old_miner_algo=$miner_algo
 		fi
-		#[[ -z $minhash || $minhash == "null" ]] && minhash=0.001
 	else
-		[[ ! -z $MINER ]] && minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
-	fi
-		
-	log_algo="(any algo)"
-	[[ ! -z $wd_algo ]] && log_algo="(${wd_algo})"
-	
-	if [[ $old_modify_conf != $(stat --printf %Y $RIG_CONF) ]]; then
-		[[ -z $minhash || $minhash == "null" ]] &&
-			message warn "Minimal hashrate for $MINER and for algorithm is not set" > /dev/null 2>&1 &&
-			echo -e "${RED}Minimal hashrate for $MINER is not set in config${NOCOLOR}"
-		#	exit 1
-		
-		old_modify_conf=$(stat --printf %Y $RIG_CONF)
+		if [[ ! -z $MINER ]]; then
+			minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
+			if [[ -z $minhash || $minhash == "null" ]]; then
+				if [[ $old_modify_conf != $(stat --printf %Y $RIG_CONF) ]]; then
+					message warn "Minimal hashrate for $MINER is not set" > /dev/null 2>&1 &&
+					echo -e "${RED}Minimal hashrate for $MINER is not set in config${NOCOLOR}"
+					old_modify_conf=$(stat --printf %Y $RIG_CONF)
+				fi
+			fi
+		fi
 	fi
 }
 
