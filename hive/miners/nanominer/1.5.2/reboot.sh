@@ -1,1 +1,0 @@
-../nanominer-on-reboot

@@ -89,7 +89,7 @@ else
      t_khs=`echo $stats_raw | jq -rc '."Algorithms"[].'$algo'."Total"."Hashrate"'`
      t_khs=`printf "%f\n" $t_khs | awk '{print $1/1000}'`
      eval "khs$nom=\$t_khs"
-     if [[ ${algo,,} == "\"randomhash\"" ]]; then
+     if [[ ${algo,,} =~ "randomhash" ]]; then
        [[ $uptime -lt 60 ]] && head -n 50 $MINER_LOG_BASENAME.log > ${MINER_LOG_BASENAME}_head.log
        num_cores=`cat ${MINER_LOG_BASENAME}_head.log | grep "<info> Using CPU threads:" | awk '{print $7}'`
        hs=`get_cores_hs "$t_khs" "$num_cores"`
