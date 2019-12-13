@@ -20,16 +20,20 @@ high_la_count=0
 
 LAST_STAT="/run/hive/last_stat.json"
 
+old_modify_conf=0
+
+
 
 function loadconf() {
 	WD_ENABLED=
-
+	WD_MINHASHES_ALGO=
+	WD_MINHASHES=
 	if [ ! -f $RIG_CONF ]; then
 		echo -e "${RED}No config $RIG_CONF${NOCOLOR}"
 		echo "Exiting"
 		exit 1
 	else
-		. $RIG_CONF
+		source $RIG_CONF
 	fi
 
 	[[ -z $WD_ENABLED || $WD_ENABLED != 1 ]] &&
@@ -40,14 +44,14 @@ function loadconf() {
 		echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
 		exit 1
 
-	[[ -z $MINER ]] &&
-		echo -e "${YELLOW}No miner is set in config, exiting${NOCOLOR}" &&
-		exit 1
+	#[[ -z $MINER ]] &&
+	#	echo -e "${YELLOW}No miner is set in config, exiting${NOCOLOR}" &&
+	#	exit 1
 
 	
+	minhash=
 	
-	if [[ $WD_MINHASHES_ALGO != "{}" ]]; then
-		minhash=
+	if [[ ! -z $WD_MINHASHES_ALGO && $WD_MINHASHES_ALGO != "{}" ]]; then
 		miner_algo=
 		wd_algo=
 		map_algo=
@@ -62,18 +66,22 @@ function loadconf() {
 			fi
 			minhash=$(echo $WD_MINHASHES_ALGO | jq ".\"${wd_algo}\"")
 		fi
-		[[ -z $minhash || $minhash == "null" ]] && minhash=0.001
+		#[[ -z $minhash || $minhash == "null" ]] && minhash=0.001
 	else
-		minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
+		[[ ! -z $MINER ]] && minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
 	fi
 		
 	log_algo="(any algo)"
 	[[ ! -z $wd_algo ]] && log_algo="(${wd_algo})"
 	
-	[[ -z $minhash || $minhash == "null" ]] &&
-		message warn "Minimal hashrate for $MINER and for algorithm is not set" &&
-		echo -e "${RED}Minimal hashrate for $MINER is not set in config, exiting${NOCOLOR}" &&
-		exit 1
+	if [[ $old_modify_conf != $(stat --printf %Y $RIG_CONF) ]]; then
+		[[ -z $minhash || $minhash == "null" ]] &&
+			message warn "Minimal hashrate for $MINER and for algorithm is not set" > /dev/null 2>&1 &&
+			echo -e "${RED}Minimal hashrate for $MINER is not set in config${NOCOLOR}"
+		#	exit 1
+		
+		old_modify_conf=$(stat --printf %Y $RIG_CONF)
+	fi
 }
 
 
@@ -154,7 +162,8 @@ function loop() {
 	((check_count++))
 	[[ $check_count -ge $OK_MESSAGE_REDUCE ]] && check_count=0
 
-
+	[[ -z $minhash || $minhash == "null" ]] && return
+	
 	khs=
 	[[ -e $HASHRATE_KHS ]] && khs=`cat $HASHRATE_KHS`
 	[[ -z $khs ]] && khs=0
