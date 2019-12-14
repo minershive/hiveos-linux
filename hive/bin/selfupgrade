@@ -82,8 +82,16 @@ fi
 #remove avrdude conf file to exclude overwrite request
 [[ -f /etc/avrdude.conf ]] && rm /etc/avrdude.conf
 
+# check available memory and stop miners in advance
+if miner status > /dev/null; then
+	mem=`free -b | grep "Mem" | awk '{print int($7/1024/1024)}'` || mem=0
+	[[ $mem -lt 250 ]] &&
+		echo -e "${YELLOW}> Low memory available - $mem MB. Stopping miners${NOCOLOR}" &&
+		miner stop
+fi
+
 #Sometimes Ubuntu fails to update repos
-dpkg --configure -a
+dpkg --configure -a || apt-get install -f -y # try to fix broken packages
 dexitcode=$? # we do not check it here. only return on exit to show a problem
 
 hpkg update
@@ -116,7 +124,7 @@ if [[ $exitcode -eq 0 ]]; then
 	[[ $as -ne 0 ]] && echo -e "${YELLOW}> Stopping autoswitch${NOCOLOR}" && autoswitch stop > /dev/null 2>&1
 	echo -e "${YELLOW}> Stopping autofan, watchdog, miners${NOCOLOR}"
 	miner stop
-	wd stop
+	#wd stop
 	autofan stop > /dev/null
 
 	echo ------------------------------------------------------
@@ -130,7 +138,7 @@ if [[ $exitcode -eq 0 ]]; then
 			hive_extra_packages="hive-lib-dotnet $hive_extra_packages"
 
 		#Here should be listed all non-miner packages so that versions check will work
-		apt-get install -y --only-upgrade hive hive-lib hive-opt hive-opt-algomap $hive_extra_packages
+		apt-get install -y -f --only-upgrade hive hive-lib hive-opt hive-opt-algomap $hive_extra_packages
 		aexitcode=$?
 		[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 
@@ -138,7 +146,7 @@ if [[ $exitcode -eq 0 ]]; then
 		packages=$(hpkg getlist miners | grep -v '[0-9]')
 		if [[ ! -z $packages ]]; then
 			echo -e "${YELLOW}> Checking miners packages${NOCOLOR}"
-			apt-get install -y --only-upgrade $packages
+			apt-get install -y -f --only-upgrade $packages
 			aexitcode=$?
 			[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 		fi
@@ -147,12 +155,12 @@ if [[ $exitcode -eq 0 ]]; then
 		packages=$(hpkg getlist miners | grep '[0-9]')
 		if [[ ! -z $packages ]]; then
 			echo -e "${YELLOW}> Checking miners version packages${NOCOLOR}"
-			apt-get install -y --only-upgrade $packages
+			apt-get install -y -f --only-upgrade $packages
 			aexitcode=$?
 			[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 		fi
 	else
-		apt-get install -y --only-upgrade --allow-downgrades --reinstall hive=$VERSION
+		apt-get install -y -f --only-upgrade --allow-downgrades --reinstall hive=$VERSION
 		exitcode=$?
 	fi
 fi
@@ -170,7 +178,7 @@ if [[ $exitcode -ne 0 ]];then
 		# Start autofan, wd, miners, autoswitch if we stopped them
 		echo -e "${YELLOW}> Starting autofan, watchdog, miners${NOCOLOR}"
 		autofan restart > /dev/null
-		wd start
+		#wd start
 		miner start
 		[[ $as -ne 0 ]] && echo -e "${YELLOW}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 	fi
@@ -204,7 +212,7 @@ agent-screen restart
 # Start autofan, wd, miners, autoswitch
 echo -e "${YELLOW}> Starting autofan, watchdog, miners${NOCOLOR}"
 autofan restart > /dev/null
-wd start
+#wd start
 miner start
 [[ $as -ne 0 ]] && echo -e "${YELLOW}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 

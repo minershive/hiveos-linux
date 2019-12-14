@@ -45,10 +45,6 @@ function remove_miners() {
 	echo -e "${CYAN}> Stopping miner${NOCOLOR}"
 	miner stop
 
-	# stop watchdog while installing packages
-	local wd=$(wd status | grep -c running)
-	[[ $wd -ne 0 ]] && wd stop
-
 	echo
 	echo -e "${CYAN}> Uninstalling packages${NOCOLOR}"
 	for package_name in $packages; do
@@ -67,8 +63,6 @@ function remove_miners() {
 
 	echo
 	if [[ $1 == "noinstall" ]]; then
-		# restore anyway
-		[[ $wd -ne 0 ]] && wd start
 		echo -e "${CYAN}> Skipping installing default miners${NOCOLOR}"
 		exit 0
 	fi
@@ -88,14 +82,11 @@ function remove_miners() {
 			dpkg -s $package_name > /dev/null 2>&1
 			if [[ $? -ne 0 ]]; then
 				echo -e "${YELLOW}+ $package_name${NOCOLOR}"
-				apt-get install -y $package_name
+				apt-get install -y -f $package_name
 				echo
 			fi
 		fi
 	done
-
-	# restore wd after install
-	[[ $wd -ne 0 ]] && wd start
 
 	echo
 	[[ $1 == "nostart" || $1 == "noinstall" ]] &&
@@ -138,7 +129,7 @@ function install_miners_all() {
 		if [[ $? -ne 0 ]]; then
 			echo -e "${YELLOW}Installing${NOCOLOR}"
 
-			apt-get install -y $package_name 2>&1 | tee /tmp/package-install.log
+			apt-get install -y -f $package_name 2>&1 | tee /tmp/package-install.log
 			exitstatus=${PIPESTATUS[0]}
 
 			[[ $exitstatus -ne 0 ]] &&
