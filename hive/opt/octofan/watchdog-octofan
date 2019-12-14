@@ -44,15 +44,20 @@ echo "Watchdog initialization"
 echo "Short timeout = $t1"
 echo "Long timeout = $t2"
 $bin_name -w $t1 -v $t2
-
+port=22
 while true; do
 	check_sem
 	if [[ $? -ne 0 ]]; then
-	  #octofan in maintenance mode
-	  echo "Octofan in maintenance mode"
+	 	#octofan in maintenance mode
+		echo "Octofan in maintenance mode"
 	else
 		echo "Pinging watchdog"
-		[[ `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]] && $bin_name -s
+		#[[ `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]] && $bin_name -s
+		if nc -w 1 -z localhost $port 2>&1; then 
+			$bin_name -s
+		else
+			port=`cat /etc/ssh/sshd_config 2>/dev/null | grep -oP "^Port[\s]+\K[0-9]+"`
+		fi
 	fi
 	sleep 5
 done

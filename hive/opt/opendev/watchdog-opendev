@@ -41,15 +41,17 @@ watchdog_ping() {
 	#if port 22 (ssh) responds then
 	#send ping signal to WD, if WD does not receive it for a while, then WD RESET the MB.
 	pinging=1
+	port=22
 	while true
 	do
 		t1=`date +%s` || t1=0
 		#if [[ $pinging -eq 1 && `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]]; then
-		if [[ $pinging -eq 1 ]] && nc -w 1 -z localhost 22 2>&1; then
+		if [[ $pinging -eq 1 ]] && nc -w 1 -z localhost $port 2>&1; then
 			echo "Pinging watchdog"
 			echo -n "~U" > $PORT || break;
 		else
-			echo "NOT pinging watchdog"
+			echo "NOT pinging watchdog (sshd port $port)"
+			port=`cat /etc/ssh/sshd_config 2>/dev/null | grep -oP "^Port[\s]+\K[0-9]+"`
 		fi
 		sleep 5
 		t2=`date +%s` || t2=0

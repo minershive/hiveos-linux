@@ -51,10 +51,16 @@ else
 	checksum=`printf %02X $(( (0x${byteCount:0:2} + 0x${byteCount:2:2} + 0x$action + 0x${mac:0:2} + 0x${mac:2:2} + 0x${mac:4:2} + 0x${mac:6:2} + 0x${mac:8:2} + 0x${mac:10:2} + 0x$srrSlot)%0x100  ))`
 	packet1="$firstByte$byteCount$action$mac$srrSlot$checksum"
 
+	port=22
 	while true
 	do
 		echo "Sending keepallive packet to SRR:$srrSerial on slot:$slot. Message: $packet1"
-		[[ `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]] && echo -n "$packet1" | xxd -r -p |socat - UDP-DATAGRAM:255.255.255.255:1051,broadcast > /dev/null &
+		#[[ `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]] && echo -n "$packet1" | xxd -r -p |socat - UDP-DATAGRAM:255.255.255.255:1051,broadcast > /dev/null &
+		if nc -w 1 -z localhost $port 2>&1; then
+			echo -n "$packet1" | xxd -r -p | socat - UDP-DATAGRAM:255.255.255.255:1051,broadcast > /dev/null &
+		else
+			port=`cat /etc/ssh/sshd_config 2>/dev/null | grep -oP "^Port[\s]+\K[0-9]+"`
+		fi
 		sleep 5
 	done
 fi
