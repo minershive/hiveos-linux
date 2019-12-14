@@ -23,38 +23,63 @@ LAST_STAT="/run/hive/last_stat.json"
 old_modify_conf=0
 old_miner_algo=
 minhash=
+wd_algo=
+wd_miner=
+disable=0
 
 function loadconf() {
 	WD_ENABLED=
 	WD_MINHASHES_ALGO=
 	WD_MINHASHES=
+	WD_TYPE=
+	disable=0
 	if [ ! -f $RIG_CONF ]; then
 		echo -e "${RED}No config $RIG_CONF${NOCOLOR}"
-		echo "Exiting"
-		exit 1
+		echo "Watchdog disable"
+#		exit 1
+		disable=1
+		return
 	else
 		source $RIG_CONF
 	fi
 
-	[[ -z $WD_ENABLED || $WD_ENABLED != 1 ]] &&
-		echo -e "${YELLOW}Watchdog not enabled, exiting${NOCOLOR}" &&
-		exit 0
+	if [[ -z $WD_ENABLED || $WD_ENABLED != 1 ]]; then
+		echo -e "${YELLOW}Watchdog disabled in config${NOCOLOR}"
+#		exit 0
+		disable=1
+		return
+	fi
 
-	[[ ! -z $MAINTENANCE && $MAINTENANCE -gt 0 ]] &&
-		echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
-		exit 1
-
+	if [[ ! -z $MAINTENANCE && $MAINTENANCE -gt 0 ]]; then
+		echo -e "${YELLOW}Maintenance mode enabled, Watchdog disable${NOCOLOR}"
+	#	exit 1
+		disable=1
+	fi
+	
+	if [[ $(screen -ls miner | grep miner | wc -l) -eq 0 ]]; then
+		echo -e "${YELLOW}Miner not running, Watchdog disable${NOCOLOR}"
+		disable=1
+	fi
+	
+	benchmark check > /dev/null 2>&1
+	[[ $? == 0 ]] && bench=1 || bench=0
+	if [[ $bench -eq 1 ]];then
+		echo -e "${RED}Detect running or unfinished benchmark.\nWatchdog disable${NOCOLOR}"
+		disable=1
+	fi
+	
+	[[ $disable -eq 1 ]] && return
 	#[[ -z $MINER ]] &&
 	#	echo -e "${YELLOW}No miner is set in config, exiting${NOCOLOR}" &&
 	#	exit 1
-
+	miner_algo=
+	wd_algo=
+	map_algo=
+	wd_miner=
 	
 	
-	
-	if [[ ! -z $WD_MINHASHES_ALGO && $WD_MINHASHES_ALGO != "{}" ]]; then
-		miner_algo=
-		wd_algo=
-		map_algo=
+	if [[ $WD_TYPE == algo ]]; then
+		
 		[[ -e $LAST_STAT ]] && miner_algo=$(cat $LAST_STAT | jq -r ".params.miner_stats.algo")
 		if [[ ! -z $miner_algo && $miner_algo != "null" ]]; then
 			map="/hive/opt/algomap/"$MINER".json"
@@ -66,7 +91,7 @@ function loadconf() {
 			fi
 			minhash=$(echo $WD_MINHASHES_ALGO | jq ".\"${wd_algo}\"")
 			if [[ -z $minhash || $minhash == "null" ]]; then
-				if [[ old_miner_algo != $miner_algo ]]; then
+				if [[ $old_miner_algo != $miner_algo ]]; then
 					message warn "Minimal hashrate for ${wd_algo} is not set" > /dev/null 2>&1
 					echo -e "${RED}Minimal hashrate for ${wd_algo} is not set${NOCOLOR}"
 				fi
@@ -75,6 +100,7 @@ function loadconf() {
 		fi
 	else
 		if [[ ! -z $MINER ]]; then
+			wd_miner=$MINER
 			minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
 			if [[ -z $minhash || $minhash == "null" ]]; then
 				if [[ $old_modify_conf != $(stat --printf %Y $RIG_CONF) ]]; then
@@ -195,7 +221,7 @@ function loop() {
 	if [[ $hashok == 1 ]]; then
 		set_lastgood
 		[[ $ok_count == 0 ]] &&
-			echo -e "${GREEN}OK${NOCOLOR} ${CYAN}$MINER $log_algo${NOCOLOR} $khs kHs >= $minhash kHs"
+			echo -e "${GREEN}OK${NOCOLOR} ${CYAN}$wd_miner $wd_algo${NOCOLOR} $khs kHs >= $minhash kHs"
 
 		((ok_count++))
 		[[ $ok_count -ge $OK_MESSAGE_REDUCE ]] && ok_count=0
@@ -206,13 +232,13 @@ function loop() {
 	local elapsed=$(( $now - $lastgood ))
 	#echo Elapsed $elapsed seconds
 
-	echo -e "${RED}BARK${NOCOLOR} ${CYAN}$MINER $log_algo${NOCOLOR} $khs kHs < $minhash kHs for $elapsed seconds"
+	echo -e "${RED}BARK${NOCOLOR} ${CYAN}$wd_miner $wd_algo${NOCOLOR} $khs kHs < $minhash kHs for $elapsed seconds"
 
 	# check to reboot first
 	if [[ ! -z $WD_REBOOT ]]; then
 		reboot_timeout=`echo $WD_REBOOT 60 | awk '{print $1 * $2}'`
 		if [[ $elapsed -ge $reboot_timeout ]]; then
-			miner log | message danger "$MINER $log_algo low hashrate ($khs kH/s), rebooting" payload
+			miner log | message danger "$wd_miner $wd_algo low hashrate ($khs kH/s), rebooting" payload
 			echo -e "---"
 			echo -e "${RED}Rebooting after $WD_REBOOT minutes${NOCOLOR}"
 			echo -e "---"
@@ -226,9 +252,9 @@ function loop() {
 	if [[ ! -z $WD_MINER ]]; then
 		miner_restart_timeout=`echo $WD_MINER 60 | awk '{print $1 * $2}'`
 		if [[ $miner_restart_count == 0 && $elapsed -ge $miner_restart_timeout ]]; then
-			miner log | message warn "$MINER $log_algo low hashrate ($khs kH/s), restarting" payload
+			miner log | message warn "$wd_miner $wd_algo low hashrate ($khs kH/s), restarting" payload
 			echo -e "---"
-			echo -e "${YELLOW}Restarting ${CYAN}$MINER $log_algo${NOCOLOR} ${YELLOW}after $WD_MINER minutes${NOCOLOR}"
+			echo -e "${YELLOW}Restarting ${CYAN}$wd_miner $wd_algo${NOCOLOR} ${YELLOW}after $WD_MINER minutes${NOCOLOR}"
 			echo -e "---"
 			miner_restart_count=1
 			miner restart
@@ -249,7 +275,7 @@ function run() {
 	[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && echo "MAX LA:         $WD_MAX_LA.0 (min $WD_MIN_LA.0)"
 
 	while true; do
-		loop
+		[[ $disable -eq 0 ]] && loop
 		sleep $WD_SLEEP
 		loadconf
 	done
@@ -262,10 +288,11 @@ case $1 in
 		run
 	;;
 	stop)
-		systemctl stop hive-watchdog
+		#systemctl stop hive-watchdog
 	;;
 	start)
-		systemctl start hive-watchdog
+		systemctl status hive-watchdog > /dev/null 2>&1
+		[[ $? -ne 0 ]] && systemctl start hive-watchdog
 	;;
 	restart)
 		systemctl restart hive-watchdog

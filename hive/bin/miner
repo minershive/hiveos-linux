@@ -387,12 +387,12 @@ case $1 in
 	start)
 		bench_check
 		# start WD before miner to return miner start exit code not WD
-		wd start
+#		wd start
 		start
 	;;
 	stop)
 		bench_check
-		wd stop
+#		wd stop
 		stop
 	;;
 	bench_start)

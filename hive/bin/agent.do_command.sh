@@ -12,7 +12,7 @@ function do_nvstop () {
 	nv_as=$(screen -ls | grep -c autoswitch)
 	nv_mn=$(screen -ls | grep -c miner)
 	nv_af=$(screen -ls | grep -c autofan)
-	nv_wd=$(wd status | grep -c running)
+	#nv_wd=$(wd status | grep -c running)
 	nvstop
 	return $?
 }
@@ -23,7 +23,7 @@ function do_nvstart () {
 	rm /run/hive/NV_OFF > /dev/null 2>&1
 	systemctl start hivex > /dev/null 2>&1
 	sleep 10
-	[[ $nv_wd -ne 0 ]] && wd start > /dev/null 2>&1
+	#[[ $nv_wd -ne 0 ]] && wd start > /dev/null 2>&1
 	[[ $nv_mn -ne 0 ]] && miner start > /dev/null 2>&1
 	[[ $nv_af -ne 0 ]] && autofan start> /dev/null 2>&1
 	[[ $nv_as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
@@ -154,7 +154,7 @@ function do_command () {
 				fi
 
 				# Start Watchdog. It will exit if WD_ENABLED=0 ---------------------------
-				[[ $WD_ENABLED=1 && $bench -eq 0 ]] && wd restart
+				#[[ $WD_ENABLED=1 && $bench -eq 0 ]] && wd restart
 				
 				if [[ $bench -eq 0 ]]; then
 					message ok "Rig config changed" --id=$cmd_id
@@ -302,9 +302,9 @@ function do_command () {
 
 		amd_upload)
 			# stop watchdog and autofan to prevent reboot on errors during flashing
-			local wd=$(wd status | grep -c running)
+			#local wd=$(wd status | grep -c running)
 			local af=$(screen -ls | grep -c autofan)
-			[[ $wd -ne 0 ]] && wd stop > /dev/null 2>&1
+			#[[ $wd -ne 0 ]] && wd stop > /dev/null 2>&1
 			[[ $af -ne 0 ]] && autofan stop > /dev/null 2>&1
 
 			# Batch mode
@@ -399,7 +399,7 @@ function do_command () {
 			fi
 
 			# restart watchdog and autofan
-			[[ $wd -ne 0 ]] && wd start > /dev/null 2>&1
+			#[[ $wd -ne 0 ]] && wd start > /dev/null 2>&1
 			[[ $af -ne 0 ]] && autofan start> /dev/null 2>&1
 		;;
 

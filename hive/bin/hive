@@ -337,9 +337,9 @@ else
 		benchmark start
 	else
 		#Start Watchdog. It will exit if its 0
-		[[ $WD_ENABLED == 1 ]] &&
-			echo2 "> Hashrate Watchdog enabled" &&
-			wd start
+#		[[ $WD_ENABLED == 1 ]] &&
+#			echo2 "> Hashrate Watchdog enabled" &&
+		wd start
 		echo2 "> Starting miner"
 		miner start
 	fi
