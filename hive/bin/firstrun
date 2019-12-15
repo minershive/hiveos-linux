@@ -91,9 +91,9 @@ read_url () {
 	while true; do
 		read url
 		[[ -z $url ]] && break
-		[[ $url =~ ^(http|https)://.+$ ]] &&
+		[[ $url =~ ^(http|https)://[0-9a-z\.-]+(:[0-9]{2,5})?$ ]] &&
 			HIVE_HOST_URL=$url &&
-			echo -e "New server URL: ${YELLOW}$HIVE_HOST_URL${NOCOLOR}" &&
+			echo -e "New API server URL: ${YELLOW}$HIVE_HOST_URL${NOCOLOR}" &&
 			break
 		echo "Invalid URL"
 	done
@@ -142,7 +142,7 @@ while true; do
 		ask_yn "n" && wifi
 	fi
 	
-	echo -e "Server URL: ${YELLOW}$HIVE_HOST_URL${NOCOLOR}"
+	echo -e "Server API URL: ${YELLOW}$HIVE_HOST_URL${NOCOLOR}"
 	echo "Press ENTER to continue with this URL or type a new one"
 	read_url
 	read_id
