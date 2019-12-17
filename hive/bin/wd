@@ -103,12 +103,13 @@ function loadconf() {
 		old_modify_conf=$(stat --printf %Y $RIG_CONF)
 	fi
 	
-	if [[ $old_flag_time == $(stat --printf %Y $RUNNING_FLAG) ]]; then
-		change_miner=0
-	else
+	if [[ $old_flag_time != $(stat --printf %Y $RUNNING_FLAG) && $miner_restart_count -eq 0 ]]; then
 		change_miner=1
 		wd_algo=
+		rm $LAST_STAT
 		old_flag_time=$(stat --printf %Y $RUNNING_FLAG)
+	else
+		change_miner=0
 	fi
 	
 	
@@ -160,7 +161,7 @@ function set_lastgood() {
 		lastgood=`stat -c %Y $HASHRATE_KHS` ||
 		#lastgood=0 can't set it to 0, in case of boot agent may be late
 		lastgood=`date +%s` #let's count from now
-
+		
 	miner_restart_count=0
 }
 
@@ -307,7 +308,7 @@ function loop() {
 function run() {
 
 	set_lastgood
-
+		
 	loadconf
 
 	echo "MINER RESTART:  $WD_MINER minutes"
