@@ -1,0 +1,8 @@
+Package: hive-miners-ccminer-verus
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-ccminer-verus-3.611
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - ccminer-verus (VerusHash v2.1 CUDA miner)
