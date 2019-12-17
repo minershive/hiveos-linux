@@ -6,9 +6,10 @@ Description=Hive Watchdog Service
 [Service]
 Type=simple
 ExecStart=/hive/bin/wd run
-
 SyslogIdentifier=hive-watchdog
-
+OOMScoreAdjust=-100
+KillMode=process
+Restart=always
 
 [Install]
 WantedBy=multi-user.target

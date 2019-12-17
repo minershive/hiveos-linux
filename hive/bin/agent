@@ -160,11 +160,6 @@ function wait-for-gpu-stats() {
 # Main loop cycle
 function loop {
 	#In some rare cases he have empty stats array
-	
-	#Check for WD service running
-	systemctl status hive-watchdog > /dev/null 2>&1
-	[[ $? -ne 0 ]] && systemctl start hive-watchdog
-	
 	DT=432000
 
 	no_link=$(( $(date +%s) - $LAST_OK ))
@@ -430,7 +425,7 @@ function loop {
 	LAST_OK=$(date +%s)
 	if [[ $force_stop -eq 1 ]]; then
 		# always run wd before miner
-	#	wd start
+		wd start
 		miner start
 		force_stop=0
 		echo "[`date`] Connection with API server is OK. Start miner" >> $LOG

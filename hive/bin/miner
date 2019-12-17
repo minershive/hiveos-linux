@@ -4,6 +4,7 @@ STOP_TIMEOUT=15
 export MINER_STOP=/run/hive/MINER_STOP
 
 MINER_LOGS_BASE_DIR=/var/log/miner
+RUNNING_FLAG="/run/hive/MINER_RUN"
 
 function usage() {
 	bname=`basename $0`
@@ -127,6 +128,9 @@ function start() {
 	screen -S miner -X title $MINER #set nice title
 	echo $MINER >> /run/hive/cur_miner ##add miner-name to the list of working miners
 	
+	[[ -e $RUNNING_FLAG ]] && rm $RUNNING_FLAG
+	touch $RUNNING_FLAG
+	
 	# close bash window #0
 	screen -S miner -p bash -X stuff 'exit\n'
 
@@ -184,6 +188,8 @@ function stop() {
 		done
 		rm /run/hive/cur_miner
 	fi
+	
+	[[ -e $RUNNING_FLAG ]] && rm $RUNNING_FLAG
 	
 	#remove khs so no confusing for watchdog
 	#[[ -e /run/hive/khs ]] && rm /run/hive/khs

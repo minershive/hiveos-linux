@@ -20,12 +20,22 @@ high_la_count=0
 
 LAST_STAT="/run/hive/last_stat.json"
 
+RUNNING_FLAG="/run/hive/MINER_RUN"
+
 old_modify_conf=0
-old_miner_algo=
+old_flag_time=0
 minhash=
 wd_algo=
+[[ -e $RUNNING_FLAG ]] && wd_algo=$(cat $RUNNING_FLAG) && old_flag_time=$(stat --printf %Y $RUNNING_FLAG)
 wd_miner=
 disable=0
+lastgood=`date +%s`
+change_conf=1
+change_miner=1
+old_algo=
+last_log=0
+miner_restart_count=0
+
 
 function loadconf() {
 	WD_ENABLED=
@@ -33,38 +43,46 @@ function loadconf() {
 	WD_MINHASHES=
 	WD_TYPE=
 	disable=0
+	
 	if [ ! -f $RIG_CONF ]; then
-		echo -e "${RED}No config $RIG_CONF${NOCOLOR}"
-		echo "Watchdog disable"
-#		exit 1
+		if [[ $(( `date +%s` - $last_log )) -ge 600 ]]; then
+			echo -e "${RED}No config $RIG_CONF${NOCOLOR}"
+			echo "Watchdog disable"
+			last_log=`date +%s`
+	#		exit 1
+			
+		fi
 		disable=1
 		return
-	else
-		source $RIG_CONF
 	fi
+	
+	source $RIG_CONF
+	
 
 	if [[ -z $WD_ENABLED || $WD_ENABLED != 1 ]]; then
-		echo -e "${YELLOW}Watchdog disabled in config${NOCOLOR}"
+		[[ $(( `date +%s` - $last_log )) -ge 600 ]] && last_log=`date +%s` && echo -e "${YELLOW}Watchdog disabled in config${NOCOLOR}" 
 #		exit 0
 		disable=1
 		return
 	fi
 
+	
 	if [[ ! -z $MAINTENANCE && $MAINTENANCE -gt 0 ]]; then
-		echo -e "${YELLOW}Maintenance mode enabled, Watchdog disable${NOCOLOR}"
+		[[ $(( `date +%s` - $last_log )) -ge 600 ]] && last_log=`date +%s` && echo -e "${YELLOW}Maintenance mode enabled, Watchdog disable${NOCOLOR}"
 	#	exit 1
 		disable=1
 	fi
 	
-	if [[ $(screen -ls miner | grep miner | wc -l) -eq 0 ]]; then
-		echo -e "${YELLOW}Miner not running, Watchdog disable${NOCOLOR}"
+	if [[ ! -e $RUNNING_FLAG ]]; then
+#	if [[ $(screen -ls miner | grep miner | wc -l) -eq 0 ]]; then
+		[[ $(( `date +%s` - $last_log )) -ge 600 ]] && last_log=`date +%s` && echo -e "${YELLOW}Miner not running, Watchdog disable${NOCOLOR}"
 		disable=1
 	fi
 	
 	benchmark check > /dev/null 2>&1
 	[[ $? == 0 ]] && bench=1 || bench=0
 	if [[ $bench -eq 1 ]];then
-		echo -e "${RED}Detect running or unfinished benchmark.\nWatchdog disable${NOCOLOR}"
+		[[ $(( `date +%s` - $last_log )) -ge 600 ]] && last_log=`date +%s` && echo -e "${RED}Detect running or unfinished benchmark.\nWatchdog disable${NOCOLOR}"
 		disable=1
 	fi
 	
@@ -73,9 +91,25 @@ function loadconf() {
 	#	echo -e "${YELLOW}No miner is set in config, exiting${NOCOLOR}" &&
 	#	exit 1
 	miner_algo=
-	wd_algo=
 	map_algo=
 	wd_miner=
+	
+	
+	if [[ $old_modify_conf == $(stat --printf %Y $RIG_CONF) ]]; then
+		change_conf=0
+	else
+		change_conf=1
+		miner_restart_count=0
+		old_modify_conf=$(stat --printf %Y $RIG_CONF)
+	fi
+	
+	if [[ $old_flag_time == $(stat --printf %Y $RUNNING_FLAG) ]]; then
+		change_miner=0
+	else
+		change_miner=1
+		wd_algo=
+		old_flag_time=$(stat --printf %Y $RUNNING_FLAG)
+	fi
 	
 	
 	if [[ $WD_TYPE == algo ]]; then
@@ -89,28 +123,34 @@ function loadconf() {
 			else 
 				wd_algo=$miner_algo
 			fi
-			minhash=$(echo $WD_MINHASHES_ALGO | jq ".\"${wd_algo}\"")
-			if [[ -z $minhash || $minhash == "null" ]]; then
-				if [[ $old_miner_algo != $miner_algo ]]; then
-					message warn "Minimal hashrate for ${wd_algo} is not set" > /dev/null 2>&1
-					echo -e "${RED}Minimal hashrate for ${wd_algo} is not set${NOCOLOR}"
-				fi
+			if [[ -e $RUNNING_FLAG ]]; then
+				[[ $wd_algo != $(cat $RUNNING_FLAG) ]] && echo $wd_algo > $RUNNING_FLAG && old_flag_time=$(stat --printf %Y $RUNNING_FLAG)
 			fi
-			old_miner_algo=$miner_algo
 		fi
+		minhash=$(echo $WD_MINHASHES_ALGO | jq ".\"${wd_algo}\"")
 	else
 		if [[ ! -z $MINER ]]; then
 			wd_miner=$MINER
 			minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
-			if [[ -z $minhash || $minhash == "null" ]]; then
-				if [[ $old_modify_conf != $(stat --printf %Y $RIG_CONF) ]]; then
-					message warn "Minimal hashrate for $MINER is not set" > /dev/null 2>&1 &&
-					echo -e "${RED}Minimal hashrate for $MINER is not set in config${NOCOLOR}"
-					old_modify_conf=$(stat --printf %Y $RIG_CONF)
-				fi
+		fi
+	fi
+	
+	if [[ -z $minhash || $minhash == "null" ]]; then
+		if [[ $WD_TYPE == algo ]]; then
+			if [[ ! -z $wd_algo && $wd_algo != $old_algo ]]; then
+				message warn "Minimal hashrate for ${wd_algo} is not set" > /dev/null 2>&1
+				echo -e "${RED}Minimal hashrate for ${wd_algo} is not set${NOCOLOR}"
+				old_algo=$wd_algo
+			fi
+		else
+			if [[ $change_conf -eq 1 ]]; then
+				message warn "Minimal hashrate for $MINER is not set" > /dev/null 2>&1 &&
+				echo -e "${RED}Minimal hashrate for $MINER is not set in config${NOCOLOR}"
 			fi
 		fi
 	fi
+	
+	last_log=0
 }
 
 
@@ -192,6 +232,7 @@ function loop() {
 	[[ $check_count -ge $OK_MESSAGE_REDUCE ]] && check_count=0
 
 	[[ -z $minhash || $minhash == "null" ]] && return
+	[[ $WD_TYPE == algo && -z $wd_algo ]] && return
 	
 	khs=
 	[[ -e $HASHRATE_KHS ]] && khs=`cat $HASHRATE_KHS`
@@ -202,6 +243,7 @@ function loop() {
 	local hashok=`echo $khs $minhash | awk '{ print ($1 >= $2) ? 1 : 0 }'` #float comparison
 
 	local new=`date +%s`
+	[[ $change_conf -eq 1 || $change_miner -eq 1 ]] && now= && set_lastgood
 	# check and adjust time if changed too much
 	if [[ ! -z $now ]]; then
 		local diff=$(( $new - $now - $WD_SLEEP ))

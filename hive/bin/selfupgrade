@@ -162,6 +162,7 @@ if [[ $exitcode -eq 0 ]]; then
 	else
 		apt-get install -y -f --only-upgrade --allow-downgrades --reinstall hive=$VERSION
 		exitcode=$?
+		systemctl daemon-reload
 	fi
 fi
 
