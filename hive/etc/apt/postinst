@@ -66,7 +66,7 @@ if [[ ! -L /lib/systemd/system/wpa_supplicant@ra0.service ]]; then #check for sy
 	ln -sf /hive/etc/wpa_supplicant@wlan0.service /lib/systemd/system/wpa_supplicant@ra0.service
 fi
 
-
+systemctl daemon-reload
 
 # Cron ---------------------------------------------------------------------------------------
 
