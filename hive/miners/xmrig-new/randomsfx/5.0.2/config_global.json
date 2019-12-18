@@ -1,0 +1,58 @@
+{
+    "api": {
+        "id": null,
+        "worker-id": null
+    },
+    "http": {
+        "enabled": true,
+        "host": "127.0.0.1",
+        "port": 60070,
+        "access-token": null,
+        "restricted": true
+    },
+    "autosave": true,
+    "version": 1,
+    "background": false,
+    "colors": true,
+    "randomx": {
+        "init": -1,
+        "numa": true,
+        "wrmsr": true,
+        "1gb-pages": false
+    },
+    "cpu": {
+        "enabled": true
+    },
+    "opencl": {
+        "enabled": true
+    },
+    "cuda": {
+        "enabled": true
+    },
+    "donate-level": 1,
+    "donate-over-proxy": 1,
+    "log-file": "/var/log/miner/xmrig-new/xmrig-new.log",
+    "pools": [
+        {
+            "algo": "rx/sfx",
+            "coin": null,
+            "url": "YOUR_POOL_ADDRESS",
+            "user": "YOUR_WALLET_ADDRESS",
+            "pass": "x",
+            "rig-id": null,
+            "nicehash": false,
+            "keepalive": false,
+            "enabled": true,
+            "tls": false,
+            "tls-fingerprint": null,
+            "daemon": false,
+            "self-select": null
+        }
+    ],
+    "print-time": 60,
+    "retries": 5,
+    "retry-pause": 5,
+    "syslog": false,
+    "user-agent": null,
+    "watch": true
+}
