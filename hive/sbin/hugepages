@@ -2,7 +2,7 @@
 
 . colors
 
-VERS="0.3.1"
+VERS="0.4.0"
 
 HUGES_RX=1168
 HUGES_CN=128
@@ -12,26 +12,65 @@ HPAGES_REQ=$1                                                                   
 
 MEM_AVAIL=`cat /proc/meminfo | grep "MemFree" | awk '{ print $2 }'`             # Memory available
 HPAGE_SIZE=`cat /proc/meminfo | grep "Hugepagesize" | awk '{ print $2 }'`       # HugePage size usually 2M
-HPAGES_CUR=`cat /proc/meminfo | grep "HugePages_Total" | awk '{ print $2 }'`    # Number of HugePages (current value)
-HPAGES_MAX=$(($HPAGES_CUR+$MEM_AVAIL/$HPAGE_SIZE*$MEM_RES_PERC/100))            # Number of HugePages (max calculated)
+HPAGES_CUR=`cat /proc/meminfo | grep "HugePages_Total" | awk '{ print $2 }'`    # Number of total 2Mb HugePages
+HPAGES_FREE=`cat /proc/meminfo | grep "HugePages_Free" | awk '{ print $2 }'`    # Number of free 2Mb HugePages
+HPAGES_MAX=$(($HPAGES_FREE+$MEM_AVAIL/$HPAGE_SIZE*$MEM_RES_PERC/100))           # Number of HugePages (max calculated)
 
 CPU_NUMA=`lscpu | grep "NUMA node(s)" | awk '{ print $3 }'`
 CPU_CORE=`lscpu | grep "^CPU(s):" | awk '{ print $2 }'`
 
+HPAGES_1GB_MEM=$(( $CPU_NUMA * 3 * 1024 * 1024 + 2048 * $CPU_CORE ))
+
 HUGES_RX_CALC=$(( $HUGES_RX * $CPU_NUMA + $CPU_CORE ))
 
-huge_intel_boost(){
+huge_rx_1gb_pages_get(){
+    HPAGES_1GB_FREE=0
+    HPAGES_1GB_TOTAL=0
+    for i in $(find /sys/devices/system/node/node* -maxdepth 0 -type d);
+    do
+        [[ -d "$i/hugepages/hugepages-1048576kB" ]] && HPAGES_1GB_FREE=$(($HPAGES_1GB_FREE+`cat $i/hugepages/hugepages-1048576kB/free_hugepages`)) && HPAGES_1GB_TOTAL=$(($HPAGES_1GB_TOTAL+`cat $i/hugepages/hugepages-1048576kB/nr_hugepages`))
+    done
+}
+
+huge_rx_1gb_pages_set(){
+   local qty=
+   [[ -z $1 ]] && qty=3 || qty=$1
+   for i in $(find /sys/devices/system/node/node* -maxdepth 0 -type d);
+   do
+       echo $qty > "$i/hugepages/hugepages-1048576kB/nr_hugepages";
+   done
+}
+
+randomx_intel_boost(){
     cpu_check=`lscpu | grep "Model name" | grep -c "Intel"`
     msr_check=`lscpu | grep "^Flags" | grep -c "msr"`
     if [[ "$cpu_check" -gt 0 && "$msr_check" -gt 0 ]]; then
         pkg_check=`dpkg -l | grep -c "msr-tools"`
         if [[ "$pkg_check" -eq 0 ]]; then
             echo "Installing msr-tools package ..."
-            apt install -y msr-tools
+            apt install -y msr-tools || return
         fi
         [[ `lsmod | grep msr` == "" ]] && modprobe msr
         wrmsr -a 0x1a4 6
         echo -e "${GREEN}[INFO]${NOCOLOR} Intel CPU RandomX boost applied"
+    fi
+}
+
+randomx_ryzen_boost(){
+    cpu_check=`lscpu | grep "Model name" | grep -c "AMD Ryzen"`
+    msr_check=`lscpu | grep "^Flags" | grep -c "msr"`
+    if [[ "$cpu_check" -gt 0 && "$msr_check" -gt 0 ]]; then
+        pkg_check=`dpkg -l | grep -c "msr-tools"`
+        if [[ "$pkg_check" -eq 0 ]]; then
+            echo "Installing msr-tools package ..."
+            apt install -y msr-tools || return
+        fi
+        [[ `lsmod | grep msr` == "" ]] && modprobe msr || return
+        wrmsr -a 0xc0011022 0x510000
+        wrmsr -a 0xc001102b 0x1808cc16
+        wrmsr -a 0xc0011020 0
+        wrmsr -a 0xc0011021 0x40
+        echo -e "${GREEN}[INFO]${NOCOLOR} AMD Ryzen RandomX boost applied"
     fi
 }
 
@@ -40,7 +79,21 @@ huge_pages_set(){
 }
 
 huge_cur_print(){
-    echo -e "HugePages (current): ${GREEN}$HPAGES_CUR${NOCOLOR}"
+    echo -n -e "HugePages 2Mb (free/total): "
+    if [[ $HPAGES_FREE -eq $HPAGES_CUR && $HPAGES_CUR -gt 0 ]]; then
+        echo -e -n "${GREEN}"
+    elif [[ $HPAGES_FREE -lt $HPAGES_CUR && $HPAGES_CUR -gt 0 ]]; then
+        echo -e -n "${YELLOW}"
+    else
+        echo -e -n "${RED}"
+    fi
+    echo -n -e "$HPAGES_FREE${NOCOLOR} / "
+    if [[ $HPAGES_CUR -gt 0 ]]; then
+        echo -n -e "${GREEN}"
+    else
+        echo -n -e "${RED}"
+    fi
+    echo -e "$HPAGES_CUR${NOCOLOR}"
 }
 
 huge_cpu_print(){
@@ -50,11 +103,13 @@ huge_cpu_print(){
 }
 
 huge_max_print(){
-    echo -e "HugePages (maximum): ${RED}$HPAGES_MAX${NOCOLOR}"
+    echo -e "HugePages 2Mb (maximum RX): ${RED}$HPAGES_MAX${NOCOLOR}"
 }
 
 huge_rx_print(){
-    echo -e "HugePages (randomx): ${YELLOW}$HUGES_RX_CALC${NOCOLOR}"
+    echo -e "HugePages 2Mb (suggest RX): ${YELLOW}$HUGES_RX_CALC${NOCOLOR}"
+    echo -n -e "HugePages 1Gb (RX-tunning): "
+    [[ $MEM_AVAIL -gt $HPAGES_1GB_MEM ]] && echo -e "${GREEN}available${NOCOLOR}" || echo -e "${RED}not available${NOCOLOR}"
 }
 
 print_banner(){
@@ -62,27 +117,30 @@ print_banner(){
 }
 
 print_help(){
-    print_banner
-    echo -e "This tool allows you to set the desired value for hugepages."
-    echo -e "${DGRAY}The suggested value for CN-based algorithms is ${HUGES_CN}"
+    echo -e "${WHITE}This tool allows you to set the desired value for hugepages."
+    echo -e "${LGRAY}The suggested value for CN-based algorithms is ${HUGES_CN}"
     echo -e "The suggested value for RandomX is $HUGES_RX_CALC"
     echo
     echo -e "${YELLOW}Usage: \n\t${CYAN}hugepages value${NOCOLOR}"
     echo
     echo -e "${YELLOW}Other examples of usage:${NOCOLOR}"
-    echo -e "\t${CYAN}hugepages -r${NOCOLOR}  - ${LGRAY}restoring system defaults"
-    echo -e "\t${CYAN}hugepages -rx${NOCOLOR} - ${LGRAY}try set suggested value ($HUGES_RX_CALC) for RandomX"
-    echo -e "\t${CYAN}hugepages -cn${NOCOLOR} - ${LGRAY}try set suggested value ($HUGES_CN) for CN-based "
-    echo -e "\t${CYAN}hugepages -h${NOCOLOR}  - ${LGRAY}this help "
+    echo -e "\t${CYAN}hugepages -r${NOCOLOR}   - ${LGRAY}restoring system defaults"
+    echo -e "\t${CYAN}hugepages -rx${NOCOLOR}  - ${LGRAY}try set suggested value ($HUGES_RX_CALC) for RandomX"
+    echo -e "\t${CYAN}hugepages -cn${NOCOLOR}  - ${LGRAY}try set suggested value ($HUGES_CN) for CN-based "
+    echo -e "\t${CYAN}hugepages -erx${NOCOLOR} - ${LGRAY}try use $((CPU_NUMA*3))*1Gb HugePages + $CPU_CORE*2Mb HugePages for RandomX"
+    echo -e "\t${CYAN}hugepages -h${NOCOLOR}   - ${LGRAY}this help "
 }
 
 huge_get_def(){
-    echo `cat /etc/sysctl.conf | grep vm.nr_hugepages | tr '=' ' ' | awk '{ print $2 }'`
+    local def=`cat /etc/sysctl.conf | grep -E "^vm.nr_hugepages" | tr '=' ' ' | awk '{ print $2 }'`
+    [[ "$def" == "" ]] && echo 0 || echo $def
 }
 
 ################################################################################
 # MAIN SCRIPT BODY
 ################################################################################
+cpu_boost=0
+
 print_banner
 [[ -z $HPAGES_REQ ]] && huge_cpu_print && huge_cur_print && huge_max_print && huge_rx_print && exit 0
 case $1 in
@@ -91,10 +149,30 @@ case $1 in
         exit 0
         ;;
     -r|--restore)
+        huge_rx_1gb_pages_get
+        if [[ $HPAGES_1GB_FREE -gt 0 ]]; then
+           echo -e "${GREEN}[INFO]${NOCOLOR} Reset 1Gb HugePages"
+           huge_rx_1gb_pages_set 0
+        fi
         HPAGES_REQ=`huge_get_def`
         echo -e "${GREEN}[INFO]${NOCOLOR} Try restore to system default HugePages value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
         ;;
+    -erx)
+        echo -e "${GREEN}[INFO]${NOCOLOR} Try use 1Gb HugePages for RandomX algorithm"
+        cpu_boost=1
+        huge_rx_1gb_pages_get
+        if [[ $MEM_AVAIL -gt $HPAGES_1GB_MEM ]]; then
+            huge_rx_1gb_pages_set
+            huge_rx_1gb_pages_get
+            echo -e "${GREEN}[INFO]${NOCOLOR} Use ${YELLOW}${HPAGES_1GB_FREE}${NOCOLOR}x1Gb HugePages for RandomX algorithm"
+            HPAGES_REQ=$(nproc)
+        else
+            echo -e "${YELLOW}[WARN]${NOCOLOR} Not enough RAM available for 1Gb HugePages, using 2Mb HugePages"
+            HPAGES_REQ=$HUGES_RX_CALC
+        fi
+        ;;
     -rx)
+        cpu_boost=1
         HPAGES_REQ=$HUGES_RX_CALC
         echo -e "${GREEN}[INFO]${NOCOLOR} Try set HugePages to suggested for RandomX algorithm value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
         ;;
@@ -103,14 +181,16 @@ case $1 in
         echo -e "${GREEN}[INFO]${NOCOLOR} Try set HugePages to suggested for CN-based algorithms value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
         ;;
      *)
+        cpu_boost=1
         re='^[0-9]+$'
         if ! [[ $HPAGES_REQ =~ $re ]] ; then
             echo -e "${RED}[ERR] ${YELLOW}Invalid value given${NOCOLOR}" >&2; exit 1
         fi
 esac
 
-if [[ $HPAGES_REQ -gt $HUGES_CN ]]; then
-    huge_intel_boost
+if [[ $cpu_boost -eq 1 ]]; then
+    randomx_intel_boost
+    randomx_ryzen_boost
 fi
 
 if [[ $HPAGES_REQ -le $HPAGES_MAX ]]; then
@@ -122,7 +202,7 @@ fi
 
 HPAGES_SET=`cat /proc/sys/vm/nr_hugepages`
 
-echo -e "${GREEN}[INFO]${NOCOLOR} New HugePages value set: ${GREEN}$HPAGES_SET${NOCOLOR}"
+echo -e "${GREEN}[INFO]${NOCOLOR} New HugePages (2Mb) value set: ${GREEN}$HPAGES_SET${NOCOLOR}"
 
 exit 0
 
