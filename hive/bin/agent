@@ -130,7 +130,7 @@ function wait-for-gpu-stats() {
 	local i=
 	max_tries=$(($INTERVAL*2*2))
 	for (( i=1; i<=$max_tries; i++)); do
-		local mtime=`stat -c %Y /run/hive/gpu-stats.json`
+		local mtime=`stat -c %Y /run/hive/gpu-stats.json 2>/dev/null`
 		[[ -z $mtime ]] && mtime=0
 
 		local now=`date +%s`
@@ -143,11 +143,20 @@ function wait-for-gpu-stats() {
 			echo -en " ${GREEN}+"
 			return
 		elif [[ $i == $max_tries && $stats_age -ge 70 ]]; then #it seems gpu-stats hanged for more than 1.5 minutes
-		 	gpu_stats='{}'
-			echo -en " ${RED}hanged gpu-stats?"
-		 	return
+			gpu_stats='{}'
+			echo -en " ${RED}hanged gpu-stats? ${CYAN}Restarting"
+			if [[ $(pgrep -cf "agent.gpu-stats run") -ne 0 ]]; then
+				pkill -f "agent.gpu-stats run"
+			else
+				pkill -f "agent.gpu-stats"
+				sleep 0.2
+				screen -S agent -X screen 2 agent.gpu-stats
+				sleep 0.2
+				screen -S agent -X title "gpu-stats" #set nice title
+			fi
+			return
 		elif [[ $i == $max_tries ]]; then #&& $stats_age -ge $(($INTERVAL*2))  #too long to wait for it, giving up. taking old value
-			gpu_stats=`cat /run/hive/gpu-stats.json`
+			gpu_stats=`cat /run/hive/gpu-stats.json 2>/dev/null`
 			echo -en " ${YELLOW}gave up waiting"
 			return
 		fi
@@ -201,10 +210,19 @@ function loop {
 	echo -en "${NOCOLOR}"
 	date
 
+	# check filesystem status
+	if [[ ! -w /tmp ]]; then
+		echo "Filesystem is read-only, rebooting"
+		sleep 10 # wait. maybe sreboot was called
+		mount | message error "Filesystem is read-only, rebooting" payload
+		# using reboot as sreboot most probably failed
+		reboot
+	fi
+
 	[[ -z $gpu_stats ]] && gpu_stats='{}'
-	local temp=$(jq '.temp' <<< $gpu_stats)
-	local fan=$(jq '.fan' <<< $gpu_stats)
-	local power=$(jq '.power' <<< $gpu_stats)
+	local temp=$(jq 'if .temp then .temp else empty end' <<< $gpu_stats)
+	local fan=$(jq 'if .fan then .fan else empty end' <<< $gpu_stats)
+	local power=$(jq 'if .power then .power else empty end' <<< $gpu_stats)
 
 	if [[ ! -z $MINER ]]; then
 #		miner2_json=
@@ -270,7 +288,7 @@ function loop {
 
 	[[ ! -z $META ]] && meta="$META" || meta='null'
 
-	mem=`free -m | grep 'Mem' | awk '{print $2", "$4}'`
+	mem=`free -m | grep 'Mem' | awk '{print $2", "$7}'` # total and available
 	df=`df -h / | awk '{ print $4 }' | tail -n 1 | sed 's/%//'`
 	cpuavg=`cat /proc/loadavg | awk '{print $1", "$2", "$3}'`
 
