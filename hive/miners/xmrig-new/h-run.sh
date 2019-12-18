@@ -7,7 +7,7 @@ function HugePagesTune(){
        hugepages $XMRIG_NEW_HUGEPAGES
    else
       if [[ `echo $XMRIG_NEW_ALGO | grep -c "^rx\/"` -gt 0 ]]; then
-          hugepages -rx $XMRIG_NEW_HUGEPAGES
+          hugepages -rx
       fi
    fi
 }

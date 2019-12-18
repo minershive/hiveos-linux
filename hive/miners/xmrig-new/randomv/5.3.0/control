@@ -1,0 +1,7 @@
+Package: hive-miners-xmrig-new-randomv-5.3.0
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - XMRig-RandomV v5.3.0 XMV/MoneroV

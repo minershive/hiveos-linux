@@ -17,6 +17,7 @@
     "randomx": {
         "init": -1,
         "numa": true,
+        "wrmsr": true,
         "1gb-pages": false
     },
     "cpu": {
