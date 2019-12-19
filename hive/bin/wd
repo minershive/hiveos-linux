@@ -281,7 +281,11 @@ function loop() {
 	if [[ ! -z $WD_REBOOT ]]; then
 		reboot_timeout=`echo $WD_REBOOT 60 | awk '{print $1 * $2}'`
 		if [[ $elapsed -ge $reboot_timeout ]]; then
-			miner log | message danger "$wd_miner $wd_algo low hashrate ($khs kH/s), rebooting" payload
+			if [[ $WD_TYPE == algo ]]; then		
+				miner log | message danger "$wd_algo low hashrate ($khs kH/s), rebooting" payload
+			else 
+				miner log | message danger "$wd_miner low hashrate ($khs kH/s), rebooting" payload
+			fi
 			echo -e "---"
 			echo -e "${RED}Rebooting after $WD_REBOOT minutes${NOCOLOR}"
 			echo -e "---"
@@ -295,7 +299,11 @@ function loop() {
 	if [[ ! -z $WD_MINER ]]; then
 		miner_restart_timeout=`echo $WD_MINER 60 | awk '{print $1 * $2}'`
 		if [[ $miner_restart_count == 0 && $elapsed -ge $miner_restart_timeout ]]; then
-			miner log | message warn "$wd_miner $wd_algo low hashrate ($khs kH/s), restarting" payload
+			if [[ $WD_TYPE == algo ]]; then
+				miner log | message warn "$wd_algo low hashrate ($khs kH/s), restarting" payload
+			else
+				miner log | message warn "$wd_miner low hashrate ($khs kH/s), restarting" payload
+			fi
 			echo -e "---"
 			echo -e "${YELLOW}Restarting ${CYAN}$wd_miner $wd_algo${NOCOLOR} ${YELLOW}after $WD_MINER minutes${NOCOLOR}"
 			echo -e "---"
