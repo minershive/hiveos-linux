@@ -2,7 +2,7 @@
 
 . colors
 
-VERS="0.4.0"
+VERS="0.4.1"
 
 HUGES_RX=1168
 HUGES_CN=128
@@ -39,6 +39,21 @@ huge_rx_1gb_pages_set(){
    do
        echo $qty > "$i/hugepages/hugepages-1048576kB/nr_hugepages";
    done
+}
+
+memory_clear1(){
+   echo -e "${GREEN}[INFO]${NOCOLOR} Reset PageCache"
+   sync; echo 1 > /proc/sys/vm/drop_caches
+}
+
+memory_clear2(){
+   echo -e "${GREEN}[INFO]${NOCOLOR} Reset denries and inodes"
+   sync; echo 2 > /proc/sys/vm/drop_caches
+}
+
+memory_clear3(){
+   echo -e "${GREEN}[INFO]${NOCOLOR} Reset PageCache, denries and inodes"
+   sync; echo 3 > /proc/sys/vm/drop_caches
 }
 
 randomx_intel_boost(){
@@ -128,6 +143,7 @@ print_help(){
     echo -e "\t${CYAN}hugepages -rx${NOCOLOR}  - ${LGRAY}try set suggested value ($HUGES_RX_CALC) for RandomX"
     echo -e "\t${CYAN}hugepages -cn${NOCOLOR}  - ${LGRAY}try set suggested value ($HUGES_CN) for CN-based "
     echo -e "\t${CYAN}hugepages -erx${NOCOLOR} - ${LGRAY}try use $((CPU_NUMA*3))*1Gb HugePages + $CPU_CORE*2Mb HugePages for RandomX"
+    echo -e "\t${CYAN}hugepages -mcN${NOCOLOR} - ${LGRAY}drop memory cache where N can be one of 1 (PageCache only), 2 (denries and inodes) or 3 (1+2)"
     echo -e "\t${CYAN}hugepages -h${NOCOLOR}   - ${LGRAY}this help "
 }
 
@@ -151,21 +167,39 @@ case $1 in
     -r|--restore)
         huge_rx_1gb_pages_get
         if [[ $HPAGES_1GB_FREE -gt 0 ]]; then
-           echo -e "${GREEN}[INFO]${NOCOLOR} Reset 1Gb HugePages"
-           huge_rx_1gb_pages_set 0
+           echo -e "${GREEN}[INFO]${NOCOLOR} Reset 1Gb HugePages - set to $((HPAGES_1GB_TOTAL-HPAGES_1GB_FREE))"
+           huge_rx_1gb_pages_set $((HPAGES_1GB_TOTAL-HPAGES_1GB_FREE))
         fi
         HPAGES_REQ=`huge_get_def`
         echo -e "${GREEN}[INFO]${NOCOLOR} Try restore to system default HugePages value: ${YELLOW}$HPAGES_REQ${NOCOLOR}"
         ;;
+    -mc1)
+        memory_clear1
+        exit 0
+        ;;
+    -mc2)
+        memory_clear2
+        exit 0
+        ;;
+    -mc3)
+        memory_clear3
+        exit 0
+        ;;
     -erx)
+        memory_clear3
         echo -e "${GREEN}[INFO]${NOCOLOR} Try use 1Gb HugePages for RandomX algorithm"
         cpu_boost=1
         huge_rx_1gb_pages_get
         if [[ $MEM_AVAIL -gt $HPAGES_1GB_MEM ]]; then
             huge_rx_1gb_pages_set
             huge_rx_1gb_pages_get
-            echo -e "${GREEN}[INFO]${NOCOLOR} Use ${YELLOW}${HPAGES_1GB_FREE}${NOCOLOR}x1Gb HugePages for RandomX algorithm"
-            HPAGES_REQ=$(nproc)
+            if [[ $HPAGES_1GB_FREE -gt 0 ]]; then
+                echo -e "${GREEN}[INFO]${NOCOLOR} Use ${YELLOW}${HPAGES_1GB_FREE}${NOCOLOR}x1Gb HugePages for RandomX algorithm"
+                HPAGES_REQ=$(nproc)
+            else
+               echo -e "${YELLOW}[WARN]${NOCOLOR} Failed to allocate 1Gb HugePages, using 2Mb HugePages"
+               HPAGES_REQ=$HUGES_RX_CALC
+            fi
         else
             echo -e "${YELLOW}[WARN]${NOCOLOR} Not enough RAM available for 1Gb HugePages, using 2Mb HugePages"
             HPAGES_REQ=$HUGES_RX_CALC
