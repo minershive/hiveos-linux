@@ -1,0 +1,78 @@
+{
+    "api": {
+        "id": null,
+        "worker-id": null
+    },
+    "http": {
+        "enabled": true,
+        "host": "127.0.0.1",
+        "port": 60050,
+        "access-token": null,
+        "restricted": true
+    },
+    "autosave": true,
+    "version": 1,
+    "background": false,
+    "colors": true,
+    "randomx": {
+        "init": -1,
+        "numa": true
+    },
+    "cpu": {
+        "enabled": true,
+        "huge-pages": true,
+        "hw-aes": null,
+        "priority": null,
+        "asm": true,
+        "argon2-impl": null,
+        "argon2": [],
+        "cn": [
+        ],
+        "cn-heavy": [
+        ],
+        "cn-lite": [
+        ],
+        "cn-pico": [
+        ],
+        "cn/gpu": [],
+        "rx": [],
+        "rx/wow": [],
+        "cn/0": false,
+        "cn-lite/0": false
+    },
+    "donate-level": 1,
+    "donate-over-proxy": 0,
+    "log-file": null,
+    "pools": [
+        {
+            "algo": null,
+            "url": "YOUR_POOL_ADDRESS:PORT",
+            "user": "YOUR_WALLET",
+            "pass": "x",
+            "rig-id": null,
+            "nicehash": false,
+            "keepalive": true,
+            "enabled": true,
+            "tls": false,
+            "tls-fingerprint": null,
+            "daemon": false
+        }
+    ],
+    "cc-client": {
+        "enabled": false,
+        "use-tls": false,
+        "use-remote-logging": true,
+        "upload-config-on-start": true,
+        "url": "localhost:3344",
+        "access-token": "mySecret",
+        "worker-id": null,
+        "reboot-cmd": "",
+        "update-interval-s": 10
+    },
+    "print-time": 60,
+    "retries": 5,
+    "retry-pause": 5,
+    "syslog": false,
+    "user-agent": null,
+    "watch": true
+}
