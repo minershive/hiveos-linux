@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+# HugePages tunning
+function HugePagesTune(){
+   XMRIG_ALGO=`cat config.json | jq -r '.pools[0].algo'`
+   echo "Start HugePages tuning for RandomX ..."
+   if [[ `echo $XMRIG_ALGO | grep -c "^rx\/"` -gt 0 || `echo $XMRIG_ALGO | grep -c "^random\/"` -gt 0 ]]; then
+       hugepages -rx
+   fi
+}
+
 [[ `ps aux | egrep './[x]mrig' | grep -v xmrig-amd | grep -v xmrig-nvidia | wc -l` != 0 ]] &&
 	echo -e "${RED}$MINER_NAME miner is already running${NOCOLOR}" &&
 	exit 1
@@ -15,5 +24,7 @@ while true; do
 done
 
 cd $MINER_DIR/$MINER_FORK/$MINER_VER
+
+HugePagesTune
 
 ./xmrig | tee $MINER_LOG_BASENAME.log
