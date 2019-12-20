@@ -1,140 +1,152 @@
 #!/usr/bin/env bash
 . colors
 
-VERS="0.1.1"
+VERS="0.2.0"
 SWAP_FILE="/hiveswapfile"
-SWAP_SIZE_TARGET=${2:-8192}
-MEMORY_SIZE_TARGET=${3:-16384}
+SWAP_SIZE_TARGET=${2:-4096}
+#MEMORY_SIZE_TARGET=${3:-16384}
 DELAY=5
-
-function DelayDot(){
-        local i=0
-        while [ "$i" -le "$DELAY" ]
-        do
-                echo -n '.'
-                sleep 1
-                i=$((i+1))
-        done
-        echo
+	
+function DelayDot() {
+	local i=
+	for((i=0; i < DELAY; i++))
+	do
+		echo -n '.'
+		sleep 1
+	done
+	echo
 }
 
-function fstabRemoveEntry(){
+function fstabRemoveEntry() {
 	sudo sed -i.bak "\@^/hiveswapfile@d" /etc/fstab
 	return $?
 }
 
-function fstabAddEntry(){
+function fstabAddEntry() {
 	sudo sed -i.bak "\@^/hiveswapfile@d" /etc/fstab
 	sudo echo "/hiveswapfile none swap sw 0 0" >> /etc/fstab
 	return $?
 }
 
-function MemInfo(){
-    PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
-    DISK_PART=`blkid -U "${PART_UUID}"`
-    FREE_SPACE=`df -h -BM -t ext4 | grep -w $DISK_PART | awk '{ print $4 }' | tr -d 'M'`
-    MEM_SIZE=`free -m | grep "Mem" | awk '{ print $2 }'`
-    SWAP_SIZE=`free -m | grep "Swap" | awk '{ print $2 }'`
-    TOTAL_MEM=$((MEM_SIZE+SWAP_SIZE))
+function MemInfo() {
+	PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
+	DISK_PART=`blkid -U "${PART_UUID}"`
+	FREE_SPACE=`df -h -BM -t ext4 | grep -w $DISK_PART | awk '{ print $4 }' | tr -d 'M'`
+	MEM_SIZE=`free -m | grep "Mem" | awk '{ print $2 }'`
+	SWAP_SIZE=`free -m | grep "Swap" | awk '{ print $2 }'`
+	TOTAL_MEM=$((MEM_SIZE+SWAP_SIZE))
 
-    echo -e "${YELLOW}*** Memory info ***${NOCOLOR}"
-    echo -e "Memory: ${GREEN}$MEM_SIZE${NOCOLOR} Mb"
-    echo -e "Swap  : ${GREEN}$SWAP_SIZE${NOCOLOR} Mb"
-    echo -e "-------------------"
-    echo -e "TOTAL : ${GREEN}$TOTAL_MEM${NOCOLOR} Mb"
-    echo
-    echo -e "Disk free space: ${GREEN}$FREE_SPACE${NOCOLOR} Mb"
-    echo
+	echo -e "${YELLOW}*** Memory info ***${NOCOLOR}"
+	echo -e "Memory: ${GREEN}$MEM_SIZE${NOCOLOR} MB"
+	echo -e "Swap  : ${GREEN}$SWAP_SIZE${NOCOLOR} MB"
+	echo -e "-------------------"
+	echo -e "TOTAL : ${GREEN}$TOTAL_MEM${NOCOLOR} MB"
+	echo
+	local color=$GREEN
+	if [[ $FREE_SPACE -lt 1024 ]]; then
+		color=$RED
+	elif [[ $FREE_SPACE -lt 2048 ]]; then
+		color=$YELLOW
+	fi
+	echo -e "Disk free space: ${color}$FREE_SPACE${NOCOLOR} MB"
+	echo
 }
 
-function CreateSwapFile(){
-    MemInfo
+function CreateSwapFile() {
+	MemInfo
 
-    if [ $SWAP_SIZE -gt 0 ]; then
-    	echo -e "${RED}Swap already activated. Bye!${NOCOLOR}"
-    	exit 1
-    fi
+	if [ $SWAP_SIZE -gt 0 ]; then
+		echo -e "${RED}Swap already activated. Bye!${NOCOLOR}"
+		exit 1
+	fi
 
-    if [ $((SWAP_SIZE_TARGET+MEM_SIZE)) -gt $MEMORY_SIZE_TARGET ]; then
-    	echo -e "${RED}Wrong command line arguments!${NOCOLOR}"
-    	exit 1
-    fi
+	#if [ $((SWAP_SIZE_TARGET+MEM_SIZE)) -gt $MEMORY_SIZE_TARGET ]; then
+	#	echo -e "${RED}Wrong command line arguments!${NOCOLOR}"
+	#	exit 1
+	#fi
 
-    MEM_DIFF=$((MEMORY_SIZE_TARGET-MEM_SIZE))
+	#MEM_DIFF=$((MEMORY_SIZE_TARGET-MEM_SIZE))
 
-    if [ $MEM_DIFF -gt 512 ]; then
-    	SWAP_SIZE=$MEM_DIFF
-    else
-	echo -e "${RED}You have enough RAM so using swap not recommended. Bye!${NOCOLOR}"
-	exit 2
-    fi
+	#if [ $MEM_DIFF -gt 512 ]; then
+	#	SWAP_SIZE=$MEM_DIFF
+	#else
+	#	echo -e "${RED}You have enough RAM so using swap not recommended. Bye!${NOCOLOR}"
+	#	exit 2
+	#fi
 
-    echo -e "Going to create swap file ${GREEN}$SWAP_SIZE${NOCOLOR} Mb"
-    echo -e "${YELLOW}Press Ctrl+C to break or wait $DELAY seconds to starting process${NOCOLOR}"
-    DelayDot
-    
-    if [ $((SWAP_SIZE+1024)) -gt $FREE_SPACE ]; then
-	echo -e "No space on disk for swap file - try ${PURPLE}disk-expand${NOCOLOR} first or change swap size in arguments"
-	exit 3
-    fi
+	if [[ $SWAP_SIZE_TARGET -lt 256 ]]; then
+		echo -e "${RED}Swap size must be at least 256 MB$NOCOLOR"
+		exit 2
+	fi
 
-    echo -e "Start creating swap file ${YELLOW}$SWAP_FILE${NOCOLOR}"
-    sudo dd if=/dev/zero of=${SWAP_FILE} bs=1M count=$SWAP_SIZE status=progress
-    if [ $? -ne 0 ]; then
-    	echo -e "${RED}Failed to create swap file ${NOCOLOR}"
-    	rm ${SWAP_FILE}
-    	exit 3
-    fi
-    echo -e "Swap file created successfully!"
+	if [[ $((SWAP_SIZE_TARGET+1024)) -gt $FREE_SPACE ]]; then
+		echo -e "${RED}Not enough free disk space for swap file$NOCOLOR - try ${PURPLE}disk-expand${NOCOLOR} first or change swap size"
+		exit 3
+	fi
 
-    sudo chown root:root ${SWAP_FILE}
-    sudo chmod 0600 ${SWAP_FILE}
-    sudo mkswap ${SWAP_FILE} #-L HIVESWAP
-    sudo swapon ${SWAP_FILE}
-    echo
-    unset SWAP_SIZE
-    MemInfo
+	#echo -e "Going to create swap file ${GREEN}$SWAP_SIZE_TARGET${NOCOLOR} MB"
+	#echo -e "${YELLOW}Press Ctrl+C to break or wait $DELAY seconds to starting process${NOCOLOR}"
+	#DelayDot
 
-    if [ $SWAP_SIZE -gt 0 ]; then
-    	echo -e "Swap file ${YELLOW}${SWAP_FILE}${NOCOLOR} with size ${YELLOW}${SWAP_SIZE}${NOCOLOR} Mb ${GREEN}ACTIVATED!${NOCOLOR}"
-    	[[ $(fstabAddEntry) ]] && echo -e "${RED}Failed to add entry to /etc/fstab${NOCOLOR}"
-    else
-    	echo -e "${RED}Something was wrong! Please report to bee@haveos.farm ${NOCOLOR}"
-    	exit 11
-    fi
+	echo -e "Start creating swap file ${YELLOW}$SWAP_FILE${NOCOLOR}"
+	#sudo dd if=/dev/zero of=${SWAP_FILE} bs=1M count=$SWAP_SIZE_TARGET status=progress
+	sudo fallocate -l ${SWAP_SIZE_TARGET}M ${SWAP_FILE}
+	if [ $? -ne 0 ]; then
+		echo -e "${RED}Failed to create swap file ${NOCOLOR}"
+		rm ${SWAP_FILE}
+		exit 3
+	fi
+	echo -e "Swap file created successfully!"
+
+	sudo chown root:root ${SWAP_FILE}
+	sudo chmod 0600 ${SWAP_FILE}
+	sudo mkswap ${SWAP_FILE} #-L HIVESWAP
+	sudo swapon ${SWAP_FILE}
+	#sudo swapon --show
+	echo
+	unset SWAP_SIZE
+	MemInfo
+
+	if [[ $SWAP_SIZE -gt 0 ]]; then
+		echo -e "Swap file ${YELLOW}${SWAP_FILE}${NOCOLOR} with size ${YELLOW}${SWAP_SIZE}${NOCOLOR} MB ${GREEN}ACTIVATED!${NOCOLOR}"
+		[[ $(fstabAddEntry) ]] && echo -e "${RED}Failed to add entry to /etc/fstab${NOCOLOR}"
+	else
+		echo -e "${RED}Something was wrong! Please report to bee@haveos.farm ${NOCOLOR}"
+		exit 11
+	fi
 }
 
-function RemoveSwapFile(){
-    SWAP_SIZE=`free -m | grep "Swap" | awk '{ print $2 }'`
-    if [ $SWAP_SIZE -eq 0 ];then
+function RemoveSwapFile() {
+	SWAP_SIZE=`free -m | grep "Swap" | awk '{ print $2 }'`
+	if [[ $SWAP_SIZE -eq 0 ]];then
 		echo -e "${YELLOW}Swap is not active. There is nothing to do!${NOCOLOR}"
 		exit 1
-    fi
-    
-    echo -e "${YELLOW}Swap file removing:${NOCOLOR}"
-    echo -n "- deactivating and removing swap file "
-    sudo swapoff $SWAP_FILE && sudo rm $SWAP_FILE && echo -e "${GREEN}OK${NOCOLOR}"
-    if [ $? -ne 0 ];then
+	fi
+	
+	echo -e "${YELLOW}Swap file removing:${NOCOLOR}"
+	echo -n "- deactivating and removing swap file "
+	sudo swapoff $SWAP_FILE && sudo rm $SWAP_FILE && echo -e "${GREEN}OK${NOCOLOR}"
+	if [ $? -ne 0 ];then
 		echo -e "${RED}FAIL${NOCOLOR}"
 		exit 1
-    fi
-    echo -n "- removing swap entry from /etc/fstab "
-    if [ $(fstabRemoveEntry) ]; then
-    	echo -e "${RED}FAIL${NOCOLOR}"
-    	exit 1
+	fi
+	echo -n "- removing swap entry from /etc/fstab "
+	if [ $(fstabRemoveEntry) ]; then
+		echo -e "${RED}FAIL${NOCOLOR}"
+		exit 1
 	
-    else
+	else
 		echo -e "${GREEN}OK${NOCOLOR}"
-    fi
-    echo -e "${GREEN}Completed!${NOCOLOR}"
+	fi
+	echo -e "${GREEN}Completed!${NOCOLOR}"
 	return 0
 }
 
-function Help(){
-        echo -e "${YELLOW}create [Swap_Size_Mb] [[Total_Size_Mb]] ${NOCOLOR}- create swap in file (default size 8192Mb or/and 16384 Mb in total)"
-        echo -e "${YELLOW}remove${NOCOLOR} - remove swap file"
-        echo -e "${YELLOW}info${NOCOLOR} - memory info"
-        echo -e "${YELLOW}help${NOCOLOR} - this info"
+function Help() {
+	echo -e "${YELLOW}create $NOCOLOR[${YELLOW}Swap_Size_Mb$NOCOLOR] - create swap in file (default size ${WHITE}4096$NOCOLOR MB)"
+	echo -e "${YELLOW}remove${NOCOLOR} - remove swap file"
+	echo -e "${YELLOW}info${NOCOLOR}   - memory info"
+	echo -e "${YELLOW}help${NOCOLOR}   - this info"
 }
 
 ######################################################################
@@ -149,13 +161,10 @@ case "$1" in
 		RemoveSwapFile
 		;;
 	info)
-                MemInfo
-                ;;
-        help)
-                Help
-                ;;
-        *)
-                Help
+		MemInfo
+		;;
+	help|*)
+		Help
 		;;
 esac
 
