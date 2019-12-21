@@ -33,10 +33,10 @@
         "asm": true
     },
     "opencl": {
-        "enabled": false
+        "enabled": true
     },
     "cuda": {
-        "enabled": false
+        "enabled": true
     },
     "donate-level": 2,
     "donate-over-proxy": 1,
