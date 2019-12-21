@@ -14,6 +14,7 @@ get_hashes(){
   for (( i = 0; i < $threads; i++ )); do
     hs+="$t_hs "
     a_temp+="$t_temp "
+    a_fan+="0 "
   done
 }
 
@@ -63,6 +64,7 @@ local ver=`miner_ver`
 local conf_name="/run/hive/miners/$MINER_NAME/$MINER_NAME.conf"
 local algo="verushash"
 a_temp=
+a_fan=
 
 # Calc log freshness
 local diffTime=$(get_log_time_diff)
@@ -80,6 +82,7 @@ if [ "$diffTime" -lt "$maxDelay" ]; then
   local hs_units='khs' # hashes utits
   hs=`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`
   a_temp=`echo ${a_temp[@]} | tr " " "\n" | jq -cs '.'`
+  a_fan=`echo ${a_fan[@]} | tr " " "\n" | jq -cs '.'`
 
   acc=0
   rej=0
@@ -90,12 +93,13 @@ if [ "$diffTime" -lt "$maxDelay" ]; then
         --argjson hs "$hs" \
         --arg hs_units "$hs_units" \
         --argjson temp "$a_temp" \
+        --argjson fan "$a_fan" \
         --arg uptime "$uptime" \
         --arg acc "$acc" \
         --arg rej "$rej" \
         --arg algo "$algo" \
         --arg ver "$ver" \
-        '{$hs, $hs_units, $temp, ar: [$acc, $rej], $uptime, $algo, $ver}')
+        '{$hs, $hs_units, $temp, $fan, ar: [$acc, $rej], $uptime, $algo, $ver}')
 else
   stats=""
   khs=0
