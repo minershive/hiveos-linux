@@ -49,7 +49,7 @@
     },
     "donate-level": 0,
     "donate-over-proxy": 0,
-    "log-file": "/var/log/miner/safexrig/safexrig.log",
+    "log-file": "/var/log/miner/xmrig-new/xmrig-new.log",
     "pools": [
         {
             "algo": "rx/sfx",
