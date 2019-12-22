@@ -73,7 +73,7 @@ function do_command () {
 			local exec=$(echo "$body" | jq '.exec' --raw-output)
 			nohup bash -c '
 			log_name="/tmp/exec_"'$cmd_id'".log"
-			'"$exec"' > $log_name 2>&1
+			('"$exec"') > $log_name 2>&1
 			exitcode=$?
 			payload=`cat $log_name`
 			[[ $exitcode -eq 0 ]] &&
