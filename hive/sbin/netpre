@@ -37,7 +37,7 @@ if [[ $TYPE = "ntfs" ]]; then
 elif [[ $TYPE = "fat" ]]; then
 	fsck.fat -a /dev/disk/by-label/HIVE
 else
-	echo -e "${RED}Unknown filsystem type \"$TYPE\" for /dev/disk/by-label/HIVE${NOCOLOR}"
+	echo "Unknown filsystem type \"$TYPE\" for /dev/disk/by-label/HIVE"
 fi
 
 # Mounting
@@ -46,9 +46,9 @@ echo "> Mounting /hive-config"
 systemctl start hive\\x2dconfig.mount
 exitcode=$?
 if [[ $exitcode == 0 ]]; then #|| $exitcode == 16  - 16 already mounted for 'mount' command, for service this does not work
-	echo -e "${GREEN}Mounted /hive-config${NOCOLOR}"
+	echo -e "Mounted /hive-config"
 else
-	echo -e "${RED}Unable to mount /hive-config${NOCOLOR}"
+	echo -e "Unable to mount /hive-config"
 	exit 1
 fi
 

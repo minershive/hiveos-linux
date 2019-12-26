@@ -37,6 +37,9 @@ if [[ $1 == "old" ]]; then
 fi
 
 
+set -o pipefail
+
+
 SEP=" · "
 
 # 1/4 of 4GB
@@ -49,6 +52,8 @@ VERY_LOW_DISK=1000
 
 HIGH_TEMP=70
 VERY_HIGH_TEMP=80
+
+WATCH_REFRESH=2
 
 
 [[ -f $RIG_CONF ]] && . $RIG_CONF
@@ -77,25 +82,25 @@ pretty_uptime() {
 }
 
 
-sys_info() {
-	echo -en "$BPURPLE$(uname -sr)$NOCOLOR"
+sys_name=`uname -sr`
+sys_info1() {
+	echo -en "$BPURPLE$sys_name$NOCOLOR"
 	echo -en "$SEP${BGREEN}H $(dpkg -s hive | grep -oP "^Version: \K.*$")$NOCOLOR"
 
 	# uptime without secs
 	#local upt=$(uptime -p)
 	#echo -e "$SEP$WHITE${upt//,}$NOCOLOR"
 
-	# uptime with secs
-	echo -e "${SEP}up $(pretty_uptime)$NOCOLOR"
-
 	# short uptime with secs
 	#local upt=`cat /proc/uptime | awk '{printf "%dd %02dh %02dm %02ds", $1/24/3600, $1/3600%24, $1/60%60, $1%60}'`
 	#echo -e "$SEP${WHITE}uptime $upt$NOCOLOR"
 
-	echo -en "$BCYAN$(hostname)$NOCOLOR"
-	echo -en "${SEP}ID ${RIG_ID:-n/a}$NOCOLOR"
+	# uptime with secs
+	echo -e "${SEP}up $(pretty_uptime)$NOCOLOR"
+}
 
-	local cpus=`nproc --all`
+
+sys_la() {
 	local lavg=(`cat /proc/loadavg | awk '{printf $1" "$2" "$3}'`)
 	local color=
 	echo -en "${SEP}LA"
@@ -110,19 +115,50 @@ sys_info() {
 		fi
 		echo -en " $color$la$NOCOLOR"
 	done
+}
+
+
+cpus=`nproc --all`
+sys_info2() {
+	echo -en "$BCYAN$(hostname)$NOCOLOR"
+	echo -en "${SEP}ID ${RIG_ID:-n/a}$NOCOLOR"
+
+	sys_la
 
 	local mem=()
 	#mem=(`free -b | grep 'Mem' | awk '{pcent=int(100*$7/$2+0.5); total=int(10*$2/2^30+0.5)/10; avail_gb=int(10*$7/2^30+0.5)/10; avail_mb=int($7/2^20); printf "%.1fG %.1fG %d %d", total, avail_gb, avail_mb, pcent}'`)
 	mem=(`free -h | grep 'Mem' | awk '{print $2" "$7}'`)
 	mem+=(`free -b | grep 'Mem' | awk '{pcent=int(100*$7/$2+0.5); avail=int($7/2^20); print avail" "pcent}'`)
-	echo -en "${SEP}RAM $WHITE${mem[0]}$NOCOLOR"
 	local color=$WHITE
 	if [[ ${mem[2]} -lt $VERY_LOW_RAM ]]; then
 		color=$BRED
 	elif [[ ${mem[2]} -lt $LOW_RAM ]]; then
 		color=$BYELLOW
 	fi
-	echo -e "  available $color${mem[1]}$NOCOLOR ($color${mem[3]}%$NOCOLOR)"
+	local swap=`free -h | grep 'Swap' | awk '{if ($2!="0B") print $2}'`
+	[[ ! -z $swap ]] && swap="${SEP}Swap $WHITE$swap$NOCOLOR"
+	echo -e "${SEP}RAM $WHITE${mem[0]}$NOCOLOR  available $color${mem[1]}$NOCOLOR ($color${mem[3]}%$NOCOLOR)$swap"
+}
+
+
+sys_info_compact() {
+	echo -en "$BCYAN$(hostname)$NOCOLOR"
+
+	sys_la
+
+	local mem=()
+	mem+=(`free -b | grep 'Mem' | awk '{pcent=int(100*$7/$2+0.5); avail=int($7/2^20); avail_gb=int(10*$7/2^30+0.5)/10; print 0" "avail_gb" "avail" "pcent}'`)
+	local color=$WHITE
+	if [[ ${mem[2]} -lt $VERY_LOW_RAM ]]; then
+		color=$BRED
+	elif [[ ${mem[2]} -lt $LOW_RAM ]]; then
+		color=$BYELLOW
+	fi
+	echo -en "${SEP}AVL $color${mem[1]}G$NOCOLOR ($color${mem[3]}%$NOCOLOR)"
+
+	# short uptime with secs
+	local upt=`cat /proc/uptime | awk '{printf "%dd %02dh %02dm %02ds", $1/24/3600, $1/3600%24, $1/60%60, $1%60}'`
+	echo -e "${SEP}up $upt$NOCOLOR"
 }
 
 
@@ -147,11 +183,12 @@ net_info() {
 		dns=`grep -Pazo "DNS: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | awk '{$1=$1};1'`
 		ips=`grep -Pazo "  Address: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | awk '{$1=$1};1'`
 		gw=`grep -Pazo " Gateway: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | awk '{$1=$1};1'`
+		driver=`grep "Driver:" <<< "$nstat" | awk -F ': ' '{print $2}'`
 		[[ ! -z $ips ]] && echo -en "  ip $WHITE$ips$NOCOLOR"
 		[[ ! -z $gw ]] && echo -en "  gw $WHITE$gw$NOCOLOR"
 		[[ ! -z $dns ]] && echo -en "  dns $WHITE$dns$NOCOLOR"
-		driver=`grep "Driver:" <<< "$nstat" | awk -F ': ' '{print $2}'`
-		echo -e "$SEP$driver"
+		[[ ! -z $driver ]] && echo -en "$SEP$driver"
+		echo ""
 	done
 
 #● 2: eth0
@@ -171,6 +208,8 @@ net_info() {
 }
 
 
+disk_dev=`lsblk -no PKNAME /dev/block/$(mountpoint -d /)`
+disk_model=`lsblk -no VENDOR,MODEL,SIZE /dev/$disk_dev | head -n 1 | awk '{$1=$1};1'`
 disk_info() {
 	local disk=()
 	disk=(`df -h --output=source,size,used,avail / | tail -n 1`)
@@ -183,13 +222,14 @@ disk_info() {
 		color=$BYELLOW
 	fi
 	echo -en "  free $color${disk[3]}$NOCOLOR ($color${disk[4]}%$NOCOLOR)"
-	local disk_dev=`lsblk -no PKNAME /dev/block/$(mountpoint -d /)`
-	local disk_model=`lsblk -no VENDOR,MODEL,SIZE /dev/$disk_dev | head -n 1 | awk '{$1=$1};1'`
 	echo -e "$SEP$disk_model"
 }
 
 
 sys_check() {
+	# read it on every run
+	[[ -f $RIG_CONF ]] && . $RIG_CONF
+
 	local MSG=()
 	#if [[ ! -f $RIG_CONF ]]; then
 	#	MSG+=("${BRED}Warning: $RIG_CONF not found$NOCOLOR")
@@ -216,7 +256,7 @@ sys_check() {
 }
 
 
-function color_printf {
+color_printf() {
 	local pad=$1
 	local str="$2"
 	# colored string length correction for printf formatting
@@ -227,6 +267,21 @@ function color_printf {
 }
 
 
+# reread gpu_detect only on change
+gpu_detect_json=
+gpu_detect_time=0
+gpu_detect() {
+	#[[ ! -f $GPU_DETECT_JSON ]] && return 1
+	local ts=`stat -c %Y $GPU_DETECT_JSON 2>/dev/null`
+	[[ -z $ts ]] && return 1
+	[[ $gpu_detect_time -eq $ts ]] && return 0 # ! -z $gpu_detect_json
+	gpu_detect_time=$ts
+	readarray -t gpu_detect_json <<< "`cat $GPU_DETECT_JSON | jq -r -c '.[] | (.busid+";"+.brand+";"+.name+";"+.mem+";"+.vbios)' 2>/dev/null`"
+	[[ ${#gpu_detect_json[@]} -eq 0 ]] && return 1
+	return 0
+}
+
+
 gpu_info() {
 	[[ ! -f $GPU_DETECT_JSON ]] && return 1
 
@@ -234,14 +289,12 @@ gpu_info() {
 	[[ -f $GPU_STATS_JSON && `stat --printf %Y $GPU_STATS_JSON` -gt $(( `date +%s` - 30 )) ]] &&
 		all_stats=(`cat $GPU_STATS_JSON | jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i ([]; . + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+";"+.[1]+";"+.[2]+";"+.[3]' 2>/dev/null`)
 
-	_IFS=$IFS; IFS=$'\n'
-	local all_info=(`cat $GPU_DETECT_JSON | jq -r -c '.[] | (.busid+";"+.brand+";"+.name+";"+.mem+";"+.vbios)' 2>/dev/null`)
-	[[ ${#all_info[@]} -eq 0 ]] && return 1
+	gpu_detect || return
 
 	# get max string length
 	local maxline=0
 	local len=0
-	for line in "${all_info[@]}"; do
+	for line in "${gpu_detect_json[@]}"; do
 		# skip intel integrated graphics
 		[[ $line =~ "Intel" ]] && continue
 		# do not count type amd;nvidia;cpu
@@ -249,10 +302,13 @@ gpu_info() {
 		[[ $len -gt $maxline ]] && maxline=$len
 	done
 
+	[[ ! -z $1 ]] && local -n result=$1 || local result=
 	local idx=0
 	local count=0
-	for gpu in "${all_info[@]}"; do
-		local info=(`awk -F ";" '{print $1"\n"$2"\n"$3"\n"$4"\n"$5}' <<< $gpu`)
+	local info
+	local stats
+	for gpu in "${gpu_detect_json[@]}"; do
+		readarray -t info <<< "${gpu//;/$'\n'}"
 		local busid=${info[0]}
 		local brand=${info[1]}
 		local name=${info[2]}
@@ -261,43 +317,347 @@ gpu_info() {
 		local output=
 		[[ ! -z $vbios ]] && vbios=" ($vbios)"
 		if [[ $brand == "nvidia" || ($name =~ "NVIDIA" && ! $name =~ "nForce") ]]; then
-			output=`printf "%b%2s%b" $BBLUE $idx "$NOCOLOR $busid $GREEN$name$NOCOLOR $mem$vbios"`
+			output=`printf "%b%2s%b" "$BBLUE" "$idx" "$NOCOLOR $busid $GREEN$name$NOCOLOR $mem$vbios"`
 			((idx++))
 		elif [[ $brand == "amd" || ($name =~ "Advanced Micro Devices" && ! $name =~ "RS880" && ! $name =~ "Stoney") ]]; then
-			output=`printf "%b%2s%b" $BBLUE $idx "$NOCOLOR $busid $RED$name$NOCOLOR $mem$vbios"`
+			output=`printf "%b%2s%b" "$BBLUE" "$idx" "$NOCOLOR $busid $RED$name$NOCOLOR $mem$vbios"`
 			((idx++))
 		else
 			output=`printf "%2s%b" " " "$NOCOLOR $busid $YELLOW$name$NOCOLOR"`
 		fi
-		color_printf $maxline "$output"
-		local stats=(`awk -F ";" '{print $1"\n"$2"\n"$3"\n"$4}' <<< ${all_stats[$count]}`)
+		result+=`color_printf "$maxline" "$output"`
+		readarray -t stats <<< "${all_stats[$count]//;/$'\n'}"
 		((count++))
 		local temp=${stats[1]}
 		local fan=${stats[2]}
 		local power=${stats[3]}
-		[[ "${stats[0]}" != "$busid" || $power -eq 0 ]] && echo && continue
+		[[ "${stats[0]}" != "$busid" || $power -eq 0 ]] && result+=$'\n' && continue
 		local color=$WHITE
-		if [[ $temp -ge $VERY_HIGH_TEMP ]]; then
+		if [[ $temp -ge 999 ]]; then
+			temp="???"
+			color=$BPURPLE
+		elif [[ $temp -ge $VERY_HIGH_TEMP ]]; then
 			color=$BRED
 		elif [[ $temp -ge $HIGH_TEMP ]]; then
 			color=$BYELLOW
 		fi
-		printf "%b%3s%b°C %b%4s %b%% %b%4s %bW\n" $color $temp $NOCOLOR $WHITE $fan $NOCOLOR $WHITE $power $NOCOLOR
+		[[ $power -gt 999 ]] && power="???"
+		result+=`printf "%b%3s%b°C %b%4s %b%% %b%4s %bW" "$color" "$temp" "$NOCOLOR" "$WHITE" "$fan" "$NOCOLOR" "$WHITE" "$power" "$NOCOLOR"`
+		result+=$'\n'
 	done
-	IFS=$_IFS
+	[[ -z $1 ]] && echo -n "$result"
 	return 0
 }
 
 
-sys_info
-disk_info
-net_info
-sys_check
+gpu_compact() {
+	[[ ! -f $GPU_DETECT_JSON ]] && return 1
 
-echo
-gpu_info || gpu-detect list
+	local gpu_stats=
+	[[ -f $GPU_STATS_JSON && `stat --printf %Y $GPU_STATS_JSON` -gt $(( `date +%s` - 30 )) ]] &&
+		gpu_stats=(`cat $GPU_STATS_JSON | jq --slurp -r -c '.[] | .brand, .busids, .temp, .fan, .power | join(";")' 2>/dev/null`)
 
-echo
-helpme
+	local brands=(${gpu_stats[0]//;/ })
+	local busids=(${gpu_stats[1]//;/ })
+	local temps=(${gpu_stats[2]//;/ })
+	local fans=(${gpu_stats[3]//;/ })
+	local powers=(${gpu_stats[4]//;/ })
+	local first_idx=0
 
-echo
+	gpu_detect && grep "${busids[0]}" <<< "$gpu_detect_json" | grep -q Intel && first_idx=1
+
+	[[ ! -z $1 ]] && local -n result=$1 || local result=
+	local idx
+	local step=6
+	for((idx=$first_idx; idx < "${#busids[@]}"; idx++)); do
+		local color=$YELLOW
+		if [[ ${brands[$idx]} == "nvidia" ]]; then
+			color=$GREEN
+		elif [[ ${brands[$idx]} == "amd" ]]; then
+			color=$RED
+		fi
+		result+=`printf "%b%${step}s%b" "$color" "${busids[$idx]/\.0}" "$NOCOLOR"`
+	done
+	result+=$'\n'
+	step=$((step-2))
+	for((idx=$first_idx; idx < "${#temps[@]}"; idx++)); do
+		local color=$WHITE
+		if [[ ${temps[$idx]} -ge 999 ]]; then
+			temps[$idx]="???"
+			color=$BPURPLE
+		elif [[ ${temps[$idx]} -ge $VERY_HIGH_TEMP ]]; then
+			color=$BRED
+		elif [[ ${temps[$idx]} -ge $HIGH_TEMP ]]; then
+			color=$BYELLOW
+		fi
+		result+=`printf "%b%${step}s%b°C" "$color" "${temps[$idx]}" "$NOCOLOR"`
+	done
+	result+=$'\n'
+	for((idx=$first_idx; idx < "${#fans[@]}"; idx++)); do
+		result+=`printf "%b%${step}s%b %%" "$WHITE" "${fans[$idx]}" "$NOCOLOR"`
+	done
+	result+=$'\n'
+	for((idx=$first_idx; idx < "${#powers[@]}"; idx++)); do
+		[[ ${powers[$idx]} -gt 999 ]] && powers[$idx]="???"
+		result+=`printf "%b%${step}s%b W" "$WHITE" "${powers[$idx]}" "$NOCOLOR"`
+	done
+	result+=$'\n'
+	[[ -z $1 ]] && echo -n "$result"
+	return 0
+}
+
+
+miners_info() {
+	local scr=`sudo screen -S miner -Q windows`
+	echo -e "Miners: $WHITE${scr//(L)/ -}$NOCOLOR"
+}
+
+
+add_help() {
+	local -n var=$1
+	output+=`printf '\n%b%15s%b · %b' "$WHITE" "$2" "$NOCOLOR" "$3"`
+}
+
+
+show_log() {
+	# $cols is global
+	local screen=$1
+	local needed_lines=$2
+	local -n result=$3
+	local need_padding=$4
+
+	# log menu
+	local color=$DGRAY
+	local running=1
+	local output=" "
+	if ! screen -S miner -Q windows > /dev/null; then
+		[[ $screen != "0" && $screen != "9" ]] &&
+			output="${color}=${RED} [ $WHITE$screen$RED No miners are running ] ${NOCOLOR}" ||
+			output="${color}=${RED} ${WHITE}1-8$RED No miners are running ${NOCOLOR}"
+		running=0
+	fi
+	for((i=1;i<=11;i++)); do
+		local tab=$i
+		if [[ $i -eq 8 ]]; then
+			title="syslog"
+		elif [[ $i -eq 9 ]]; then
+			title="autofan"
+		elif [[ $i -eq 10 ]]; then
+			title="agent"
+			tab="0"
+		elif [[ $i -eq 11 ]]; then
+			title="help"
+			tab="h"
+		else
+			[[ $running -eq 0 ]] && continue
+			title=`screen -S miner -p $i -Q title`
+			if [[ $? -ne 0 ]]; then
+				[[ "$i" != "$screen" ]] && continue
+				title=
+			fi
+		fi
+		if [[ "$i" == "$screen" ]]; then
+			[[ ! -z $title ]] && title="${CYAN} $title"
+			output+="${color}=${RED} [ $WHITE$tab$title $RED] $NOCOLOR"
+		else
+			output+="${color}= $WHITE$tab${CYAN} $title $NOCOLOR"
+		fi
+	done
+	output+="${color}="
+	local menu_len=`echo -e "$output" | sed 's/\x1b\[[0-9;]*m//g' | wc -m`
+	test=$menu_len
+	while [[ $menu_len -lt $cols ]]; do
+		output+="="
+		((menu_len++))
+	done
+	result+=`echo -e "$output$NOCOLOR"`$'\n'
+	needed_lines=$(( needed_lines - menu_len/(cols+1) - 1 ))
+
+	# log itself
+	local padding=-1 # count at the end
+	if [[ $screen == "11" ]]; then
+		output=
+		add_help output "g" "switch gpu stats display mode"
+		add_help output "t" "switch top info display mode"
+		add_help output "1..7" "show selected miner log"
+		add_help output "8" "show syslog"
+		add_help output "9" "show autofan log"
+		add_help output "0" "show agent log"
+		add_help output "shift + 0..9" "show selected log in split mode"
+		add_help output "s" "swap top and bottom logs in split mode"
+		add_help output "- +" "change logs size in split mode"
+		add_help output "=" "reset logs size in split mode"
+		add_help output "" "select the same logs in split mode to disable it"
+		add_help output "Esc e x q" "exit"
+		output=`echo -e "$output"`
+
+	elif [[ $screen == "8" ]]; then
+		output=`tail -n $needed_lines /var/log/syslog 2>/dev/null | tr -d "\r" | sed 's/.\{'$cols'\}/&\n/g'`
+
+	elif [[ $screen == "9" ]]; then
+		output=`autofan log 2>/dev/null | tail -n $needed_lines | tr -d "\r" | sed 's/.\{'$cols'\}/&\n/g'`
+
+	elif [[ $screen == "10" ]]; then
+		output=`agent-screen log 2>/dev/null | tail -n $needed_lines | tr -d "\r" | sed 's/.\{'$cols'\}/&\n/g'`
+
+	else
+		#output=`miner log $screen`
+		output=`tail -n $needed_lines /run/hive/miner.$screen 2>/dev/null | tr -d "\r" | cat -s`
+		if [[ $? -ne 0 ]]; then
+			output=$'\n'" No log for miner #$screen"
+		else
+			# most tricky part. calc line wrapping for colored output
+			local arr
+			readarray -t arr <<< "`sed 's/\x1b\[[0-9;]*m//g' <<< \"$output\"`"
+			local calc_lines=0
+			local length=$(( ${#arr[@]} - 1 ))
+			local real_lines
+			for((idx=$length; idx>=0; idx--)); do
+				real_lines=$(( ${#arr[$idx]}/(cols+1) + 1 ))
+				[[ $(( calc_lines + real_lines )) -gt $needed_lines ]] && break
+				calc_lines=$(( calc_lines + real_lines ))
+			done
+			# set padding amount
+			padding=$(( needed_lines - calc_lines ))
+			# set lines needed to grab
+			needed_lines=$(( length - idx ))
+		fi
+	fi
+
+	result+=`tail -n $needed_lines <<< "$output"`
+	if [[ $need_padding -eq 1 ]]; then
+		[[ $padding -eq -1 ]] && padding=$(( needed_lines - `wc -l <<< "$output"` ))
+		output=
+		for((i=1; i<=$padding; i++)); do
+			output+=$'\n'
+		done
+		result+=$output
+	fi
+	#result+=`echo -en "$NOCOLOR"`
+	#result+=`echo -en "\r(c=$cols; h=$2; l=$needed_lines; p=$padding)"`
+}
+
+
+function show_top() {
+	sys_info1
+	sys_info2
+	disk_info
+	net_info
+	sys_check
+}
+
+
+function show_gpu() {
+	echo
+	gpu_info || gpu-detect list
+}
+
+
+function show_bottom() {
+	echo
+	miners_info
+	echo
+	unbuffer helpme
+	echo
+}
+
+
+function motd_watch() {
+	# prevent running from scripts
+	[ ! -t 1 ] && return 1
+
+	# default values
+	local first=1
+	local second=1
+	local compact_top=1
+	local compact_gpu=1
+
+	local position=0
+	local pos_limit=5
+	local nocolor=`echo -en "$NOCOLOR\r"`
+
+	# main loop
+	while true;
+	do
+		lines=`tput lines`
+		cols=`tput cols`
+
+		[[ $compact_top -eq 0 ]] && header=`show_top` || header=`sys_info_compact`
+		header+=$'\n'$'\n'
+		if [[ $compact_gpu -eq 0 ]]; then
+			gpu_info header || header+=`unbuffer gpu-detect list`$'\n'
+		else
+			gpu_compact header
+		fi
+		# strip colors and wrap lines for correct size
+		local header_lines=`sed 's/\x1b\[[0-9;]*m//g' <<< "$header" | sed 's/.\{'$((cols+1))'\}/&\n/g' | wc -l`
+		local log_lines=$(( lines - header_lines ))
+		local log=
+		if [[ $first == $second || $log_lines -lt $(( pos_limit*2 )) ]]; then
+			show_log $first $log_lines log
+		else
+			local real_limit=$(( log_lines/2 - pos_limit ))
+			[[ $position -gt $real_limit ]] && position=$real_limit
+			[[ $position -lt -$real_limit ]] && position=-$real_limit
+			local second_lines=$(( log_lines/2 - position ))
+			local first_lines=$(( log_lines - second_lines ))
+			show_log $first $first_lines log 1
+			log+=$'\n'
+			show_log $second $second_lines log
+		fi
+
+		clear
+		echo -n "$header"$'\n'"$log$nocolor"
+
+		read -n 1 -s -t $WATCH_REFRESH -r key
+		[[ -z $key ]] && continue
+
+		[[ "$key" =~ ($'\033'|q|e|x)  ]] && break
+
+		if [[ "$key" =~ ^[0-9]$ ]]; then
+			[[ "$key" == "0" ]] && key=10
+			[[ $second -eq $first ]] && second=$key
+			first=$key
+			continue
+		fi
+
+		[[ "$key" == "t" ]] && ((compact_top ^= 1)) && continue
+		[[ "$key" == "g" ]] && ((compact_gpu ^= 1)) && continue
+		[[ "$key" == "h" ]] && first=11 && continue
+		[[ "$key" == "H" ]] && second=11 && continue
+		[[ "$key" == "s" ]] && tmp=$first && first=$second && second=$tmp && continue
+		[[ "$key" == "+" ]] && ((position--)) && continue
+		[[ "$key" == "-" ]] && ((position++)) && continue
+		[[ "$key" == "=" ]] && position=0 && continue
+
+		[[ "$key" == "!" ]] && second=1 && continue
+		[[ "$key" == "@" ]] && second=2 && continue
+		[[ "$key" == "#" ]] && second=3 && continue
+		[[ "$key" == "\$" ]] && second=4 && continue
+		[[ "$key" == "%" ]] && second=5 && continue
+		[[ "$key" == "^" ]] && second=6 && continue
+		[[ "$key" == "&" ]] && second=7 && continue
+		[[ "$key" == "*" ]] && second=8 && continue
+		[[ "$key" == "(" ]] && second=9 && continue
+		[[ "$key" == ")" ]] && second=0 && continue
+	done
+
+	clear
+	echo -n "$header"
+	show_bottom
+	return 0
+}
+
+
+if [[ $1 == "watch" ]]; then
+	[[ `id -u` -ne 0 ]] && echo "Watch must be run from root!" && exit 1
+	motd_watch && exit
+	echo "Watch must be run from terminal!"
+	exit 1
+fi
+
+show_top
+show_gpu
+show_bottom
+
+exit 0
