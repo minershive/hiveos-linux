@@ -2,20 +2,20 @@
 
 [ -t 1 ] && . colors
 
+# ${BCYAN}Ctrl${CYAN}+${BCYAN}a d$NOCOLOR to exit, ${BCYAN}Ctrl${CYAN}+${BCYAN}a${CYAN}+${BCYAN}a$NOCOLOR to switch between
 echo -e "${YELLOW}=== Commands FAQ ===
-${CYAN}helpme$NOCOLOR - shows this FAQ, ${CYAN}motd$NOCOLOR - shows summary info (like after boot)
-${CYAN}miner$NOCOLOR - shows running miner screen, ${BCYAN}Ctrl${CYAN}+${BCYAN}a d$NOCOLOR to exit, ${BCYAN}Ctrl${CYAN}+${BCYAN}a${CYAN}+${BCYAN}a$NOCOLOR to switch between
-${CYAN}miner start $NOCOLOR|$CYAN stop$NOCOLOR - starts or stops miner obviously
-${CYAN}agent-screen$NOCOLOR - shows hive client agent, ${BCYAN}Ctrl${CYAN}+${BCYAN}a d$NOCOLOR to exit, ${BCYAN}Ctrl${CYAN}+${BCYAN}a${CYAN}+${BCYAN}a$NOCOLOR to switch between
-${CYAN}selfupgrade $NOCOLOR[$CYAN--force$NOCOLOR] [${CYAN}version$NOCOLOR] - upgrade hive to latest or specified version (like 0.6-65)
-${CYAN}firstrun -f $NOCOLOR[${CYAN}url$NOCOLOR] - force rig setup, you will enter ID and password again, url is optional
-${CYAN}wifi $NOCOLOR[${CYAN}ssid pass$NOCOLOR] - to setup WiFi if you have one
-${BCYAN}net-test${NOCOLOR} - check your network connection
-${PURPLE}hive-passwd${NOCOLOR} - change system password
+${CYAN}helpme$NOCOLOR - shows this FAQ. ${CYAN}motd$NOCOLOR [${BYELLOW}watch$NOCOLOR] - shows summary info, or live stats and logs
+${CYAN}miner $NOCOLOR[${CYAN}start$NOCOLOR|${CYAN}stop$NOCOLOR|${CYAN}restart$NOCOLOR]$NOCOLOR - shows running miner screen, or starts/stops/restarts it
+${CYAN}agent-screen $NOCOLOR[${CYAN}restart$NOCOLOR] - shows Hive client agent screen
+${CYAN}selfupgrade $NOCOLOR[$CYAN--force$NOCOLOR] [${CYAN}VER$NOCOLOR] - upgrade to latest or specified version, i.e. 0.6-65
+${CYAN}firstrun -f $NOCOLOR[${CYAN}URL$NOCOLOR] - force rig setup, re-enter ID and password, URL is optional
+${CYAN}wifi $NOCOLOR[${CYAN}SSID PASS$NOCOLOR] - setup WiFi if available
+${BCYAN}net-test${NOCOLOR} - check network connection to internet and Hive servers
+${PURPLE}hive-passwd${NOCOLOR} - change system password for ssh/vnc/shellinabox
 ${PURPLE}logs-on${NOCOLOR} | ${PURPLE}logs-off${NOCOLOR} - keep logs on disk / in RAM (for USB Flash drives)
-${PURPLE}gpu-fans-find ${NOCOLOR}[${PURPLE}index${NOCOLOR}] - find GPU by spinning fans, index can specified to find particular GPU (like 10)
-${PURPLE}disk-expand${NOCOLOR} - enlarge disk to use all space
-${PURPLE}hpkg${NOCOLOR} - Hive package manager
-${PURPLE}hive-replace ${NOCOLOR}[${PURPLE}--list${NOCOLOR}] - system image replacement tool. Image can be selected from list
-${GREEN}nvidia-driver-update $NOCOLOR[${GREEN}version$NOCOLOR] - update to latest or specified version (like 418 or 418.88)
-${BRED}amd-info${NOCOLOR} | ${BGREEN}nvidia-info${NOCOLOR} - GPU information"
+${PURPLE}gpu-fans-find ${NOCOLOR}[${PURPLE}GPU${NOCOLOR}] - find GPU by spinning fans. GPU index can be specified, i.e. 5
+${PURPLE}disk-expand${NOCOLOR} - expand system partition to use all available disk space
+${PURPLE}hpkg ${NOCOLOR}[${PURPLE}remove miners noinstall${NOCOLOR}] - Hive package manager. Specify option to remove all
+${PURPLE}hive-replace ${NOCOLOR}[${PURPLE}--list${NOCOLOR}] - live image replacement tool. Image can be selected from list
+${GREEN}nvidia-driver-update $NOCOLOR[${GREEN}VER$NOCOLOR] - update to latest or specified version, i.e. 418, 418.88
+${BRED}amd-info${NOCOLOR} | ${BGREEN}nvidia-info${NOCOLOR} - shows GPU information"
