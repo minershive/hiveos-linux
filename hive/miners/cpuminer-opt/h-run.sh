@@ -9,6 +9,7 @@ FLAG_AVX=`echo ${CPU_INFO} | grep -c " avx "`
 FLAG_AES=`echo ${CPU_INFO} | grep -c " aes "`
 FLAG_AVX2=`echo ${CPU_INFO} | grep -c " avx2 "`
 FLAG_SHA=`echo ${CPU_INFO} | grep -c " sha_ni "`
+FLAG_AVX512=`echo ${CPU_INFO} | grep -c " avx512"`
 
 #echo SSE2:$FLAG_SSE2 SSE42:$FLAG_SSE42 AVX:$FLAG_AVX AES:$FLAG_AES AVX2:$FLAG_AVX2 SHA:$FLAG_SHA
 
@@ -30,6 +31,8 @@ elif [[ $FLAG_SSE2 == 1 && $FLAG_SSE42 == 1 && $FLAG_AVX == 1 && $FLAG_AES == 1 
     CPU_FLAG="aes-avx"
 elif [[ $FLAG_SSE2 == 1 && $FLAG_SSE42 == 1 && $FLAG_AVX == 0 && $FLAG_AES == 1 && $FLAG_AVX2 == 0 ]]; then
     CPU_FLAG="aes-sse42"
+elif [[ $FLAG_AVX2 == 1 && $FLAG_AVX512 == 1 && -f "${MINER_DIR}/${MINER_FORK}/${MINER_VER}/cpuminer-avx512" ]]; then
+    CPU_FLAG="avx512"
 elif [[ $FLAG_AVX2 == 1 && $FLAG_SHA == 1 ]]; then
     CPU_FLAG="avx2-sha"
 elif [[ $FLAG_AVX2 == 1 ]]; then
