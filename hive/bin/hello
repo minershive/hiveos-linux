@@ -188,7 +188,7 @@ fi
 
 #Coolbox Autofan
 if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
-	coolbox_serial=`$COOLBOX --get_serial`
+  coolbox_serial=`$COOLBOX --get_serial`
 	if [[ ! -z $coolbox_serial ]]; then
 		coolbox_json=$(
 			jq -n \
@@ -323,15 +323,44 @@ fi
 # Coolbox Autofan config========================================================
 coolbox=$(echo $response | jq '.result.coolbox' --raw-output)
 if [[ ! -z $coolbox && $coolbox != "null" ]]; then
-	if [[ -z $COOLBOX_CONF ]]; then #reread env variables as after upgrade this can be empty
-		source /etc/environment
-		export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
-	fi
-	echo "Saving Coolbox Autofan config"
-	echo "$coolbox" > $COOLBOX_CONF
+  # Coolbox remove check
+  coolbox_serial=
+  for (( i = 0; i < 3; i++ )); do #three times
+    coolbox_serial=`$COOLBOX --get_serial`
+    if [[ ! -z $coolbox_serial ]]; then
+      break
+    fi
+    sleep 0.5
+  done
+  if [[ -z $coolbox_serial ]]; then
+    coolbox_request=$(
+    jq -n \
+    --arg rig_id "$RIG_ID" \
+    --arg passwd "$RIG_PASSWD" \
+    '{
+    	"method": "coolbox", "jsonrpc": "2.0", "id": 0,
+    	"params": {
+    		$rig_id, $passwd, "delete": true
+    	}
+    }'
+    )
+    echo "$coolbox_request" | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'
+
+    coolbox_response=$(echo $coolbox_request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=coolbox" -H "Content-Type: application/json")
+    if [[ $exitcode -eq 0 ]]; then
+      echo "Coolbox Autofan successfully removed: $coolbox_response"
+    fi
+  else #coolbox found saving it's config
+    if [[ -z $COOLBOX_CONF ]]; then #reread env variables as after upgrade this can be empty
+      source /etc/environment
+      export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+    fi
+    echo "Saving Coolbox Autofan config"
+    echo "$coolbox" > $COOLBOX_CONF
+  fi
 fi
 
-# Repositpry URLs ================================================================
+# Repositpry URLs ==============================================================
 HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
 repository_list=$(echo $response | jq '.result.repository_list' --raw-output)
 [[ -z $repository_list || $repository_list == "null" ]] &&
