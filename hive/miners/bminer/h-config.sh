@@ -16,6 +16,7 @@ function miner_config_gen() {
 	mkfile_from_symlink $MINER_CONFIG
 
 	[[ ! -z $BMINER_ALGO ]] && algo=$BMINER_ALGO || algo="stratum"
+	[[ $BMINER_TLS -eq 1 && ! $algo =~ "ssl" ]] && algo+="+ssl"
 	conf=
 	pool=
 
@@ -40,6 +41,7 @@ function miner_config_gen() {
 
 	if [[ ! -z $BMINER_URL2 ]]; then
 		[[ ! -z $BMINER_ALGO2 ]] && algo2=$BMINER_ALGO2 || algo2="blake2s"
+		[[ $BMINER_TLS2 -eq 1 && ! $algo2 =~ "ssl" ]] && algo2+="+ssl"
 		pool=
 		for url in $BMINER_URL2; do
 		  tpl=$BMINER_TEMPLATE2
