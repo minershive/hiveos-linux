@@ -1,0 +1,7 @@
+Package: hive-miners-cpuminer-opt-jayddee-3.10.7
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - CPUminer-opt-JayDDee v3.10.7
