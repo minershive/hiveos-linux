@@ -1,20 +1,29 @@
 #!/usr/bin/env bash
 
+function miner_fork() {
+	local MINER_FORK=$GRINGOLDMINER_FORK
+	[[ -z $MINER_FORK ]] && MINER_FORK=$MINER_DEFAULT_FORK
+	echo $MINER_FORK
+}
+
 function miner_ver() {
   local MINER_VER=$GRINGOLDMINER_VER
-  [[ -z $MINER_VER ]] && MINER_VER=$MINER_LATEST_VER
-  echo $MINER_VER
+  local fork=`miner_fork`
+  fork=${fork^^} #uppercase MINER_FORK
+	[[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${fork//-/_}" #char replace
+	echo $MINER_VER
 }
 
 
 function miner_config_echo() {
   local MINER_VER=`miner_ver`
-  miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/config.xml"
+	local MINER_FORK=`miner_fork`
+  miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_FORK/$MINER_VER/config.xml"
 }
 
 function miner_config_gen() {
 
-  local MINER_CONFIG="$MINER_DIR/$MINER_VER/config.xml"
+  local MINER_CONFIG="$MINER_DIR/$MINER_FORK/$MINER_VER/config.xml"
   mkfile_from_symlink $MINER_CONFIG
 
   [[ -z $GRINGOLDMINER_TEMPLATE ]] && echo -e "${YELLOW}GRINGOLDMINER_TEMPLATE is empty${NOCOLOR}" && return 1

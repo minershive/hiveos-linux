@@ -1,7 +1,0 @@
-Package: hive-miners-gringoldminer-1.0-monerov
-Version: 0.6-01
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - GrinGoldMiner - MoneroVMiner v1.0

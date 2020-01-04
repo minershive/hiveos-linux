@@ -29,7 +29,7 @@ get_cards_hashes(){
   local t_hs=-1
   local i=0;
   for (( i=0; i < ${GPU_COUNT}; i++ )); do
-    t_hs=`cat $log_name | tail -n 50 | grep "Statistics: GPU ${i}:" | tail -n 1 | cut -f 15 -d " " -s`
+    t_hs=`cat $log_name | tail -n 50 | grep "Statistics: GPU ${i}:" | tail -n 1 awk '{print $7}'`
     [[ ! -z $t_hs ]] && hs+=\"$t_hs\"" " && khs=`echo $khs $t_hs | awk '{ printf("%.6f", $1 + $2/1000) }'`
   done
 }
@@ -61,10 +61,12 @@ get_log_time_diff(){
 
 local log_dir=`dirname "$MINER_LOG_BASENAME"`
 
-cd "$log_dir"
-local log_name=$(ls -t --color=never | head -1)
-log_name="${log_dir}/${log_name}"
+# cd "$log_dir"
+# local log_name=$(ls -t --color=never | head -1)
+# log_name="${log_dir}/${log_name}"
+log_name=${MINER_LOG_BASENAME}.log
 local ver=`miner_ver`
+local fork=`miner_fork`
 local conf_name="/var/run/hive/miners/$MINER_NAME/config.xml"
 
 local temp=$(jq '.temp' <<< $gpu_stats)
@@ -85,8 +87,7 @@ local hs_units='hs' # hashes utits
 
 GPU_COUNT=`cat $conf_name | grep -c "<DeviceID>"`
 
-if [[ "$ver" =~ "monerov" ]]; then
-  log_name=${MINER_LOG_BASENAME}.log
+if [[ "$fork" = "monerov" ]]; then
 
   # If log is fresh the calc miner stats or set to null if not
 	if [ "$diffTime" -lt "$maxDelay" ]; then
@@ -121,8 +122,8 @@ elif [[ "$ver" < "3.0" ]]; then
 
 		# A/R shares by pool
 		#2019-01-14T20:07:29Z    DEBUG,     Statistics for 1: shares sub: 11 ac: 10 rj: 0
-		local ac=`cat $log_name | tail -n 50 | grep 'Statistics for ' | grep 'shares sub: ' | tail -n 1 | cut -f 17 -d " " -s`
-		local rj=`cat $log_name | tail -n 50 | grep 'Statistics for ' | grep 'shares sub: ' | tail -n 1 | cut -f 19 -d " " -s`
+		local ac=`cat $log_name | tail -n 50 | grep 'Statistics for ' | grep 'shares sub: ' | tail -n 1 | awk '{print $9}'`
+		local rj=`cat $log_name | tail -n 50 | grep 'Statistics for ' | grep 'shares sub: ' | tail -n 1 | awk '{print $11}'`
 
 		# make JSON
 		stats=$(jq -nc \
@@ -148,6 +149,7 @@ else
 		local rj=$(($st-$ac))
 		local hs=`jq -r '.workers[].graphsPerSecond' <<< $stats_status`
 		khs=`jq -r '[.workers[].graphsPerSecond] | add' <<< $stats_status`
+    khs=`echo $khs | awk '{ printf("%.6f", $1/1000) }'`
 		# make JSON
 		stats=$(jq -nc \
 			--argjson hs "`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`" \
