@@ -55,7 +55,7 @@ function miner_config_gen() {
   echo '    <Password>'$GRINGOLDMINER_PASS'</Password>' >> $MINER_CONFIG
   echo '  </SecondaryConnection>' >> $MINER_CONFIG
   echo '  <LogOptions>' >> $MINER_CONFIG
-  echo '    <FileMinimumLogLevel>DEBUG</FileMinimumLogLevel>' >> $MINER_CONFIG
+  echo '    <FileMinimumLogLevel>ERROR</FileMinimumLogLevel>' >> $MINER_CONFIG
   echo '    <ConsoleMinimumLogLevel>DEBUG</ConsoleMinimumLogLevel>' >> $MINER_CONFIG
   echo '  </LogOptions>' >> $MINER_CONFIG
   [[ -z $GRINGOLDMINER_CPULOAD ]] && GRINGOLDMINER_CPULOAD=0
