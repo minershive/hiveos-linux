@@ -25,4 +25,4 @@ done
 
 cd $MINER_DIR/$MINER_VER
 
-wildrig-multi $(< ${MINER_NAME}.conf) | tee $MINER_LOG_BASENAME.log
+wildrig-multi $(< ${MINER_NAME}.conf) | tee --append $MINER_LOG_BASENAME.log

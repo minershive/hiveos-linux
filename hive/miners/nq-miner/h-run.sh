@@ -6,4 +6,4 @@
 
 cd $MINER_DIR/$MINER_VER
 
-xargs -a $MINER_NAME.conf ./nq-miner $@ 2>&1 | tee $MINER_LOG_BASENAME.log
+xargs -a $MINER_NAME.conf ./nq-miner $@ 2>&1 | tee --append $MINER_LOG_BASENAME.log

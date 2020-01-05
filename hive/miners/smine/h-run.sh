@@ -6,4 +6,4 @@
 
 cd $MINER_DIR/$MINER_VER
 
-./smine `cat ${MINER_NAME}.conf` | tee $MINER_LOG_BASENAME.log
+./smine `cat ${MINER_NAME}.conf` | tee --append $MINER_LOG_BASENAME.log

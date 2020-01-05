@@ -18,4 +18,4 @@ while true; do
     break
 done
 
-zm --cfg-file=zm.conf 2>&1 | tee $MINER_LOG_BASENAME.log
+zm --cfg-file=zm.conf 2>&1 | tee --append $MINER_LOG_BASENAME.log

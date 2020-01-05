@@ -16,4 +16,4 @@ done
 
 cd $MINER_DIR/$MINER_VER
 
-./cast-xmr $(< cast-xmr.conf) --remoteaccess --remoteport=${MINER_API_PORT} 2>&1 | tee $MINER_LOG_BASENAME.log
+./cast-xmr $(< cast-xmr.conf) --remoteaccess --remoteport=${MINER_API_PORT} 2>&1 | tee --append $MINER_LOG_BASENAME.log

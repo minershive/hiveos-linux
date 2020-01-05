@@ -17,4 +17,4 @@ done
 cd $MINER_DIR/$MINER_FORK/$MINER_VER
 
 
-./ethminer `cat $MINER_DIR/$MINER_FORK/$MINER_VER/ethminer.conf` 2>&1 | tee $MINER_LOG_BASENAME.log
+./ethminer `cat $MINER_DIR/$MINER_FORK/$MINER_VER/ethminer.conf` 2>&1 | tee --append $MINER_LOG_BASENAME.log

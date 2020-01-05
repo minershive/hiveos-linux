@@ -16,5 +16,4 @@ if [[ $EGGMINERGPU_TMPFS -eq 1 ]]; then
 fi
 
 cd $MINER_DIR/$MINER_VER
-./eggminer 2>&1 | tee $MINER_LOG_BASENAME.log
-
+./eggminer 2>&1 | tee --append $MINER_LOG_BASENAME.log

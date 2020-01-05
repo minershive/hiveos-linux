@@ -27,4 +27,4 @@ cd $MINER_DIR/$MINER_FORK/$MINER_VER
 
 HugePagesTune
 
-./xmrig | tee $MINER_LOG_BASENAME.log
+./xmrig | tee --append $MINER_LOG_BASENAME.log

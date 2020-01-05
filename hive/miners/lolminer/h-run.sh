@@ -4,4 +4,4 @@ cd $MINER_DIR/$MINER_VER
 
 [[ ! -e ./lolminer.conf ]] && echo "No config file found, exiting" && exit 1
 
-lolMiner $(< lolminer.conf) | tee $MINER_LOG_BASENAME.log
+lolMiner $(< lolminer.conf) | tee --append $MINER_LOG_BASENAME.log

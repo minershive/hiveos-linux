@@ -23,4 +23,4 @@ done
 cd $MINER_DIR/$MINER_VER
 WATCHDOG=""
 [[ -e watchdog.sh ]] && WATCHDOG="--watchdog_script"
-./teamredminer $(< $MINER_NAME.conf) --api_listen=0.0.0.0:${MINER_API_PORT} $WATCHDOG $@ 2>&1 | tee ${MINER_LOG_BASENAME}.log
+./teamredminer $(< $MINER_NAME.conf) --api_listen=0.0.0.0:${MINER_API_PORT} $WATCHDOG $@ 2>&1 | tee --append ${MINER_LOG_BASENAME}.log

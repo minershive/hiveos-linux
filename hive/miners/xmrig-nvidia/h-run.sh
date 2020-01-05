@@ -16,4 +16,4 @@ done
 
 cd $MINER_DIR/$MINER_FORK/$MINER_VER
 
-./xmrig-nvidia | tee $MINER_LOG_BASENAME.log
+./xmrig-nvidia | tee --append $MINER_LOG_BASENAME.log

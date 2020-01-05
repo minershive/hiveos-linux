@@ -6,4 +6,4 @@
 
 cd ${MINER_DIR}/${MINER_FORK}/${MINER_VER}
 
-./nheqminer `cat $MINER_NAME.conf` 2>&1 | tee $MINER_LOG_BASENAME.log
+./nheqminer `cat $MINER_NAME.conf` 2>&1 | tee --append $MINER_LOG_BASENAME.log

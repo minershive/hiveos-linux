@@ -18,4 +18,4 @@
 
 cd $MINER_DIR/$MINER_VER
 
-./zjazz_cuda `cat $MINER_DIR/$MINER_VER/zjazz-cuda.conf` 2>&1 | tee $MINER_LOG_BASENAME.log
+./zjazz_cuda `cat $MINER_DIR/$MINER_VER/zjazz-cuda.conf` 2>&1 | tee --append $MINER_LOG_BASENAME.log

@@ -6,5 +6,4 @@
 
 cd $MINER_DIR/$MINER_VER
 
-UV_THREADPOOL_SIZE=24 ./sushi-miner-cuda 2>&1 | tee $MINER_LOG_BASENAME.log
-
+UV_THREADPOOL_SIZE=24 ./sushi-miner-cuda 2>&1 | tee --append $MINER_LOG_BASENAME.log

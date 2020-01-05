@@ -6,4 +6,4 @@
 
 cd $MINER_DIR/$MINER_VER
 
-./cortex_miner `cat ${MINER_NAME}.conf` 2>&1 | tee $MINER_LOG_BASENAME.log
+./cortex_miner `cat ${MINER_NAME}.conf` 2>&1 | tee --append $MINER_LOG_BASENAME.log

@@ -17,7 +17,6 @@ fi
 
 cd $MINER_DIR/$MINER_VER
 conf=`head -n 1 miner.conf`
-stdbuf -oL -eL ./noncepool_miner $conf | tee $MINER_LOG_BASENAME.log 
+stdbuf -oL -eL ./noncepool_miner $conf | tee --append $MINER_LOG_BASENAME.log 
 #./noncepool_miner `cat miner.conf`
 # 2>&1 #| tee $MINER_LOG_BASENAME.log
-

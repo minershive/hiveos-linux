@@ -18,4 +18,4 @@
 
 cd $MINER_DIR/$MINER_VER
 
-./bminer `cat $MINER_DIR/$MINER_VER/bminer.conf` 2>&1 | tee $MINER_LOG_BASENAME.log
+./bminer `cat $MINER_DIR/$MINER_VER/bminer.conf` 2>&1 | tee --append $MINER_LOG_BASENAME.log

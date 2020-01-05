@@ -18,4 +18,4 @@ cd $MINER_DIR/$MINER_VER
 
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./
 
-./kbminer `cat kbminer.conf` --enableapi --apiaddr :$MINER_API_PORT 2>&1 | tee $MINER_LOG_BASENAME.log
+./kbminer `cat kbminer.conf` --enableapi --apiaddr :$MINER_API_PORT 2>&1 | tee --append $MINER_LOG_BASENAME.log

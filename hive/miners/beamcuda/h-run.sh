@@ -6,4 +6,4 @@
 
 cd $MINER_DIR/$MINER_VER
 
-./beam-cuda-miner `cat $MINER_NAME.conf` | tee $MINER_LOG_BASENAME.log
+./beam-cuda-miner `cat $MINER_NAME.conf` | tee --append $MINER_LOG_BASENAME.log

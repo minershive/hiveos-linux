@@ -10,4 +10,4 @@ cd $MINER_DIR/$MINER_VER
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${MINER_DIR}/${MINER_VER}
 
-./noncerpro-opencl $(< ./miner.conf) --api=true --apiport=${MINER_API_PORT} 2>&1 | tee $MINER_LOG_BASENAME.log
+./noncerpro-opencl $(< ./miner.conf) --api=true --apiport=${MINER_API_PORT} 2>&1 | tee --append $MINER_LOG_BASENAME.log
