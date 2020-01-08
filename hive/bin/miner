@@ -85,9 +85,9 @@ function start() {
 		echo -e "${YELLOW}No miner is set in config, exiting ${NOCOLOR}" &&
 		exit 1
 
-	
+
 	[[ -f /run/hive/cur_miner ]] && rm /run/hive/cur_miner
-	
+
 	echo -en "Starting ${CYAN}$MINER${NOCOLOR}"
 	#[[ ! -z $MINER2 ]] &&
 	#	echo -en " and ${CYAN}$MINER2${NOCOLOR}"
@@ -127,10 +127,10 @@ function start() {
 	sleep 0.2
 	screen -S miner -X title $MINER #set nice title
 	echo $MINER >> /run/hive/cur_miner ##add miner-name to the list of working miners
-	
+
 	[[ -e $RUNNING_FLAG ]] && rm $RUNNING_FLAG
 	touch $RUNNING_FLAG
-	
+
 	# close bash window #0
 	screen -S miner -p bash -X stuff 'exit\n'
 
@@ -178,7 +178,7 @@ function stop() {
 
 	# remove stop file
 	[[ -f $MINER_STOP ]] && rm $MINER_STOP
-	
+
 	# run h-stop from miner dir
 	if [[ -f /run/hive/cur_miner ]]; then
 		for CUR_MINER in `cat /run/hive/cur_miner`
@@ -188,9 +188,9 @@ function stop() {
 		done
 		rm /run/hive/cur_miner
 	fi
-	
+
 	[[ -e $RUNNING_FLAG ]] && rm $RUNNING_FLAG
-	
+
 	#remove khs so no confusing for watchdog
 	#[[ -e /run/hive/khs ]] && rm /run/hive/khs
 	#wd gets mtime of file, no problem
@@ -345,7 +345,7 @@ function log_truncate {
 
 	fsize=`stat -c%s $log_basename.log`
 	[[ ! -z $fsize && $fsize -ge $MAX_LOG_SIZE ]] &&
-		echo "" >  $log_basename.log
+		echo "*** truncated by $0" > $log_basename.log
 
 	return 0
 }
