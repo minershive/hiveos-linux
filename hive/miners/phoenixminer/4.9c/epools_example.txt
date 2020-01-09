@@ -1,0 +1,24 @@
+#
+# PhoenixMiner ethash pools list (you MUST rename this files to epools.txt in order to use it)
+#
+# The pools specified in this file will be added to the pools specified with the PhoenixMiner's
+# command-line options (see -pool and -pool2 command line options).
+# 
+# Alternatively, you can omit the -pool option on the command-line and use only the pools in
+# epools.txt file. This will give you the ability to specify more than two pools, and to change
+# the pools without restarting the miner by using the 'r' key in the PhoenixMiner console to
+# reload the epools.txt file.
+#
+# You must put one pool per line as specified in the examples below
+# If the line starts with '#' it will be ignored as comment
+#
+# NOTE: PhoenixMiner also "understands" the epools.txt files from Claymore's dual Ethereum miner
+
+POOL: eu1.ethermine.org:4444, WAL: 0x008c26f3a2Ca8bdC11e5891e0278c9436B6F5d1E.RigName
+POOL: us1.ethermine.org:4444, WAL: 0x008c26f3a2Ca8bdC11e5891e0278c9436B6F5d1E.RigName
+
+# The following line shows all possible pool options. The values for each option must follow the
+# same rules as these specified in the Readme.txt file for the -pool, -wal, -pass, -worker,
+# -proto, -coin, and -stales command-line options
+
+# POOL: europe.ethash-hub.miningpoolhub.com:20585, WAL: YourLoginName, WORKER: WorkerName, PASS: x, PROTO: 1, COIN: music, STALES: 1
