@@ -12,21 +12,21 @@ get_total_hs(){
 }
 
 get_cpu_temps(){
-	local coretemp0=`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input 2>/dev/null`
-	[[ ! -z $coretemp0 ]] && #may not work with AMD cpous
-		tcore=$((`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input | head -n 1`/1000)) ||
-		tcore=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n 1 | awk '{print $1/1000}'` #maybe we will need to detect AMD cores
-
+	local tcore=`cpu-temp`
+	local i=0
+	local l_num_cores=$1
+	local l_temp=
 	if [[ ! -z tcore ]]; then
-		for (( i=0; i < ${num_cores}; i++ )); do
-			temp[$i]=$tcore
+		for (( i=0; i < ${l_num_cores}; i++ )); do
+		l_temp+="$tcore "
 		done
+		echo $l_temp
 	fi
 }
 
-get_bus_numbers () {
+get_bus_numbers() {
 	#2019-11-29 20:58:18: <info> GPU 0 PCI 01.00.0, Platform: CUDA, Name: GeForce GTX 1050 Ti, 4040 MB available
-  local line=
+	local line=
 	local l_bus_numbers=
 	while read -r line ; do
 		l_bus_numbers+=`echo $line | cut -d " " -f 7 | cut -d "." -f 1 | awk '{printf("%d\n", "0x"$1)}'`" "
@@ -34,7 +34,7 @@ get_bus_numbers () {
 	echo $l_bus_numbers
 }
 
-get_cpu_bus_numbers () {
+get_cpu_bus_numbers() {
 	local i=0
 	local l_bus=
 	for (( i=0; i < $1; i++ )); do
@@ -72,7 +72,7 @@ else
 		get_cores_hs
 		hs=`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`
 		khs=`echo $khs | awk '{ printf($1/1000) }'`
-		get_cpu_temps
+		temp=`get_cpu_temps "$num_cores"`
 		temp=`echo ${temp[@]} | tr " " "\n" | jq -cs '.'`
 		fan="[]"
 	else

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+. colors
+
+VERS="0.1.0"
+
+get_cpu_temp () {
+  for HWMON in $(ls /sys/class/hwmon)
+  do
+     local test=$(cat /sys/class/hwmon/${HWMON}/name | grep -c -E 'coretemp|k10temp')
+     if [[ $test -gt 0 ]]; then
+         HWMON_DIR=/sys/class/hwmon/$HWMON
+         break
+     fi
+  done
+  if [[ -z $HWMON_DIR ]]; then
+     HWMON_DIR="/sys/class/hwmon/hwmon0"
+  fi
+  cat $HWMON_DIR/temp*_input | head -1 | awk '{ printf("%.0f", $1/1000)}'
+}
+
+print_help(){
+    echo -e "${CYAN}Hive cpu-temp Helper v$VERS"
+    echo -e "${WHITE}This tool shows CPU temp."
+    echo
+    echo -e "${YELLOW}Usage:"
+    echo -e "\t${CYAN}cpu-temp      ${LGRAY}- current CPU temp value"
+    echo
+    echo -e "${YELLOW}Other examples of usage:${NOCOLOR}"
+    echo -e "\t${CYAN}cpu-temp -h   ${LGRAY}- print this help ${NOCOLOR}"
+}
+
+################################################################################
+# MAIN SCRIPT BODY
+################################################################################
+
+case $1 in
+    -h|--help)
+        print_help
+        exit 0
+        ;;
+    *)
+        get_cpu_temp
+        ;;
+esac

@@ -1,13 +1,5 @@
 #!/usr/bin/env bash
 
-get_cpu_temp () {
-  local coretemp0=`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input 2>/dev/null`
-  [[ ! -z $coretemp0 ]] && #may not work with AMD cpous
-    local tcore=$((`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input | head -n 1`/1000)) ||
-    tcore=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n 1 | awk '{print $1/1000}'` #maybe we will need to detect AMD cores
-  [[ ! -z $tcore ]] && echo $tcore || echo null
-}
-
 stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:${MINER_API_PORT}/api.json`
 
 if echo $stats_raw | grep -q '""'; then
@@ -32,7 +24,7 @@ else
 
 	khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 
-	local cpu_temp=`get_cpu_temp`
+	local cpu_temp=`cpu-temp`
 
 	local bus_numbers=
 	local a_fans=

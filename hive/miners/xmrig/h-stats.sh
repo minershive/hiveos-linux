@@ -1,18 +1,27 @@
 #!/usr/bin/env bash
 
-function get_cpu_temp(){
-    for HWMON in $(ls /sys/class/hwmon) 
-    do
-       local test=$(cat /sys/class/hwmon/${HWMON}/name | grep -c -E 'coretemp|k10temp')
-       if [[ $test -gt 0 ]]; then
-           HWMON_DIR=/sys/class/hwmon/$HWMON
-           break
-       fi
-    done
-    if [[ -z $HWMON_DIR ]]; then
-       HWMON_DIR="/sys/class/hwmon/hwmon0"
-    fi
-    cat $HWMON_DIR/temp*_input
+get_cpu_temps(){
+	local t_core=`cpu-temp`
+	local i=0
+	local l_num_cores=$1
+	local l_temp=
+	if [[ ! -z t_core ]]; then
+		for (( i=0; i < ${l_num_cores}; i++ )); do
+			l_temp+="$t_core "
+		done
+		echo $l_temp
+	fi
+}
+
+get_cpu_fans(){
+	local t_fan=0
+	local i=0
+	local l_num_cores=$1
+	local l_fan=
+	for (( i=0; i < ${l_num_cores}; i++ )); do
+		l_fan+="$t_fan "
+	done
+	echo $l_fan
 }
 
 local ver=`miner_ver`
@@ -41,9 +50,15 @@ else
 	khs=`echo $stats_raw | jq -r '.hashrate.total[0]' | awk '{print $1/1000}'`
 	local ac=$(jq '.results.shares_good' <<< "$stats_raw")
 	local rj=$(( $(jq '.results.shares_total' <<< "$stats_raw") - $ac ))
-	local cpu_temp=`get_cpu_temp | head -n $(nproc) | awk '{print $1/1000}' | jq -rsc .` #just a try to get CPU temps
+	local num_cores=`echo $stats_raw | jq '.hashrate.threads[][0]' | wc -l`
+	local cpu_temp=`get_cpu_temps "$num_cores"`
+	cpu_temp=`echo ${cpu_temp[@]} | tr " " "\n" | jq -cs '.'`
+	local cpu_fan=`get_cpu_fans "$num_cores"`
+	cpu_fan=`echo ${cpu_fan[@]} | tr " " "\n" | jq -cs '.'`
 	stats=`echo $stats_raw | jq --arg ac "$ac" --arg rj "$rj" \
-					'{hs: [.hashrate.threads[][0]], temp: '$cpu_temp', ar: [$ac, $rj],
+                              --argjson temp "$cpu_temp" \
+                              --argjson fan "$cpu_fan" \
+					'{hs: [.hashrate.threads[][0]], $temp, $fan, ar: [$ac, $rj],
 					  uptime: .connection.uptime, algo: .algo, ver: .version}'`
 fi
 

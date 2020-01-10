@@ -1,20 +1,5 @@
 #!/usr/bin/env bash
 
-get_cpu_temp () {
-  for HWMON in $(ls /sys/class/hwmon)
-  do
-     local test=$(cat /sys/class/hwmon/${HWMON}/name | grep -c -E 'coretemp|k10temp')
-     if [[ $test -gt 0 ]]; then
-         HWMON_DIR=/sys/class/hwmon/$HWMON
-         break
-     fi
-  done
-  if [[ -z $HWMON_DIR ]]; then
-     HWMON_DIR="/sys/class/hwmon/hwmon0"
-  fi
-  cat $HWMON_DIR/temp*_input | head -1 | awk '{print $1/1000}'
-}
-
 stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:$MINER_API_PORT/api.json`
 if [[ $? -ne 0 || -z $stats_raw ]]; then
   echo -e "${YELLOW}Failed to read $miner from localhost:${MINER_API_PORT}${NOCOLOR}"
@@ -30,7 +15,7 @@ else
   local bus_ids=
   local l_temps=
   local l_fans=
-  local cpu_temp=`get_cpu_temp`
+  local cpu_temp=`cpu-temp`
   [[ $cpu_temp = "" ]] && cpu_temp=null
   if [[ $cpu_threads -gt 0 ]]; then
     for ((i = 0; i < $cpu_threads; i++)); do

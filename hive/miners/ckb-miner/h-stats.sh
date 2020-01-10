@@ -46,13 +46,9 @@ get_log_time_diff(){
 
 get_cpu_temps(){
   local i=0
-  local tcore=
+  local tcore=`cpu-temp`
   local l_num_cores=$1
-  local l_temp
-  local coretemp0=`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input 2>/dev/null`
-  [[ ! -z $coretemp0 ]] && #may not work with AMD cpous
-    tcore=$((`cat /sys/devices/platform/coretemp.0/hwmon/hwmon*/temp*_input | head -n 1`/1000)) ||
-    tcore=`cat /sys/class/hwmon/hwmon0/temp*_input | head -n 1 | awk '{print $1/1000}'` #maybe we will need to detect AMD cores
+  local l_temp=
 
   if [[ ! -z tcore ]]; then
     for (( i=0; i < ${l_num_cores}; i++ )); do

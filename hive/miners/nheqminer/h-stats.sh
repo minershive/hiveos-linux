@@ -8,7 +8,7 @@ get_hashes(){
   #[21:09:27][0x00007f30a093c740] .[33mSpeed [15 sec]: 0 MH/s, .[0m
   hs=''
   local i=0
-  local t_temp=`get_cpu_temp`
+  local t_temp=`cpu-temp`
   khs=`cat $log_name | tail -n 100 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | grep "Speed \[" | tail -n 1 | awk '{ printf("%.6f", $5*1000) }'`
   local t_hs=`echo "$khs / $threads" | bc`
   for (( i = 0; i < $threads; i++ )); do
@@ -17,21 +17,6 @@ get_hashes(){
     a_fan+="0 "
     a_bus+="null "
   done
-}
-
-get_cpu_temp () {
-  for HWMON in $(ls /sys/class/hwmon)
-  do
-     local test=$(cat /sys/class/hwmon/${HWMON}/name | grep -c -E 'coretemp|k10temp')
-     if [[ $test -gt 0 ]]; then
-         HWMON_DIR=/sys/class/hwmon/$HWMON
-         break
-     fi
-  done
-  if [[ -z $HWMON_DIR ]]; then
-     HWMON_DIR="/sys/class/hwmon/hwmon0"
-  fi
-  cat $HWMON_DIR/temp*_input | head -1 | awk '{ printf("%.0f", $1/1000)}'
 }
 
 get_miner_uptime(){
