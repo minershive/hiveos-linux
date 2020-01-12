@@ -1,14 +1,15 @@
 #!/bin/bash
 
-# install optinal WiFi drivers
+# install optional WiFi drivers
 
 for opt in "$@"
 do
 	case $opt in
 
 		8812)
-		    apt-get update
-			apt-get install rtl8812au-dkms
+			export CONFIG_X86_X32=N
+			apt-get update
+			apt-get install --reinstall -y rtl8812au-dkms
 			;;
 
 		8192)
@@ -24,20 +25,20 @@ do
 			echo "options 8192eu rtw_power_mgnt=0 rtw_enusbss=0" | tee /etc/modprobe.d/8192eu.conf
 			;;
 
-		8192-remove)			
+		8192-remove)
 			dkms remove rtl8192eu/1.0 --all
 			;;
 
 		bcm)
-		    # some bcm drivers
-		    apt-get update
+			# some bcm drivers
+			apt-get update
 			apt-get --reinstall install bcmwl-kernel-source
 			modprobe -r b43 ssb wl brcmfmac brcmsmac bcma
 			modprobe wl
 			;;
 
-		 *) #-h|--help)
-		 	break
+		*) #-h|--help)
+			break
 			;;
 
 	esac
@@ -47,8 +48,8 @@ done
 
 echo -e "Optional WiFi drivers installation"
 echo -e "Usage: $0 [driver]"
-echo -e "  rt8812  USB-AC56 & etc (RTL8812AU)"
-echo -e "  rt8192  DWA-131 rev E1, TL-WN821Nv6, TL-WN823Nv2 & etc (RTL8192EU)"
+echo -e "  8812    USB-AC56 & etc (RTL8812AU)"
+echo -e "  8192    DWA-131 rev E1, TL-WN821Nv6, TL-WN823Nv2 & etc (RTL8192EU)"
 echo -e "  bcm     Some Broadcom adapters"
 
 exit 0
