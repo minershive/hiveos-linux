@@ -2,7 +2,7 @@
 
 . colors
 
-VERS="0.4.1"
+VERS="0.4.2"
 
 HUGES_RX=1168
 HUGES_CN=128
@@ -66,7 +66,7 @@ randomx_intel_boost(){
             apt install -y msr-tools || return
         fi
         [[ `lsmod | grep msr` == "" ]] && modprobe msr
-        wrmsr -a 0x1a4 6
+        wrmsr -a 0x1a4 0xf
         echo -e "${GREEN}[INFO]${NOCOLOR} Intel CPU RandomX boost applied"
     fi
 }
