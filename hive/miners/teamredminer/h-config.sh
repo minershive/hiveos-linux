@@ -18,7 +18,16 @@ function miner_config_gen() {
 
   [[ -z $TEAMREDMINER_ALGO ]] && TEAMREDMINER_ALGO=lyra2z
 
-  conf="-a ${TEAMREDMINER_ALGO}"
+  local conf="-a ${TEAMREDMINER_ALGO}"
+
+  if [[ ${TEAMREDMINER_ALGO} == "ethash" ]]; then
+    local wallet="${TEAMREDMINER_TEMPLATE%.*}"
+    local worker_name="${TEAMREDMINER_TEMPLATE##*.}"
+    [[ ! -z $worker_name ]] && worker_name=" --eth_worker $worker_name"
+  else
+    local wallet=${TEAMREDMINER_TEMPLATE}
+    local worker_name=
+  fi
 
   for pool in $TEAMREDMINER_URL; do
     grep -q "://" <<< $pool
@@ -27,10 +36,9 @@ function miner_config_gen() {
     local pass=
     [[ ! -z ${TEAMREDMINER_PASS} ]] && pass=" -p ${TEAMREDMINER_PASS}"
 
-  	conf+=" -o $pool -u ${TEAMREDMINER_TEMPLATE}${pass}"
+    conf+=" -o $pool -u ${wallet}${pass}${worker_name}"
 
-	done
-
+  done
 
   [[ ! -z $TEAMREDMINER_USER_CONFIG ]] && conf+=" ${TEAMREDMINER_USER_CONFIG}"
 
