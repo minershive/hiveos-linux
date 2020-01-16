@@ -122,6 +122,8 @@ busids_dirs=`printf '%s\n' "${busids_dirs[@]}" | sort` #sorting by bus id
 list=`lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices" | grep -v -e "RS880"  -e "Stoney" | awk '{print $1}'`
 
 i=-1
+card_idx=-1
+
 #for dir in $dirs; do
 for bdir in $busids_dirs; do
 	dir=`echo $bdir | awk -F\; '{print $2}'`
@@ -139,6 +141,8 @@ for bdir in $busids_dirs; do
 	#busid=`realpath /sys/class/drm/card$cardno/device | awk -F/ '{print $NF}'`
 	busid=`echo $bdir | awk -F\; '{print $1}'`
 	busid=${busid#0000:} #trim prefix
+
+	(( card_idx++ ))
 
 	# do not use internal gpus
 	[[ ! "$list" =~ $busid ]] && continue
