@@ -56,12 +56,12 @@ for bdir in $busids_dirs; do
 	#echo "  Core state: `cat /sys/class/drm/card$cardno/device/pp_dpm_sclk | grep '*'`"
 	#echo "  Mem state: `cat /sys/class/drm/card$cardno/device/pp_dpm_mclk | grep '*'`"
 
-	plevel=`cat /sys/class/drm/card$cardno/device/power_dpm_force_performance_level`
-	[[ $plevel == "manual" ]] && plevelStr="${YELLOW}$plevel${NOCOLOR}" || plevelStr="${BLUE}$plevel${NOCOLOR}"
+	#plevel=`cat /sys/class/drm/card$cardno/device/power_dpm_force_performance_level`
+	#[[ $plevel == "manual" ]] && plevelStr="${YELLOW}$plevel${NOCOLOR}" || plevelStr="${BLUE}$plevel${NOCOLOR}"
 
 	sclk=`cat /sys/class/drm/card$cardno/device/pp_dpm_sclk | grep -m1 '*'` #3: 1100Mhz *
 	mclk=`cat /sys/class/drm/card$cardno/device/pp_dpm_mclk | grep -m1 '*'` #2: 1900Mhz *
-	fanrpm=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/fan1_input` #rpm from fan
+	fanrpm=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/fan1_input 2>/dev/null` #rpm from fan
 	ref=`amdmemtweak --current | sed -n "/pci:0000:${busid}/,/pci/p" |grep REF | awk '{print$3}'`
 	core_dpm=`echo $sclk | awk '{print $1}' | sed -e 's/://'`
 	core_mhz=`echo $sclk | awk '{print $2}'`
@@ -82,7 +82,7 @@ for bdir in $busids_dirs; do
 		pwr=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(average GPU)' | awk '{print $1}'`
 
 
-	echo -e "$plevelStr \t${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${PURPLE}V${NOCOLOR} $corev\t${PURPLE}MEMSTATE${NOCOLOR} $mem_dpm ${PURPLE}MEM${NOCOLOR} $mem_mhz  ${PURPLE}REF${NOCOLOR} $ref \t${PURPLE}PWR${NOCOLOR} $pwr W ${PURPLE}RPM${NOCOLOR} $fanrpm"
+	echo -e "  ${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${PURPLE}V${NOCOLOR} $corev\t${PURPLE}MEMSTATE${NOCOLOR} $mem_dpm ${PURPLE}MEM${NOCOLOR} $mem_mhz  ${PURPLE}REF${NOCOLOR} $ref \t${PURPLE}PWR${NOCOLOR} $pwr W ${PURPLE}RPM${NOCOLOR} $fanrpm"
 
 
 done
