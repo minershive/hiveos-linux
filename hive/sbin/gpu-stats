@@ -60,6 +60,8 @@ function internal_stats {
 function amd_stats {
 	#cardcount=0;
 	#/sys/class/drm/card7/device/hwmon/hwmon10
+	local list=`lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices" | grep -v -e "RS880"  -e "Stoney" | awk '{print $1}'`
+
 	for hwmondir in /sys/class/drm/card*/device/hwmon/hwmon*/ ; do
 		#echo $hwmondir
 		#if there are no dirs then there will be 1 string item in loop, skip it
@@ -76,6 +78,9 @@ function amd_stats {
 
 		busid=`realpath /sys/class/drm/card$cardno | rev | cut -d '/' -f 3 | rev | awk '{print tolower($0)}'`
 		busid=${busid#0000:} #trim prefix
+
+		# do not use internal gpus
+		[[ ! "$list" =~ $busid ]] && continue
 
 		speed="0"
 		[[ -e ${hwmondir}pwm1_max ]] && fanmax=`head -1 ${hwmondir}pwm1_max` || fanmax=0
