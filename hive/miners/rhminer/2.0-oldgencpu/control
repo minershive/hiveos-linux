@@ -1,0 +1,7 @@
+Package: hive-miners-rhminer-2.0-oldgencpu
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - rhminer v2.0 (old CPU build)

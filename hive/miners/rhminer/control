@@ -1,8 +1,8 @@
 Package: hive-miners-rhminer
-Version: 0.6-02
+Version: 0.6-03
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-rhminer-1.5.3-cpu
+Depends: hive-miners-rhminer-2.0
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - rhminer (RandomHash miner)
