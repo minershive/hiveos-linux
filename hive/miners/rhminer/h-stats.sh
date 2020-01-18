@@ -39,7 +39,7 @@ else
 
   stats=$(jq --arg total_khs "$khs" \
              --argjson hs "$hs" \
-             --arg algo "randomhash" \
+             --arg algo "randomhash2" \
              --arg ver `miner_ver` \
              --argjson temp "$temp" \
              '{$total_khs, $hs, $algo, $temp, uptime: .uptime, ar: [.accepted, .rejected, .failed], $ver}' <<< "$stats_raw")
