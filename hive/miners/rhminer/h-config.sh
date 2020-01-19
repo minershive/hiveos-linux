@@ -30,8 +30,11 @@ function miner_config_gen() {
 
   local pass=$RHMINER_PASS
   [[ ! -z $pass ]] && pass=" -pw $pass"
-
+  
   conf="-s ${pool1} -su ${RHMINER_TEMPLATE}${pass}${pool2} -cpu ${RHMINER_USER_CONFIG} -logfilename $MINER_LOG_BASENAME.log -apiport ${MINER_API_PORT}"
+
+  # use all cpu cores instead of 1 by default
+  [[ ! $RHMINER_USER_CONFIG =~ -cputhreads ]] && conf+=" -cputhreads $(nproc --all)"
 
   echo "$conf" > $MINER_CONFIG
 
