@@ -8,7 +8,7 @@ get_cores_hs(){
   for (( i=0; i < ${l_num_cores}; i++ )); do
     l_hs+=`echo $l_khs | awk '{ printf($1/'$l_num_cores') }'`" "
   done
-  echo $l_hs
+  echo ${l_hs[@]} | tr " " "\n" | jq -cs '.'
 }
 
 get_cpu_temps(){
@@ -16,12 +16,19 @@ get_cpu_temps(){
   local i=0
   local l_num_cores=$1
   local l_temp=
-  if [[ ! -z tcore ]]; then
-    for (( i=0; i < ${l_num_cores}; i++ )); do
-      l_temp+="$tcore "
-    done
-    echo $l_temp
-  fi
+  for (( i=0; i < ${l_num_cores}; i++ )); do
+    l_temp+="$tcore "
+  done
+  echo ${l_temp[@]} | tr " " "\n" | jq -cs '.'
+}
+
+get_bus_numbers(){
+  local l_num_cores=$1
+  local l_bus_numbers=
+  for (( i=0; i < ${l_num_cores}; i++ )); do
+    l_bus_numbers+="null "
+  done
+  echo ${l_bus_numbers[@]} | tr " " "\n" | jq -cs '.'
 }
 
 stats_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://localhost:$MINER_API_PORT`
@@ -34,15 +41,15 @@ else
   local threads=`echo $stats_raw | jq '.infos[0].threads'`
   local hs=`get_cores_hs $khs $threads`
   local temp=`get_cpu_temps $threads`
-  hs=`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`
-  temp=`echo ${temp[@]} | tr " " "\n" | jq -cs '.'`
+  local bus_numbers=`get_bus_numbers $threads`
 
   stats=$(jq --arg total_khs "$khs" \
              --argjson hs "$hs" \
              --arg algo "randomhash2" \
              --arg ver `miner_ver` \
              --argjson temp "$temp" \
-             '{$total_khs, $hs, $algo, $temp, uptime: .uptime, ar: [.accepted, .rejected, .failed], $ver}' <<< "$stats_raw")
+             --argjson bus_numbers "$bus_numbers" \
+             '{$total_khs, $hs, $algo, $temp, uptime: .uptime, ar: [.accepted, .rejected, .failed], $bus_numbers, $ver}' <<< "$stats_raw")
 fi
 
 
