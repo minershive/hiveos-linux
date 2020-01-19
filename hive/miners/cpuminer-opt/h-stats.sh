@@ -20,6 +20,7 @@ else
 	local hs=0
 	local temp=0
 	kilo=1000
+	cpu_temp=`cpu-temp`
 	for (( i=0; i < ${#hashes_val[@]}; i++ )); do
 		smb=${hashes_pre[$i]}
 		case "$smb" in
@@ -39,24 +40,8 @@ else
 
 		hs[$i]=`echo ${hashes_val[$i]} | awk -v koef=$koef '{print $1*koef}' | awk '{ printf("%.f",$1) }'`
 		total_hs=$(($total_hs+${hs[$i]}))
-		# Get CPU temp from stats and if we get 0 then get it from sysfs
-#
-		set -x
-		for HWMON in $(ls /sys/class/hwmon); do 
-		   local test=$(cat /sys/class/hwmon/${HWMON}/name | grep -c -E 'coretemp|k10temp') 
-		   if [[ $test -gt 0 ]]; 
-		       then HWMON_DIR=/sys/class/hwmon/$HWMON 
-		       break 
-		   fi 
-		done 
-		if [[ -z $HWMON_DIR ]]; then 
-		    local tcore=`echo "$summary" | tr ';' '\n' | grep -m1 'TEMP=' | sed -e 's/.*=//' | awk '{printf("%.0f",$1)}'`
-		else
-			local tcore=`cat $HWMON_DIR/temp*_input | head -n 1 | awk '{print $1/1000}'`
-		fi
-		temps[$i]=$tcore
-		set +x
-#
+		temps[$i]=$cpu_temp
+		bus_numbers[$i]=null
 	done
 	# Convert total H/s to kH/s
 	khs=`echo $total_hs | awk -F';' '{print $1/1000}'` #hashes to khs
@@ -67,6 +52,7 @@ else
 		--arg uptime "$uptime" --arg algo "$algo" \
 		--argjson hs "`echo ${hs[@]} | tr " " "\n" | jq -cs '.'`" \
 		--argjson temp "`echo ${temps[@]} | tr " " "\n" | jq -cs '.'`" \
+		--argjson bus_numbers "`echo ${bus_numbers[@]} | tr " " "\n" | jq -cs '.'`" \
 		--arg ver "$ver" \
-		'{$vers, $algo, $hs, ar: [$acc, $rej], $temp, $uptime, $ver}')
+		'{$vers, $algo, $hs, ar: [$acc, $rej], $temp, $uptime, $bus_numbers, $ver}')
 fi
