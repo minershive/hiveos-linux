@@ -7,6 +7,8 @@ if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be e
 fi
 
 
+LOG="/var/log/hive-agent.log"
+
 # Check for proxy var. Or agent and others started from here will not see it
 . http_proxy.sh
 
@@ -38,11 +40,13 @@ function restart_agent() {
 		[[ $i == 25 ]] && echo -e "${RED}screen agent not found in 25 iterations, check logs and maybe flash drive speed${NOCOLOR}"
 	done
 
-	screen -S agent -X screen 2 agent.gpu-stats &&
-		screen -S agent -X title "gpu-stats" #set nice title
+	screen -S agent -X screen 2 agent.gpu-stats
 	sleep 0.2
-	screen -S agent -X screen 1 agent &&
-		screen -S agent -X title "agent" #set nice title
+	screen -S agent -X title "gpu-stats" #set nice title
+	sleep 0.2
+	screen -S agent -X screen 1 agent
+	sleep 0.2
+	screen -S agent -X title "agent" #set nice title
 	sleep 0.2
 	# close bash window #0
 	screen -S agent -p bash -X stuff 'exit\n'
@@ -55,7 +59,15 @@ function start_agent() {
 	# As we have several processes in screen need to check for actual agent, not just for screen
 	running=$(pgrep -cf '/agent run$')
 	if [[ $running -eq 0 ]]; then
-		screen -ls agent >/dev/null && echo "Screen is running but agent is not"
+		screen -ls agent >/dev/null && echo "Screen is running but agent is not, restarting"
+		restart_agent
+		return
+	fi
+	# check if agent is alive by checking its log
+	local log_ts; log_ts=`stat --printf %Y $LOG 2>/dev/null` || log_ts=0
+	local now_ts; now_ts=`date +%s` || now_ts=0
+	if [[ $log_ts -lt $(( now_ts - 180 )) ]]; then
+		echo "Agent is dead, restarting"
 		restart_agent
 		return
 	fi
@@ -88,7 +100,7 @@ case $1 in
 	;;
 
 	log)
-		tail -n 20 /var/log/hive-agent.log
+		tail -n 20 $LOG
 		exit
 	;;
 	
