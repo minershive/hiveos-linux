@@ -32,6 +32,10 @@ CLI_OUTPUT="/tmp/fan_controller_cli_output"
 OCTOFAN_PERCENT_PWM="/hive/opt/octofan/octofan_percent_pwm"
 PSU_LAST_POWER_FILENAME="/tmp/octofan_psu_last_power"
 
+CLI_LOG_BASE_NAME="/var/log/hive-octofan-cli" #without .log
+CLI_LOGS_BASE_DIR=/var/log/
+MAX_LOG_SIZE=10000000 #10m
+
 CALC_AVERAGE_SPEED=1
 
 ################################################################################
@@ -1049,6 +1053,60 @@ if [[ -f $MAINTENANCE_SEM_NAME ]]; then
 fi
 }
 
+function log_truncate () {
+  [[ ! -e $CLI_LOG_BASE_NAME.log ]] && return 0
+
+	local fsize=`stat -c%s $CLI_LOG_BASE_NAME.log`
+	[[ ! -z $fsize && $fsize -ge $MAX_LOG_SIZE ]] &&
+		echo "*** truncated by $0" > $CLI_LOG_BASE_NAME.log
+
+	return 0
+}
+
+function logs_rotate () {
+	# Make sure logs dir exists
+	mkdir -p $CLI_LOGS_BASE_DIR
+
+	[[ -e $CLI_LOG_BASE_NAME.log.5 ]] && rm $CLI_LOG_BASE_NAME.log.5
+	[[ -e $CLI_LOG_BASE_NAME.log.4 ]] && mv -f $CLI_LOG_BASE_NAME.log.4 $CLI_LOG_BASE_NAME.log.5
+	[[ -e $CLI_LOG_BASE_NAME.log.3 ]] && mv -f $CLI_LOG_BASE_NAME.log.3 $CLI_LOG_BASE_NAME.log.4
+	[[ -e $CLI_LOG_BASE_NAME.log.2 ]] && mv -f $CLI_LOG_BASE_NAME.log.2 $CLI_LOG_BASE_NAME.log.3
+	[[ -e $CLI_LOG_BASE_NAME.log.1 ]] && mv -f $CLI_LOG_BASE_NAME.log.1 $CLI_LOG_BASE_NAME.log.2
+	[[ -e $CLI_LOG_BASE_NAME.log ]] && mv -f $CLI_LOG_BASE_NAME.log $CLI_LOG_BASE_NAME.log.1
+
+	return 0
+}
+
+function echo_log () {
+  echo2 "$1" >> $CLI_LOG_BASE_NAME.log
+}
+
+function write_cli_log () {
+  check_cli_output
+
+  local in_t=`cat $CLI_OUTPUT | grep "Temperature No. 0" | cut -d " " -f 5`
+  local out_t=`cat $CLI_OUTPUT | grep "Temperature No. 1" | cut -d " " -f 5`
+
+  local vac=`cat $CLI_OUTPUT | grep "PSU Vac:" | cut -d " " -f 4`
+  local pac=`cat $CLI_OUTPUT | grep "PSU Pac:" | cut -d " " -f 4`
+  local vdc=`cat $CLI_OUTPUT | grep "PSU Vdc:" | cut -d " " -f 4`
+
+  local psu_in_t=`cat $CLI_OUTPUT | grep "PSU T2:" | cut -d " " -f 4`
+  local psu_out_t=`cat $CLI_OUTPUT | grep "PSU T1:" | cut -d " " -f 4`
+  local psu_board_t=`cat $CLI_OUTPUT | grep "PSU T3:" | cut -d " " -f 4`
+
+  local f0_speed=`cat $CLI_OUTPUT | grep "FAN No. $FAN0 RPM:" | cut -d " " -f 5`
+  local f1_speed=`cat $CLI_OUTPUT | grep "FAN No. $FAN1 RPM:" | cut -d " " -f 5`
+  local f2_speed=`cat $CLI_OUTPUT | grep "FAN No. $FAN2 RPM:" | cut -d " " -f 5`
+
+  echo_log "$(date +"%Y-%m-%d %T")"
+  echo_log "Case FAN$FAN0: ${f0_speed}rpm   FAN$FAN1: ${f1_speed}rpm   FAN$FAN2: ${f2_speed}rpm"
+  echo_log "Case temperature intake: ${in_t}°C   outgoing: ${out_t}°C"
+  echo_log "PSU temperature intake: ${psu_in_t}°C   outgoing: ${psu_out_t}°C   board: ${psu_board_t}°C"
+  echo_log "PSU Vac: ${vac}V   Pac: ${pac}W   Vdc: ${vdc}V"
+  echo_log ""
+}
+
 if [ ! $1 = "" ]; then
   check_sem
   [[ $? -ne 0 ]] && exit 1 #octofan in maintenance mode
@@ -1065,14 +1123,19 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
     get_temp_json
   elif [[ $1 == "get_psu_json" || $1 == "-p" ]]; then
     get_psu_json
+  elif [[ $1 == "write_cli_log" || $1 == "-wl" ]]; then
+    write_cli_log
   elif [[ $1 == "blink_error" || $1 == "-e" ]]; then
     blink_error
   elif [[ $1 == "blink_warning"|| $1 == "-w" ]]; then
     blink_warning
   elif [[ $1 == "blink_off" || $1 == "-off" ]]; then
     blink_off
+  elif [[ $1 == "log_truncate" || $1 == "-tl" ]]; then
+    log_truncate
   elif [[ $1 == "run" ]]; then
     check_config
+    logs_rotate
     octo_fan_control
   elif [[ $1 == "save_text_to_EEPROM" ]]; then
     save_text_to_EEPROM
@@ -1095,6 +1158,8 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
     fi
   elif [[ $1 == "get_max_rpm_json" || $1 == "-m" ]]; then
     get_max_rpm_json
+  elif [[ $1 == "logs_rotate" || $1 == "-rl" ]]; then
+    logs_rotate
   elif [[ $1 == "" ]]; then
     session_count=`screen -ls octofan | grep octofan | wc -l`
     if [[ $session_count -gt 0 ]]; then

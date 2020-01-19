@@ -366,6 +366,8 @@ function loop {
 				request="$json" ||
 				echo -e "${RED}Octofan json parsing error${NOCOLOR}"
 		fi
+
+		$OCTOFAN write_cli_log
 	fi
 
 	# Add Coolbox Autofan controller stats to json
