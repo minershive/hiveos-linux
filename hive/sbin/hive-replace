@@ -379,19 +379,19 @@ function prepare {
 	fi
 
 	for SOCKET in \
-	`systemctl list-units -t socket | awk '{print $1}' | grep -v -e ssh | grep -v -e openvpn | grep -v -e shellinabox | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions | grep -v -e hive`; \
+	`systemctl list-units -t socket | awk '{print $1}' | grep -v -e ssh | grep -v -e openvpn | grep -v -e shellinabox | grep -v -e network | grep -v -e ifup | grep -v -e user | grep -v -e hive`; \
 	do systemctl stop $SOCKET > /dev/null 2>&1 && echo "> stop $SOCKET"; done
 
 	for SERVICE in \
-	`systemctl list-units -t service | awk '{print $1}' | grep -v -e ssh | grep -v -e openvpn | grep -v -e shellinabox | grep -v -e network | grep -v -e ifup | grep -v -e user-sessions | grep -v -e hive`; \
+	`systemctl list-units -t service | awk '{print $1}' | grep -v -e ssh | grep -v -e openvpn | grep -v -e shellinabox | grep -v -e network | grep -v -e ifup | grep -v -e user | grep -v -e hive`; \
 	do systemctl stop $SERVICE > /dev/null 2>&1 && echo "> stop $SERVICE"; done
 	
 	#skip self, telec, hssh, watchdog!
 	pid="1"
 	while [[ ! -z $pid ]]; do
-		pid=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec -e hssh -e watchdog -e hl340 -e srrv2 | sed '2!d' | awk '{print $2}') #'
+		pid=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e network -e telec -e hssh -e watchdog -e hl340 -e srrv2 | sed '2!d' | awk '{print $2}') #'
 		[[ -z $pid ]] && continue
-		process=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e telec -e hssh -e watchdog -e hl340 -e srrv2 | sed '2!d' | awk '{print $1}') #'
+		process=$(lsof / | grep -v ' \(mem\|txt\|rtd\|cwd\) ' | grep -v -e $SCRIPT_NAME | grep -v -e network -e telec -e hssh -e watchdog -e hl340 -e srrv2 | sed '2!d' | awk '{print $1}') #'
 		echo -e "> kill $process"
 		kill $pid
 		sleep 1
