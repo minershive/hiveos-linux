@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
 
-get_cpu_temps(){
+get_cpu_temps () {
 	local t_core=`cpu-temp`
 	local i=0
 	local l_num_cores=$1
 	local l_temp=
-	if [[ ! -z t_core ]]; then
-		for (( i=0; i < ${l_num_cores}; i++ )); do
-			l_temp+="$t_core "
-		done
-		echo $l_temp
-	fi
+	for (( i=0; i < ${l_num_cores}; i++ )); do
+		l_temp+="$t_core "
+	done
+  echo ${l_temp[@]} | tr " " "\n" | jq -cs '.'
 }
 
-get_cpu_fans(){
+get_cpu_fans () {
 	local t_fan=0
 	local i=0
 	local l_num_cores=$1
@@ -21,7 +19,17 @@ get_cpu_fans(){
 	for (( i=0; i < ${l_num_cores}; i++ )); do
 		l_fan+="$t_fan "
 	done
-	echo $l_fan
+	echo ${l_fan[@]} | tr " " "\n" | jq -cs '.'
+}
+
+get_bus_numbers () {
+	local i=0
+	local l_num_cores=$1
+	local l_numbers=
+	for (( i=0; i < ${l_num_cores}; i++ )); do
+		l_numbers+="null "
+	done
+	echo ${l_numbers[@]} | tr " " "\n" | jq -cs '.'
 }
 
 local ver=`miner_ver`
@@ -52,14 +60,14 @@ else
 	local rj=$(( $(jq '.results.shares_total' <<< "$stats_raw") - $ac ))
 	local num_cores=`echo $stats_raw | jq '.hashrate.threads[][0]' | wc -l`
 	local cpu_temp=`get_cpu_temps "$num_cores"`
-	cpu_temp=`echo ${cpu_temp[@]} | tr " " "\n" | jq -cs '.'`
 	local cpu_fan=`get_cpu_fans "$num_cores"`
-	cpu_fan=`echo ${cpu_fan[@]} | tr " " "\n" | jq -cs '.'`
+	local bus_numbers=`get_bus_numbers "$num_cores"`
 	stats=`echo $stats_raw | jq --arg ac "$ac" --arg rj "$rj" \
                               --argjson temp "$cpu_temp" \
                               --argjson fan "$cpu_fan" \
+															--argjson bus_numbers "$bus_numbers" \
 					'{hs: [.hashrate.threads[][0]], $temp, $fan, ar: [$ac, $rj],
-					  uptime: .connection.uptime, algo: .algo, ver: .version}'`
+					  uptime: .connection.uptime, algo: .algo, $bus_numbers, ver: .version}'`
 fi
 
 [[ -z $khs ]] && khs=0
