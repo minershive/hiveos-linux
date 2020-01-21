@@ -19,28 +19,45 @@ function miner_config_gen() {
   [[ -z $TEAMREDMINER_ALGO ]] && TEAMREDMINER_ALGO=lyra2z
 
   local conf="-a ${TEAMREDMINER_ALGO}"
+  local worker_name=
+  local line=
+  local pool=
+  local pass=
+  #local user_config=
 
-  if [[ ${TEAMREDMINER_ALGO} == "ethash" ]]; then
-    local wallet="${TEAMREDMINER_TEMPLATE%.*}"
-    local worker_name="${TEAMREDMINER_TEMPLATE##*.}"
-    [[ ! -z $worker_name ]] && worker_name=" --eth_worker $worker_name"
-  else
-    local wallet=${TEAMREDMINER_TEMPLATE}
-    local worker_name=
+  if [[ $TEAMREDMINER_ALGO = "ethash" && ! -z $TEAMREDMINER_WORKER ]]; then
+    worker_name=" --eth_worker $TEAMREDMINER_WORKER"
   fi
+
+  [[ ! -z $TEAMREDMINER_PASS ]] && pass=" -p $TEAMREDMINER_PASS"
+
+  # while read -r line; do
+  #   [[ -z $line ]] && continue
+  #   if grep -q '\-\-eth_worker' <<< $line; then
+  #     worker_name=" $line"
+  #   else
+  #     user_config=$line
+  #   fi
+  # done <<< "$TEAMREDMINER_USER_CONFIG"
+
+  # if [[ ${TEAMREDMINER_ALGO} == "ethash" ]]; then
+  #   local wallet="${TEAMREDMINER_TEMPLATE%.*}"
+  #   local worker_name="${TEAMREDMINER_TEMPLATE##*.}"
+  #   [[ ! -z $worker_name ]] && worker_name=" --eth_worker $worker_name"
+  # else
+  #   local wallet=${TEAMREDMINER_TEMPLATE}
+  #   local worker_name=
+  # fi
 
   for pool in $TEAMREDMINER_URL; do
     grep -q "://" <<< $pool
     [[ $? -ne 0 ]] && pool="stratum+tcp://${pool}"
 
-    local pass=
-    [[ ! -z ${TEAMREDMINER_PASS} ]] && pass=" -p ${TEAMREDMINER_PASS}"
-
-    conf+=" -o $pool -u ${wallet}${pass}${worker_name}"
+    conf+=" -o $pool -u ${TEAMREDMINER_TEMPLATE}${pass}${worker_name}"
 
   done
 
-  [[ ! -z $TEAMREDMINER_USER_CONFIG ]] && conf+=" ${TEAMREDMINER_USER_CONFIG}"
+  [[ ! -z $TEAMREDMINER_USER_CONFIG ]] && conf+=" $TEAMREDMINER_USER_CONFIG"
 
   echo "$conf" > $MINER_CONFIG
 }
