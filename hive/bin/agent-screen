@@ -84,7 +84,15 @@ function log_agent() { # log_window
 }
 
 case $1 in
-	start|dontattach)
+	start)
+		start_agent
+		exit
+	;;
+
+	dontattach)
+		# prevent agent start from CRON during boot process
+		upt=`cat /proc/uptime | awk '{print int($1)}'`
+		[[ $upt -lt 300 ]] && echo "Too early" && exit 0
 		start_agent
 		exit
 	;;
