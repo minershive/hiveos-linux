@@ -507,7 +507,7 @@ run_miners_array() {
 miners_info() {
 	#local scr=`sudo screen -S miner -Q windows | tail -n 1`
 	#echo "Miners: $WHITE${scr//(L)/ -}$NOCOLOR"
-	[[ -f $WALLET_CONF ]] && . $WALLET_CONF
+	[[ -e $WALLET_CONF ]] && . $WALLET_CONF
 	local run_miners
 	run_miners_array run_miners
 	local conf_miners
@@ -520,15 +520,26 @@ miners_info() {
 		[[ -z ${run_miners[$idx]} && -z ${conf_miners[$idx]} ]] && continue
 		local ver=
 		if [[ ! -z ${conf_miners[$idx]} ]]; then
+			# get version from flightsheet
 			local miner_ver="${conf_miners[$idx]^^}_VER"
-			[[ ! -z ${!miner_ver} ]] && ver=" ${!miner_ver}"
+			miner_ver=${!miner_ver}
+			if [[ -z $miner_ver ]]; then
+				# get default version from miner config
+				local MINER_DIR=/hive/miners/${conf_miners[$idx]}
+				[[ -e $MINER_DIR/h-manifest.conf ]] && source $MINER_DIR/h-manifest.conf
+				[[ -e $MINER_DIR/h-config.sh ]] && source $MINER_DIR/h-config.sh
+				local miner_ver=`miner_ver 2>/dev/null`
+				[[ ! -z $miner_ver ]] && ver=" $miner_ver"
+			else
+				[[ ! -z $miner_ver ]] && ver=" $WHITE$miner_ver$NOCOLOR"
+			fi
 		fi
-		[[ ${run_miners[$idx]} == ${conf_miners[$idx]} ]] && output+="$SEP$BGREEN${conf_miners[$idx]}$WHITE$ver$NOCOLOR" && continue
+		[[ ${run_miners[$idx]} == ${conf_miners[$idx]} ]] && output+="$SEP$BGREEN${conf_miners[$idx]}$NOCOLOR$ver" && continue
 		[[ ! -z ${conf_miners[$idx]} ]] && output+="$SEP$BRED${conf_miners[$idx]}$WHITE$ver$NOCOLOR"
 		[[ ! -z ${run_miners[$idx]} ]] && output+="$SEP$BYELLOW${run_miners[$idx]}$NOCOLOR"
 	done
 	local fs; fs=`grep -m 1 -oP "FLIGHT SHEET \K\".*\"(?= ###$)" $WALLET_CONF 2>/dev/null` || fs="${BRED}EMPTY"
-	echo "Flightsheet $BCYAN$fs$NOCOLOR$output$NOCOLOR"
+	echo "Flightsheet: $BCYAN$fs$NOCOLOR$output$NOCOLOR"
 
 	return 0
 }
