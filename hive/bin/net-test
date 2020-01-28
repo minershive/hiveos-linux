@@ -4,7 +4,7 @@
 [[ -e $RIG_CONF ]] && . $RIG_CONF
 
 # hosts on ports 80 and 443
-API_HOSTS=("api.hiveos.farm" "helsinki.hiveos.farm" "msk.hiveos.farm" "paris.hiveos.farm" "amster.hiveos.farm")
+API_HOSTS=("api.hiveos.farm" "helsinki.hiveos.farm" "msk.hiveos.farm" "ca1.hiveos.farm" "paris.hiveos.farm" "amster.hiveos.farm")
 # urls for other ports
 API_URLS=("https://api.hiveos.farm:8443" "http://helsinki.hiveos.farm:8000")
 # just to check connection
@@ -15,7 +15,7 @@ OTHER_DNS=("8.8.8.8" "1.1.1.1" "114.114.114.114")
 
 GOODTIME=1000
 
-CASE_WIDTH=64
+CASE_WIDTH=48
 
 HEADER_COLOR=$YELLOW
 CASE_COLOR=$BCYAN
@@ -58,13 +58,22 @@ function PrintCase {
 }
 
 
+color_printf() {
+	local pad=$1
+	local str="$2"
+	# colored string length correction for printf formatting
+	#local wcolors=`wc -c <<< "$str"`
+	#local nocolors=`sed 's/\x1b\[[0-9;]*m//g' <<< "$str" | wc -c`
+	#local len=$(( $pad + wcolors - nocolors ))
+	local wocolors=`sed 's/\x1b\[[0-9;]*m//g' <<< "$str"`
+	local len=$(( $pad + ${#str} - ${#wocolors} ))
+	printf "%-${len}b" "$str"
+}
+
+
 function PrintCase2 {
 	local str="[$1] ${CASE_COLOR}$2"
-	# colored string length correction for printf formatting
-	local wcolors=`echo -e "$str" | wc -c`
-	local nocolors=`echo -e "$str" | sed 's/\x1b\[[0-9;]*m//g' | wc -c`
-	local len=$(( CASE_WIDTH + wcolors - nocolors ))
-	printf "%-${len}b" "$str"
+	color_printf $CASE_WIDTH "$str"
 }
 
 
@@ -93,8 +102,13 @@ function Ping {
 			[[ $i -eq 0 ]] && echo -en "$OK\t$total\t" || echo -en "$total\t"
 			[[ $totaltime -ge $((GOODTIME*2)) ]] && break
 		else
-			#echo -en "$FAIL\t" && break
-			[[ $i -eq 0 && $CYCLES -gt 1 ]] && echo -en $YELLOW"[???]\t$FAIL\t" || echo -en "$FAIL\t"
+			if [[ ${CYCLES:-1} -eq 1 ]]; then
+				echo -en "$FAIL\t${ERROR_COLOR}check firewall rules or connection settings$NOCOLOR"
+			elif [[ $i -eq 0 && $CYCLES -gt 1 ]]; then
+				echo -en $YELLOW"[???]\t$FAIL\t"
+			else
+				echo -en "$FAIL\t"
+			fi
 		fi
 	done
 	echo
@@ -134,8 +148,13 @@ function Curl {
 			[[ $i -eq 0 ]] && echo -en "$OK\t$total\t" || echo -en "$total\t"
 			[[ $totaltime -ge $((GOODTIME*2)) ]] && break
 		else
-			#echo -en "$FAIL\t" && break
-			[[ $i -eq 0 && $CYCLES -gt 1 ]] && echo -en $YELLOW"[???]\t$FAIL\t" || echo -en "$FAIL\t"
+			if [[ ${CYCLES:-1} -eq 1 ]]; then
+				echo -en "$FAIL\t${ERROR_COLOR}check firewall rules$NOCOLOR"
+			elif [[ $i -eq 0 && $CYCLES -gt 1 ]]; then
+				echo -en $YELLOW"[???]\t$FAIL\t"
+			else
+				echo -en "$FAIL\t"
+			fi
 			((RESULT++))
 		fi
 	done
@@ -147,12 +166,19 @@ function Curl {
 # nslookup wrapper
 function NSLookup {
 	local host=$1
+	local api_host=$2
 	local RESULT=0
-	PrintCase2 "DNS" "$host"
+	if [[ -z $api_host ]]; then
+		PrintCase2 "DNS" "$host"
+	else
+		local str="${WHITE}>>> $host"
+		[[ $host == $api_host ]] && str+=" (CURRENT)"
+		color_printf $CASE_WIDTH "$str$NOCOLOR"
+	fi
 	#`nslookup $1 > /dev/null 2>&1`
 	res=(`dig -4 +noall +answer +retry=0 +time=15 $host | grep -oP ".*\sA\s\K[^\s]+$"`)
 	RESULT=$?
-	[[ $RESULT -eq  0 ]] && echo -e "$OK\t${CYAN}${res[@]}$NOCOLOR" || echo -e $FAIL
+	[[ $RESULT -eq  0 ]] && echo -e "$OK\t${CYAN}${res[@]}$NOCOLOR" || echo -e "$FAIL\t${ERROR_COLOR}check DNS or connection settings$DNS"$NOCOLOR
 	return $RESULT
 }
 
@@ -170,19 +196,20 @@ function Trace {
 function Connection {
 	local host=$1
 	local checkApi=$2
+	local api_host=$3
 	local RESULT=0
 
-	NSLookup "$host"
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Please check your DNS server or connection settings$DNS"$NOCOLOR && return 4
+	NSLookup "$host" "$api_host"
+	[[ $? -ne 0 ]] && return 4
 
 	Ping "$host"
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Please check your Firewall rules or connection settings"$NOCOLOR && ((RESULT++))
+	[[ $? -ne 0 ]] && ((RESULT++))
 
 	Curl "http://$host" $checkApi
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"HTTP connection failed. Please check Firewall rules"$NOCOLOR && ((RESULT++))
+	[[ $? -ne 0 ]] && ((RESULT++))
 
 	Curl "https://$host" $checkApi
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"HTTPS (SSL) connection failed. Please check Firewall rules"$NOCOLOR && ((RESULT++))
+	[[ $? -ne 0 ]] && ((RESULT++))
 
 	return $RESULT
 }
@@ -208,11 +235,11 @@ function Connections {
 	[[ -z $API_HOST ]] && echo -e $ERROR_COLOR"No API server defined in rig.conf"$NOCOLOR && exit 1
 
 	if (echo "$API_HOST" | grep -q "hiveos.farm"); then
-		echo
-		Connection "hiveos.farm"
+		echo -e "${YELLOW}> Checking connection to HIVE OS server:${NOCOLOR}"
+		Connection "hiveos.farm" "" " "
 	fi
 
-	echo
+	#echo
 	echo -e "${YELLOW}> Checking connection to worker API servers:${NOCOLOR}"
 
 	if (echo "$API_HOST" | grep -q "hiveos.farm"); then
@@ -221,8 +248,8 @@ function Connections {
 
 		for host in "${API_HOSTS[@]}"
 		do
-			[[ $host == $API_HOST ]] && echo -e "${WHITE}>>> $host (CURRENT)${NOCOLOR}" || echo -e "${WHITE}>>> $host${NOCOLOR}"
-			Connection "$host" api
+			#[[ $host == $API_HOST ]] && echo -e "${WHITE}>>> $host (CURRENT)${NOCOLOR}" || echo -e "${WHITE}>>> $host${NOCOLOR}"
+			Connection "$host" api "$API_HOST"
 			exitcode=$?
 			# return exicode only for current API server
 			[[ $host == $API_HOST ]] && RESULT=$exitcode
@@ -233,11 +260,11 @@ function Connections {
 					Curl $url api
 				done
 			fi
-			echo
+			#echo
 		done
 	else
-		echo -e "${WHITE}>>> $API_HOST (CURRENT)${NOCOLOR}"
-		Connection "$API_HOST" api
+		#echo -e "${WHITE}>>> $API_HOST (CURRENT)${NOCOLOR}"
+		Connection "$API_HOST" api "$API_HOST"
 		RESULT=$?
 		echo
 	fi
@@ -253,7 +280,7 @@ function Connections {
 
 # restarting network interfaces
 #function RestartNetworking {
-#    if [ $LAST_RESULT -eq 1 ]; 
+#    if [ $LAST_RESULT -eq 1 ];
 #    then
 #    	echo -ne "$WARN_COLOR    connections was fail: restart network"
 #    	LAST_RESULT=0
@@ -278,7 +305,7 @@ echo -e "${YELLOW}> Local Network Configuration:${NOCOLOR}"
 #echo -e "Gateway:   $LOCAL_GW"
 #echo -e "DNS:       ${LOCAL_DNS[@]}"
 networkctl status
-echo
+#echo
 
 merge_all_dns
 
@@ -291,7 +318,7 @@ Connections
 #Connections
 
 # Traceroute to hosts for debuging if connections was not fixed
-#if [ $LAST_RESULT -eq 1 ]; 
+#if [ $LAST_RESULT -eq 1 ];
 #then
 #	sleep 5
 #	echo
