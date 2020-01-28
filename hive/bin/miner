@@ -115,7 +115,7 @@ function start() {
 	for mindex in {32..2}; do
 		eval minerval=\$MINER$mindex
 		if [[ ! -z $minerval ]]; then
-			screen -S miner -X screen $mindex miner-run $minerval
+			screen -S miner -X screen $mindex miner-run $minerval $mindex
 			sleep 0.2
 			screen -S miner -X title $minerval #set nice title
 			echo $minerval >> /run/hive/cur_miner ##add miner-name to the list of working miners
@@ -123,7 +123,7 @@ function start() {
 		fi
 	done
 
-	screen -S miner -X screen 1 miner-run $MINER
+	screen -S miner -X screen 1 miner-run $MINER 1
 	sleep 0.2
 	screen -S miner -X title $MINER #set nice title
 	echo $MINER >> /run/hive/cur_miner ##add miner-name to the list of working miners
@@ -307,46 +307,62 @@ function config() {
 }
 
 
+function logs_rotate_helper {
+	local log_basename="$1"
+	local log_filename="$2"
+	[[ -z $2 ]] && log_filename="$1"
+	[[ ! -e "$log_filename.log" ]] && return 0
+
+	# gzip current log
+	gzip -f "$log_filename.log" || return 1
+	# gzip old logs if needed
+	gzip -f "$log_basename".?.log 2>/dev/null
+
+	for i in {8..1}; do
+		[[ -e "$log_basename.$i.log.gz" ]] && mv -f "$log_basename.$i.log.gz" "$log_basename.$((i+1)).log.gz"
+	done
+	[[ -e "$log_filename.log.gz" ]] && mv -f "$log_filename.log.gz" "$log_basename.1.log.gz"
+	return
+}
+
 
 function logs_rotate {
-	log_basename=`miner_log_basename $1`
-	if [[ $? > 0 ]]; then
-		echo $log_basename #show error message
+	log_basename=`miner_log_basename "$1"`
+	if [[ $? -ne 0 ]]; then
+		echo "$log_basename" #show error message
 		return 1
 	fi
 
 	# Make sure logs dir exists
 	mkdir -p $MINER_LOGS_BASE_DIR/$1
 
-	[[ -e $log_basename.5.log ]] && rm $log_basename.5.log
-	[[ -e $log_basename.4.log ]] && mv -f $log_basename.4.log $log_basename.5.log
-	[[ -e $log_basename.3.log ]] && mv -f $log_basename.3.log $log_basename.4.log
-	[[ -e $log_basename.2.log ]] && mv -f $log_basename.2.log $log_basename.3.log
-	[[ -e $log_basename.1.log ]] && mv -f $log_basename.1.log $log_basename.2.log
-	[[ -e $log_basename.log ]] && mv -f $log_basename.log $log_basename.1.log
-
-	return 0
+	logs_rotate_helper "$log_basename"
+	return
 }
-
 
 
 #truncates current log, run by cron
 function log_truncate {
-	#MAX_LOG_SIZE=$(( 10 * 1024 * 1024 ))
-	MAX_LOG_SIZE=10000000 #10m
+	MAX_LOG_SIZE=$(( 20 * 1024 * 1024 )) # 20 MB
 
-	log_basename=`miner_log_basename $1`
-	if [[ $? > 0 ]]; then
-		echo $log_basename #show error message
+	log_basename=`miner_log_basename "$1"`
+	if [[ $? -ne 0 ]]; then
+		echo "$log_basename" #show error message
 		return 1
 	fi
 
-	[[ ! -e $log_basename.log ]] && return 0
+	[[ ! -e "$log_basename.log" ]] && return 0
 
-	fsize=`stat -c%s $log_basename.log`
-	[[ ! -z $fsize && $fsize -ge $MAX_LOG_SIZE ]] &&
-		echo "*** truncated by $0" > $log_basename.log
-
+	#fsize=`stat -c%s $log_basename.log`
+	# get real log file size on disk
+	fsize=(`du --block-size=1 $log_basename.log 2>/dev/null`)
+	if [[ $? -eq 0 && ${fsize[0]} -ge $MAX_LOG_SIZE ]]; then
+		# save current log before truncation
+		tr -d '\0' < "$log_basename.log" > "$log_basename.0.log"
+		echo -e "[$(date)] *** Truncated by $0 ***\n\n" > "$log_basename.log"
+		# and rotate it with others
+		logs_rotate_helper "$log_basename" "$log_basename.0"
+	fi
 	return 0
 }
 
