@@ -29,6 +29,15 @@ function do_nvstart () {
 	[[ $nv_as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 }
 
+
+function backslash() {
+	local var="${1//\\/\\\\}"
+	var="${var//\"/\\\"}"
+	var="${var//\`/\\\`}"
+	var="${var//\$/\\\$}"
+	echo "$var"
+}
+
 ####
 
 function do_command () {
@@ -75,10 +84,9 @@ function do_command () {
 			log_name="/tmp/exec_"'$cmd_id'".log"
 			('"$exec"') > $log_name 2>&1
 			exitcode=$?
-			payload=`cat $log_name`
 			[[ $exitcode -eq 0 ]] &&
-				echo "$payload" | message info "'"$exec"'" payload --id='$cmd_id' ||
-				echo "$payload" | message error "'"$exec"' (failed, exitcode=$exitcode)" payload --id='$cmd_id'
+				cat $log_name | message info "'"$(backslash "$exec")"'" payload --id='$cmd_id' ||
+				cat $log_name | message error "'"$(backslash "$exec")"' (failed, exitcode=$exitcode)" payload --id='$cmd_id'
 			' > /tmp/nohup.log 2>&1 &
 		;;
 
