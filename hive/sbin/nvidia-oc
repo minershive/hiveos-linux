@@ -24,6 +24,8 @@ systemctl status hivex > /dev/null
 [[ $? -ne 0 ]] && echo -e "${YELLOW}WARNING: X Server is not running! Some settings will not be applied!${NOCOLOR}"
 
 export DISPLAY=":0"
+NVS_TIMEOUT=10
+NVSMI_TIMEOUT=10
 
 # check it in first place
 if [ ! -f $NVIDIA_OC_CONF ]; then
@@ -168,18 +170,21 @@ for (( i=0; i < $n; ++i )); do
 			#	[[ $plmax -gt $pldef && ${PLIMIT[$i]} -gt $plmax ]] && PLIMIT[$i]=${PLMAX[$i]%%[!0-9\.]*} && echo -e "${RED}Power limit was set to MAX value${NOCOLOR}"
 			#	[[ $plmin -lt $pldef && ${PLIMIT[$i]} -lt $plmin ]] && PLIMIT[$i]=${PLMIN[$i]%%[!0-9\.]*} && echo -e "${RED}Power limit was set to MIN value${NOCOLOR}"
 			#fi
-			nvresult=`nvidia-smi -i $i -pl ${PLIMIT[$i]}`
+			nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl ${PLIMIT[$i]}`
 			nvcode=$?
-			[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
-			nvresult=`echo "$nvresult" | grep -v "^$"`
-			echo -e "${color}$nvresult${NOCOLOR}"
-			[[ $nvcode -ne 0 ]] && exitcode=$nvcode
+	
 		else
 			#if [[ $plcur != $pldef ]]; then
 				echo "Restoring default power limit ${pldef}"
-				nvidia-smi -i $i -pl $pldef | grep -v "^$"
+				nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl $pldef`
+				nvcode=$?
 			#fi
 		fi
+		[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
+		nvresult=`grep -v "^$" <<< "$nvresult"`
+		[[ ! -z $nvresult ]] && echo -e "${color}$nvresult${NOCOLOR}"
+		[[ $nvcode -ge 124 ]] && echo -e "${RED}nvidia-smi failed by timeout$NOCOLOR"
+		[[ $nvcode -ne 0 ]] && exitcode=$nvcode
 	fi
 	
 	#not working
@@ -240,10 +245,11 @@ for (( i=0; i < $n; ++i )); do
 
 	if [[ ! -z $args ]]; then
 		echo -en "${RED}"
-		nvresult=`nvidia-settings $args`
+		nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args`
 		nvcode=$?
 		#[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
-		nvresult=`echo "$nvresult" | grep -v "^$"`
+		[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
+		nvresult=`grep -v "^$" <<< "$nvresult"`
 		echo -e "${NOCOLOR}$nvresult"
 		[[ $nvcode -ne 0 ]] && exitcode=$nvcode
 	fi

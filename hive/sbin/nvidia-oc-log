@@ -6,7 +6,7 @@
 #nvidia-oc > /var/log/nvidia-oc.log 2>&1
 
 # OC runtime limit
-TIMEOUT=150
+TIMEOUT=180
 
 # limit RUNNING_DELAY value
 export MAX_RUNNING_DELAY=300
@@ -30,7 +30,7 @@ exitcode=$?
 
 if [[ $exitcode -ne 0 ]]; then
 	echo -e "${RED}ERROR: NVIDIA OC failed ${NOCOLOR}"
-	[[ "$1" != "quiet" ]] && cat /var/log/nvidia-oc.log | message error "NVIDIA OC failed" payload > /dev/nul
+	[[ "$1" != "quiet" ]] && cat /var/log/nvidia-oc.log | message error "NVIDIA OC failed" payload > /dev/null
 fi
 
 #sed removes colors
