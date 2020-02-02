@@ -60,6 +60,12 @@ if [[ $arg_retry == 1 ]]; then
 	done
 fi
 
+function hello_quit {
+	screens=`screen -ls hello | grep -Po "\K[0-9]+(?=\.hello)"`
+	for pid in $screens; do
+		screen -S $pid.hello -X quit > /dev/null
+	done
+}
 
 # Make hello request ================================================================
 
@@ -84,9 +90,17 @@ lan_dns=`cat /run/systemd/resolve/resolv.conf | grep -m1 ^nameserver | awk '{pri
 cat /etc/systemd/network/20-ethernet.network | grep -q '^DHCP=yes' && lan_dhcp=1 || lan_dhcp=0
 lan_config="{\"dhcp\": $lan_dhcp, \"address\": \"${lan_addresses[@]}\", \"gateway\": \"$lan_gateway\", \"dns\": \"$lan_dns\"}"
 
-mb_manufacturer=`dmidecode | grep -A4 '^Base Board Information' | grep "Manufacturer:" | sed -E 's/\sManufacturer:\s+(.*)/\1/'`
-mb_product=`dmidecode | grep -A4 '^Base Board Information' | grep "Product Name:" | sed -E 's/\sProduct Name:\s+(.*)/\1/'`
-system_uuid=$(dmidecode -s system-uuid) #same as /sys/class/dmi/id/product_uuid
+#mb_manufacturer=`dmidecode | grep -A4 '^Base Board Information' | grep "Manufacturer:" | sed -E 's/\sManufacturer:\s+(.*)/\1/'`
+#mb_product=`dmidecode | grep -A4 '^Base Board Information' | grep "Product Name:" | sed -E 's/\sProduct Name:\s+(.*)/\1/'`
+#system_uuid=$(dmidecode -s system-uuid) #same as /sys/class/dmi/id/product_uuid
+
+system_uuid=`cat /sys/class/dmi/id/product_uuid 2>/dev/null` || system_uuid=$(dmidecode -s system-uuid)
+mb_product=`cat /sys/class/dmi/id/board_name 2>/dev/null`
+mb_manufacturer=`cat /sys/class/dmi/id/board_vendor 2>/dev/null`
+
+mb_bios=`cat /sys/class/dmi/id/bios_version 2>/dev/null`
+mb_bios_date=`cat /sys/class/dmi/id/bios_date 2>/dev/null` && mb_bios="$mb_bios $mb_bios_date"
+
 cpu_model=`lscpu | grep "Model name:" | sed 's/Model name:[ \t]*//g'`
 cpu_cores=`lscpu | grep "^CPU(s):" | sed 's/CPU(s):[ \t]*//g'`
 aes=`lscpu | grep "^Flags:.*aes" | wc -l`
@@ -148,7 +162,7 @@ jq -n \
 --arg gpu_count_nvidia "$gpu_count_nvidia" \
 --arg nvidia_version "`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//'`" \
 --arg amd_version "$amd_version" \
---arg manufacturer "$mb_manufacturer" --arg product "$mb_product" --arg system_uuid "$system_uuid" \
+--arg manufacturer "$mb_manufacturer" --arg product "$mb_product" --arg bios "$mb_bios" --arg system_uuid "$system_uuid" \
 --arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" --arg cpu_id "$cpu_id" \
 --arg disk_model "$disk_model" \
 --arg kernel "$kernel" \
@@ -161,7 +175,7 @@ jq -n \
 		$rig_id, $passwd, $server_url, $uid, $ref_id,
 		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn, $lan_config,
 		$gpu, $gpu_count_amd, $gpu_count_nvidia,
-		"mb": {$manufacturer, $product, $system_uuid}, "cpu": {$model, $cores, $aes, $cpu_id}, $disk_model,
+		"mb": {$manufacturer, $product, $system_uuid, $bios}, "cpu": {$model, $cores, $aes, $cpu_id}, $disk_model,
 		$kernel, $amd_version, $nvidia_version,
 		$version
 	}
@@ -241,7 +255,7 @@ echo "$response" | jq '.'
 error=$(echo $response | jq '.error' --raw-output)
 if [[ ! -z $error && $error != "null" ]]; then
 	echo -e "${RED}ERROR:${NOCOLOR} `echo $response | jq '.error.message' -r`"
-	screen -S hello -X quit > /dev/null
+	hello_quit
 	exit 1
 fi
 
@@ -250,12 +264,12 @@ config=$(echo $response | jq '.result.config' --raw-output)
 if [[ -z "$config" || "$config" == "null" ]]; then
 	echo "Response body: $response"
 	echo -e "${RED}ERROR:${NOCOLOR} no config field in response"
-	screen -S hello -X quit > /dev/null
+	hello_quit
 	exit 1
 fi
 
 # stop screen session if not running from it
-[[ $arg_check == 0 ]] && screen -S hello -X quit > /dev/null
+[[ $arg_check == 0 ]] && hello_quit
 
 echo "$config" > $RIG_CONF
 
