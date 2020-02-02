@@ -518,10 +518,13 @@ miners_info() {
 	for idx in {1..7}
 	do
 		[[ -z ${run_miners[$idx]} && -z ${conf_miners[$idx]} ]] && continue
-		local ver=
 		if [[ ! -z ${conf_miners[$idx]} ]]; then
 			# get version from flightsheet
-			local miner_ver="${conf_miners[$idx]^^}_VER"
+			local miner_name=${conf_miners[$idx]//-/_}
+			local miner_fork="${miner_name^^}_FORK"
+			miner_fork=${!miner_fork}
+			[[ ! -z $miner_fork ]] && miner_fork="-$miner_fork"
+			local miner_ver="${miner_name^^}_VER"
 			miner_ver=${!miner_ver}
 			if [[ -z $miner_ver ]]; then
 				# get default version from miner config
@@ -529,13 +532,13 @@ miners_info() {
 				[[ -e $MINER_DIR/h-manifest.conf ]] && source $MINER_DIR/h-manifest.conf
 				[[ -e $MINER_DIR/h-config.sh ]] && source $MINER_DIR/h-config.sh
 				local miner_ver=`miner_ver 2>/dev/null`
-				[[ ! -z $miner_ver ]] && ver=" $miner_ver"
+				[[ ! -z $miner_ver ]] && miner_ver=" $miner_ver"
 			else
-				[[ ! -z $miner_ver ]] && ver=" $WHITE$miner_ver$NOCOLOR"
+				[[ ! -z $miner_ver ]] && miner_ver=" $WHITE$miner_ver$NOCOLOR"
 			fi
 		fi
-		[[ ${run_miners[$idx]} == ${conf_miners[$idx]} ]] && output+="$SEP$BGREEN${conf_miners[$idx]}$NOCOLOR$ver" && continue
-		[[ ! -z ${conf_miners[$idx]} ]] && output+="$SEP$BRED${conf_miners[$idx]}$WHITE$ver$NOCOLOR"
+		[[ ${run_miners[$idx]} == ${conf_miners[$idx]} ]] && output+="$SEP$BGREEN${conf_miners[$idx]}$miner_fork$NOCOLOR$miner_ver" && continue
+		[[ ! -z ${conf_miners[$idx]} ]] && output+="$SEP$BRED${conf_miners[$idx]}$miner_fork$NOCOLOR$miner_ver"
 		[[ ! -z ${run_miners[$idx]} ]] && output+="$SEP$BYELLOW${run_miners[$idx]}$NOCOLOR"
 	done
 	local fs; fs=`grep -m 1 -oP "FLIGHT SHEET \K\".*\"(?= ###$)" $WALLET_CONF 2>/dev/null` || fs="${BRED}EMPTY"
@@ -694,23 +697,6 @@ function show_top() {
 }
 
 
-function show_gpu() {
-	echo
-	gpu_info || gpu-detect list
-}
-
-
-function show_bottom() {
-	echo
-	miners_info
-	echo
-	# do not wrap help in motd
-	tput rmam
-	unbuffer helpme | awk '{print $0" "}'
-	tput smam
-}
-
-
 function motd_watch() {
 	# default values
 	local first=1
@@ -842,7 +828,20 @@ fi
 echo -n $'\r'
 
 show_top
-show_gpu
-show_bottom
+echo
+gpu_info || gpu-detect list
+echo
+miners_info
+echo
+
+# show help only on boot and console session start
+# this does not work correct in teleconsole
+cmd=`ps --no-headers $PPID`
+if [[ $cmd =~ (-bash|motd) ]]; then
+	# do not wrap help in motd
+	tput rmam
+	unbuffer helpme | awk '{print $0" "}'
+	tput smam
+fi
 
 exit 0
