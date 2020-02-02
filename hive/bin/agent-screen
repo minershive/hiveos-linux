@@ -19,7 +19,7 @@ function stop_agent() {
 	if [[ ! -z $screens ]]; then
 		echo "Quiting previous screen"
 		for pid in $screens; do
-			screen -S $pid -X quit
+			screen -S $pid.agent -X quit
 		done
 		return 0
 	fi

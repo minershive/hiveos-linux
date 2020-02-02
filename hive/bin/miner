@@ -153,7 +153,7 @@ function stop() {
 
 	for pid in $screens; do
 		echo "Sending Ctrl+C to screen session $pid"
-		screen -S $pid -X at "#" stuff ^C
+		screen -S $pid.miner -X at "#" stuff ^C
 	done
 	sleep 1
 	check=`screen -ls miner`
@@ -173,7 +173,7 @@ function stop() {
 	screens=`screen -ls miner | grep -Po "\K[0-9]+(?=\.miner)"`
 	for pid in $screens; do
 		echo "Stopping screen session $pid"
-		screen -S $pid -X quit
+		screen -S $pid.miner -X quit
 	done
 
 	# remove stop file

@@ -605,7 +605,7 @@ function stop() {
 	fi
 	for pid in $screens; do
 		echo "Stopping autofan screen session $pid"
-		screen -S $pid -X quit
+		screen -S $pid.autofan -X quit
 	done
 	return 0
 }

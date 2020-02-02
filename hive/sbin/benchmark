@@ -423,7 +423,7 @@ function stop() {
 	else
 		for pid in $screens; do
 			echo "Stopping screen session $pid"
-			screen -S $pid -X quit
+			screen -S $pid.benchmark -X quit
 		done
 	fi
 	message info "Benchmark aborted. Restoring the previous tasks of the worker" > /dev/null 2>&1
