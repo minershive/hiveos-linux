@@ -27,10 +27,10 @@ else
 		EXCC)
 			algo="equihash 144/5"
 			;;
-		GRIN-AD29)
+		GRIN-AD29|GRIN-C29D|GRIN-C29M)
 			algo="cuckoo"
 			;;
-		GRIN-AT31)
+		GRIN-AT31|GRIN-AT32|GRIN-C31|GRIN-C32|GRIN-AUTO)
 			algo="cuckoo"
 			;;
 		ZEL)
