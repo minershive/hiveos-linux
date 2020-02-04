@@ -3,6 +3,7 @@
 . colors
 
 # it is used to save OC settings to apply only changes on next run. can be disabled
+# it must be reset after X server restart
 #NVIDIA_OC_FILE=/run/hive/nvidia-oc
 
 date
@@ -84,26 +85,22 @@ else
 fi
 
 #pad arrays
-[[ ! -z $CLOCK ]] &&
-CLOCK=($CLOCK) &&
+[[ ! -z $CLOCK ]] && CLOCK=($CLOCK) || CLOCK=(0)
 for (( i=${#CLOCK[@]}; i < $n; ++i )); do
 	CLOCK[$i]=${CLOCK[$i-1]}
 done
 
-[[ ! -z $MEM ]] &&
-MEM=($MEM) &&
+[[ ! -z $MEM ]] && MEM=($MEM) || MEM=(0)
 for (( i=${#MEM[@]}; i < $n; ++i )); do
 	MEM[$i]=${MEM[$i-1]}
 done
 
-[[ ! -z $FAN ]] &&
-FAN=($FAN) &&
+[[ ! -z $FAN ]] && FAN=($FAN) || FAN=(0)
 for (( i=${#FAN[@]}; i < $n; ++i )); do
 	FAN[$i]=${FAN[$i-1]}
 done
 
-[[ ! -z $PLIMIT ]] &&
-PLIMIT=($PLIMIT) &&
+[[ ! -z $PLIMIT ]] && PLIMIT=($PLIMIT) || PLIMIT=(0)
 for (( i=${#PLIMIT[@]}; i < $n; ++i )); do
 	PLIMIT[$i]=${PLIMIT[$i-1]}
 done
