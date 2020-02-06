@@ -197,9 +197,9 @@ net_info() {
 			color=$BPURPLE
 		fi
 		echo -n "  $color$state$NOCOLOR"
-		dns=`grep -Pazo "DNS: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | awk '{$1=$1};1'`
-		ips=`grep -Pazo "  Address: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | awk '{$1=$1};1'`
-		gw=`grep -Pazo " Gateway: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | awk '{$1=$1};1'`
+		dns=`grep -Pazo "DNS: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | tr -d '\0' | awk '{$1=$1};1'`
+		ips=`grep -Pazo "  Address: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | tr -d '\0' | awk '{$1=$1};1'`
+		gw=`grep -Pazo " Gateway: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | tr -d '\0' | awk '{$1=$1};1'`
 		driver=`grep "Driver:" <<< "$nstat" | awk -F ': ' '{print $2}'`
 		[[ ! -z $ips ]] && echo -n "  ip $WHITE$ips$NOCOLOR"
 		[[ ! -z $gw ]] && echo -n "  gw $WHITE$gw$NOCOLOR"
