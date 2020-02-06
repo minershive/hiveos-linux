@@ -50,9 +50,10 @@ nvidia_count=`echo "$nvidia_json" | jq '.|length'`
 
 for ((i=0; i < $nvidia_count; i++)) do
 	devi=$((i+1))
-	busid=`echo "$nvidia_json" | jq -r ".[$i].busid" | awk -F : '{printf("%d:%d:%d\n", "0x"$1, "0x"$2, "0x"$3)}'` #sed 's/\./:/'
 	name=`echo "$nvidia_json" | jq -r ".[$i].name"`
-	busid_dec=$busid
+	busid=`echo "$nvidia_json" | jq -r ".[$i].busid"` # does not work with GNU awk | awk -F : '{printf("%d:%d:%d\n", "0x"$1, "0x"$2, "0x"$3)}'` #sed 's/\./:/'
+	busid_arr=(${busid//[!0-9a-fA-F]/ })
+	busid_dec="$((16#${busid_arr[0]})):$((16#${busid_arr[1]})):$((16#${busid_arr[2]}))"
 
 	#sed -i -e '/^#Device0 ConnectedMonitor BEGIN$/,/^#Device0 ConnectedMonitor END$/c\\tOption "ConnectedMonitor" "DFP-0"\n\tOption "CustomEDID" "DFP-0:/hive/etc/edid.bin"' /etc/X11/xorg.conf
 	emulated_monitor_string=$'Option "ConnectedMonitor" "DFP-0"\n\tOption "CustomEDID" "DFP-0:/hive/etc/edid.bin"'
