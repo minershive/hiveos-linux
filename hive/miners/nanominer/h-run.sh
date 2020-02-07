@@ -27,6 +27,6 @@ if [[ ${algos,,} =~ "random" ]] && ! grep -q -v "random" <<< "${algos,,}"; then
 	# also set LOW priority for CPU mining
 	nice -n 10 ./nanominer
 else
-	rm $MINER_DIR/$MINER_VER/libcuda.*
+	rm $MINER_DIR/$MINER_VER/libcuda.* 2>/dev/null
 	./nanominer
 fi
