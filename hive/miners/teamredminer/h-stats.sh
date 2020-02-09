@@ -19,7 +19,8 @@ else
   local a_fans=""
   local a_temp=""
 
-  [[ `echo $stats_raw | jq -r .summary.SUMMARY[0].Elapsed` -lt 60 ]] && head -n 50 ${MINER_LOG_BASENAME}.log > ${MINER_LOG_BASENAME}_head.log
+  #[[ `echo $stats_raw | jq -r .summary.SUMMARY[0].Elapsed` -lt 60 ]] && head -n 50 ${MINER_LOG_BASENAME}.log > ${MINER_LOG_BASENAME}_head.log
+  [[ `wc -l ${MINER_LOG_BASENAME}_head.log | awk '{print $1}'` -lt 150 ]] && head -n 150 ${MINER_LOG_BASENAME}.log > ${MINER_LOG_BASENAME}_head.log
 
   local ver=`echo $stats_raw | jq -r .summary.STATUS[0].Description | awk '{ printf $2 }'`
 
