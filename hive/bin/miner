@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -o pipefail
+
 STOP_TIMEOUT=15
 export MINER_STOP=/run/hive/MINER_STOP
 
@@ -65,12 +67,27 @@ fix_sgminer_gm
 
 ########################################################################################################################
 
-function start() {
-	# OC is applied on boot and on change in agent. so disable it here.
-	#amd-oc-safe > /dev/null #be silent
+function kill_hanged() {
+	# kill hanged queries to miners screen session
+	queries=`screen -ls miner | grep -Po "\K[0-9]+.miner(-queryA)+"`
+	if [[ ! -z $queries ]]; then
+		# wait and query again to prevent from killing alive queries
+		sleep 0.5
+		queries2=`screen -ls miner | grep -Po "\K[0-9]+.miner(-queryA)+"`
+		[[ "$queries" == "$queries2" ]] &&
+			echo "Killing hanged miners screen session queries" &&
+			pkill -f " -S miner "
+	fi
+	# remove dead
+	screen -wipe miner >/dev/null
+}
 
-	session_count=`screen -ls miner | grep miner | wc -l`
-	if [[ $session_count > 0 ]]; then
+
+function start() {
+	kill_hanged
+
+	session_count=`screen -ls miner | grep -c ".miner"`
+	if [[ $session_count -gt 0 ]]; then
 		echo -e "${YELLOW}Miner screen is already running${NOCOLOR}"
 		echo -e "Run ${CYAN}miner${NOCOLOR} or ${CYAN}screen -r${NOCOLOR} to resume screen"
 		return
@@ -84,7 +101,6 @@ function start() {
 		message warn "No miner is set" > /dev/null &&
 		echo -e "${YELLOW}No miner is set in config, exiting ${NOCOLOR}" &&
 		exit 1
-
 
 	[[ -f /run/hive/cur_miner ]] && rm /run/hive/cur_miner
 
@@ -142,18 +158,20 @@ function stop() {
 	#echo -e "Stopping ${CYAN}$MINER${NOCOLOR}"
 	#screen -S miner -X quit
 
+	kill_hanged
+
 	#screens=`screen -ls miner | grep -E "[0-9]+\.miner" | cut -d. -f1 | awk '{print $1}'`
-	screens=`screen -ls miner | grep -Po "\K[0-9]+(?=\.miner)"`
-	[[ -z $screens ]] &&
+	screens=(`screen -ls miner | grep -Po "\K[0-9]+(?=\.miner)" | sort --unique`)
+	[[ ${#screens[@]} -eq 0 ]] &&
 		echo "No miner screens found" &&
 		return
 
 	# prevent some miners from restarting in the loop
 	echo 1 > $MINER_STOP
 
-	for pid in $screens; do
+	for pid in "${screens[@]}"; do
 		echo "Sending Ctrl+C to screen session $pid"
-		screen -S $pid.miner -X at "#" stuff ^C
+		timeout 1 screen -S $pid.miner -X at "#" stuff ^C
 	done
 	sleep 1
 	check=`screen -ls miner`
@@ -170,10 +188,10 @@ function stop() {
 	fi
 
 	# quit them all
-	screens=`screen -ls miner | grep -Po "\K[0-9]+(?=\.miner)"`
-	for pid in $screens; do
+	screens=(`screen -ls miner | grep -Po "\K[0-9]+(?=\.miner)" | sort --unique`)
+	for pid in "${screens[@]}"; do
 		echo "Stopping screen session $pid"
-		screen -S $pid.miner -X quit
+		timeout 1 screen -S $pid.miner -X quit
 	done
 
 	# remove stop file
@@ -248,10 +266,20 @@ function log_tail {
 	tail -n $TAIL_LINE /run/hive/miner.$suffix
 	exitcode=$?
 
-	echo ""
-	title=`screen -S miner -p $suffix -Q title` &&
-		echo -e "${GREEN}> Miner screen is running${NOCOLOR}" ||
-		echo -e "${RED}> Miner screen is not running${NOCOLOR}"
+	echo -e "$NOCOLOR"
+
+	for i in {1..3}; do
+		title=`timeout 1 screen -S miner -p $suffix -Q title 2>/dev/null`
+		code=$?
+		if [[ $code -lt 124 ]]; then
+			[[ $code -eq 0 ]] &&
+				echo -e "${GREEN}> Miner screen is running${NOCOLOR}" ||
+				echo -e "${RED}> Miner screen is not running${NOCOLOR}"
+			break
+		fi
+		sleep 0.2
+	done
+	screen -wipe miner >/dev/null
 
 	return $exitcode
 
@@ -393,11 +421,24 @@ function bench_check (){
 
 
 function status {
-	windows=`screen -S miner -Q windows | tail -n 1`
-	[[ $? -ne 0 ]] && echo -e "${YELLOW}No miner screens are running${NOCOLOR}" && return 1
-	echo "Running miner screens:"
-	lf=$'\n'
-	readarray -t screens <<< "${windows//  /$lf}"
+	kill_hanged
+	for i in {1..3}; do
+		query=`timeout 1 screen -S miner -Q windows 2>/dev/null`
+		exitcode=$?
+		[[ $exitcode -lt 124 ]] && break
+		sleep 0.2
+	done
+	screen -wipe miner >/dev/null
+
+	[[ $exitcode -ge 124 ]] && echo -e "${RED}Miners screen query error${NOCOLOR}" && return 3
+	if [[ $exitcode -ne 0 ]]; then
+		grep -q miner <<< "$query" && echo -e "${RED}Miners screen is in inconsistent state${NOCOLOR}" && return 2
+		echo -e "${YELLOW}No miners are running${NOCOLOR}" && return 1
+	fi
+
+	windows=`tail -n 1 <<< "$query"`
+	echo "Running miners in screen:"
+	readarray -t screens <<< "${windows//  /$'\n'}"
 	for scr in "${screens[@]}"
 	do
 		[[ $scr =~ ^([0-9]+)([^[:space:]]+)?[[:space:]]+(.*)$ ]] && echo -e "[${BASH_REMATCH[1]}] ${CYAN}${BASH_REMATCH[3]}${NOCOLOR}" || echo $scr
@@ -471,6 +512,7 @@ case $1 in
 		usage
 	;;
 	*)
+		kill_hanged
 		screen -x -S miner
 		[[ $? != 0 ]] && usage
 	;;
