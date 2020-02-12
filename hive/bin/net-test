@@ -86,6 +86,8 @@ function TimeColor {
 function Ping {
 	local host=$1
 	local name=$2
+	local errormsg=$3
+	[[ -z $errormsg ]] && errormsg="Check firewall rules or connection settings"
 	local RESULT=0
 	local response=
 	[[ -z $name ]] && name=$host
@@ -103,7 +105,7 @@ function Ping {
 			[[ $totaltime -ge $((GOODTIME*2)) ]] && break
 		else
 			if [[ ${CYCLES:-1} -eq 1 ]]; then
-				echo -en "$FAIL\t${ERROR_COLOR}check firewall rules or connection settings$NOCOLOR"
+				echo -en "$FAIL\t$ERROR_COLOR$errormsg$NOCOLOR"
 			elif [[ $i -eq 0 && $CYCLES -gt 1 ]]; then
 				echo -en $YELLOW"[???]\t$FAIL\t"
 			else
@@ -149,7 +151,7 @@ function Curl {
 			[[ $totaltime -ge $((GOODTIME*2)) ]] && break
 		else
 			if [[ ${CYCLES:-1} -eq 1 ]]; then
-				echo -en "$FAIL\t${ERROR_COLOR}check firewall rules$NOCOLOR"
+				echo -en "$FAIL\t${ERROR_COLOR}Check firewall rules$NOCOLOR"
 			elif [[ $i -eq 0 && $CYCLES -gt 1 ]]; then
 				echo -en $YELLOW"[???]\t$FAIL\t"
 			else
@@ -178,7 +180,7 @@ function NSLookup {
 	#`nslookup $1 > /dev/null 2>&1`
 	res=(`dig -4 +noall +answer +retry=0 +time=15 $host | grep -oP ".*\sA\s\K[^\s]+$"`)
 	RESULT=$?
-	[[ $RESULT -eq  0 ]] && echo -e "$OK\t${CYAN}${res[@]}$NOCOLOR" || echo -e "$FAIL\t${ERROR_COLOR}check DNS or connection settings$DNS"$NOCOLOR
+	[[ $RESULT -eq  0 ]] && echo -e "$OK\t${CYAN}${res[@]}$NOCOLOR" || echo -e "$FAIL\t${ERROR_COLOR}Check DNS or connection settings$DNS"$NOCOLOR
 	return $RESULT
 }
 
@@ -220,14 +222,12 @@ function Connections {
 	local RESULT=0
 
 	echo -e "${YELLOW}> Checking network connection:${NOCOLOR}"
-	Ping "$LOCAL_GW" "$LOCAL_GW ${NOCOLOR}(Gateway)"
-	[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping router. Please check your router and physical connection"$NOCOLOR
+	Ping "$LOCAL_GW" "$LOCAL_GW ${NOCOLOR}(Gateway)" "Check your router and physical connection"
 
 	for host in "${ALL_DNS[@]}"
 	do
 		[[ $host == $LOCAL_GW ]] && continue;
 		Ping "$host" "$host ${NOCOLOR}(DNS)"
-		[ $? -ne 0 ] && echo -e $ERROR_COLOR"Failed to ping DNS. Please check your internet connection"$NOCOLOR
 	done
 
 	#[[ ! -z $HIVE_HOST_URL ]] && API_HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'` || API_HOST=
