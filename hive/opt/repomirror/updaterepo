@@ -1,79 +1,84 @@
 #!/usr/bin/env bash
-date
 
-#for all the programs running from within the script, make sure they run in the "UTC" time zone 
+# for all the programs running from within the script, make sure they run in the "UTC" time zone
 # (or whatever is set on the remote repo server as the timezone for timestamps of the files in the repo)
 export TZ=UTC
-WGET="/usr/bin/wget"
+WGET="/usr/bin/wget -t 0 -T 20 -nv"
+
+function mydate() {
+	date --rfc-3339=seconds
+}
+
+#echo "$(mydate): PID $$"
+
+pids=(`pgrep -f $0`)
+for pid in "${pids[@]}"; do
+	[[ $$ != $pid ]] && echo "Repo update is already running (PID $pid), exiting" && exit 0
+done
 
 [[ -e /hive-config/repo-sync.url ]] &&
-	repourl=`cat /hive-config/repo-sync.url | grep -v "^$" | grep -v "^#" |head -n 1`
+	repourl=`cat /hive-config/repo-sync.url | grep -v "^$" | grep -v "^#" | head -n 1`
 
 [[ -z $repourl ]] &&
 	repourl=http://download.hiveos.farm/repo/binary/
 
-
 # should end in a / for successful sync, add trailing slash if missing
 [[ "${repourl}" != */ ]] && repourl="${repourl}/"
 
-#This does not work as rig will fetch from itself
+# This does not work as rig will fetch from itself
 #repourl=`cat /etc/apt/sources.list.d/hiverepo.list | grep '^deb http' | tail -n 1 | awk '{print $2}'`
-
-
-
 echo "Repo URL: $repourl"
 
 domain=`echo "$repourl" | sed -e 's|^[^/]*//||' -e 's|/.*$||'`
 echo "Domain: $domain"
 
-echo
-
-
-
 cd /var/www/html
 
+echo "Working under $(pwd)"
 
 # wget will download to domain directory, so link it appropriately
 [[ ! -e /var/www/html/$domain ]] &&
 	ln -sf /var/www/html/repomirror /var/www/html/$domain
 
-#remove files like RepoVer and other files which are not actual packages
+# remove files like RepoVer and other files which are not actual packages
 for file in `ls /var/www/html/repomirror/repo/binary/* | grep -v deb`
 do
 	rm -f $file
 done
 
-#Request re-sync of everything with conditional if-modified-since requests from the remote repo server, overwriting local files with 
+# Request re-sync of everything with conditional if-modified-since requests from the remote repo server, overwriting local files with 
 # ones from the remote server.
-#Because -c and -N do not seem to work too nicely in GNU wget (only larger-than-original new files get synced upon update), just use -N
+# Because -c and -N do not seem to work too nicely in GNU wget (only larger-than-original new files get synced upon update), just use -N
 # instead of  trying to save bandwidth upon incomplete downloads
-echo "Working under `pwd`"
 
-${WGET} -nv -r -l1 -N "$repourl"
+echo "$(mydate): Updating repo packages"
+${WGET} -r --level=1 -N "$repourl"
 
-#Remove index files so directory contents will be generated via nginx
-#this may cause a certain amount of trash-talk from wget complaining about unavailable last-modified timestamps. 
+# Remove index files so directory contents will be generated via nginx
+# this may cause a certain amount of trash-talk from wget complaining about unavailable last-modified timestamps.
 rm repomirror/repo/index.html
 rm repomirror/repo/binary/index.html
 
 cd /var/www/html/repomirror/repo/binary
-#Check for md5 mismatches vs Packages file, if we have one from a successful download. 
-#Insane Packages file will cause massive deletion of .deb files, but c'est la vie
+# Check for md5 mismatches vs Packages file, if we have one from a successful download.
+# Insane Packages file will cause massive deletion of .deb files, but c'est la vie
 
 if [ -f Packages ]; then
-#do a file with a list of bad downloads 
-TFN=`mktemp /tmp/pkgdnldXXXXXX`
-echo "`date` $0 : Checking and removing damaged or misdownloaded files using md5 sums from the fresh Packages file"
-#this is ugly and needs some prettying in a more human-readable language 
-(cat Packages | tr '\n' '|' | sed  's/||/\\/g' | tr '\\' '\n') | perl -ne 'next unless (m/Filename.*.deb/); m/Filename: (.+?)\|.*MD5sum: ([0-9A-Fa-f]+)/; $fn = $1; $md = $2; $emd=`md5sum $fn`; $emd=~m/^([0-9A-Fa-f]+)/; $emd = $1;  if ($md ne $emd){print "$fn\n"; unlink ($fn);};' | tee $TFN
-echo "`date` $0 : Re-downloading any removed file(s) from $repourl (if any)...."
-for file in `cat $TFN | sed 's/.\///g'`
-do
- echo downloading ${repourl}/$file
- ${WGET} -nv ${repourl}/$file
-done
-echo "`date` $0 : Removing temproray files (${TFN})...."
-rm -f $TFN
+	# do a file with a list of bad downloads
+	TFN=`mktemp /tmp/pkgdnldXXXXXX`
+	echo "$(mydate): Checking and removing damaged or misdownloaded files using md5 sums from the fresh Packages file"
+	# this is ugly and needs some prettying in a more human-readable language
+	(cat Packages | tr '\n' '|' | sed  's/||/\\/g' | tr '\\' '\n') | perl -ne 'next unless (m/Filename.*.deb/); m/Filename: (.+?)\|.*MD5sum: ([0-9A-Fa-f]+)/; $fn = $1; $md = $2; $emd=`md5sum $fn`; $emd=~m/^([0-9A-Fa-f]+)/; $emd = $1;  if ($md ne $emd){print "$fn\n"; unlink ($fn);};' | tee $TFN
+	echo "$(mydate): Re-downloading removed files if any...."
+	for file in `cat $TFN | sed 's/.\///g'`
+	do
+		echo "Downloading ${repourl}/$file"
+		${WGET} ${repourl}/$file
+	done
+	#echo "Removing temproray files (${TFN})...."
+	rm -f $TFN
 fi
 
-echo "`date` $0 : Done."
+echo "$(mydate): Done."
+
+exit 0
