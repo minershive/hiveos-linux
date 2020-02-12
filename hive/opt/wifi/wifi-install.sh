@@ -10,6 +10,7 @@ do
 			export CONFIG_X86_X32=N
 			apt-get update
 			apt-get install --reinstall -y rtl8812au-dkms
+			modprobe 8812au
 			;;
 
 		8192)
