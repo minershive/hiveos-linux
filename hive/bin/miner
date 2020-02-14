@@ -364,7 +364,13 @@ function logs_rotate {
 	# Make sure logs dir exists
 	mkdir -p $MINER_LOGS_BASE_DIR/$1
 
-	logs_rotate_helper "$log_basename"
+	[[ ! -e "$log_basename.log" ]] && return 0
+
+	# remove nulls if log was already truncated
+	tr -d '\0' < "$log_basename.log" > "$log_basename.0.log"
+	rm -f "$log_basename.log"
+
+	logs_rotate_helper "$log_basename" "$log_basename.0"
 	return
 }
 
@@ -385,7 +391,7 @@ function log_truncate {
 	# get real log file size on disk
 	fsize=(`du --block-size=1 $log_basename.log 2>/dev/null`)
 	if [[ $? -eq 0 && ${fsize[0]} -ge $MAX_LOG_SIZE ]]; then
-		# save current log before truncation
+		# save current log before truncation and remove nulls if it was already truncated
 		tr -d '\0' < "$log_basename.log" > "$log_basename.0.log"
 		echo -e "[$(date)] *** Truncated by $0 ***\n\n" > "$log_basename.log"
 		# and rotate it with others
