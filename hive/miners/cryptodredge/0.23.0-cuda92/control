@@ -1,0 +1,7 @@
+Package: hive-miners-cryptodredge-0.23.0-cuda92
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - CryptoDredge v0.23.0 CUDA 9.2

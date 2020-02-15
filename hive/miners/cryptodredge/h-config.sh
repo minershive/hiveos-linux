@@ -61,6 +61,12 @@ function miner_config_gen() {
 		"cryptonight-ccx" )
 			algo="cnconceal"
 		;;
+		"cryptonight-upx2" )
+			algo="cnupx2"
+		;;
+		"cryptonight-zls" )
+			algo="cnzls"
+		;;
 	esac
 	[[ ! -z ${algo} ]] && algo="-a ${algo}"
 
