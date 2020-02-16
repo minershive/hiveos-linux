@@ -4,4 +4,4 @@ Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - CCminer-bmw512 v1.0.0
+Description: Hive miner - CCminer-bsha3 v1.0.0
