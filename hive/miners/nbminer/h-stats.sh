@@ -21,6 +21,10 @@
                         algo="eaglesong"
                         algo2="ethash"
                       ;;
+             hns_ethash)
+                        algo="bl2bsha3"
+                        algo2="ethash"
+                      ;;
                       *)
                         algo=$NBMINER_ALGO
                       ;;
