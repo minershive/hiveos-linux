@@ -62,7 +62,7 @@ for bdir in $busids_dirs; do
 	sclk=`cat /sys/class/drm/card$cardno/device/pp_dpm_sclk | grep -m1 '*'` #3: 1100Mhz *
 	mclk=`cat /sys/class/drm/card$cardno/device/pp_dpm_mclk | grep -m1 '*'` #2: 1900Mhz *
 	fanrpm=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/fan1_input 2>/dev/null` #rpm from fan
-	ref=`amdmemtweak --current | sed -n "/pci:0000:${busid}/,/pci/p" |grep REF | awk '{print$3}'`
+	ref=`amdmemtweak --current | sed -n "/pci:0000:${busid}/,/pci/p" | grep "REF:" | awk '{print$3}'`
 	core_dpm=`echo $sclk | awk '{print $1}' | sed -e 's/://'`
 	core_mhz=`echo $sclk | awk '{print $2}'`
 	mem_dpm=`echo $mclk | awk '{print $1}' | sed -e 's/://'`
