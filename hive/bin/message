@@ -14,16 +14,25 @@ fi
 
 HIVE_URL="$HIVE_HOST_URL/worker/api"
 LOG="/var/log/hive-agent.log"
+
+if [[ $1 == -f=* || $1 == --file=* ]]; then
+	type="file"
+	file="${1#*=}"
+	[[ ! -e $file ]] && echo "File not found: \"$file\"" && exit 1
+	data=`basename "$file"`
+else
+	type="$1"
+	data="$2"
+fi
+
 #echo $#
-if [[ $# < 2 ]]; then
+if [[ -z $data || -z $type ]]; then
 	echo "Usage: $0 success|danger|warning|info|file \"message\" [payload] [-i|--id=msgid] [-f|--file=path/name]"
+	echo "       $0 -f|--file=path/name"
 	echo "Aliases: ok|error|err|warn|default"
 	echo "payload is read from stdin"
 	exit 1
 fi
-
-type="$1"
-data="$2"
 
 MSGCOLOR=$CYAN
 [[ $type == "error" || $type == "err" ]] && type="danger" && MSGCOLOR=$RED
@@ -111,11 +120,15 @@ if [ $exitcode -ne 0 ]; then
 fi
 
 #echo "[`date`] < $response" >> $LOG
-echo "[`date`] < `echo $response | jq . -c`" >> $LOG
+parsed=`jq . -c <<< "$response" 2>/dev/null`
+if [[ $? -ne 0 ]]; then
+	echo "$response"
+	exit 1
+fi
 
-error=$(echo $response | jq '.error' --raw-output)
+echo "[`date`] < $response" >> $LOG
+error=`jq '.error' --raw-output <<< "$respone"`
 #[[ ! -z $error && $error != "null" ]] && echo -e "Error response: `echo $response | jq '.error' -r`" && exit 1
 [[ ! -z $error && $error != "null" ]] && echo "Error response: $error" && exit 1
-
 
 exit 0
