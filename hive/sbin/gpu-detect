@@ -19,6 +19,7 @@ NVIDIA_FAN_COUNT=
 #	sleep 0.1
 #done
 
+GPU_STRING="VGA|3D controller|Display controller"
 
 if [[ $1 == "list" || $1 == "listjson" ]]; then
 	#Moved to /hive/bin/hive
@@ -45,11 +46,11 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 
 
 	if [[ ! -z $2 && $2 == "AMD" ]]; then
-		list=`lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney"`
+		list=`lspci | grep -E "$GPU_STRING" | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney"`
 	elif [[ ! -z $2 && $2 == "NVIDIA" ]]; then
-		list=`lspci | grep -E "VGA|3D controller" | grep "NVIDIA" | grep -v "nForce"`
+		list=`lspci | grep -E "$GPU_STRING" | grep "NVIDIA" | grep -v "nForce"`
 	else
-		list=`lspci | grep -E "VGA|3D controller"`
+		list=`lspci | grep -E "$GPU_STRING"`
 	fi
 	gpus=()
 
@@ -65,7 +66,7 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 
 		#[[ $s =~ ^([0-9a-z:.]+).*\[(.+)\] ]]
 		#re='^([0-9a-z\:\.]+) VGA compatible controller: (.*)$'
-		re='^([0-9a-z\:\.]+) (VGA compatible|3D) controller: (.*)$'
+		re='^([0-9a-z\:\.]+) (VGA compatible|3D|Display) controller: (.*)$'
 		[[ $s =~ $re ]]
 		busid=${BASH_REMATCH[1]}
 		name=${BASH_REMATCH[3]}
@@ -183,16 +184,16 @@ elif [[ $1 == "listnvidia" ]]; then
 	done <<<"$list"
 	exit 0
 elif [[ $1 == "AMD" ]]; then
-	lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | wc -l
+	lspci | grep -E "$GPU_STRING" | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | wc -l
 elif [[ $1 == "AMD_FIRST" ]]; then
-	lspci | grep -E "VGA|3D controller" | head -n 1 | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | wc -l
+	lspci | grep -E "$GPU_STRING" | head -n 1 | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | wc -l
 elif [[ $1 == "NVIDIA" ]]; then
-	lspci | grep -E "VGA|3D controller" | grep "NVIDIA" | grep -v "nForce" | wc -l
+	lspci | grep -E "$GPU_STRING" | grep "NVIDIA" | grep -v "nForce" | wc -l
 elif [[ $1 == "NVIDIA_FIRST" ]]; then
-	lspci | grep -E "VGA|3D controller" | head -n 1 | grep "NVIDIA" | grep -v "nForce" | wc -l
+	lspci | grep -E "$GPU_STRING" | head -n 1 | grep "NVIDIA" | grep -v "nForce" | wc -l
 else
 	#default, just grep
-	lspci | grep -E "(VGA|3D controller).*$1" | wc -l
+	lspci | grep -E "($GPU_STRING).*$1" | wc -l
 fi
 
 

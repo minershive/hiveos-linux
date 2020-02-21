@@ -4,7 +4,7 @@
 
 ###Usage: gpu-stats internal|amd|nvidia
 
-
+GPU_STRING="VGA|3D controller|Display controller"
 
 busids=()
 brand=()
@@ -31,7 +31,7 @@ function putstats {
 # add all gpus as cpu. they will be replaced later with real data.
 # needed for broken gpus that give no data
 function all_gpu_stats {
-	local cards=`echo "$lspci" | grep -E "VGA|3D controller" | grep -E "NVIDIA|AMD"`
+	local cards=`echo "$lspci" | grep -E "$GPU_STRING" | grep -E "NVIDIA|AMD"`
 	while read -r line; do
 		[[ -z $line ]] && continue
 
@@ -44,7 +44,7 @@ function all_gpu_stats {
 
 function internal_stats {
 	#detect not NVIDIA and not AMD cards, might be only one internal
-	local cards=`echo "$lspci" | grep -E "VGA|3D controller" | grep -vE "NVIDIA|AMD"`
+	local cards=`echo "$lspci" | grep -E "$GPU_STRING" | grep -vE "NVIDIA|AMD"`
 	cards+=`echo "$lspci" | grep -E "nForce"` #add internal nForce gpu to the list
 	while read -r line; do
 		[[ -z $line ]] && continue
@@ -60,7 +60,7 @@ function internal_stats {
 function amd_stats {
 	#cardcount=0;
 	#/sys/class/drm/card7/device/hwmon/hwmon10
-	local list=`lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices" | grep -v -e "RS880"  -e "Stoney" | awk '{print $1}'`
+	local list=`lspci | grep -E "$GPU_STRING" | grep "Advanced Micro Devices" | grep -v -e "RS880"  -e "Stoney" | awk '{print $1}'`
 
 	for hwmondir in /sys/class/drm/card*/device/hwmon/hwmon*/ ; do
 		#echo $hwmondir
