@@ -2,6 +2,7 @@
 #ln -s /hive/bin/motd /etc/update-motd.d/00-my-motd
 . colors
 
+echo ""
 
 # old "classic" motd
 if [[ $1 == "old" ]]; then
@@ -90,7 +91,7 @@ sys_name=`uname -r`
 
 sys_info1() {
 	echo -n "${BPURPLE}$sys_name$NOCOLOR"
-	echo -n "$SEP${BCYAN}H $WHITE$(dpkg -s hive | grep -oP "^Version: \K.*$")$NOCOLOR"
+	echo -n "$SEP${BYELLOW}H $WHITE$(dpkg -s hive | grep -oP "^Version: \K.*$")$NOCOLOR"
 
 	if [[ $gpu_count_nvidia -gt 0 ]]; then
 		nv_version=`nvidia-smi --help 2>&1`
@@ -256,6 +257,8 @@ sys_check() {
 	#	[[ -z $HIVE_HOST_URL ]] &&  MSG+=("${BRED}Error: no HIVE_HOST_URL in rig.conf$NOCOLOR")
 	#	[[ -z $WORKER_NAME ]] &&  MSG+=("${BRED}Error: no WORKER_NAME in rig.conf$NOCOLOR")
 	#fi
+	[[ -f /hive-config/.DISKLESS_AMD && $(cat /proc/mounts | grep "/ " | awk '{print $1}') == tmpfs ]] &&
+		MSG+=("${BYELLOW}Warning: This is diskless rig!$NOCOLOR")
 
 	[[ $MAINTENANCE -eq 1 ]] && MSG+=("${BYELLOW}Warning: Maintenance mode is enabled (with drivers loading)$NOCOLOR")
 	[[ $MAINTENANCE -eq 2 ]] && MSG+=("${BYELLOW}Warning: Maintenance mode is enabled (without drivers loading)$NOCOLOR")
@@ -264,7 +267,7 @@ sys_check() {
 		local nvidia=$(gpu-detect NVIDIA)
 		local amd=$(gpu-detect AMD)
 		[[ $X_DISABLED -eq 1 && $nvidia -gt 0 ]] && MSG+=("${BYELLOW}Warning: X Server (GUI) is disabled. NVIDIA overclocking will not function properly$NOCOLOR")
-		[[ $X_DISABLED -ne 1 && $nvidia -eq 0 && $amd -gt 0 ]] && MSG+=("${BYELLOW}Warning: X Server (GUI) is enabled. It is only needed for NVIDIA $NOCOLOR")
+		[[ $X_DISABLED == 0 && $nvidia -eq 0 && $amd -gt 0 ]] && MSG+=("${BYELLOW}Warning: X Server (GUI) is enabled. It is only needed for NVIDIA $NOCOLOR")
 	fi
 
 	[[ ${#MSG[@]} -eq 0 ]] && return
@@ -634,7 +637,7 @@ show_log() {
 		add_help output "9" "show autofan log"
 		add_help output "0" "show agent log"
 		add_help output "shift + 0..9" "show selected log in split mode at bottom"
-		add_help output "s" "swap top and bottom logs in split mode"
+		add_help output "s" "swap top and bottom logs in split mode" # "
 		add_help output "d" "disable split mode (or select the same logs)"
 		add_help output "- +" "change logs size in split mode"
 		add_help output "=" "reset logs size in split mode"
@@ -786,7 +789,7 @@ function motd_watch() {
 
 		[[ "$key" == "h" ]] && first=11 && continue
 		[[ "$key" == "H" ]] && second=11 && continue
-		[[ "$key" == "s" ]] && local tmp=$first && first=$second && second=$tmp && continue
+		[[ "$key" == "s" ]] && local tmp=$first && first=$second && second=$tmp && continue # "
 		[[ "$key" == "d" ]] && second=$first && continue
 		[[ "$key" == "+" ]] && ((position--)) && continue
 		[[ "$key" == "-" ]] && ((position++)) && continue

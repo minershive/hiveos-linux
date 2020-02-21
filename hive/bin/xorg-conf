@@ -1,0 +1,216 @@
+#!/usr/bin/env bash
+
+set -o pipefail
+
+#echo "Creating Xorg config"
+
+
+#if [ ! -f $GPU_DETECT_JSON ]; then
+#	gpu_detect_json=`gpu-detect listjson`
+#else
+#	gpu_detect_json=`cat $GPU_DETECT_JSON`
+#fi
+
+
+# disable glamregl extension as it often crashes X server
+[[ -f /usr/lib/xorg/modules/libglamoregl.so ]] &&
+	mv -f /usr/lib/xorg/modules/libglamoregl.so /usr/lib/xorg/modules/libglamoregl.so.disabled
+[[ -f /opt/amdgpu/lib/xorg/modules/libglamoregl.so ]] &&
+	mv -f /opt/amdgpu/lib/xorg/modules/libglamoregl.so /opt/amdgpu/lib/xorg/modules/libglamoregl.so.disabled
+
+
+devidx=0
+screens_section=""
+conf=""
+
+gpu_detect="`lspci | grep -E "VGA|3D controller|Display controller"`"
+
+internal=`echo "$gpu_detect" | head -n 1 | grep -vE "NVIDIA|AMD"`
+if [[ ! -z $internal ]]; then
+	#busid=`echo $internal | awk '{print $1}' | awk -F : '{printf("%d:%d:%d\n", "0x"$1, $2, $3)}'`
+	busid=`awk '{print $1}' <<< "$internal"`
+	busid_arr=(${busid//[!0-9a-fA-F]/ })
+	busid_dec="$((16#${busid_arr[0]})):$((16#${busid_arr[1]})):$((16#${busid_arr[2]}))"
+
+	#echo $internal
+	internal_driver="intel"
+	[[ $internal =~ "VMware" ]] && internal_driver="vmware" #00:02.0 VGA compatible controller: VMware SVGA II Adapter
+	[[ $internal =~ "Device 1234:1111" ]] && internal_driver="vesa"
+	[[ $internal =~ "QXL" ]] && internal_driver="vga" #internal_driver="modesetting", with modesetting driver - OC will not work
+
+	echo "Detected internal GPU $busid to be the first one, choosing \"$internal_driver\" driver"
+
+	conf+="
+# --- Internal GPU -------------------------------------------------------------
+Section \"Device\"
+	Identifier     \"Device$devidx\"
+	Driver         \"$internal_driver\"
+	BusID          \"PCI:$busid_dec\"
+EndSection
+
+Section \"Screen\"
+	Identifier     \"Screen$devidx\"
+	Device         \"Device$devidx\"
+	Monitor        \"Monitor0\"
+EndSection
+"
+	screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
+	((devidx++))
+fi
+
+
+#amd_count=`jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ] | length' <<< "$gpu_detect_json" 2>/dev/null`
+#amd_names=(`jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .value.name ] | .[]' <<< "$gpu_detect_json" 2>/dev/null`)
+#amd_busids=(`jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .value.busid ] | .[]' <<< "$gpu_detect_json" 2>/dev/null`)
+
+#amd_first=`gpu-detect AMD_FIRST`
+amd_first=`echo "$gpu_detect" | head -n 1 | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | wc -l`
+amd_busids=(`echo "$gpu_detect" | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | awk '{print $1}'`)
+#echo "AMD - ${amd_busids[@]}"
+
+# add only if AMD is first
+if [[ $amd_first -gt 0 && ${#amd_busids[@]} -gt 0 ]]; then
+	echo "Adding ${#amd_busids[@]} AMD GPU to config"
+
+	for busid in "${amd_busids[@]}"; do
+		busid_arr=(${busid//[!0-9a-fA-F]/ })
+		busid_dec="$((16#${busid_arr[0]})):$((16#${busid_arr[1]})):$((16#${busid_arr[2]}))"
+
+	conf+="
+# --- $busid -------------------------------------------------------------------
+Section \"Device\"
+	Identifier     \"Device$devidx\"
+	Driver         \"amdgpu\" # \"modesetting\"
+	BusID          \"PCI:$busid_dec\"
+EndSection
+
+Section \"Screen\"
+	Identifier     \"Screen$devidx\"
+	Device         \"Device$devidx\"
+EndSection
+"
+		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
+		((devidx++))
+	done
+else
+	[[ ${#amd_busids[@]} -gt 0 ]] && echo "AMD GPU is not first one, skipping"
+fi
+
+
+#nvidia_count=`jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ] | length' <<< "$gpu_detect_json" 2>/dev/null`
+#nvidia_names=(`jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .value.name ] | .[]' <<< "$gpu_detect_json" 2>/dev/null`)
+#nvidia_busids=(`jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .value.busid ] | .[]' <<< "$gpu_detect_json" 2>/dev/null`)
+
+nvidia_busids=(`echo "$gpu_detect" | grep "NVIDIA" | grep -v "nForce" | awk '{print $1}'`)
+#echo "NV - ${nvidia_busids[@]}"
+
+if [[ ${#nvidia_busids[@]} -gt 0 ]]; then
+	monitors=(`nvidia-smi --query-gpu=gpu_bus_id,display_mode --format=csv,noheader 2>/dev/null | grep "Enabled" | cut -d, -f1`)
+	if [[ ! -z $monitors ]]; then
+		connected=${monitors[0]/00000000:}
+		#echo "Monitor connected to NVIDIA GPU ${monitors[@]}"
+	fi
+
+	echo "Adding ${#nvidia_busids[@]} NVIDIA GPU to config"
+
+	for busid in "${nvidia_busids[@]}"; do
+		busid_arr=(${busid//[!0-9a-fA-F]/ })
+		busid_dec="$((16#${busid_arr[0]})):$((16#${busid_arr[1]})):$((16#${busid_arr[2]}))"
+		if [[ $connected == ${busid//\"} ]]; then
+			echo "Connected monitor detected on GPU $connected"
+			emulated_monitor_string=
+			useDisplayDevice='Monitor        "Monitor0"'
+		else
+			emulated_monitor_string=$'Option         "ConnectedMonitor" "DFP-0"\n\tOption         "CustomEDID" "DFP-0:/hive/etc/edid.bin"'
+			useDisplayDevice='Option         "UseDisplayDevice" "none"'
+		fi
+
+		# Use it, remove none
+		[[ $i == 0 && -z $internal ]] && useDisplayDevice=""
+
+		conf+="
+# --- $busid -------------------------------------------------------------------
+Section \"Device\"
+	Identifier     \"Device$devidx\"
+	Driver         \"nvidia\"
+	Option         \"Coolbits\" \"31\"
+	BusID          \"PCI:$busid_dec\"
+	$emulated_monitor_string
+EndSection
+
+Section \"Screen\"
+	Identifier     \"Screen$devidx\"
+	Device         \"Device$devidx\"
+	Option         \"Coolbits\" \"31\"
+	$useDisplayDevice
+EndSection
+"
+		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
+		((devidx++))
+	done
+fi
+
+
+# write config
+echo "
+#### AUTOGENERATED BY HIVE ####################################################################
+
+Section \"ServerFlags\"
+	Option \"BlankTime\" \"0\"
+	Option \"StandbyTime\" \"0\"
+	Option \"SuspendTime\" \"0\"
+	Option \"OffTime\" \"0\"
+EndSection
+
+Section \"ServerLayout\"
+	Identifier     \"Layout0\"
+
+$screens_section
+	InputDevice    \"Mouse0\" \"CorePointer\"
+EndSection
+
+Section \"Module\"
+	Disable \"glx\"
+EndSection
+
+###############################################################################################
+
+Section \"InputDevice\"
+	Identifier     \"Mouse0\"
+	Driver         \"mouse\"
+	Option         \"Protocol\" \"auto\"
+	Option         \"Device\" \"/dev/psaux\"
+	Option         \"Emulate3Buttons\" \"no\"
+	Option         \"ZAxisMapping\" \"4 5\"
+EndSection
+
+Section \"InputDevice\"
+	Identifier     \"Keyboard0\"
+	Driver         \"kbd\"
+EndSection
+
+###############################################################################################
+
+Section \"Monitor\"
+	Identifier     \"Monitor0\"
+#	VendorName     \"Unknown\"
+#	ModelName      \"Unknown\"
+#	HorizSync       28.0 - 33.0
+#	VertRefresh     43.0 - 72.0
+	Option         \"DPMS\" \"0\"
+EndSection
+
+$conf
+" > /etc/X11/xorg.conf
+
+exit 0
+
+#--use-display-device="DFP-0"
+#--allow-empty-initial-configuration \ #Allow the X server to start even if no connected display devices could be detected.
+#--preserve-driver-name #By default nvidia-xconfig changes the  display  driver  to "nvidia" for all configured X screens; this option preserves the existing driver name of each X screen.
+#nvidia-xconfig \
+#	--enable-all-gpus \
+#	--cool-bits=31 \
+#	--connected-monitor="DFP-0" \
+#	--custom-edid="DFP-0:/hive/etc/edid.bin" \
+#	--preserve-driver-name

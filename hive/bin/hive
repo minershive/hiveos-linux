@@ -23,6 +23,7 @@ bench=0
 benchmark check > /dev/null 2>&1
 [[ $? == 0 ]] && bench=1 || bench=0
 
+
 function echo2 {
 	echo -e "$1" > /dev/tty1
 	echo -e "$1"
@@ -44,7 +45,6 @@ if [[ $? -ne 0 && ! -e /hive-config/rig.conf && $DISKLESS != 1 ]]; then
 fi
 
 
-
 if [[ -e /hive-config/branding-logo.txt ]]; then
 	BRANDING_LOGO=$(cat /hive-config/branding-logo.txt; echo .) #echo . to preserve new lines
 	BRANDING_LOGO=${BRANDING_LOGO%.} #remove last .
@@ -60,11 +60,8 @@ fi
 BRANDING_LOGO="${BYELLOW}${BRANDING_LOGO}${NOCOLOR}"
 
 
-
-
 #Check for proxy var. Or agent and others started from here will not see it
 . http_proxy.sh
-
 
 
 #Make directory in RAM
@@ -85,19 +82,16 @@ export GPU_FIRST_NVIDIA=`gpu-detect NVIDIA_FIRST`
 
 #cd $(dirname $(realpath $0))
 
-uname="`uname -sr`   ${YELLOW}H `dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`${NOCOLOR}"
+SEP=" · "
 
-msg=$(cat <<EOF
-$uname
-${BRANDING_LOGO}
-${CYAN}`hostname`${NOCOLOR}
-${BPURPLE}`hostname -I`${NOCOLOR}
+sysinfo="$BPURPLE$(uname -sr)$NOCOLOR$SEP${BYELLOW}H $WHITE$(dpkg -s hive | grep -oP "^Version: \K.*$")$NOCOLOR"
+sysinfo+="$SEP$BCYAN$(hostname)$NOCOLOR$SEP${WHITE}$(hostname -I)$NOCOLOR"
 
-EOF
-)
+echo2 "$BRANDING_LOGO$sysinfo\n"
 
-echo2 "$msg"
+[[ $DISKLESS == 1 ]] && echo2 "\n${BGREEN}Diskless rig detected${NOCOLOR}\n\n"
 
+sleep 2
 
 ### OpenVPN #############################################################################################
 openvpn-install
@@ -108,31 +102,25 @@ openvpn-install
 [[ -e $RIG_CONF ]] &&
 	. $RIG_CONF
 
-if [[ $GPU_FIRST_AMD == 0 && $GPU_FIRST_NVIDIA == 0 && $DISKLESS != 1 && $X_DISABLED != 1 ]]; then
-	warnmsg=$(cat <<WARN
-$YELLOW
-#####################################################################
-###
-### You have connected monitor to integrated GPU on the motherboard?
-### Don't do this. Connect monitor to the 1st external GPU (in 16x slot).
-### However we will try to continue in 5 seconds.
-###
-#####################################################################
-$NOCOLOR
-WARN
-)
 
-	#rm config so maybe xorg autoconfig will work
-	rm /etc/X11/xorg.conf > /dev/null 2>&1
+# rm config so maybe xorg autoconfig will work
+#rm /etc/X11/xorg.conf > /dev/null 2>&1
 
-	echo2 "$warnmsg"
-	sleep 5
-fi
+
+#if [[ $GPU_FIRST_AMD == 0 && $GPU_FIRST_NVIDIA == 0 && $DISKLESS != 1 && $X_DISABLED != 1 ]]; then
+#	echo2 "$YELLOW
+##########################################################################
+###
+###  You have connected monitor to integrated GPU on the motherboard?
+###  It's better to connect monitor to the 1st external GPU (in 16x slot).
+###
+##########################################################################
+#$NOCOLOR"
+#fi
 
 ### Nvidia not first warning ############################################################################
 if [ $GPU_FIRST_AMD -gt 0 ] && [ $GPU_COUNT_NVIDIA -gt 0 ]; then
-	warnmsg=$(cat <<WARN
-$YELLOW
+	echo2 "$YELLOW
 #####################################################################
 ###
 ###   WARNING
@@ -143,15 +131,9 @@ $YELLOW
 ###   X server will crash in this configuration.
 ###
 #####################################################################
-###   Boot will continue in 15 seconds so you may try
-#####################################################################
-$NOCOLOR
-WARN
-)
-
-	echo2 "$warnmsg"
-	sleep 15
+$NOCOLOR"
 fi
+
 
 # request maintenance mode before loading drivers
 if [[ ! -z $RIG_ID && ! -z $RIG_PASSWD && ! -z $HIVE_HOST_URL ]]; then
@@ -185,7 +167,7 @@ if [[ ! -z $RIG_ID && ! -z $RIG_PASSWD && ! -z $HIVE_HOST_URL ]]; then
 			[[ "${res[2]}" == "null" ]] && MAINTENANCE= || MAINTENANCE=${res[2]}
 		fi
 	fi
-	echo2 "> Boot settings: MAINTENANCE_MODE='$MAINTENANCE', DISABLE_GUI='$X_DISABLED'"
+	echo2 "> Boot settings: MAINTENANCE_MODE=\"$MAINTENANCE\", DISABLE_GUI=\"$X_DISABLED\""
 fi
 
 
@@ -200,8 +182,7 @@ else
 		echo2 "> Loading ${GREEN}NVIDIA${NOCOLOR} drivers, $GPU_COUNT_NVIDIA GPU"
 		modprobe nvidia_drm modeset=1
 		#modprobe nvidia
-
-		echo2 "`nvidia-xorg`"
+		#echo2 "`nvidia-xorg`"
 	fi
 	if [ $GPU_COUNT_AMD -gt 0 ]; then
 		if [[ -e /opt/dkms-vega/amdgpu.ko ]]; then
@@ -211,10 +192,10 @@ else
 		echo2 "> Loading ${RED}AMD${NOCOLOR} drivers, $GPU_COUNT_AMD GPU"
 		modprobe amdgpu
 		# if there are nvidias then their config should be used, amd will not work anyways
-		if [ $GPU_COUNT_NVIDIA -eq 0 ]; then
-			echo2 "Copying AMD Xorg config"
-			cp /hive/etc/xorg.conf.amd /etc/X11/xorg.conf > /dev/null 2>&1
-		fi
+		#if [ $GPU_COUNT_NVIDIA -eq 0 ]; then
+		#	echo2 "Copying AMD Xorg config"
+		#	cp /hive/etc/xorg.conf.amd /etc/X11/xorg.conf > /dev/null 2>&1
+		#fi
 
 		echo2 "`amd-save-pp_tables`"
 
@@ -230,6 +211,7 @@ else
 	#sleep 1
 fi
 
+
 gpu-detect listjson > $GPU_DETECT_JSON
 
 
@@ -241,8 +223,8 @@ gpu-detect listjson > $GPU_DETECT_JSON
 #[ "0$TAILPID" != "0" ] && kill -9 $TAILPID
 #tail -f /var/log/syslog > /dev/tty1 &
 
+#motd
 
-motd
 
 #Run watchdog pinger ASAP. Will detect device.
 echo2 "> Detecting watchdogs"
@@ -253,13 +235,16 @@ echo2 "`/hive/opt/qinheng/hl340.sh`"
 echo2 "`/hive/opt/srrv2/srrv2.sh`"
 echo2 "`/hive/opt/octofan/watchdog-octofan.sh`"
 
+
 echo2 "> Applying crontab"
 crontab /hive/etc/crontab.root
+
 
 echo2 "> Saying hello to server"
 hello boot
 [[ -e $RIG_CONF ]] &&
 	. $RIG_CONF
+
 
 # cache host only if network is online to reduce boot time. it will be run by cron anyway
 if networkctl list | grep -q routable; then
@@ -283,8 +268,15 @@ agent-screen start
 [[ -e /root/nvidia-oc ]] && rm /root/nvidia-oc
 
 
+# always generate X server config
+echo2 "> Creating Xorg config"
+echo2 "`xorg-conf`"
+
+# auto enable X server for Nvidia gpu
+[[ -z $X_DISABLED && $GPU_COUNT_NVIDIA -gt 0 ]] && X_DISABLED=0
+
 # Nvidia OC will be run by xinit
-if [[ $X_DISABLED != 1 && $DISKLESS != 1 && $MAINTENANCE != 2 ]]; then
+if [[ $X_DISABLED == 0 && $DISKLESS != 1 && $MAINTENANCE != 2 ]]; then
 	echo2 "> Starting HiveX"
 	systemctl start hivex
 
@@ -316,12 +308,18 @@ if [[ $X_DISABLED != 1 && $DISKLESS != 1 && $MAINTENANCE != 2 ]]; then
 			done
 		fi
 	fi
-else
-	systemctl restart hive-console
+	
+	pgrep Xorg >/dev/null
+	if [[ $? -ne 0 ]]; then
+		echo2 "\n\n${RED}It seems X server failed to run.\nThis can happen with some GPUs and buggy drivers.\nBut you still can use Hive in console.${NOCOLOR}\n"
+		sleep 3
+	fi
 fi
+
 
 # Apply amd-oc before miner start
 [[ $MAINTENANCE != 2 ]] && amd-oc-safe
+
 
 if [[ $MAINTENANCE == 1 || $MAINTENANCE == 2 ]]; then
 	echo2 "> Maintenance mode. Miner and software watchdog are disabled"
@@ -345,12 +343,15 @@ else
 	fi
 fi
 
+
 [[ $MAINTENANCE != 2 ]] &&
 	echo2 "> Starting autofan" &&
 	autofan start
 
+
 #echo2 "> Starting octofan"
 $OCTOFAN
+
 
 #k10temp for cpu temp
 modprobe k10temp
@@ -362,5 +363,10 @@ fi
 
 
 echo2 "> Hive Start Finished"
+
+
+# restart console only if X not running
+pgrep Xorg >/dev/null || systemctl restart hive-console
+
 
 exit 0

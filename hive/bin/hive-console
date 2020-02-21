@@ -1,34 +1,23 @@
 #!/bin/bash
 #This service is started only if the X server is not started or then xinit is killed
+
 export PATH="./:/hive/bin:/hive/sbin:$PATH"
 
 #[ -t 1 ] &&
-. colors #use them anyway
+#. colors #use them anyway
 
-if [[ -f /hive-config/.DISKLESS_AMD && $(cat /proc/mounts | grep "/ " | awk '{print $1}') == tmpfs ]];then
-msg=$(cat <<EOF
-$GREEN
+source /etc/environment
+[[ -e $RIG_CONF ]] &&
+	. $RIG_CONF
 
-Diskless rig detected
+function console_restart() {
+    # clear trap
+    trap - EXIT
+	echo "Restarting console..."
+	systemctl restart hive-console
+}
 
-$NOCOLOR
-EOF
-)
-else
-msg=$(cat <<EOF
-$RED
-
-It seems X server failed to run (or you have disabled it).
-This can happen with some GPUs and buggy drivers.
-But you still can use Hive in console.
-
-$NOCOLOR
-EOF
-)
-fi
-
-echo -e "$msg"
-
-sleep 2
+# set trap
+#trap 'console_restart' EXIT
 
 sudo -i bash -c "motd; firstrun; bash"
