@@ -5,13 +5,6 @@ set -o pipefail
 #echo "Creating Xorg config"
 
 
-#if [ ! -f $GPU_DETECT_JSON ]; then
-#	gpu_detect_json=`gpu-detect listjson`
-#else
-#	gpu_detect_json=`cat $GPU_DETECT_JSON`
-#fi
-
-
 # disable glamregl extension as it often crashes X server
 [[ -f /usr/lib/xorg/modules/libglamoregl.so ]] &&
 	mv -f /usr/lib/xorg/modules/libglamoregl.so /usr/lib/xorg/modules/libglamoregl.so.disabled
@@ -19,62 +12,83 @@ set -o pipefail
 	mv -f /opt/amdgpu/lib/xorg/modules/libglamoregl.so /opt/amdgpu/lib/xorg/modules/libglamoregl.so.disabled
 
 
-devidx=0
-screens_section=""
-conf=""
+
+#if [ ! -f $GPU_DETECT_JSON ]; then
+#	gpu_detect_json=`gpu-detect listjson`
+#else
+#	gpu_detect_json=`cat $GPU_DETECT_JSON`
+#fi
+
+#amd_first=`gpu-detect AMD_FIRST`
+#amd_busids=(`jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .value.busid ] | .[]' <<< "$gpu_detect_json" 2>/dev/null`)
+#nvidia_busids=(`jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .value.busid ] | .[]' <<< "$gpu_detect_json" 2>/dev/null`)
+
+
+convert_busid() {
+	local busid=($1)
+	local busid_arr=(${busid[0]//[!0-9a-fA-F]/ })
+	echo "$((16#${busid_arr[0]})):$((16#${busid_arr[1]})):$((16#${busid_arr[2]}))"
+}
+
 
 gpu_detect="`lspci | grep -E "VGA|3D controller|Display controller"`"
 
+amd_primary=`echo "$gpu_detect" | head -n 1 | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | wc -l`
+amd_busids=(`echo "$gpu_detect" | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | cut -d" " -f1`)
+#echo "AMD - ${amd_busids[@]}"
+
+nvidia_busids=(`echo "$gpu_detect" | grep "NVIDIA" | grep -v "nForce" | cut -d" " -f1`)
+#echo "NV - ${nvidia_busids[@]}"
+
 internal=`echo "$gpu_detect" | head -n 1 | grep -vE "NVIDIA|AMD"`
-if [[ ! -z $internal ]]; then
-	#busid=`echo $internal | awk '{print $1}' | awk -F : '{printf("%d:%d:%d\n", "0x"$1, $2, $3)}'`
-	busid=`awk '{print $1}' <<< "$internal"`
-	busid_arr=(${busid//[!0-9a-fA-F]/ })
-	busid_dec="$((16#${busid_arr[0]})):$((16#${busid_arr[1]})):$((16#${busid_arr[2]}))"
+#echo "INTERNAL - $internal"
 
-	#echo $internal
-	internal_driver="intel"
-	[[ $internal =~ "VMware" ]] && internal_driver="vmware" #00:02.0 VGA compatible controller: VMware SVGA II Adapter
-	[[ $internal =~ "Device 1234:1111" ]] && internal_driver="vesa"
-	[[ $internal =~ "QXL" ]] && internal_driver="vga" #internal_driver="modesetting", with modesetting driver - OC will not work
 
-	echo "Detected internal GPU $busid to be the first one, choosing \"$internal_driver\" driver"
+devidx=0
+connected=
+screens_section=
+conf=
 
-	conf+="
-# --- Internal GPU -------------------------------------------------------------
+
+# add Nvidia first if monitor is connected to it
+if [[ ${#nvidia_busids[@]} -gt 0 && $devidx -eq 0 ]]; then
+	monitors=(`nvidia-smi --query-gpu=gpu_bus_id,display_mode --format=csv,noheader 2>/dev/null | grep "Enabled" | cut -d, -f1`)
+	if [[ ! -z $monitors ]]; then
+		echo "Detected monitor on NVIDIA GPU ${monitors[@]}"
+		connected=${monitors[0]/00000000:}
+		echo "Adding 1 NVIDIA GPU as the primary one"
+
+		busid=$connected
+		busid_dec=$(convert_busid $busid)
+
+		conf+="
+# --- $busid -------------------------------------------------------------------
 Section \"Device\"
 	Identifier     \"Device$devidx\"
-	Driver         \"$internal_driver\"
+	Driver         \"nvidia\"
+	Option         \"Coolbits\" \"31\"
 	BusID          \"PCI:$busid_dec\"
 EndSection
 
 Section \"Screen\"
 	Identifier     \"Screen$devidx\"
 	Device         \"Device$devidx\"
+	Option         \"Coolbits\" \"31\"
 	Monitor        \"Monitor0\"
 EndSection
 "
-	screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
-	((devidx++))
+		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
+		((devidx++))
+	fi
 fi
 
 
-#amd_count=`jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ] | length' <<< "$gpu_detect_json" 2>/dev/null`
-#amd_names=(`jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .value.name ] | .[]' <<< "$gpu_detect_json" 2>/dev/null`)
-#amd_busids=(`jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .value.busid ] | .[]' <<< "$gpu_detect_json" 2>/dev/null`)
-
-#amd_first=`gpu-detect AMD_FIRST`
-amd_first=`echo "$gpu_detect" | head -n 1 | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | wc -l`
-amd_busids=(`echo "$gpu_detect" | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | awk '{print $1}'`)
-#echo "AMD - ${amd_busids[@]}"
-
-# add only if AMD is first
-if [[ $amd_first -gt 0 && ${#amd_busids[@]} -gt 0 ]]; then
-	echo "Adding ${#amd_busids[@]} AMD GPU to config"
+# add AMD only if it is first and primary
+if [[ $amd_primary -gt 0 && $devidx -eq 0 ]]; then
+	echo "Adding ${#amd_busids[@]} AMD GPU, first is the primary one"
 
 	for busid in "${amd_busids[@]}"; do
-		busid_arr=(${busid//[!0-9a-fA-F]/ })
-		busid_dec="$((16#${busid_arr[0]})):$((16#${busid_arr[1]})):$((16#${busid_arr[2]}))"
+		busid_dec=$(convert_busid $busid)
 
 	conf+="
 # --- $busid -------------------------------------------------------------------
@@ -92,41 +106,60 @@ EndSection
 		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
 		((devidx++))
 	done
-else
-	[[ ${#amd_busids[@]} -gt 0 ]] && echo "AMD GPU is not first one, skipping"
+elif [[ ${#amd_busids[@]} -gt 0 ]]; then
+	echo "Detected ${#amd_busids[@]} AMD GPU, but none is the primary, skipping"
 fi
 
 
-#nvidia_count=`jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ] | length' <<< "$gpu_detect_json" 2>/dev/null`
-#nvidia_names=(`jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .value.name ] | .[]' <<< "$gpu_detect_json" 2>/dev/null`)
-#nvidia_busids=(`jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .value.busid ] | .[]' <<< "$gpu_detect_json" 2>/dev/null`)
+# add Internal only if is first
+if [[ ! -z $internal && $devidx -eq 0 ]]; then
+	busid=`awk '{print $1}' <<< "$internal"`
+	busid_dec=$(convert_busid $busid)
 
-nvidia_busids=(`echo "$gpu_detect" | grep "NVIDIA" | grep -v "nForce" | awk '{print $1}'`)
-#echo "NV - ${nvidia_busids[@]}"
+	#echo $internal
+	internal_driver="intel"
+	[[ $internal =~ "VMware" ]] && internal_driver="vmware" #00:02.0 VGA compatible controller: VMware SVGA II Adapter
+	[[ $internal =~ "Device 1234:1111" ]] && internal_driver="vesa"
+	[[ $internal =~ "QXL" ]] && internal_driver="vga" #internal_driver="modesetting", with modesetting driver - OC will not work
+	
+	echo "Adding internal GPU $busid with \"$internal_driver\" driver, it is the primary one"
 
+	conf+="
+# --- Internal GPU -------------------------------------------------------------
+Section \"Device\"
+	Identifier     \"Device$devidx\"
+	Driver         \"$internal_driver\"
+	BusID          \"PCI:$busid_dec\"
+EndSection
+
+Section \"Screen\"
+	Identifier     \"Screen$devidx\"
+	Device         \"Device$devidx\"
+	Monitor        \"Monitor0\"
+EndSection
+"
+	screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
+	((devidx++))
+elif [[ ! -z $internal ]]; then
+	echo "Detected internal GPU, but it is not the primary, skipping"
+fi
+
+
+# add all other Nvidia
 if [[ ${#nvidia_busids[@]} -gt 0 ]]; then
-	monitors=(`nvidia-smi --query-gpu=gpu_bus_id,display_mode --format=csv,noheader 2>/dev/null | grep "Enabled" | cut -d, -f1`)
-	if [[ ! -z $monitors ]]; then
-		connected=${monitors[0]/00000000:}
-		#echo "Monitor connected to NVIDIA GPU ${monitors[@]}"
+	if [[ ! -z $connected && ${#nvidia_busids[@]} -gt 1 ]]; then
+		echo "Adding $(( ${#nvidia_busids[@]} - 1 )) NVIDIA GPU"
+	elif [[ $devidx -eq 0 ]]; then
+		echo "Adding ${#nvidia_busids[@]} NVIDIA GPU, first is the primary one"
+	else
+		echo "Adding ${#nvidia_busids[@]} NVIDIA GPU"
 	fi
 
-	echo "Adding ${#nvidia_busids[@]} NVIDIA GPU to config"
-
 	for busid in "${nvidia_busids[@]}"; do
-		busid_arr=(${busid//[!0-9a-fA-F]/ })
-		busid_dec="$((16#${busid_arr[0]})):$((16#${busid_arr[1]})):$((16#${busid_arr[2]}))"
-		if [[ $connected == ${busid//\"} ]]; then
-			echo "Connected monitor detected on GPU $connected"
-			emulated_monitor_string=
-			useDisplayDevice='Monitor        "Monitor0"'
-		else
-			emulated_monitor_string=$'Option         "ConnectedMonitor" "DFP-0"\n\tOption         "CustomEDID" "DFP-0:/hive/etc/edid.bin"'
-			useDisplayDevice='Option         "UseDisplayDevice" "none"'
-		fi
+		# skip already added
+		[[ $connected == $busid ]] && continue
 
-		# Use it, remove none
-		[[ $i == 0 && -z $internal ]] && useDisplayDevice=""
+		busid_dec=$(convert_busid $busid)
 
 		conf+="
 # --- $busid -------------------------------------------------------------------
@@ -135,14 +168,15 @@ Section \"Device\"
 	Driver         \"nvidia\"
 	Option         \"Coolbits\" \"31\"
 	BusID          \"PCI:$busid_dec\"
-	$emulated_monitor_string
+	Option         \"ConnectedMonitor\" \"DFP-0\"
+	Option         \"CustomEDID\" \"DFP-0:/hive/etc/edid.bin\"
 EndSection
 
 Section \"Screen\"
 	Identifier     \"Screen$devidx\"
 	Device         \"Device$devidx\"
 	Option         \"Coolbits\" \"31\"
-	$useDisplayDevice
+	Option         \"UseDisplayDevice\" \"none\"
 EndSection
 "
 		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
