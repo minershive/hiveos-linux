@@ -45,20 +45,20 @@ internal=`echo "$gpu_detect" | head -n 1 | grep -vE "NVIDIA|AMD"`
 
 
 devidx=0
-connected=
+nv_connected=
 screens_section=
 conf=
 
 
 # add Nvidia first if monitor is connected to it
 if [[ ${#nvidia_busids[@]} -gt 0 && $devidx -eq 0 ]]; then
-	monitors=(`nvidia-smi --query-gpu=gpu_bus_id,display_mode --format=csv,noheader 2>/dev/null | grep "Enabled" | cut -d, -f1`)
-	if [[ ! -z $monitors ]]; then
-		echo "Detected monitor on NVIDIA GPU ${monitors[@]}"
-		connected=${monitors[0]/00000000:}
+	nv_monitors=(`nvidia-smi --query-gpu=gpu_bus_id,display_mode --format=csv,noheader 2>/dev/null | grep "Enabled" | cut -d, -f1`)
+	if [[ ! -z $nv_monitors ]]; then
+		echo "Detected monitor on NVIDIA GPU ${nv_monitors[@]}"
+		nv_connected=${nv_monitors[0]/00000000:}
 		echo "Adding 1 NVIDIA GPU as the primary one"
 
-		busid=$connected
+		busid=$nv_connected
 		busid_dec=$(convert_busid $busid)
 
 		conf+="
@@ -74,7 +74,6 @@ Section \"Screen\"
 	Identifier     \"Screen$devidx\"
 	Device         \"Device$devidx\"
 	Option         \"Coolbits\" \"31\"
-	Monitor        \"Monitor0\"
 EndSection
 "
 		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
@@ -85,16 +84,48 @@ fi
 
 # add AMD only if it is first and primary
 if [[ $amd_primary -gt 0 && $devidx -eq 0 ]]; then
-	echo "Adding ${#amd_busids[@]} AMD GPU, first is the primary one"
+	amd_monitors=()
+	statuses=(`grep "^connected" /sys/class/drm/*/status 2>/dev/null`)
+	for status in "${statuses[@]}"; do
+		#echo "$status"
+		dev_path="${status%%-*}/device/uevent"
+		[[ -f $dev_path ]] && pciid=`grep PCI_SLOT_NAME $dev_path 2>/dev/null` && amd_monitors+=(${pciid##*=})
+	done
+
+	echo "Adding ${#amd_busids[@]} AMD GPU to config"
+
+	if [[ ! -z $amd_monitors ]]; then
+		echo "Detected monitor on AMD GPU ${amd_monitors[@]}"
+		busid=${amd_monitors[0]/0000:}
+		busid_dec=$(convert_busid $busid)
+	conf+="
+# --- $busid -------------------------------------------------------------------
+Section \"Device\"
+	Identifier     \"Device$devidx\"
+	Driver         \"amdgpu\"
+	BusID          \"PCI:$busid_dec\"
+EndSection
+
+Section \"Screen\"
+	Identifier     \"Screen$devidx\"
+	Device         \"Device$devidx\"
+EndSection
+"
+		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
+		((devidx++))
+	fi
 
 	for busid in "${amd_busids[@]}"; do
+		# skip already added
+		[[ $amd_connected == $busid ]] && continue
+
 		busid_dec=$(convert_busid $busid)
 
 	conf+="
 # --- $busid -------------------------------------------------------------------
 Section \"Device\"
 	Identifier     \"Device$devidx\"
-	Driver         \"amdgpu\" # \"modesetting\"
+	Driver         \"amdgpu\"
 	BusID          \"PCI:$busid_dec\"
 EndSection
 
@@ -116,9 +147,9 @@ if [[ ! -z $internal && $devidx -eq 0 ]]; then
 	busid=`awk '{print $1}' <<< "$internal"`
 	busid_dec=$(convert_busid $busid)
 
-	#echo $internal
-	internal_driver="intel"
-	[[ $internal =~ "VMware" ]] && internal_driver="vmware" #00:02.0 VGA compatible controller: VMware SVGA II Adapter
+	internal_driver="vesa" # default
+	[[ $internal =~ "Intel" ]] && internal_driver="intel" # 00:02.0 VGA compatible controller: Intel Corporation HD Graphics 610
+	[[ $internal =~ "VMware" ]] && internal_driver="vmware" # 00:02.0 VGA compatible controller: VMware SVGA II Adapter
 	[[ $internal =~ "Device 1234:1111" ]] && internal_driver="vesa"
 	[[ $internal =~ "QXL" ]] && internal_driver="vga" #internal_driver="modesetting", with modesetting driver - OC will not work
 	
@@ -147,7 +178,7 @@ fi
 
 # add all other Nvidia
 if [[ ${#nvidia_busids[@]} -gt 0 ]]; then
-	if [[ ! -z $connected && ${#nvidia_busids[@]} -gt 1 ]]; then
+	if [[ ! -z $nv_connected && ${#nvidia_busids[@]} -gt 1 ]]; then
 		echo "Adding $(( ${#nvidia_busids[@]} - 1 )) NVIDIA GPU"
 	elif [[ $devidx -eq 0 ]]; then
 		echo "Adding ${#nvidia_busids[@]} NVIDIA GPU, first is the primary one"
@@ -157,9 +188,12 @@ if [[ ${#nvidia_busids[@]} -gt 0 ]]; then
 
 	for busid in "${nvidia_busids[@]}"; do
 		# skip already added
-		[[ $connected == $busid ]] && continue
+		[[ $nv_connected == $busid ]] && continue
 
 		busid_dec=$(convert_busid $busid)
+
+		# do not disable primary gpu output
+		[[ $devidx -eq 0 ]] && useDisplayDevice= || useDisplayDevice="Option         \"UseDisplayDevice\" \"none\""
 
 		conf+="
 # --- $busid -------------------------------------------------------------------
@@ -176,7 +210,7 @@ Section \"Screen\"
 	Identifier     \"Screen$devidx\"
 	Device         \"Device$devidx\"
 	Option         \"Coolbits\" \"31\"
-	Option         \"UseDisplayDevice\" \"none\"
+	$useDisplayDevice
 EndSection
 "
 		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
