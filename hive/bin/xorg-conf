@@ -56,7 +56,7 @@ if [[ ${#nvidia_busids[@]} -gt 0 && $devidx -eq 0 ]]; then
 	if [[ ! -z $nv_monitors ]]; then
 		echo "Detected monitor on NVIDIA GPU ${nv_monitors[@]}"
 		nv_connected=${nv_monitors[0]/00000000:}
-		echo "Adding 1 NVIDIA GPU as the primary one"
+		echo "Adding NVIDIA GPU $nv_connected as the primary one"
 
 		busid=$nv_connected
 		busid_dec=$(convert_busid $busid)
@@ -92,11 +92,12 @@ if [[ $amd_primary -gt 0 && $devidx -eq 0 ]]; then
 		[[ -f $dev_path ]] && pciid=`grep PCI_SLOT_NAME $dev_path 2>/dev/null` && amd_monitors+=(${pciid##*=})
 	done
 
-	echo "Adding ${#amd_busids[@]} AMD GPU to config"
-
 	if [[ ! -z $amd_monitors ]]; then
 		echo "Detected monitor on AMD GPU ${amd_monitors[@]}"
-		busid=${amd_monitors[0]/0000:}
+		amd_connected=${amd_monitors[0]/0000:}
+		echo "Adding AMD GPU $amd_connected as the primary one"
+				
+		busid=$amd_connected
 		busid_dec=$(convert_busid $busid)
 	conf+="
 # --- $busid -------------------------------------------------------------------
@@ -113,6 +114,10 @@ EndSection
 "
 		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
 		((devidx++))
+
+		[[ ${#amd_busids[@]} -gt 1 ]] && echo "Adding other $(( ${#amd_busids[@]} - 1 )) AMD GPU"
+	else
+		echo "Adding ${#amd_busids[@]} AMD GPU, first is the primary one"
 	fi
 
 	for busid in "${amd_busids[@]}"; do
@@ -179,7 +184,7 @@ fi
 # add all other Nvidia
 if [[ ${#nvidia_busids[@]} -gt 0 ]]; then
 	if [[ ! -z $nv_connected && ${#nvidia_busids[@]} -gt 1 ]]; then
-		echo "Adding $(( ${#nvidia_busids[@]} - 1 )) NVIDIA GPU"
+		echo "Adding other $(( ${#nvidia_busids[@]} - 1 )) NVIDIA GPU"
 	elif [[ $devidx -eq 0 ]]; then
 		echo "Adding ${#nvidia_busids[@]} NVIDIA GPU, first is the primary one"
 	else
