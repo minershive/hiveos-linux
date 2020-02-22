@@ -181,6 +181,8 @@ for bdir in $busids_dirs; do
 
 			[[ ! -z $memoryState ]] &&
 				echo $memoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
+
+			echo "auto" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
 		fi
 	fi
 done
