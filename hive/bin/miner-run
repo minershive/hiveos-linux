@@ -161,6 +161,10 @@ fi
 # Run miner ==========================================================================
 [[ ! -z $MINER_STOP && -f $MINER_STOP ]] && rm $MINER_STOP > /dev/null 2>&1
 
+# miner minimal work time in seconds for log rotation
+miner_min_time=30
+miner_start_ts=0
+
 cd $MINER_DIR
 while true; do
 	[[ ! -e $MINER_DIR/h-run.sh ]] &&
@@ -168,8 +172,10 @@ while true; do
 		sleep 3 &&
 		continue
 
-	miner logrotate $MINER_NAME
-	
+	# do not rotate logs if miner restarts quickly to keep old logs
+	[[ $(date +%s) -ge $(( miner_start_ts + miner_min_time )) ]] &&
+		miner logrotate $MINER_NAME || echo "Skipping miner log rotation due to execution time < ${miner_min_time}sec"
+
 	#Drop TIME_WAIT sockets
 	if [[ ! -z $MINER_API_PORT && $(lsmod | grep droptcpsock) ]]; then
 		echo ""
@@ -181,10 +187,18 @@ while true; do
 			sleep 1
 		done
 	fi
-	
+
+	miner_start_ts=$(date +%s)
+
+	# prevent Ctrl+C from killing screen. only killing miner for first time
+	trap 'echo ""' SIGINT
+
 	source $MINER_DIR/h-run.sh
 	# exit loop if miner stop exists
 	[[ ! -z $MINER_STOP && -f $MINER_STOP ]] && break
+
+	# allow Ctrl+C again
+	trap - SIGINT
 
 	echo ""
 	echo -e "${YELLOW}$MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
