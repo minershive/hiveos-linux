@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+
+SWITCH_OUTPUT_TO_MONITOR=1
+
+
 set -o pipefail
 
 #echo "Creating Xorg config"
@@ -37,6 +41,7 @@ amd_primary=`echo "$gpu_detect" | head -n 1 | grep "Advanced Micro Devices" | gr
 amd_busids=(`echo "$gpu_detect" | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | cut -d" " -f1`)
 #echo "AMD - ${amd_busids[@]}"
 
+nvidia_primary=`echo "$gpu_detect" | head -n 1 | grep "NVIDIA" | grep -v "nForce" |  wc -l`
 nvidia_busids=(`echo "$gpu_detect" | grep "NVIDIA" | grep -v "nForce" | cut -d" " -f1`)
 #echo "NV - ${nvidia_busids[@]}"
 
@@ -45,61 +50,94 @@ internal=`echo "$gpu_detect" | head -n 1 | grep -vE "NVIDIA|AMD"`
 
 
 devidx=0
-nv_connected=
 screens_section=
 conf=
+connected=
 
 
-# add Nvidia first if monitor is connected to it
-if [[ ${#nvidia_busids[@]} -gt 0 && $devidx -eq 0 ]]; then
-	nv_monitors=(`nvidia-smi --query-gpu=gpu_bus_id,display_mode --format=csv,noheader 2>/dev/null | grep "Enabled" | cut -d, -f1`)
-	if [[ ! -z $nv_monitors ]]; then
-		echo "Detected monitor on NVIDIA GPU ${nv_monitors[@]}"
-		nv_connected=${nv_monitors[0]/00000000:}
-		echo "Adding NVIDIA GPU $nv_connected as the primary one"
+# detect connected monitors
+devices=(`grep "^connected" /sys/class/drm/*/status 2>/dev/null`)
+if [[ ${#devices[@]} -gt 0 ]]; then
+	monitors=()
+	echo "Detecting connected monitors:"
+	for device in "${devices[@]}"; do
+		echo -n "  $device"
+		dev_path="${device%%-*}/device/uevent"
+		busid=
+		[[ -f $dev_path ]] && busid=`grep -oP "PCI_SLOT_NAME=\K.*" $dev_path 2>/dev/null` && monitors+=(${busid/0000:})
+		[[ ! -z $busid ]] && echo " - GPU $busid" || echo " - unable to get busid for GPU"
+	done
+fi
+if [[ ! -z ${monitors[0]} ]]; then
+	connected=${monitors[0]}
+	if [[ "$internal" =~ $connected ]]; then
+		gpu="internal"
+	elif [[ "${amd_busids[@]}" =~ $connected ]]; then
+		gpu="AMD"
+	elif [[ "${nvidia_busids[@]}" =~ $connected ]]; then
+		gpu="NVIDIA"
+	else
+		gpu="Unknown"
+	fi
+#	if [[ $SWITCH_OUTPUT_TO_MONITOR == 1 ]]; then
+#		echo "Using $gpu GPU ${monitors[0]} as the primary one"
+#	else
+#		echo "Using default primary GPU"
+#	fi
+else
+	SWITCH_OUTPUT_TO_MONITOR=0
+fi
 
-		busid=$nv_connected
-		busid_dec=$(convert_busid $busid)
 
-		conf+="
-# --- $busid -------------------------------------------------------------------
+# add internal GPU only if it is primary or has connected monitor
+if [[ ! -z $internal && ( $SWITCH_OUTPUT_TO_MONITOR != 1 || "$internal" =~ $connected ) ]]; then
+	busid=`awk '{print $1}' <<< "$internal"`
+	busid_dec=$(convert_busid $busid)
+
+	internal_driver="vesa" # default
+	[[ $internal =~ "Intel" ]] && internal_driver="intel" # 00:02.0 VGA compatible controller: Intel Corporation HD Graphics 610
+	[[ $internal =~ "VMware" ]] && internal_driver="vmware" # 00:02.0 VGA compatible controller: VMware SVGA II Adapter
+	[[ $internal =~ "Device 1234:1111" ]] && internal_driver="vesa"
+	[[ $internal =~ "QXL" ]] && internal_driver="vga" #internal_driver="modesetting", with modesetting driver - OC will not work
+
+	if [[ ! -z $connected && "$internal" =~ $connected ]]; then
+		echo "Adding internal GPU $busid with \"$internal_driver\" driver, as the primary one"
+		monitor=
+	else
+		echo "Adding internal GPU $busid with \"$internal_driver\" driver, it is the primary one"
+		monitor="Monitor        \"Monitor0\""
+	fi
+	
+	conf+="
+# --- Internal GPU -------------------------------------------------------------
 Section \"Device\"
 	Identifier     \"Device$devidx\"
-	Driver         \"nvidia\"
-	Option         \"Coolbits\" \"31\"
+	Driver         \"$internal_driver\"
 	BusID          \"PCI:$busid_dec\"
 EndSection
 
 Section \"Screen\"
 	Identifier     \"Screen$devidx\"
 	Device         \"Device$devidx\"
-	Option         \"Coolbits\" \"31\"
+	$monitor
 EndSection
 "
-		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
-		((devidx++))
-	fi
+	screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
+	((devidx++))
+elif [[ ! -z $internal ]]; then
+	echo "Detected internal GPU, skipping"
 fi
 
 
-# add AMD only if it is first and primary
-if [[ $amd_primary -gt 0 && $devidx -eq 0 ]]; then
-	amd_monitors=()
-	statuses=(`grep "^connected" /sys/class/drm/*/status 2>/dev/null`)
-	for status in "${statuses[@]}"; do
-		#echo "$status"
-		dev_path="${status%%-*}/device/uevent"
-		[[ -f $dev_path ]] && pciid=`grep PCI_SLOT_NAME $dev_path 2>/dev/null` && amd_monitors+=(${pciid##*=})
-	done
+# add AMD GPU only if it is primary or has connected monitor
+if [[ ( $amd_primary -gt 0 && $SWITCH_OUTPUT_TO_MONITOR != 1 ) || ( $SWITCH_OUTPUT_TO_MONITOR == 1 && "${amd_busids[@]}" =~ $connected ) ]]; then
 
-	if [[ ! -z $amd_monitors ]]; then
-		echo "Detected monitor on AMD GPU ${amd_monitors[@]}"
-		amd_connected=${amd_monitors[0]/0000:}
-		echo "Adding AMD GPU $amd_connected as the primary one"
-				
-		busid=$amd_connected
+	# first add with connected monitor if needed
+	if [[ $SWITCH_OUTPUT_TO_MONITOR == 1 ]]; then
+		echo "Adding AMD GPU $connected as the primary one"
+		busid=$connected
 		busid_dec=$(convert_busid $busid)
-	conf+="
+		conf+="
 # --- $busid -------------------------------------------------------------------
 Section \"Device\"
 	Identifier     \"Device$devidx\"
@@ -122,11 +160,10 @@ EndSection
 
 	for busid in "${amd_busids[@]}"; do
 		# skip already added
-		[[ $amd_connected == $busid ]] && continue
+		[[ $SWITCH_OUTPUT_TO_MONITOR == 1 && $busid == $connected ]] && continue
 
 		busid_dec=$(convert_busid $busid)
-
-	conf+="
+		conf+="
 # --- $busid -------------------------------------------------------------------
 Section \"Device\"
 	Identifier     \"Device$devidx\"
@@ -142,49 +179,40 @@ EndSection
 		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
 		((devidx++))
 	done
+
 elif [[ ${#amd_busids[@]} -gt 0 ]]; then
-	echo "Detected ${#amd_busids[@]} AMD GPU, but none is the primary, skipping"
+	echo "Detected ${#amd_busids[@]} AMD GPU, skipping"
 fi
 
 
-# add Internal only if is first
-if [[ ! -z $internal && $devidx -eq 0 ]]; then
-	busid=`awk '{print $1}' <<< "$internal"`
-	busid_dec=$(convert_busid $busid)
+# add Nvidia GPU in any case
+if [[ ${#nvidia_busids[@]} -gt 0 ]]; then
+	#monitors=(`nvidia-smi --query-gpu=gpu_bus_id,display_mode --format=csv,noheader 2>/dev/null | grep "Enabled" | cut -d, -f1`)
 
-	internal_driver="vesa" # default
-	[[ $internal =~ "Intel" ]] && internal_driver="intel" # 00:02.0 VGA compatible controller: Intel Corporation HD Graphics 610
-	[[ $internal =~ "VMware" ]] && internal_driver="vmware" # 00:02.0 VGA compatible controller: VMware SVGA II Adapter
-	[[ $internal =~ "Device 1234:1111" ]] && internal_driver="vesa"
-	[[ $internal =~ "QXL" ]] && internal_driver="vga" #internal_driver="modesetting", with modesetting driver - OC will not work
-	
-	echo "Adding internal GPU $busid with \"$internal_driver\" driver, it is the primary one"
-
-	conf+="
-# --- Internal GPU -------------------------------------------------------------
+	# first add with connected monitor if needed
+	if [[ $SWITCH_OUTPUT_TO_MONITOR == 1 && "${nvidia_busids[@]}" =~ $connected ]]; then
+		echo "Adding NVIDIA GPU $connected as the primary one"
+		busid=$connected
+		busid_dec=$(convert_busid $busid)
+		conf+="
+# --- $busid -------------------------------------------------------------------
 Section \"Device\"
 	Identifier     \"Device$devidx\"
-	Driver         \"$internal_driver\"
+	Driver         \"nvidia\"
+	Option         \"Coolbits\" \"31\"
 	BusID          \"PCI:$busid_dec\"
 EndSection
 
 Section \"Screen\"
 	Identifier     \"Screen$devidx\"
 	Device         \"Device$devidx\"
-	Monitor        \"Monitor0\"
+	Option         \"Coolbits\" \"31\"
 EndSection
 "
-	screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
-	((devidx++))
-elif [[ ! -z $internal ]]; then
-	echo "Detected internal GPU, but it is not the primary, skipping"
-fi
+		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
+		((devidx++))
+	[[ ${#nvidia_busids[@]} -gt 1 ]] && echo "Adding other $(( ${#nvidia_busids[@]} - 1 )) NVIDIA GPU"
 
-
-# add all other Nvidia
-if [[ ${#nvidia_busids[@]} -gt 0 ]]; then
-	if [[ ! -z $nv_connected && ${#nvidia_busids[@]} -gt 1 ]]; then
-		echo "Adding other $(( ${#nvidia_busids[@]} - 1 )) NVIDIA GPU"
 	elif [[ $devidx -eq 0 ]]; then
 		echo "Adding ${#nvidia_busids[@]} NVIDIA GPU, first is the primary one"
 	else
@@ -193,10 +221,9 @@ if [[ ${#nvidia_busids[@]} -gt 0 ]]; then
 
 	for busid in "${nvidia_busids[@]}"; do
 		# skip already added
-		[[ $nv_connected == $busid ]] && continue
+		[[ $SWITCH_OUTPUT_TO_MONITOR == 1 && $busid == $connected ]] && continue
 
 		busid_dec=$(convert_busid $busid)
-
 		# do not disable primary gpu output
 		[[ $devidx -eq 0 ]] && useDisplayDevice= || useDisplayDevice="Option         \"UseDisplayDevice\" \"none\""
 
