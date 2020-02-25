@@ -22,7 +22,7 @@ maxCoreClock=`ohgodatool -p $PPT --show-max-core-clock | grep -oP "\K[0-9]+"`
 maxPower=`ohgodatool -p $PPT --show-max-power | grep -oP "\K[0-9]+"`
 TDP=`ohgodatool -p $PPT --show-tdp | grep -oP "\K[0-9]+"`
 TDC=`ohgodatool -p $PPT --show-tdc | grep -oP "\K[0-9]+"`
-#echo "Max core: ${maxCoreClock}MHz, Max mem: ${maxMemoryClock}MHz"
+#echo "Max core: ${maxCoreClock}MHz, Max mem: ${maxMemoryClock}MHz, Max mem state: $maxMemoryState"
 echo "TDP: ${TDP}W, TDC: ${TDC}A, Max power: ${maxPower}W"
 
 
@@ -31,20 +31,24 @@ if [[ ! -z $CORE_STATE ]]; then
 		[[ ${CORE_STATE[$i]} != 0 ]] && #skip zero state, means auto
 			coreState=${CORE_STATE[$i]}
 	else
-		echo -e "${YELLOW}WARNING: Invalid core state ${CORE_STATE[$i]}, falling back to $DEFAULT_CORE_STATE${NOCOLOR}"
-		#coreState=$DEFAULT_CORE_STATE
+		echo -e "${YELLOW}WARNING: Invalid core state ${CORE_STATE[$i]} specified"
 	fi
 fi
 
 
-if [[ -z ${MEM_STATE[$i]} || ${MEM_STATE[$i]} -le 0 || ${MEM_STATE[$i]} -gt $maxMemoryState ]]; then
-	[[ ! -z ${MEM_STATE[$i]} && ${MEM_STATE[$i]} -ne 0 ]] && echo -e "${YELLOW}WARNING: Invalid mem state ${MEM_STATE[$i]}, falling back to $maxMemoryState${NOCOLOR}"
-	MEM_STATE[$i]=$maxMemoryState
+memoryState=$maxMemoryState
+if [[ ! -z $MEM_STATE ]]; then
+	if [[ ${MEM_STATE[$i]} -ge 0 && ${MEM_STATE[$i]} -le $maxMemoryState ]]; then
+		[[ ${MEM_STATE[$i]} != 0 ]] && #skip zero state, means auto
+			memoryState=${MEM_STATE[$i]}
+	else
+		echo -e "${YELLOW}WARNING: Invalid mem state ${MEM_STATE[$i]}, falling back to $maxMemoryState${NOCOLOR}"
+	fi
 fi
 
 
 if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} -gt 0 ]]; then
-	args+=" --mem-clock ${MEM_CLOCK[$i]} --mem-state ${MEM_STATE[$i]}"
+	args+=" --mem-clock ${MEM_CLOCK[$i]} --mem-state $memoryState"
 	[[ ${MEM_CLOCK[$i]} -gt $maxMemoryClock ]] &&
 		args+="  --set-max-mem-clock ${MEM_CLOCK[$i]}"
 fi
@@ -75,7 +79,7 @@ if [[ ! -z $args ]]; then
 		ohgodatool -p $PPT $args
 
 		# fix mem clock setting with MDPM=1 on some gpu/driver/kernel combinations
-		if [[ ! -z ${MEM_CLOCK[$i]} && ${MEM_CLOCK[$i]} -gt 0 && ${MEM_STATE[$i]} -ne $maxMemoryState ]]; then
+		if [[ ! -z ${MEM_CLOCK[$i]} && ${MEM_CLOCK[$i]} -gt 0 && $memoryState -ne $maxMemoryState ]]; then
 			ohgodatool -p $PPT --mem-clock ${MEM_CLOCK[$i]} --mem-state $maxMemoryState
 		fi
 
@@ -90,7 +94,7 @@ if [[ ! -z $args ]]; then
 		ohgodatool -i $cardno $args
 
 		# fix mem clock setting with MDPM=1 on some bios/gpu/driver/kernel combinations
-		if [[ ! -z ${MEM_CLOCK[$i]} && ${MEM_CLOCK[$i]} -gt 0 && ${MEM_STATE[$i]} -ne $maxMemoryState ]]; then
+		if [[ ! -z ${MEM_CLOCK[$i]} && ${MEM_CLOCK[$i]} -gt 0 && $memoryState -ne $maxMemoryState ]]; then
 			ohgodatool -i $cardno --mem-clock ${MEM_CLOCK[$i]} --mem-state $maxMemoryState
 		fi
 	fi
