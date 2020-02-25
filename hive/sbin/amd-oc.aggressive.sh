@@ -38,7 +38,7 @@ fi
 
 if [[ -z ${MEM_STATE[$i]} || ${MEM_STATE[$i]} -le 0 || ${MEM_STATE[$i]} -gt $maxMemoryState ]]; then
 	[[ ! -z ${MEM_STATE[$i]} && ${MEM_STATE[$i]} -ne 0 ]] && echo -e "${YELLOW}WARNING: Invalid mem state ${MEM_STATE[$i]}, falling back to $maxMemoryState${NOCOLOR}"
-	${MEM_STATE[$i]}=$maxMemoryState
+	MEM_STATE[$i]=$maxMemoryState
 fi
 
 
