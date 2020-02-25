@@ -48,9 +48,13 @@ fi
 
 if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} -gt 0 ]]; then
 	ohgodatool -p $PPT --mem-clock ${MEM_CLOCK[$i]} --mem-state $memoryState
-	# fix mem clock setting with MDPM=1 on some gpu/driver/kernel combinations
+	# fix mem clock setting with MDPM 1 on some gpu/driver/kernel combinations
 	[[ $memoryState -ne $maxMemoryState ]] &&
 		ohgodatool -p $PPT --mem-clock ${MEM_CLOCK[$i]} --mem-state $maxMemoryState
+	# set MDPM 1 lower than MDPM 2 to avoid switching in auto mode
+	[[ $memoryState -eq 2 ]] &&
+		ohgodatool -p $PPT --mem-clock 400 --mem-state 1
+	# set bios max mem clock if needed
 	[[ ${MEM_CLOCK[$i]} -gt $maxMemoryClock ]] &&
 		ohgodatool -p $PPT --set-max-mem-clock ${MEM_CLOCK[$i]}
 	[[ $FAST -ne 1 ]] && cp $PPT $CARDPPT

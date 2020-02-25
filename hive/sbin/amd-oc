@@ -175,7 +175,10 @@ for bdir in $busids_dirs; do
 			. /hive/sbin/amd-oc.classic.sh
 		fi
 
-		if [[ ! -z $coreState || ! -z $memoryState ]]; then
+		# stay in auto mode as there is only one DPM state in agressive mode with core clock and voltage set
+		if [[ $AGGRESSIVE == 1 && ${CORE_STATE[$i]} -eq 1 && ${CORE_CLOCK[$i]} -gt 0 ]]; then
+			echo "Setting DPM to auto mode"
+		else
 			echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
 
 			[[ ! -z $coreState ]] &&
@@ -185,11 +188,6 @@ for bdir in $busids_dirs; do
 			[[ ! -z $memoryState ]] &&
 				#echo "Setting DPM memory state to $memoryState" &&
 				echo $memoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
-
-			# set auto mode back only in agressive mode with core clock and voltage set
-			[[ $AGGRESSIVE == 1 && ${CORE_CLOCK[$i]} -gt 0 && ${CORE_VDDC[$i]} -gt 0 ]] &&
-				echo "Setting DPM auto mode" &&
-				echo "auto" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
 		fi
 	fi
 done
