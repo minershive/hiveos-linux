@@ -120,7 +120,8 @@ while true; do
 		fi
 		break
 	else
-		echo2 "${RED}No $GPU_DETECT_JSON file exist${NOCOLOR}"
+		[[ $1 != "loop" && $1 != "run" ]] && break
+		echo2 "${RED}No $GPU_DETECT_JSON file exists${NOCOLOR}"
 	fi
 	sleep 10
 done
