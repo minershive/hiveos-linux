@@ -75,10 +75,11 @@ else
   khs=`echo $stats_raw | jq -r '.hashrate_total_now' | awk '{print $1/1000}'`
   stats=`jq --arg ac "$ac" --arg rj "$rj" \
             --argjson hs "$hs" \
+            --arg hs_units "hs" \
             --argjson temp "$temp" \
             --argjson fan "$fan" \
             --argjson bus_numbers "$bus_numbers" \
-           '{$hs, $temp, $fan, ar: [.shares.accepted, .shares.rejected],
+           '{$hs, $hs_units, $temp, $fan, ar: [.shares.accepted, .shares.rejected],
             uptime: .mining_time, algo: .algorithm, $bus_numbers, ver: .miner_version}' <<< "$stats_raw"`
 fi
 
