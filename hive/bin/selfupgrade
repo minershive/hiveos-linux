@@ -90,6 +90,17 @@ if miner status > /dev/null; then
 		miner stop
 fi
 
+
+# update pci.ids if older than 1 month
+if [[ -e /usr/share/misc/pci.ids ]]; then
+	db_ts=`stat -c %Y /usr/share/misc/pci.ids`
+	db_date=`stat -c %y /usr/share/misc/pci.ids | cut -d" " -f1`
+	[[ $(( $db_ts + 30*24*3600 )) -lt `date +%s` ]] &&
+		echo -e "${CYAN}> Updating pci.ids ($db_date)${NOCOLOR}" &&
+		update-pciids
+fi
+
+
 #Sometimes Ubuntu fails to update repos
 dpkg --configure -a || apt-get install -f -y # try to fix broken packages
 dexitcode=$? # we do not check it here. only return on exit to show a problem
@@ -200,6 +211,10 @@ export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all vari
 
 #echo ------------------------------------------------------
 screen -wipe > /dev/null 2>&1 #Wipe possible dead screen
+
+# so reboot can be avoided in case it was updated
+echo -e "${CYAN}> Running gpu-detect${NOCOLOR}"
+gpu-detect listjson > $GPU_DETECT_JSON
 
 #Moved from postinst again as hello need to see new version
 echo -e "${YELLOW}> Saying hello to server again${NOCOLOR}"
