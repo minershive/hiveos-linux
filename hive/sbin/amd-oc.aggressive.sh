@@ -10,8 +10,11 @@ CARDPPT=/sys/class/drm/card$cardno/device/pp_table
 cp $savedpp $PPT
 
 #coreState=`ohgodatool -p $PPT --show-core | grep -E "DPM state ([0-9]+):" | tail -n 1 | sed -r 's/.*([0-9]+).*/\1/'`
-args=''
 coreState=
+memoryState=
+vddci=
+applied=0
+
 
 # getting max mem state
 #maxMemoryState=`ohgodatool -p $PPT --show-mem | grep -E "Memory state ([0-9]+):" | tail -n 1 | sed -r 's/.*([0-9]+).*/\1/'`
@@ -30,64 +33,77 @@ if [[ ! -z $CORE_STATE ]]; then
 		[[ ${CORE_STATE[$i]} != 0 ]] && #skip zero state, means auto
 			coreState=${CORE_STATE[$i]}
 	else
-		echo -e "${YELLOW}WARNING: Invalid core state ${CORE_STATE[$i]} specified"
+		echo -e "${RED}ERROR: Invalid core state ${CORE_STATE[$i]} specified $NOCOLOR"
 	fi
 fi
 
 
-memoryState=$maxMemoryState
 if [[ ! -z $MEM_STATE ]]; then
 	if [[ ${MEM_STATE[$i]} -ge 0 && ${MEM_STATE[$i]} -le $maxMemoryState ]]; then
 		[[ ${MEM_STATE[$i]} != 0 ]] && #skip zero state, means auto
 			memoryState=${MEM_STATE[$i]}
 	else
-		echo -e "${YELLOW}WARNING: Invalid mem state ${MEM_STATE[$i]}, falling back to $maxMemoryState${NOCOLOR}"
+		if [[ ${MEM_STATE[$i]} -gt 100 ]]; then
+			# using as vddci voltage
+			vddci=" --vddci ${MEM_STATE[$i]}"
+			memoryState=$maxMemoryState
+		else
+			echo -e "${RED}ERROR: Invalid memory state ${MEM_STATE[$i]} specified $NOCOLOR"
+		fi
 	fi
 fi
 
 
-if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} -gt 0 ]]; then
-	ohgodatool -p $PPT --mem-clock ${MEM_CLOCK[$i]} --mem-state $memoryState
+if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} -gt 400 ]]; then
+	[[ -z $memoryState ]] &&
+		echo -e "${YELLOW}WARNING: Empty memory state, setting to max state $maxMemoryState $NOCOLOR" &&
+		memoryState=$maxMemoryState
+	ohgodatool -p $PPT --mem-clock ${MEM_CLOCK[$i]} --mem-state $memoryState $vddci
 	# fix mem clock setting with MDPM 1 on some gpu/driver/kernel combinations
 	[[ $memoryState -ne $maxMemoryState ]] &&
-		ohgodatool -p $PPT --mem-clock ${MEM_CLOCK[$i]} --mem-state $maxMemoryState
-	# set MDPM 1 lower than MDPM 2 to avoid switching in auto mode
+		ohgodatool -p $PPT --mem-clock ${MEM_CLOCK[$i]} --mem-state $maxMemoryState $vddci
+	# set MDPM 1 clocks lower than MDPM 2 to avoid switching in auto mode
 	[[ $memoryState -eq 2 ]] &&
-		ohgodatool -p $PPT --mem-clock 400 --mem-state 1
+		ohgodatool -p $PPT --mem-clock $(( ${MEM_CLOCK[$i]} - 100 )) --mem-state 1
 	# set bios max mem clock if needed
 	[[ ${MEM_CLOCK[$i]} -gt $maxMemoryClock ]] &&
 		ohgodatool -p $PPT --set-max-mem-clock ${MEM_CLOCK[$i]}
-	[[ $FAST -ne 1 ]] && cp $PPT $CARDPPT
+	[[ $FAST -ne 1 ]] && applied=1 && cp $PPT $CARDPPT
 fi
 
 
-if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} -gt 0 ]]; then
+if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} -gt 400 ]]; then
 	[[ -z $coreState ]] && # core set is not specified, let's use some default or it will not work
-		echo -e "${YELLOW}WARNING: Unset core state, falling back to $DEFAULT_CORE_STATE${NOCOLOR}" &&
+		echo -e "${YELLOW}WARNING: Empty core state, falling back to $DEFAULT_CORE_STATE $NOCOLOR" &&
 		coreState=$DEFAULT_CORE_STATE
 	for coreStateCtr in {1..7}; do #setting frequencies for all states
 		ohgodatool -p $PPT --core-clock ${CORE_CLOCK[$i]} --core-state $coreStateCtr
 	done
 	[[ ${CORE_CLOCK[$i]} -gt $maxCoreClock ]] &&
 		ohgodatool -p $PPT --set-max-core-clock ${CORE_CLOCK[$i]}
-	[[ $FAST -ne 1 ]] && cp $PPT $CARDPPT
+	[[ $FAST -ne 1 ]] && applied=1 && cp $PPT $CARDPPT
 fi
 
 
 if [[ ! -z $CORE_VDDC && ${CORE_VDDC[$i]} -gt 0 ]]; then
 	[[ -z $coreState ]] && # core set is not specified, let's use some default or it will not work
-		echo -e "${YELLOW}WARNING: Unset core state, falling back to $DEFAULT_CORE_STATE${NOCOLOR}" &&
+		echo -e "${YELLOW}WARNING: Empty core state, falling back to $DEFAULT_CORE_STATE $NOCOLOR" &&
 		coreState=$DEFAULT_CORE_STATE
 	for voltStateCtr in {1..15}; do #setting undervolt for all volt states
 		ohgodatool -p $PPT --vddc-table-set ${CORE_VDDC[$i]} --volt-state $voltStateCtr
 	done
-	[[ $FAST -ne 1 ]] && cp $PPT $CARDPPT
+	[[ $FAST -ne 1 ]] && applied=1 && cp $PPT $CARDPPT
 fi
 
 
-[[ $FAST -eq 1 ]] &&
-	echo "Applying all changes to Power Play table" &&
+if [[ $FAST -eq 1 ]]; then 
+	echo -e "${CYAN}Applying all changes to Power Play table $NOCOLOR"
 	cp $PPT $CARDPPT
+elif [[ $applied -eq 0 ]]; then
+	# if no changes were applied restore original
+	echo -e "${CYAN}Restoring original Power Play table $NOCOLOR"
+	cp $PPT $CARDPPT
+fi
 
 
 # this must be disabled for R9

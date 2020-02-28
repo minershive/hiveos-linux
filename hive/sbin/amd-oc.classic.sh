@@ -13,6 +13,8 @@ cp $savedpp $PPT
 #coreState=`ohgodatool -p $PPT --show-core | grep -E "DPM state ([0-9]+):" | tail -n 1 | sed -r 's/.*([0-9]+).*/\1/'`
 args=''
 coreState=
+memoryState=
+
 
 # getting max mem state
 #maxMemoryState=`ohgodatool -p $PPT --show-mem | grep -E "Memory state ([0-9]+):" | tail -n 1 | sed -r 's/.*([0-9]+).*/\1/'`
@@ -31,32 +33,34 @@ if [[ ! -z $CORE_STATE ]]; then
 		[[ ${CORE_STATE[$i]} != 0 ]] && #skip zero state, means auto
 			coreState=${CORE_STATE[$i]}
 	else
-		echo -e "${YELLOW}WARNING: Invalid core state ${CORE_STATE[$i]} specified"
+		echo -e "${RED}ERROR: Invalid core state ${CORE_STATE[$i]} specified $NOCOLOR"
 	fi
 fi
 
 
-memoryState=$maxMemoryState
 if [[ ! -z $MEM_STATE ]]; then
 	if [[ ${MEM_STATE[$i]} -ge 0 && ${MEM_STATE[$i]} -le $maxMemoryState ]]; then
 		[[ ${MEM_STATE[$i]} != 0 ]] && #skip zero state, means auto
 			memoryState=${MEM_STATE[$i]}
 	else
-		echo -e "${YELLOW}WARNING: Invalid mem state ${MEM_STATE[$i]}, falling back to $maxMemoryState${NOCOLOR}"
+		echo -e "${RED}ERROR: Invalid memory state ${MEM_STATE[$i]} specified $NOCOLOR"
 	fi
 fi
 
 
-if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} -gt 0 ]]; then
+if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} -gt 400 ]]; then
+	[[ -z $memoryState ]] &&
+		echo -e "${YELLOW}WARNING: Empty memory state, setting to max state $maxMemoryState $NOCOLOR" &&
+		memoryState=$maxMemoryState
 	args+=" --mem-clock ${MEM_CLOCK[$i]} --mem-state $memoryState"
 	[[ ${MEM_CLOCK[$i]} -gt $maxMemoryClock ]] &&
 		args+="  --set-max-mem-clock ${MEM_CLOCK[$i]}"
 fi
 
 
-if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} -gt 0 ]]; then
+if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} -gt 400 ]]; then
 	[[ -z $coreState ]] && # core set is not specified, let's use some default or it will not work
-		echo -e "${YELLOW}WARNING: Unset core state, falling back to $DEFAULT_CORE_STATE${NOCOLOR}" &&
+		echo -e "${YELLOW}WARNING: Empty core state, falling back to $DEFAULT_CORE_STATE $NOCOLOR" &&
 		coreState=$DEFAULT_CORE_STATE
 	args+=" --core-clock ${CORE_CLOCK[$i]} --core-state $coreState"
 	[[ ${CORE_CLOCK[$i]} -gt $maxCoreClock ]] &&
@@ -66,7 +70,7 @@ fi
 
 if [[ ! -z $CORE_VDDC && ${CORE_VDDC[$i]} -gt 0 ]]; then
 	[[ -z $coreState ]] && # core set is not specified, let's use some default or it will not work
-		echo -e "${YELLOW}WARNING: Unset core state, falling back to $DEFAULT_CORE_STATE${NOCOLOR}" &&
+		echo -e "${YELLOW}WARNING: Empty core state, falling back to $DEFAULT_CORE_STATE $NOCOLOR" &&
 		coreState=$DEFAULT_CORE_STATE
 	args+=" --vddc-table-set ${CORE_VDDC[$i]} --volt-state $coreState"
 fi
@@ -78,12 +82,11 @@ if [[ ! -z $args ]]; then
 		#echo "ohgodatool -p $PPT $args"
 		ohgodatool -p $PPT $args
 
-		# fix mem clock setting with MDPM=1 on some gpu/driver/kernel combinations
-		if [[ ! -z ${MEM_CLOCK[$i]} && ${MEM_CLOCK[$i]} -gt 0 && $memoryState -ne $maxMemoryState ]]; then
+		# fix mem clock setting with MDPM 1 on some gpu/driver/kernel combinations
+		[[ ! -z $memoryState && $memoryState -ne $maxMemoryState && ${MEM_CLOCK[$i]} -gt 400 ]] &&
 			ohgodatool -p $PPT --mem-clock ${MEM_CLOCK[$i]} --mem-state $maxMemoryState
-		fi
 
-		echo "Applying all changes to Power Play table"
+		echo -e "${CYAN}Applying all changes to Power Play table $NOCOLOR"
 		# apply changes to gpu
 		cp $PPT $CARDPPT
 	else
@@ -93,12 +96,12 @@ if [[ ! -z $args ]]; then
 		#echo "ohgodatool -i $cardno $args"
 		ohgodatool -i $cardno $args
 
-		# fix mem clock setting with MDPM=1 on some bios/gpu/driver/kernel combinations
-		if [[ ! -z ${MEM_CLOCK[$i]} && ${MEM_CLOCK[$i]} -gt 0 && $memoryState -ne $maxMemoryState ]]; then
+		# fix mem clock setting with MDPM 1 on some bios/gpu/driver/kernel combinations
+		[[ ! -z $memoryState && $memoryState -ne $maxMemoryState && ${MEM_CLOCK[$i]} -gt 400 ]] &&
 			ohgodatool -i $cardno --mem-clock ${MEM_CLOCK[$i]} --mem-state $maxMemoryState
-		fi
 	fi
 else
+	echo -e "${CYAN}Restoring original Power Play table $NOCOLOR"
     # restore saved Power Play table
     cp $savedpp $CARDPPT
 fi
