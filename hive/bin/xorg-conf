@@ -133,7 +133,7 @@ fi
 if [[ ( $amd_primary -gt 0 && $SWITCH_OUTPUT_TO_MONITOR != 1 ) || ( $SWITCH_OUTPUT_TO_MONITOR == 1 && "${amd_busids[@]}" =~ $connected ) ]]; then
 
 	# first add with connected monitor if needed
-	if [[ $SWITCH_OUTPUT_TO_MONITOR == 1 ]]; then
+	if [[ $SWITCH_OUTPUT_TO_MONITOR == 1 && "${amd_busids[@]}" =~ $connected ]]; then
 		echo "Adding AMD GPU $connected as the primary one"
 		busid=$connected
 		busid_dec=$(convert_busid $busid)
@@ -189,44 +189,25 @@ fi
 if [[ ${#nvidia_busids[@]} -gt 0 ]]; then
 	#monitors=(`nvidia-smi --query-gpu=gpu_bus_id,display_mode --format=csv,noheader 2>/dev/null | grep "Enabled" | cut -d, -f1`)
 
-	# first add with connected monitor if needed
-	if [[ $SWITCH_OUTPUT_TO_MONITOR == 1 && "${nvidia_busids[@]}" =~ $connected ]]; then
-		echo "Adding NVIDIA GPU $connected as the primary one"
-		busid=$connected
-		busid_dec=$(convert_busid $busid)
-		conf+="
-# --- $busid -------------------------------------------------------------------
-Section \"Device\"
-	Identifier     \"Device$devidx\"
-	Driver         \"nvidia\"
-	Option         \"Coolbits\" \"31\"
-	BusID          \"PCI:$busid_dec\"
-EndSection
-
-Section \"Screen\"
-	Identifier     \"Screen$devidx\"
-	Device         \"Device$devidx\"
-	Option         \"Coolbits\" \"31\"
-EndSection
-"
-		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
-		((devidx++))
-	[[ ${#nvidia_busids[@]} -gt 1 ]] && echo "Adding other $(( ${#nvidia_busids[@]} - 1 )) NVIDIA GPU"
-
-	elif [[ $devidx -eq 0 ]]; then
+	if [[ $devidx -eq 0 ]]; then
 		echo "Adding ${#nvidia_busids[@]} NVIDIA GPU, first is the primary one"
 	else
 		echo "Adding ${#nvidia_busids[@]} NVIDIA GPU"
 	fi
 
 	for busid in "${nvidia_busids[@]}"; do
-		# skip already added
-		[[ $SWITCH_OUTPUT_TO_MONITOR == 1 && $busid == $connected ]] && continue
+		useDisplayDevice="Option         \"UseDisplayDevice\" \"none\""
+		emulated_monitor_string="Option         \"ConnectedMonitor\" \"DFP-0\""$'\n'$'\t'"Option         \"CustomEDID\" \"DFP-0:/hive/etc/edid.bin\""
+
+		# disable none primary and not connected outputs
+		[[ $devidx -eq 0 && ( $SWITCH_OUTPUT_TO_MONITOR != 1 || ! "${nvidia_busids[@]}" =~ $connected ) ]] &&
+			useDisplayDevice=
+
+		[[ $busid == $connected ]] &&
+			emulated_monitor_string= &&
+			useDisplayDevice=
 
 		busid_dec=$(convert_busid $busid)
-		# do not disable primary gpu output
-		[[ $devidx -eq 0 ]] && useDisplayDevice= || useDisplayDevice="Option         \"UseDisplayDevice\" \"none\""
-
 		conf+="
 # --- $busid -------------------------------------------------------------------
 Section \"Device\"
@@ -234,8 +215,7 @@ Section \"Device\"
 	Driver         \"nvidia\"
 	Option         \"Coolbits\" \"31\"
 	BusID          \"PCI:$busid_dec\"
-	Option         \"ConnectedMonitor\" \"DFP-0\"
-	Option         \"CustomEDID\" \"DFP-0:/hive/etc/edid.bin\"
+	$emulated_monitor_string
 EndSection
 
 Section \"Screen\"
@@ -248,6 +228,7 @@ EndSection
 		screens_section+=$'\t'"Screen $devidx \"Screen$devidx\" 0 0"$'\n'
 		((devidx++))
 	done
+
 fi
 
 
