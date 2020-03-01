@@ -3,7 +3,7 @@
 # HugePages tunning
 function HugePagesTune(){
    if [[ `echo $SRBMINER_ALGO | grep -c "^randomx"` -gt 0 ]]; then
-     echo "Start HugePages tuning for RandomX ..."
+     echo "Apply HugePages tuning for RandomX ..."
      hugepages -rx
    fi
 }
@@ -15,5 +15,7 @@ function HugePagesTune(){
 cd $MINER_DIR/$MINER_VER
 
 HugePagesTune
+
+unset LD_LIBRARY_PATH
 
 ./SRBMiner-MULTI `cat $MINER_NAME.conf` | tee --append $MINER_LOG_BASENAME.log
