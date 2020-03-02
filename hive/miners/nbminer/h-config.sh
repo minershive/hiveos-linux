@@ -83,5 +83,36 @@ function miner_config_gen() {
 
   conf=`jq -n --argjson g "$config_global" --argjson c "$conf" '$g * $c'`
 
-  echo "$conf" | jq . > $MINER_CONFIG
+  if [[ $USE_COMMAND_LINE -ne 1 ]]; then
+    echo "$conf" | jq . > $MINER_CONFIG
+  else
+    local conf_line=
+    [[ ! -z `echo $conf | jq -r '.algo'` && `echo $conf | jq -r '.algo'` != "null" ]] && conf_line+=" --algo `echo $conf | jq -r '.algo'`"
+    [[ ! -z `echo $conf | jq -r '.api'` && `echo $conf | jq -r '.api'` != "null" ]] && conf_line+=" --api `echo $conf | jq -r '.api'`"
+    [[ ! -z `echo $conf | jq -r '.coin'` && `echo $conf | jq -r '.coin'` != "null" ]] && conf_line+=" --coin `echo $conf | jq -r '.coin'`"
+    [[ `echo $conf | jq -r '."cuckatoo-power-optimize"'` == "true" && `echo $conf | jq -r '."cuckatoo-power-optimize"'` != "null" ]] && conf_line+=" --cuckatoo-power-optimize"
+    [[ ! -z `echo $conf | jq -r '."cuckoo-intensity"'` && `echo $conf | jq -r '."cuckoo-intensity"'` != "null" ]] && conf_line+=" --cuckoo-intensity `echo $conf | jq -r '."cuckoo-intensity"'`"
+    [[ ! -z `echo $conf | jq -r '.devices'` && `echo $conf | jq -r '.devices'` != "null" ]] && conf_line+=" --devices `echo $conf | jq -r '.devices'`"
+    [[ ! -z `echo $conf | jq -r '."fidelity-timeframe"'` && `echo $conf | jq -r '."fidelity-timeframe"'` != "null" ]] && conf_line+=" --fidelity-timeframe `echo $conf | jq -r '."fidelity-timeframe"'`"
+    [[ ! -z `echo $conf | jq -r '.intensity'` && `echo $conf | jq -r '.intensity'` != "null" ]] && conf_line+=" --intensity `echo $conf | jq -r '.intensity'`"
+    [[ ! -z `echo $conf | jq -r '."no-nvml"'` && `echo $conf | jq -r '."no-nvml"'` != "null" ]] && conf_line+=" --no-nvml `echo $conf | jq -r '."no-nvml"'`"
+    [[ ! -z `echo $conf | jq -r '.platform'` && `echo $conf | jq -r '.platform'` != "null" ]] && conf_line+=" --platform `echo $conf | jq -r '.platform'`"
+    [[ ! -z `echo $conf | jq -r '."secondary-intensity"'` && `echo $conf | jq -r '."secondary-intensity"'` != "null" ]] && conf_line+=" -di `echo $conf | jq -r '."secondary-intensity"'`"
+    [[ ! -z `echo $conf | jq -r '."secondary-url"'` && `echo $conf | jq -r '."secondary-url"'` != "null" ]] && conf_line+=" --secondary-url `echo $conf | jq -r '."secondary-url"'`"
+    [[ ! -z `echo $conf | jq -r '."secondary-user"'` && `echo $conf | jq -r '."secondary-user"'` != "null" ]] && conf_line+=" --secondary-user `echo $conf | jq -r '."secondary-user"'`"
+    [[ ! -z `echo $conf | jq -r '."secondary-url1"'` && `echo $conf | jq -r '."secondary-url1"'` != "null" ]] && conf_line+=" --secondary-url1 `echo $conf | jq -r '."secondary-url1"'`"
+    [[ ! -z `echo $conf | jq -r '."secondary-user1"'` && `echo $conf | jq -r '."secondary-user1"'` != "null" ]] && conf_line+=" --secondary-user1 `echo $conf | jq -r '."secondary-user1"'`"
+    [[ ! -z `echo $conf | jq -r '."secondary-url2"'` && `echo $conf | jq -r '."secondary-url2"'` != "null" ]] && conf_line+=" --secondary-url2 `echo $conf | jq -r '."secondary-url2"'`"
+    [[ ! -z `echo $conf | jq -r '."secondary-user2"'` && `echo $conf | jq -r '."secondary-user2"'` != "null" ]] && conf_line+=" --secondary-user2 `echo $conf | jq -r '."secondary-user2"'`"
+    [[ `echo $conf | jq -r '."strict-ssl"'` == "true" && `echo $conf | jq -r '."strict-ssl"'` != "null" ]] && conf_line+=" --strict-ssl"
+    [[ ! -z `echo $conf | jq -r '."temperature-limit"'` && `echo $conf | jq -r '."temperature-limit"'` != "null" ]] && conf_line+=" --temperature-limit `echo $conf | jq -r '."temperature-limit"'`"
+    [[ ! -z `echo $conf | jq -r '.url'` && `echo $conf | jq -r '.url'` != "null" ]] && conf_line+=" --url `echo $conf | jq -r '.url'`"
+    [[ ! -z `echo $conf | jq -r '.user'` && `echo $conf | jq -r '.user'` != "null" ]] && conf_line+=" --user `echo $conf | jq -r '.user'`"
+    [[ ! -z `echo $conf | jq -r '.url1'` && `echo $conf | jq -r '.url1'` != "null" ]] && conf_line+=" --url1 `echo $conf | jq -r '.url1'`"
+    [[ ! -z `echo $conf | jq -r '.user1'` && `echo $conf | jq -r '.user1'` != "null" ]] && conf_line+=" --user1 `echo $conf | jq -r '.user1'`"
+    [[ ! -z `echo $conf | jq -r '.url2'` && `echo $conf | jq -r '.url2'` != "null" ]] && conf_line+=" --url2 `echo $conf | jq -r '.url2'`"
+    [[ ! -z `echo $conf | jq -r '.user2'` && `echo $conf | jq -r '.user2'` != "null" ]] && conf_line+=" --user2 `echo $conf | jq -r '.user2'`"
+
+    echo $conf_line > $MINER_CONFIG
+  fi
 }
