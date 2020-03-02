@@ -54,7 +54,7 @@ else
   [[ "$GMINER_ALGO" == "beamhash" ]] && GMINER_ALGO="equihash 150/5"
   [[ "$GMINER_ALGO" == "beamhashII" ]] && GMINER_ALGO="equihash 150/5/3"
 
-  if [[ "$GMINER_ALGO2" == "eaglesong" || "$GMINER_ALGO2" == "blake2s" ]]; then
+  if [[ "$GMINER_ALGO2" == "eaglesong" || "$GMINER_ALGO2" == "blake2s" ]] || "$GMINER_ALGO2" == "handshake" ]]; then
     local total_khs2=`echo $stats_raw | jq -r '.devices[].speed2' | awk '{s+=$1} END {printf("%.4f",s/1000)}'` #sum up and convert to khs
 
     local algo2="eaglesong"

@@ -19,7 +19,8 @@ function miner_config_gen() {
   [[ -z $GMINER_ALGO ]] && GMINER_ALGO="144_5"
   local conf="--algo $GMINER_ALGO"
   [[ "$GMINER_ALGO" == "ethash" && "$GMINER_ALGO2" == "eaglesong" ]] && conf="--algo eth+ckb" && echo "Dual mining ETH+CKB"
-  [[ "$GMINER_ALGO" == "ethash" && "$GMINER_ALGO2" == "blake2s" ]] && conf="--algo eth+kda" && echo "Dual mining ETH+KDA"
+  [[ "$GMINER_ALGO" == "ethash" && "$GMINER_ALGO2" == "blake2s" ]]   && conf="--algo eth+kda" && echo "Dual mining ETH+KDA"
+  [[ "$GMINER_ALGO" == "ethash" && "$GMINER_ALGO2" == "handshake" ]] && conf="--algo eth+hns" && echo "Dual mining ETH+HNS"
 
   local host=
   local port=
