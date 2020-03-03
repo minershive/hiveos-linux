@@ -20,8 +20,4 @@ export NBDEV="#@@@RjYj+E7UQ5yYbdlPujUXk9bweDTHH/N55JWLYXBWE/s="
 
 cd $MINER_DIR/$MINER_VER
 
-if [[ $USE_COMMAND_LINE -ne 1 ]]; then
-  ./nbminer -c config.json 2>&1 | tee --append $MINER_LOG_BASENAME.log
-else
-  ./nbminer `cat config.json` 2>&1 | tee --append $MINER_LOG_BASENAME.log
-fi
+./nbminer -c config.json 2>&1 | tee --append $MINER_LOG_BASENAME.log
