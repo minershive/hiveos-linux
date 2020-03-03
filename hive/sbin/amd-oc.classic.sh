@@ -43,7 +43,15 @@ if [[ ! -z $MEM_STATE ]]; then
 		[[ ${MEM_STATE[$i]} != 0 ]] && #skip zero state, means auto
 			memoryState=${MEM_STATE[$i]}
 	else
-		echo -e "${RED}ERROR: Invalid memory state ${MEM_STATE[$i]} specified $NOCOLOR"
+		if [[ ${MEM_STATE[$i]} -gt 100 ]]; then
+			memoryState=1 # setting to memstate 1 by default
+			# using as vddci
+			args+=" --vddci ${MEM_STATE[$i]}"
+			#args+=" --mem-vddc-idx 8"
+			#ohgodatool -p $PPT --volt-state 8 --vddc-table-set ${MEM_STATE[$i]}
+		else
+			echo "${RED}ERROR: Invalid memory state ${MEM_STATE[$i]} specified $NOCOLOR"
+		fi
 	fi
 fi
 
@@ -80,15 +88,20 @@ if [[ ! -z $args ]]; then
 	if [[ $SLOW -ne 1 ]]; then
 		# apply changes to table
 		#echo "ohgodatool -p $PPT $args"
-		ohgodatool -p $PPT $args
+		output=`ohgodatool -p $PPT $args 2>&1`
 
 		# fix mem clock setting with MDPM 1 on some gpu/driver/kernel combinations
 		[[ ! -z $memoryState && $memoryState -ne $maxMemoryState && ${MEM_CLOCK[$i]} -gt 400 ]] &&
-			ohgodatool -p $PPT --mem-clock ${MEM_CLOCK[$i]} --mem-state $maxMemoryState
+			output+=$'\n'`ohgodatool -p $PPT --mem-clock ${MEM_CLOCK[$i]} --mem-state $maxMemoryState 2>&1`
 
-		echo -e "${CYAN}Applying all changes to Power Play table $NOCOLOR"
-		# apply changes to gpu
-		cp $PPT $CARDPPT
+		# do not apply the same table again
+		if cmp $PPT $CARDPPT >/dev/null; then
+			echo -e "${GREEN}All changes were already applied to Power Play table $NOCOLOR"
+		else
+			echo "$output"
+			echo -e "${CYAN}Applying all changes to Power Play table $NOCOLOR"
+			cp $PPT $CARDPPT
+		fi
 	else
 		# restore saved Power Play table
 		cp $savedpp $CARDPPT
@@ -101,9 +114,14 @@ if [[ ! -z $args ]]; then
 			ohgodatool -i $cardno --mem-clock ${MEM_CLOCK[$i]} --mem-state $maxMemoryState
 	fi
 else
-	echo -e "${CYAN}Restoring original Power Play table $NOCOLOR"
-    # restore saved Power Play table
-    cp $savedpp $CARDPPT
+	# do not apply the same table again
+	if cmp $savedpp $CARDPPT >/dev/null; then
+		echo -e "${GREEN}All changes were already applied to Power Play table $NOCOLOR"
+	else
+		echo -e "${CYAN}Restoring original Power Play table $NOCOLOR"
+		# restore saved Power Play table
+		cp $savedpp $CARDPPT
+	fi
 fi
 
 
