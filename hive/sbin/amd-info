@@ -59,16 +59,25 @@ for bdir in $busids_dirs; do
 	#plevel=`cat /sys/class/drm/card$cardno/device/power_dpm_force_performance_level`
 	#[[ $plevel == "manual" ]] && plevelStr="${YELLOW}$plevel${NOCOLOR}" || plevelStr="${BLUE}$plevel${NOCOLOR}"
 
-	sclk=`cat /sys/class/drm/card$cardno/device/pp_dpm_sclk | grep -m1 '*'` #3: 1100Mhz *
-	mclk=`cat /sys/class/drm/card$cardno/device/pp_dpm_mclk | grep -m1 '*'` #2: 1900Mhz *
+	sclk=`grep -m1 '*' /sys/class/drm/card$cardno/device/pp_dpm_sclk 2>/dev/null` #3: 1100Mhz *
+	mclk=`grep -m1 '*' /sys/class/drm/card$cardno/device/pp_dpm_mclk 2>/dev/null` #2: 1900Mhz *
 	fanrpm=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/fan1_input 2>/dev/null` #rpm from fan
 	ref=`amdmemtweak --current | sed -n "/pci:0000:${busid}/,/pci/p" | grep -oP "REF: \K[0-9]+"`
 	core_dpm=`echo $sclk | awk '{print $1}' | sed -e 's/://'`
 	core_mhz=`echo $sclk | awk '{print $2}'`
 	mem_dpm=`echo $mclk | awk '{print $1}' | sed -e 's/://'`
 	mem_mhz=`echo $mclk | awk '{print $2}'`
-	corev=`wolfamdctrl -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
-	[[ -z $corev ]] && corev=`vegatool -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
+	ppod=`cat /sys/class/drm/card$cardno/device/pp_od_clk_voltage 2>/dev/null`
+	if [[ ! -z $ppod ]]; then
+		#corev=`echo "$ppod" | grep -m1 -A7 "OD_SCLK" | grep -m1 "$core_dpm:" | awk '{print $3}'`
+		memv=`echo "$ppod" | grep -m1 -A4 "OD_MCLK" | grep -m1 "$mem_dpm:" | awk '{print $3}'`
+	fi
+	corev=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(VDDGFX)' | awk '{print $1}'`
+	#[[ -z $corev ]] && corev=`vegatool -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
+	[[ -z $corev ]] && corev=`ohgodatool -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
+	[[ -z $memv ]] && memv=`ohgodatool -i $cardno --show-mem | grep -m1 -A1 "Memory state $mem_dpm" | grep VDDC | sed -E "s/.*VDDC: (.*)/\1/"`
+
+	vddci=`ohgodatool -i $cardno --show-mem | grep -m1 -A2 "Memory state $mem_dpm" | grep VDDCI | sed -E "s/.*VDDCI: (.*)/\1/"`
 
 	gtemp=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/temp1_input 2>/dev/null`
 	jtemp=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/temp2_input 2>/dev/null`
@@ -76,13 +85,15 @@ for bdir in $busids_dirs; do
 	[[ ! -z $jtemp ]] && [[ ! -z $mtemp ]] &&
 		echo -e  "  Temps :  GPU: $(($gtemp/1000))C   HotSpot: $(($jtemp/1000))C   Mem: $(($mtemp/1000))C "
 
-
 	pwr='n/a'
 	[[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]] &&
 		pwr=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(average GPU)' | awk '{print $1}'`
 
 
-	echo -e "  ${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${PURPLE}V${NOCOLOR} $corev\t${PURPLE}MEMSTATE${NOCOLOR} $mem_dpm ${PURPLE}MEM${NOCOLOR} $mem_mhz  ${PURPLE}REF${NOCOLOR} $ref \t${PURPLE}PWR${NOCOLOR} $pwr W ${PURPLE}RPM${NOCOLOR} $fanrpm"
-
+	echo -en "  ${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${corev}mV"
+	echo -en " ${PURPLE}MDPM${NOCOLOR} $mem_dpm ${PURPLE}MEM${NOCOLOR} $mem_mhz $memv"
+	[[ ! -z $vddci ]] && echo -en " ${PURPLE}VDDCI${NOCOLOR} $vddci"
+	echo -en " ${PURPLE}REF${NOCOLOR} $ref"
+	echo -e  " ${PURPLE}PWR${NOCOLOR} $pwr W ${PURPLE}RPM${NOCOLOR} $fanrpm"
 
 done
