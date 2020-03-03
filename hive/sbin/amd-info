@@ -75,7 +75,7 @@ for bdir in $busids_dirs; do
 	corev=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(VDDGFX)' | awk '{print $1}'`
 	#[[ -z $corev ]] && corev=`vegatool -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
 	[[ -z $corev ]] && corev=`ohgodatool -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
-	[[ -z $memv ]] && memv=`ohgodatool -i $cardno --show-mem | grep -m1 -A1 "Memory state $mem_dpm" | grep VDDC | sed -E "s/.*VDDC: (.*)/\1/"`
+	[[ -z $memv || $memv == 0 ]] && memv=`ohgodatool -i $cardno --show-mem | grep -m1 -A1 "Memory state $mem_dpm" | grep VDDC | sed -E "s/.*VDDC: (.*)/\1/"`
 
 	vddci=`ohgodatool -i $cardno --show-mem | grep -m1 -A2 "Memory state $mem_dpm" | grep VDDCI | sed -E "s/.*VDDCI: (.*)/\1/"`
 
