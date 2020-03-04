@@ -142,7 +142,7 @@ fi
 echo 1 > /sys/class/drm/card$cardno/device/hwmon/hwmon*/pwm1_enable
 [[ ! -z $FAN && ${FAN[$i]} > 0 ]] && ohgodatool -i $cardno --set-fanspeed ${FAN[$i]}
 
-[[ ! -z $REF && ${REF[$i]} > 0 ]] && amdmemtweak --gpu $i --REF ${REF[$i]}
+[[ ! -z $REF && ${REF[$i]} > 0 ]] && amdmemtweak --gpu $card_idx --REF ${REF[$i]}
 
 
 
