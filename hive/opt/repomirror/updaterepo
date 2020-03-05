@@ -3,7 +3,8 @@
 # for all the programs running from within the script, make sure they run in the "UTC" time zone
 # (or whatever is set on the remote repo server as the timezone for timestamps of the files in the repo)
 export TZ=UTC
-WGET="/usr/bin/wget -t 0 -T 20 -nv"
+WGET="/usr/bin/wget -t 0 -T 20 -nv -e robots=off"
+[ -t 1 ] && WGET+=" -v"
 
 function mydate() {
 	date --rfc-3339=seconds
@@ -56,8 +57,8 @@ ${WGET} -r --level=1 -N "$repourl"
 
 # Remove index files so directory contents will be generated via nginx
 # this may cause a certain amount of trash-talk from wget complaining about unavailable last-modified timestamps.
-rm repomirror/repo/index.html
-rm repomirror/repo/binary/index.html
+rm -f repomirror/repo/index.html
+rm -f repomirror/repo/binary/index.html
 
 cd /var/www/html/repomirror/repo/binary
 # Check for md5 mismatches vs Packages file, if we have one from a successful download.
