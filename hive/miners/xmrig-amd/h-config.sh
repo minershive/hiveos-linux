@@ -52,7 +52,7 @@ function miner_config_gen() {
 	[[ -z $tls_fp || $tls_fp == "null" ]] && tls_fp="null"
 	variant=$(jq -r '."variant"' <<< "$conf")
 	[[ -z $variant= || $variant= == "null" ]] && variant=-1
-	rig_id=$(jq -r '."rig_id"' <<< "$conf")
+	rig_id=$(jq -r '."rig-id"' <<< "$conf")
 	[[ -z $rig_id= || $rig_id= == "null" ]] && rig_id=""
 	nicehash=$(jq -r .nicehash <<< "$conf")
 	[[ -z $nicehash || $nicehash == "null" ]] && nicehash="false"
@@ -61,7 +61,7 @@ function miner_config_gen() {
 		[[ ${nicehash,,} = "true" || ${url,,} = *"nicehash"* ]] && c_nicehash='true' || c_nicehash='false'
 
 		pool=$(cat <<EOF
-			{"url": "$url", "user": "$XMRIG_AMD_TEMPLATE", "pass": "$XMRIG_AMD_PASS", "rig_id": "$rig_id", "use_nicehash": $c_nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "variant": "$variant", "keepalive": true }
+			{"url": "$url", "user": "$XMRIG_AMD_TEMPLATE", "pass": "$XMRIG_AMD_PASS", "rig-id": "$rig_id", "use_nicehash": $c_nicehash, "tls": $tls, "tls-fingerprint": $tls_fp, "variant": "$variant", "keepalive": true }
 EOF
 )
 		pools=`jq --null-input --argjson pools "$pools" --argjson pool "$pool" '$pools + [$pool]'`
