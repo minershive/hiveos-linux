@@ -48,8 +48,13 @@ function miner_config_gen() {
 		[[ $GPU_COUNT_NVIDIA > 0 ]] && ETHMINER_CUDA=1 || ETHMINER_CUDA=
 	fi
 
-	[[ -z $ETHMINER_OPENCL && -z $ETHMINER_CUDA ]] && echo "--cuda-opencl --opencl-platform 1" >> $MINER_CONFIG
-	[[ $ETHMINER_OPENCL == 1 && $ETHMINER_CUDA == 1 ]] && echo "--cuda-opencl" >> $MINER_CONFIG
+	[[ "$(miner_ver)" =~ ^([0-9]+)\.([0-9]+)\. ]]
+	# some options are not supported from version 0.18
+	if [[ ${BASH_REMATCH[1]} -eq 0 && ${BASH_REMATCH[2]} -le 17 ]]; then
+		[[ -z $ETHMINER_OPENCL && -z $ETHMINER_CUDA ]] && echo "--cuda-opencl --opencl-platform 1" >> $MINER_CONFIG
+		[[ $ETHMINER_OPENCL == 1 && $ETHMINER_CUDA == 1 ]] && echo "--cuda-opencl" >> $MINER_CONFIG
+	fi
+
 	[[ $ETHMINER_OPENCL == 1 && -z $ETHMINER_CUDA ]] && echo "--opencl" >> $MINER_CONFIG
 	[[ -z $ETHMINER_OPENCL && $ETHMINER_CUDA == 1 ]] && echo "--cuda" >> $MINER_CONFIG
 
