@@ -1,8 +1,8 @@
 Package: hive-miners-xmrig-new-xmrig
-Version: 0.6-18
+Version: 0.6-19
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-xmrig-new-xmrig-5.8.2
+Depends: hive-miners-xmrig-new-xmrig-5.9.0
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - XMRig
