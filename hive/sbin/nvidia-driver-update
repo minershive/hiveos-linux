@@ -238,7 +238,8 @@ function get_package() { # @url or @file, returns $package
 		# download file. resume if exists
 		echo -e ""
 		echo -e "${CYAN}> Downloading - ${WHITE}$url${NOCOLOR}"
-		wget -T $TIMEOUT -t $RETRY -c -P ${DRVPATH} $url 2>&1
+		[ ! -t 1 ] && verb="-nv" # reduce log in non-interactive mode
+		wget $verb -T $TIMEOUT -t $RETRY -c -P ${DRVPATH} $url 2>&1
 		exitcode=$?
 		[[ $exitcode -ne 0 ]] && echo -e "${RED}> Download error ($exitcode)${NOCOLOR}" && return $exitcode
 
@@ -270,6 +271,7 @@ function install_nvs() { # @force_install
 		# run apt update only on demand
 		if [[ $exitcode -ne 0 ]]; then
 			apt update
+			[[ $exitcode -eq 100 ]] && apt-get -f install
 			#apt install -y nvidia-settings=361.42-0ubuntu1
 			apt install -y --reinstall --allow-downgrades --allow-change-held-packages nvidia-settings=361.42-0ubuntu1
 			exitcode=$?
