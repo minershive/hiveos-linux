@@ -18,4 +18,4 @@ HugePagesTune
 
 unset LD_LIBRARY_PATH
 
-./SRBMiner-MULTI `cat $MINER_NAME.conf` | tee --append $MINER_LOG_BASENAME.log
+unbuffer ./SRBMiner-MULTI `cat $MINER_NAME.conf` | tee --append $MINER_LOG_BASENAME.log
