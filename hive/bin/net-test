@@ -201,8 +201,10 @@ function Connection {
 	local api_host=$3
 	local RESULT=0
 
-	NSLookup "$host" "$api_host"
-	[[ $? -ne 0 ]] && return 4
+	if [[ ! $host =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+		NSLookup "$host" "$api_host"
+		[[ $? -ne 0 ]] && return 4
+	fi
 
 	Ping "$host"
 	[[ $? -ne 0 ]] && ((RESULT++))
@@ -231,7 +233,7 @@ function Connections {
 	done
 
 	#[[ ! -z $HIVE_HOST_URL ]] && API_HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'` || API_HOST=
-	API_HOST=`grep -oP "://\K[^:]+" <<< "$HIVE_HOST_URL"`
+	API_HOST=`grep -oP "://\K[^:^/]+" <<< "$HIVE_HOST_URL"`
 	[[ -z $API_HOST ]] && echo -e $ERROR_COLOR"No API server defined in rig.conf"$NOCOLOR && exit 1
 
 	if (echo "$API_HOST" | grep -q "hiveos.farm"); then
@@ -240,9 +242,9 @@ function Connections {
 	fi
 
 	#echo
-	echo -e "${YELLOW}> Checking connection to worker API servers:${NOCOLOR}"
+	echo -e "${YELLOW}> Checking connection to worker API server(s):${NOCOLOR}"
 
-	if (echo "$API_HOST" | grep -q "hiveos.farm"); then
+	if [[ "$API_HOST" =~ hiveos.farm$ ]]; then
 		[[ ! " ${API_HOSTS[@]} " =~ " ${API_HOST} " ]] &&
 			API_HOSTS+=($API_HOST)
 
