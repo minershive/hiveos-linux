@@ -127,7 +127,7 @@ function Curl {
 
 	if [[ $checkApi != "api" ]]; then
 		PrintCase2 "WEB" "$host"
-	elif [[ "$host" == "$HIVE_HOST_URL" ]]; then
+	elif [[ "$HIVE_HOST_URL/" =~ $host/ ]]; then
 		PrintCase2 "API" "$host ${WHITE}(CURRENT)"
 	else
 		PrintCase2 "API" "$host"
@@ -236,15 +236,13 @@ function Connections {
 	API_HOST=`grep -oP "://\K[^:^/]+" <<< "$HIVE_HOST_URL"`
 	[[ -z $API_HOST ]] && echo -e $ERROR_COLOR"No API server defined in rig.conf"$NOCOLOR && exit 1
 
-	if (echo "$API_HOST" | grep -q "hiveos.farm"); then
+	if [[ "$API_HOST" =~ hiveos.farm$ ]]; then
 		echo -e "${YELLOW}> Checking connection to HIVE OS server:${NOCOLOR}"
 		Connection "hiveos.farm" "" " "
-	fi
 
-	#echo
-	echo -e "${YELLOW}> Checking connection to worker API server(s):${NOCOLOR}"
+		#echo
+		echo -e "${YELLOW}> Checking connection to worker API servers:${NOCOLOR}"
 
-	if [[ "$API_HOST" =~ hiveos.farm$ ]]; then
 		[[ ! " ${API_HOSTS[@]} " =~ " ${API_HOST} " ]] &&
 			API_HOSTS+=($API_HOST)
 
@@ -265,7 +263,8 @@ function Connections {
 			#echo
 		done
 	else
-		#echo -e "${WHITE}>>> $API_HOST (CURRENT)${NOCOLOR}"
+		echo -e "${YELLOW}> Checking connection to worker API server:${NOCOLOR}"
+		echo -e "${WHITE}>>> $API_HOST (CURRENT)${NOCOLOR}"
 		Connection "$API_HOST" api "$API_HOST"
 		RESULT=$?
 		echo
