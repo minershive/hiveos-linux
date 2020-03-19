@@ -177,6 +177,7 @@ function NSLookup {
 		[[ $host == $api_host ]] && str+=" (CURRENT)"
 		color_printf $CASE_WIDTH "$str$NOCOLOR"
 	fi
+	[[ $host =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]] && echo "" && return $RESULT
 	#`nslookup $1 > /dev/null 2>&1`
 	res=(`dig -4 +noall +answer +retry=0 +time=15 $host | grep -oP ".*\sA\s\K[^\s]+$"`)
 	RESULT=$?
@@ -201,10 +202,8 @@ function Connection {
 	local api_host=$3
 	local RESULT=0
 
-	if [[ ! $host =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-		NSLookup "$host" "$api_host"
-		[[ $? -ne 0 ]] && return 4
-	fi
+	NSLookup "$host" "$api_host"
+	[[ $? -ne 0 ]] && return 4
 
 	Ping "$host"
 	[[ $? -ne 0 ]] && ((RESULT++))
@@ -264,7 +263,6 @@ function Connections {
 		done
 	else
 		echo -e "${YELLOW}> Checking connection to worker API server:${NOCOLOR}"
-		echo -e "${WHITE}>>> $API_HOST (CURRENT)${NOCOLOR}"
 		Connection "$API_HOST" api "$API_HOST"
 		RESULT=$?
 		echo
