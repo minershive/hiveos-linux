@@ -8,6 +8,8 @@ fi
 [ -t 1 ] && . colors
 #[[ -t 1 || $2 == "--colors" ]] && . colors
 
+. /hive/etc/amd.ids
+
 NV_OFF=0
 [[ -f "/run/hive/NV_OFF" ]] && read NV_OFF < "/run/hive/NV_OFF"
 
@@ -90,13 +92,19 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 				read -a meminfo <<< "$meminfo" #explode array by :
 				IFS=$_IFS
 				name=${meminfo[2]}
-
+				IS_VEGA10=$( lspci -vnns $busid | grep -Ei "$GPU_VEGA10" | wc -l )
+				IS_VEGA20=$( lspci -vnns $busid | grep -Ei "$GPU_VEGA20" | wc -l )
+					if [[ $IS_VEGA10 -gt 0 || $IS_VEGA20 -gt 0  ]]; then
+						memvendor=`amdmemtweak  --current | grep -A 2 $busid |grep Memory: | cut -f2 -d ':'|xargs`
+					else
+						memvendor=${meminfo[4]}
+					fi
 				#[   26.705145] amdgpu 0000:07:00.0: VRAM: 4096M 0x0000000000000000 - 0x00000000FFFFFFFF (4096M used)
 				mem=`dmesg | grep -oE "amdgpu 0000:${busid}: VRAM:\s.*" | sed -n 's/.*VRAM:\s\([0-9MG]\+\).*/\1/p'`
 				additional=" ($mem, ${meminfo[3]}, ${meminfo[4]})"
 				if [[ $1 == "listjson" ]]; then
 					gpujson=`jq -n -c --arg busid "$busid" --arg name "$name" --arg brand "amd" --arg subvendor "$subvendor" \
-						--arg vbios "${meminfo[3]}" --arg mem_type "${meminfo[4]}" \
+						--arg vbios "${meminfo[3]}" --arg mem_type "$memvendor" \
 						'{$busid, $name, $brand, $subvendor, $vbios, $mem_type}'`
 					[[ ! -z $mem ]] && gpujson=`echo $gpujson | jq -c --arg mem "$mem" '. + {$mem}'`
 					gpus+=("$gpujson")

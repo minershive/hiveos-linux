@@ -14,7 +14,10 @@ echo ""
 
 DEFAULT_CORE_STATE=5
 
-GPU_NAVI="1002:7310|1002:7312|1002:7318|1002:7319|1002:7340|1002:731A|1002:731B|1002:731F"
+#GPU_NAVI="1002:7310|1002:7312|1002:7318|1002:7319|1002:731A|1002:731B|1002:731F"
+#GPU_VEGA10="1002:6860|1002:6861|1002:6862|1002:6863|1002:6864|1002:6867|1002:6868|1002:6869|1002:686a|1002:686b|1002:686c|1002:686d|1002:686e|1002:686f|1002:687f"
+. /hive/etc/amd.ids
+
 
 n=`gpu-detect AMD`
 if [[ $n == 0 ]]; then
@@ -162,9 +165,14 @@ for bdir in $busids_dirs; do
 	##Start introducing VEGA
 	VEGAS_COUNT=$( lspci -vnns $busid | grep VGA -A 2 | grep AMD -A 2 | grep Vega -A 2 | grep -v "Vega 8" | wc -l )
 	NAVI_COUNT=$( lspci -vnns $busid | grep -Ei "$GPU_NAVI" | wc -l )
+	IS_VEGA10=$( lspci -vnns $busid | grep -Ei "$GPU_VEGA10" | wc -l )
 	
 	if [[ $VEGAS_COUNT -ne 0 || $NAVI_COUNT -ne 0 ]]; then
-		. /hive/sbin/amd-oc.vega.sh
+		if [[ $IS_VEGA10 -gt 0 && $AGGRESSIVE == 1 ]]; then
+			. /hive/sbin/amd-oc.vega.aggressive.sh
+		else
+			. /hive/sbin/amd-oc.vega.sh
+		fi
 	else
 		# set auto performance level to reset manual DPM if no state will be set
 		[[ -z $coreState && ${CORE_CLOCK[$i]} -le 400 && ${CORE_VDDC[$i]} -le 0 ]] &&
