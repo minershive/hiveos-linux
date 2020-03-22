@@ -59,7 +59,7 @@ get_cards_hashes(){
 
 get_miner_uptime(){
   local a=0
-  let a=`stat --format='%Y' $log_name`-`stat --format='%Y' $conf_name`
+  let a=`date +%s`-`stat --format='%Y' $conf_name`
   echo $a
 }
 

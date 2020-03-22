@@ -12,10 +12,12 @@ function miner_config_echo() {
 }
 
 function miner_config_gen() {
+
+  #for correct uptime calulation
+  [[ -f /home/user/fah/config.xml ]] && rm /home/user/fah/config.xml
+
   local MINER_CONFIG="$MINER_DIR/$MINER_VER/config.xml"
   mkfile_from_symlink $MINER_CONFIG
-
-
 
   echo "<config>" > $MINER_CONFIG
   echo "  <!-- Client Control -->" >> $MINER_CONFIG
