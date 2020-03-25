@@ -290,6 +290,7 @@ hostname-check
 	locale-setup "$SYSTEM_LANG"
 
 # Wallet config ================================================================
+old_wallet=$(<$WALLET_CONF)
 wallet=$(echo $response | jq '.result.wallet' --raw-output)
 if [[ ! -z $wallet && $wallet != "null" ]]; then
 	echo "Saving Wallet config"
@@ -394,8 +395,8 @@ fi
 # [[ -e $REF_ID ]] && rm $REF_ID
 
 # Post actions =================================================================
-#restartminer - restart miner on success
-if [[ $arg_restartminer == 1 ]]; then
+#restartminer - restart miner on success if wallet was changed
+if [[ $arg_restartminer == 1 && "$old_wallet" != "$(<$WALLET_CONF)" ]]; then
 	miner restart
 	[[ $WD_ENABLED == 1 ]] &&
 		wd restart

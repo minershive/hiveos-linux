@@ -102,7 +102,7 @@ function do_command () {
 				rm /tmp/rig.conf.new
 
 				# Password change ---------------------------------------------------
-				if [[ $RIG_PASSWD != $NEW_PASSWD ]]; then
+				if [[ ! -z $RIG_PASSWD && $RIG_PASSWD != $NEW_PASSWD ]]; then
 					echo -e "${RED}New password:${NOCOLOR} $NEW_PASSWD";
 
 					message warning "Password change received, wait for next message..." --id=$cmd_id
@@ -130,6 +130,7 @@ function do_command () {
 				. $RIG_CONF
 
 				# Save wallet if given -----------------------------------------------
+				local old_wallet=$(<$WALLET_CONF)
 				if [[ $bench -eq 0 ]]; then
 					wallet=$(echo $body | jq '.wallet' --raw-output)
 					[[ ! -z $wallet && $wallet != "null" ]] &&
@@ -154,11 +155,10 @@ function do_command () {
 				# Overclocking if given in config --------------------------------------
 				[[ $bench -eq 0 ]] && oc_if_changed
 
-
 				# Final actions ---------------------------------------------------------
 				if [[ $justwrite != 1 && $bench -eq 0 ]]; then
 					hostname-check
-					miner restart
+					[[ "$old_wallet" != "$(<$WALLET_CONF)" ]] && miner restart
 				fi
 
 				# Start Watchdog. It will exit if WD_ENABLED=0 ---------------------------
