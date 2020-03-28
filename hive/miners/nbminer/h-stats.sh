@@ -52,6 +52,10 @@
                         algo="bl2bsha3"
                         algo2="ethash"
                       ;;
+             trb_ethash)
+                        algo="tellor"
+                        algo2="ethash"
+                      ;;
                       *)
                         algo=$NBMINER_ALGO
                       ;;
