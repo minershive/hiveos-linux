@@ -158,7 +158,7 @@ function do_command () {
 				# Final actions ---------------------------------------------------------
 				if [[ $justwrite != 1 && $bench -eq 0 ]]; then
 					hostname-check
-					[[ "$old_wallet" != "$(<$WALLET_CONF)" ]] && miner restart
+					[[ "$old_wallet" != "$(<$WALLET_CONF)" ]] && miner restart || miner start
 				fi
 
 				# Start Watchdog. It will exit if WD_ENABLED=0 ---------------------------

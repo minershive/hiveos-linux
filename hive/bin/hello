@@ -396,10 +396,9 @@ fi
 
 # Post actions =================================================================
 #restartminer - restart miner on success if wallet was changed
-if [[ $arg_restartminer == 1 && "$old_wallet" != "$(<$WALLET_CONF)" ]]; then
-	miner restart
-	[[ $WD_ENABLED == 1 ]] &&
-		wd restart
+if [[ $arg_restartminer == 1 ]]; then
+	[[ "$old_wallet" != "$(<$WALLET_CONF)" ]] && miner restart || miner start
+	#[[ $WD_ENABLED == 1 ]] && wd restart
 fi
 
 echo "Touching $HELLO_OK"
