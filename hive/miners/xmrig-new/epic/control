@@ -1,0 +1,8 @@
+Package: hive-miners-xmrig-new-epic
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-xmrig-new-mo-5.5.3
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - XMRig-EpicCash fork (RandomX PoW)
