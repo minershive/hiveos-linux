@@ -1,13 +1,13 @@
 {
     "api": {
-        "id": "1",
-        "worker-id": "0"
+        "id": null,
+        "worker-id": null
     },
     "http": {
         "enabled": false,
         "host": "127.0.0.1",
         "port": 60070,
-        "access-token": "",
+        "access-token": null,
         "restricted": true
     },
     "autosave": true,
