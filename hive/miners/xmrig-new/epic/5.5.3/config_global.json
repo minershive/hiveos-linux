@@ -109,5 +109,5 @@
     "retries": 10000,
     "retry-pause": 5,
     "syslog": false,
-    "user-agent": "xmrig/v-epic-0.0.1",
+    "user-agent": "xmrig/v-epic-0.0.1"
 }
