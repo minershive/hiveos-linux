@@ -87,7 +87,7 @@ get_stats_json(){
 
 local ver=`miner_ver`
 local log_name="$MINER_LOG_BASENAME.log"
-local conf_name="${MINER_DIR}/$ver/config.xml"
+local conf_name="${HOME}/fah/config.xml"
 local slot_name="/tmp/fah_slot_info"
 local info_name="/tmp/fah_info"
 local queue_name="/tmp/fah_queue"
