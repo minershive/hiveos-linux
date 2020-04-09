@@ -21,7 +21,6 @@ function miner_config_gen() {
   conf+=" --api-bind 127.0.0.1:-$MINER_API_PORT"
 
   local prefix1=$DAMOMINER_TEMPLATE
-  [[ ! -z $DAMOMINER_PASS ]] && prefix1+=":$DAMOMINER_PASS"
   local postfix1=
   if [[ ! -z $DAMOMINER_WORKER ]]; then
     if [[ $DAMOMINER_WORKER =~ "@" || $DAMOMINER_WORKER =~ "%40" ]]; then
@@ -32,6 +31,7 @@ function miner_config_gen() {
       prefix1+=".$DAMOMINER_WORKER"
     fi
   fi
+  [[ ! -z $DAMOMINER_PASS ]] && prefix1+=":$DAMOMINER_PASS"
 
   if [[ ! -z $DAMOMINER_URL ]]; then
     if [[ $DAMOMINER_ALGO =~ "_" ]]; then #dual mode
@@ -53,7 +53,6 @@ function miner_config_gen() {
   fi
 
   local prefix2=$DAMOMINER_TEMPLATE2
-  [[ ! -z $DAMOMINER_PASS2 ]] && prefix2+=":$DAMOMINER_PASS2"
   local postfix2=
   if [[ ! -z $DAMOMINER_WORKER2 ]]; then
     if [[ $DAMOMINER_WORKER2 =~ "@" || $DAMOMINER_WORKER2 =~ "%40" ]]; then
@@ -64,6 +63,7 @@ function miner_config_gen() {
       prefix2+=".$DAMOMINER_WORKER2"
     fi
   fi
+  [[ ! -z $DAMOMINER_PASS2 ]] && prefix2+=":$DAMOMINER_PASS2"
 
   if [[ ! -z $DAMOMINER_URL2 ]]; then
     local ppool=`head -n 1 <<< "$DAMOMINER_URL2"`
