@@ -290,6 +290,7 @@ function loop {
 
 	mem=`free -m | grep 'Mem' | awk '{print $2", "$7}'` # total and available
 	df=`df -h / | awk '{ print $4 }' | tail -n 1 | sed 's/%//'`
+	cputemp=`cpu-temp | jq -cs .`
 	cpuavg=`cat /proc/loadavg | awk '{print $1", "$2", "$3}'`
 
 	stats_json=$(
@@ -302,8 +303,9 @@ function loop {
 		--argjson power "$power" \
 		--arg df "$df" \
 		--argjson mem "[$mem]" \
+		--argjson cputemp "$cputemp" \
 		--argjson cpuavg "[$cpuavg]" \
-		'{ "params": { $meta, $temp, $fan, $power, $df, $mem, $cpuavg }}'
+		'{ "params": { $meta, $temp, $fan, $power, $df, $mem, $cputemp, $cpuavg }}'
 		2>/dev/null
 	)
 
