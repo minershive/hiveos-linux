@@ -47,6 +47,10 @@ function hex2dec_json() {
           algo="ethash"
           algo2="bl2bsha3"
         ;;
+       eth_trb)
+          algo="ethash"
+          algo2="tellor"
+        ;;
        ckb)
            algo="eaglesong"
          ;;
