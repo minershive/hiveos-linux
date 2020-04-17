@@ -268,8 +268,8 @@ if [[ -z "$config" || "$config" == "null" ]]; then
 fi
 
 # write config sequence
-confseq=`jq '.result.confseq' --raw-output <<< "$response"`
-[[ ! -z $confseq && $confseq != "null" ]] && echo "$confseq" > /tmp/confseq
+#confseq=`jq '.result.confseq' --raw-output <<< "$response"`
+#[[ ! -z $confseq && $confseq != "null" ]] && echo "$confseq" > /tmp/confseq
 
 # stop screen session if not running from it
 [[ $arg_check == 0 ]] && hello_quit

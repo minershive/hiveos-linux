@@ -5,6 +5,7 @@
 INTERVAL=10
 LOG="/var/log/hive-agent.log"
 LAST_STAT="/run/hive/last_stat.json"
+LAST_CMD_ID="/run/hive/last_cmd_id"
 
 API_TIMEOUT=15 #timeout to wait for miner API response, can take very long time on 13+ gpus
 
@@ -273,10 +274,16 @@ function loop {
 		stats="null"
 	fi
 
-	request=`jq -c -n --arg rig_id "$RIG_ID" --arg passwd "$RIG_PASSWD" '{ "method": "stats", "params": { "v":1, $rig_id, $passwd }}' 2>/dev/null`
+	request=`jq -c -n --arg rig_id "$RIG_ID" --arg passwd "$RIG_PASSWD" '{ "method": "stats", "params": { "v":2, $rig_id, $passwd }}' 2>/dev/null`
 	if [[ $? -ne 0 ]]; then
 		echo -e "${RED}Request json creating error${NOCOLOR}"
 		return
+	fi
+
+	if [[ -f $LAST_CMD_ID ]]; then
+		json=`echo "$request" '{"params": {"last_cmd_id": '$(<$LAST_CMD_ID)' }}' | jq -s -c '.[0] * .[1]' 2>/dev/null` &&
+			request="$json" ||
+			echo -e "${RED}Last cmd id parsing error${NOCOLOR}"
 	fi
 
 	temp=$(sanitize_temp $temp)
@@ -394,7 +401,7 @@ function loop {
 		fi
 	fi
 
-	echo $request > $LAST_STAT
+	echo "$request" > $LAST_STAT
 
 	[[ $AGENT_GZIP == 1 ]] && echo -n  "Z "
 	echo $request | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'
@@ -411,7 +418,7 @@ function loop {
 		echo "[`date`] > Z $request" >> $LOG
 
 
-		response=$(echo $request | gzip -9 -c -f | curl --insecure -L --data-binary @- ${ssl_session} \
+		response=$(echo "$request" | gzip -9 -c -f | curl --insecure -L --data-binary @- ${ssl_session} \
 		--connect-timeout 7 --max-time 15 --silent \
 		-H "Content-Encoding: gzip" \
 		-H "Content-Type:" \
@@ -421,7 +428,7 @@ function loop {
 	else
 		echo "[`date`] > $request" >> $LOG
 
-		response=$(echo $request | curl --insecure -L --data @- ${ssl_session} \
+		response=$(echo "$request" | curl --insecure -L --data @- ${ssl_session} \
 		--connect-timeout 7 --max-time 15 --silent \
 		-H "Content-Type:" \
 		-H "User-Agent:" \
@@ -440,7 +447,7 @@ function loop {
 	#echo "[`date`] < `echo $response | jq '.' -c`" >> $LOG
 	echo "[`date`] < $response" >> $LOG #full response even invalid
 
-	error=$(echo $response | jq '.error' --raw-output)
+	error=$(echo "$response" | jq '.error' --raw-output)
 	[[ $? != 0 ]] && echo -e "${RED}Invalid response${NOCOLOR}: $HIVE_HOST_URL\n$response" && return 1
 	[[ ! -z $error && $error != "null" ]] && echo -e "${RED}Error response${NOCOLOR}: $error" && return 1
 
@@ -453,24 +460,36 @@ function loop {
 		echo "[`date`] Connection with API server is OK. Start miner" >> $LOG
 	fi
 
-	command=$(echo $response | jq '.result.command' --raw-output)
+	command=$(echo "$response" | jq '.result.command' --raw-output)
 
 	if [[ $command != "OK" ]]; then
 		echo "$response" | jq '.result'
-
 		#the command has been received, reducing push interval to make the rig more responsive
 		CUR_PUSH_INTERVAL=0
 		LAST_COMMAND=$(date +%s)
+	else
+		# OK, remove last cmd id
+		rm $LAST_CMD_ID 2>/dev/null
 	fi
 
 	if [[ $command != "batch" ]]; then
-		body=`echo $response | jq -c '.result'`
+		body=`echo "$response" | jq -c '.result'`
+		#Optional command identifier
+		cmd_id=`echo "$body" | jq -r '.id'`
+		[[ $cmd_id == "null" ]] && cmd_id=
+		# save last id
+		[[ $cmd_id -gt 0 ]] && echo $cmd_id > $LAST_CMD_ID
 		do_command
 	else
-		count=`echo $response | jq '.result.commands|length'`
+		count=`echo "$response" | jq '.result.commands|length'`
 		echo "Got $count batch commands"
 		for (( i=0; i < $count; i++ )); do
-			body=`echo $response | jq -c ".result.commands[$i]"`
+			body=`echo "$response" | jq -c ".result.commands[$i]"`
+			#Optional command identifier
+			cmd_id=`echo "$body" | jq -r '.id'`
+			[[ $cmd_id == "null" ]] && cmd_id=
+			# save last id for each command
+			[[ $cmd_id -gt 0 ]] && echo $cmd_id > $LAST_CMD_ID
 			command=
 			do_command
 		done
@@ -479,10 +498,10 @@ function loop {
 	# ROH Fan controller blink error state
 	if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
 		#update text to OLED screen
-		miner_algo=`echo $stats | jq -r '.algo'`
+		miner_algo=`echo "$stats" | jq -r '.algo'`
 		$OCTOFAN update_text $miner_algo $khs
 
-		error_state=$(echo $response | jq -r '.result.error_state')
+		error_state=$(echo "$response" | jq -r '.result.error_state')
 		if [[ $error_state == "danger" ]]; then
 			$OCTOFAN blink_error
 		elif [[ $error_state == "warning" ]]; then

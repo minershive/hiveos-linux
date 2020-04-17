@@ -44,8 +44,8 @@ function do_command () {
 	[[ -z $command ]] && command=`echo "$body" | jq -r '.command'` #get command for batch
 
 	#Optional command identifier
-	cmd_id=$(echo "$body" | jq -r '.id')
-	[[ $cmd_id == "null" ]] && cmd_id=
+	#cmd_id=$(echo "$body" | jq -r '.id')
+	#[[ $cmd_id == "null" ]] && cmd_id=
 
 	bench=0
 	benchmark check > /dev/null 2>&1
@@ -55,14 +55,6 @@ function do_command () {
 
 		OK)
 			echo -e "${BGREEN}$command${NOCOLOR}"
-			confseq=`jq '.confseq' --raw-output <<< "$body"`
-			if [[ ! -z $confseq && $confseq != "null" ]]; then
-				if [[ ! -f /tmp/confseq || "$confseq" != "$(</tmp/confseq)" ]]; then
-					echo "${BYELLOW}Not in sync, sending Hello$NOCOLOR"
-					echo "$confseq" > /tmp/confseq
-					hello
-				fi
-			fi
 		;;
 
 		reboot)
@@ -99,8 +91,6 @@ function do_command () {
 		;;
 
 		config)
-			confseq=`jq '.confseq' --raw-output <<< "$body"`
-			[[ ! -z $confseq && $confseq != "null" ]] && echo "$confseq" > /tmp/confseq
 			config=$(echo $body | jq '.config' --raw-output)
 			justwrite=$(echo $body | jq '.justwrite' --raw-output) #don't restart miner, just write config, maybe WD settings will be updated
 			if [[ ! -z $config && $config != "null" ]]; then
@@ -582,7 +572,7 @@ function do_command () {
 
 						if [[ $gpu_index == -1 ]]; then # -1 = all
 							#payload=`atiflashall $extra_args /tmp/amd.uploaded.rom`
-							local nv_list=$(cat /run/hive/gpu-detect.json | jq "[.[] | select ( .brand == \"nvidia\" )]")
+							local nv_list=`cat /run/hive/gpu-detect.json | jq "[.[] | select ( .brand == \"nvidia\" )]"`
 							local nv_count=$(echo $nv_list | jq ". | length")
 							payload=""
 							local err=0
@@ -717,10 +707,6 @@ function do_command () {
 	#Flush buffers if any files changed
 	sync
 }
-
-
-
-
 
 
 
