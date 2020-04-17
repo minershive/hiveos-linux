@@ -29,7 +29,6 @@ function do_nvstart () {
 	[[ $nv_as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 }
 
-
 function backslash() {
 	local var="${1//\\/\\\\}"
 	var="${var//\"/\\\"}"
@@ -56,6 +55,14 @@ function do_command () {
 
 		OK)
 			echo -e "${BGREEN}$command${NOCOLOR}"
+			confseq=`jq '.confseq' --raw-output <<< "$body"`
+			if [[ ! -z $confseq && $confseq != "null" ]]; then
+				if [[ ! -f /tmp/confseq || "$confseq" != "$(</tmp/confseq)" ]]; then
+					echo "${BYELLOW}Not in sync, sending Hello$NOCOLOR"
+					echo "$confseq" > /tmp/confseq
+					hello
+				fi
+			fi
 		;;
 
 		reboot)
@@ -87,10 +94,13 @@ function do_command () {
 			[[ $exitcode -eq 0 ]] &&
 				cat $log_name | message info "'"$(backslash "$exec")"'" payload --id='$cmd_id' ||
 				cat $log_name | message error "'"$(backslash "$exec")"' (failed, exitcode=$exitcode)" payload --id='$cmd_id'
+			rm $log_name
 			' > /tmp/nohup.log 2>&1 &
 		;;
 
 		config)
+			confseq=`jq '.confseq' --raw-output <<< "$body"`
+			[[ ! -z $confseq && $confseq != "null" ]] && echo "$confseq" > /tmp/confseq
 			config=$(echo $body | jq '.config' --raw-output)
 			justwrite=$(echo $body | jq '.justwrite' --raw-output) #don't restart miner, just write config, maybe WD settings will be updated
 			if [[ ! -z $config && $config != "null" ]]; then

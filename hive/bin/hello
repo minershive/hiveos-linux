@@ -14,16 +14,16 @@ arg_boot=0
 
 # check for arguments
 for var in "$@"; do
-    [[ $var == "restartminer" ]] && arg_restartminer=1 && continue
-    [[ $var == "boot" ]] && arg_boot=1 && continue
-    # used internally
-    [[ $var == "retry" ]] && arg_retry=1 && continue
-    [[ $var == "check" ]] && arg_check=1 && continue
+	[[ $var == "restartminer" ]] && arg_restartminer=1 && continue
+	[[ $var == "boot" ]] && arg_boot=1 && continue
+	# used internally
+	[[ $var == "retry" ]] && arg_retry=1 && continue
+	[[ $var == "check" ]] && arg_check=1 && continue
 done
 
 if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
 	source /etc/environment
-	export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+	export `grep -vE '^$|^#' /etc/environment | cut -d= -f1` #export all variables from file
 fi
 
 HELLO_OK="/tmp/.hive-hello-ok"
@@ -70,12 +70,12 @@ function hello_quit {
 # Make hello request ================================================================
 
 #boot_time=`TZ='UTC' uptime -s`
-boot_time=$(( `date +%s` - `cat /proc/uptime | awk '{printf "%d", $1}'` ))
+boot_time=$(( `date +%s` - `awk '{printf "%d", $1}' /proc/uptime` ))
 
 if [[ ! -e $GPU_DETECT_JSON ]]; then #this is needed only when upgrading version. later we can remove this
 	gpu-detect listjson > $GPU_DETECT_JSON
 fi
-gpus_json=`cat $GPU_DETECT_JSON`
+gpus_json=$(<$GPU_DETECT_JSON)
 #gpus_json=`echo "${gpus[@]}" | jq -R . | jq -s -c .`
 gpu_count_amd=`gpu-detect AMD`
 gpu_count_nvidia=`gpu-detect NVIDIA`
@@ -86,8 +86,8 @@ net_interfaces=`ip -o link | grep -vE 'LOOPBACK|POINTOPOINT|sit0|can0|docker|son
 #taken from netconf
 lan_addresses=(`ip -o -f inet addr show | grep eth0 | awk '/scope global/ {print $4}'`)
 lan_gateway=`ip route | awk '/default/ && /eth0/ { print $3 }' | head -1`
-lan_dns=`cat /run/systemd/resolve/resolv.conf | grep -m1 ^nameserver | awk '{print $2}'`
-cat /etc/systemd/network/20-ethernet.network | grep -q '^DHCP=yes' && lan_dhcp=1 || lan_dhcp=0
+lan_dns=`grep -m1 ^nameserver /run/systemd/resolve/resolv.conf | awk '{print $2}'`
+grep -q '^DHCP=yes' /etc/systemd/network/20-ethernet.network && lan_dhcp=1 || lan_dhcp=0
 lan_config="{\"dhcp\": $lan_dhcp, \"address\": \"${lan_addresses[@]}\", \"gateway\": \"$lan_gateway\", \"dns\": \"$lan_dns\"}"
 
 #mb_manufacturer=`dmidecode | grep -A4 '^Base Board Information' | grep "Manufacturer:" | sed -E 's/\sManufacturer:\s+(.*)/\1/'`
@@ -104,9 +104,9 @@ mb_bios_date=`cat /sys/class/dmi/id/bios_date 2>/dev/null` && mb_bios="$mb_bios 
 cpu_model=`lscpu | grep "Model name:" | sed 's/Model name:[ \t]*//g'`
 cpu_cores=`lscpu | grep "^CPU(s):" | sed 's/CPU(s):[ \t]*//g'`
 aes=`lscpu | grep "^Flags:.*aes" | wc -l`
-cpu_id=$(sudo dmidecode -t 4 | grep ID | sed 's/.*ID://;s/ //g')
+cpu_id=`dmidecode -t 4 | grep ID | sed 's/.*ID://;s/ //g'`
 [[ -e /sys/class/net/eth0/address ]] &&
-	first_mac=$(cat /sys/class/net/eth0/address | sed 's/://g') || #on some motherboards eth0 is disabled
+	first_mac=`sed 's/://g' /sys/class/net/eth0/address` || #on some motherboards eth0 is disabled
 	first_mac=$(echo $net_interfaces | jq -r .[0].mac | sed 's/://g') #just grab the first in list
 
 bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
@@ -147,62 +147,62 @@ ref_id=
 [[ "$ref_id" =~ ^[[:space:]]*([^[:space:]].*[^[:space:]])[[:space:]]*$ ]] && ref_id=${BASH_REMATCH[1]}
 
 request=$(
-jq -n \
---arg uid "$uid" \
---arg rig_id "$RIG_ID" \
---arg passwd "$RIG_PASSWD" \
---arg boot_time "$boot_time" \
---arg boot_event "$arg_boot" \
---argjson ip "$ips_json" \
---argjson net_interfaces "$net_interfaces" \
---argjson lan_config "$lan_config" \
---arg openvpn "$openvpn" \
---argjson gpu "$gpus_json" \
---arg gpu_count_amd "$gpu_count_amd" \
---arg gpu_count_nvidia "$gpu_count_nvidia" \
---arg nvidia_version "`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//'`" \
---arg amd_version "$amd_version" \
---arg manufacturer "$mb_manufacturer" --arg product "$mb_product" --arg bios "$mb_bios" --arg system_uuid "$system_uuid" \
---arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" --arg cpu_id "$cpu_id" \
---arg disk_model "$disk_model" \
---arg kernel "$kernel" \
---arg server_url "$HIVE_HOST_URL" \
---arg version "$version" \
---arg ref_id "$ref_id" \
-'{
-	"method": "hello", "jsonrpc": "2.0", "id": 0,
-	"params": {
-		$rig_id, $passwd, $server_url, $uid, $ref_id,
-		$boot_time, $boot_event, $ip, $net_interfaces, $openvpn, $lan_config,
-		$gpu, $gpu_count_amd, $gpu_count_nvidia,
-		"mb": {$manufacturer, $product, $system_uuid, $bios}, "cpu": {$model, $cores, $aes, $cpu_id}, $disk_model,
-		$kernel, $amd_version, $nvidia_version,
-		$version
-	}
-}'
+	jq -n \
+	--arg uid "$uid" \
+	--arg rig_id "$RIG_ID" \
+	--arg passwd "$RIG_PASSWD" \
+	--arg boot_time "$boot_time" \
+	--arg boot_event "$arg_boot" \
+	--argjson ip "$ips_json" \
+	--argjson net_interfaces "$net_interfaces" \
+	--argjson lan_config "$lan_config" \
+	--arg openvpn "$openvpn" \
+	--argjson gpu "$gpus_json" \
+	--arg gpu_count_amd "$gpu_count_amd" \
+	--arg gpu_count_nvidia "$gpu_count_nvidia" \
+	--arg nvidia_version "`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//'`" \
+	--arg amd_version "$amd_version" \
+	--arg manufacturer "$mb_manufacturer" --arg product "$mb_product" --arg bios "$mb_bios" --arg system_uuid "$system_uuid" \
+	--arg model "$cpu_model" --arg cores "$cpu_cores" --arg aes "$aes" --arg cpu_id "$cpu_id" \
+	--arg disk_model "$disk_model" \
+	--arg kernel "$kernel" \
+	--arg server_url "$HIVE_HOST_URL" \
+	--arg version "$version" \
+	--arg ref_id "$ref_id" \
+	'{
+		"method": "hello", "jsonrpc": "2.0", "id": 0,
+		"params": {
+			$rig_id, $passwd, $server_url, $uid, $ref_id,
+			$boot_time, $boot_event, $ip, $net_interfaces, $openvpn, $lan_config,
+			$gpu, $gpu_count_amd, $gpu_count_nvidia,
+			"mb": {$manufacturer, $product, $system_uuid, $bios}, "cpu": {$model, $cores, $aes, $cpu_id}, $disk_model,
+			$kernel, $amd_version, $nvidia_version,
+			$version
+		}
+	}'
 )
 
 #ROH case fan
 if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
-	 octofan=`$OCTOFAN get_max_rpm_json`
-	 if [[ ! -z $octofan && $octofan != '[]' ]]; then
-		 octofan_json=$(
-		 	jq -n \
-		 	--argjson octofan "$octofan" \
-		 	'{
-		 		"params": {
-				 	$octofan
-		 		}
-		 	}'
-		 )
-		 [[ ! -z $octofan_json ]] &&
-		 	request=`echo "$request" "$octofan_json" | jq -s '.[0] * .[1]'`
+	octofan=`$OCTOFAN get_max_rpm_json`
+	if [[ ! -z $octofan && $octofan != '[]' ]]; then
+		octofan_json=$(
+			jq -n \
+			--argjson octofan "$octofan" \
+			'{
+				"params": {
+					$octofan
+				}
+			}'
+		)
+		[[ ! -z $octofan_json ]] &&
+			request=`echo "$request" "$octofan_json" | jq -s '.[0] * .[1]'`
 	fi
 fi
 
 #Coolbox Autofan
 if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
-  coolbox_serial=`$COOLBOX --get_serial`
+	coolbox_serial=`$COOLBOX --get_serial`
 	if [[ ! -z $coolbox_serial ]]; then
 		coolbox_json=$(
 			jq -n \
@@ -231,7 +231,6 @@ if [[ ! -z $FARM_HASH && ! -z $WORKER_NAME ]]; then
 elif [[ ! -z $SET_WORKER_NAME ]]; then
 	request=`echo "$request" | jq --arg worker_name "$SET_WORKER_NAME" '. * {"params": {$worker_name}}'`
 fi
-
 
 echo "$request" | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'
 
@@ -267,6 +266,10 @@ if [[ -z "$config" || "$config" == "null" ]]; then
 	hello_quit
 	exit 1
 fi
+
+# write config sequence
+confseq=`jq '.result.confseq' --raw-output <<< "$response"`
+[[ ! -z $confseq && $confseq != "null" ]] && echo "$confseq" > /tmp/confseq
 
 # stop screen session if not running from it
 [[ $arg_check == 0 ]] && hello_quit
@@ -327,52 +330,48 @@ octofan=$(echo $response | jq '.result.octofan' --raw-output)
 if [[ ! -z $octofan && $octofan != "null" ]]; then
 	if [[ -z $OCTOFAN_CONF ]]; then #reread env variables as after upgrade this can be empty
 		source /etc/environment
-		export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+		export `grep -vE '^$|^#' /etc/environment | cut -d= -f1` #export all variables from file
 	fi
 	echo "Saving Octofan config"
 	echo "$octofan" > $OCTOFAN_CONF
-
-  $OCTOFAN save_text_to_EEPROM
+	$OCTOFAN save_text_to_EEPROM
 fi
 
 # Coolbox Autofan config========================================================
 coolbox=$(echo $response | jq '.result.coolbox' --raw-output)
 if [[ ! -z $coolbox && $coolbox != "null" ]]; then
-  # Coolbox remove check
-  coolbox_serial=
-  for (( i = 0; i < 3; i++ )); do #three times
-    coolbox_serial=`$COOLBOX --get_serial`
-    if [[ ! -z $coolbox_serial ]]; then
-      break
-    fi
-    sleep 0.5
-  done
-  if [[ -z $coolbox_serial ]]; then
-    coolbox_request=$(
-    jq -n \
-    --arg rig_id "$RIG_ID" \
-    --arg passwd "$RIG_PASSWD" \
-    '{
-    	"method": "coolbox", "jsonrpc": "2.0", "id": 0,
-    	"params": {
-    		$rig_id, $passwd, "delete": true
-    	}
-    }'
-    )
-    echo "$coolbox_request" | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'
+	# Coolbox remove check
+	coolbox_serial=
+	for (( i = 0; i < 3; i++ )); do #three times
+		coolbox_serial=`$COOLBOX --get_serial`
+		[[ ! -z $coolbox_serial ]] && break
+		sleep 0.5
+	done
+	if [[ -z $coolbox_serial ]]; then
+		coolbox_request=$(
+			jq -n \
+			--arg rig_id "$RIG_ID" \
+			--arg passwd "$RIG_PASSWD" \
+			'{
+				"method": "coolbox", "jsonrpc": "2.0", "id": 0,
+				"params": {
+					$rig_id, $passwd, "delete": true
+				}
+			}'
+		)
+		echo "$coolbox_request" | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'
 
-    coolbox_response=$(echo $coolbox_request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=coolbox" -H "Content-Type: application/json")
-    if [[ $exitcode -eq 0 ]]; then
-      echo "Coolbox Autofan successfully removed: $coolbox_response"
-    fi
-  else #coolbox found saving it's config
-    if [[ -z $COOLBOX_CONF ]]; then #reread env variables as after upgrade this can be empty
-      source /etc/environment
-      export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
-    fi
-    echo "Saving Coolbox Autofan config"
-    echo "$coolbox" > $COOLBOX_CONF
-  fi
+		coolbox_response=$(echo $coolbox_request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent \
+			-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=coolbox" -H "Content-Type: application/json")
+		[[ $exitcode -eq 0 ]] && echo "Coolbox Autofan successfully removed: $coolbox_response"
+	else #coolbox found saving it's config
+		if [[ -z $COOLBOX_CONF ]]; then #reread env variables as after upgrade this can be empty
+			source /etc/environment
+			export `grep -vE '^$|^#' /etc/environment | cut -d= -f1` #export all variables from file
+		fi
+		echo "Saving Coolbox Autofan config"
+		echo "$coolbox" > $COOLBOX_CONF
+	fi
 fi
 
 # Repositpry URLs ==============================================================
