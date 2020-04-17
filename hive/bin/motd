@@ -839,7 +839,7 @@ echo
 
 # show help only on boot and console session start
 # this does not work correct in teleconsole
-cmd=`ps --no-headers $PPID`
+cmd=`timeout -s9 3 ps --no-headers $PPID 2>/dev/null`
 if [[ $cmd =~ (-bash|motd) ]]; then
 	# do not wrap help in motd
 	tput rmam
