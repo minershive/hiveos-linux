@@ -31,5 +31,5 @@ for (( gpu_index=0; gpu_index < $n; gpu_index++ )); do
 	#gpu_index_hex=$gpu_index
 	#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
 
-	atiflash -p $gpu_index $extra_args $filename
+	amdvbflash -p $gpu_index $extra_args $filename
 done

@@ -293,7 +293,7 @@ function do_command () {
 			if [[ ! -z $gpu_index && $gpu_index != "null" ]]; then
 				#local gpu_index_hex=$gpu_index
 				#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
-				payload=`atiflash -s $gpu_index /tmp/amd.saved.rom`
+				payload=`amdvbflash -s $gpu_index /tmp/amd.saved.rom`
 				exitcode=$?
 				echo "$payload"
 				if [[ $exitcode == 0 ]]; then
@@ -346,7 +346,7 @@ function do_command () {
 						#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
 						# payload+=`echo "=== Flashing card $gpu_index ===" && `
 						#payload+=`echo "Flashing card by CMD: atiflash -p $gpu_index $extra_args /tmp/amd.uploaded${queue}.rom"`
-						payload+=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index $extra_args /tmp/amd.uploaded.rom`
+						payload+=`echo "=== Flashing card $gpu_index ===" && amdvbflash -p $gpu_index $extra_args /tmp/amd.uploaded.rom`
 						exitcode=$?
 						if [[ $exitcode == 0 ]]; then
 							meta_good+=($gpu_index)
@@ -391,15 +391,17 @@ function do_command () {
 						else
 							#local gpu_index_hex=$gpu_index
 							#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
-							payload=`echo "=== Flashing card $gpu_index ===" && atiflash -p $gpu_index $extra_args /tmp/amd.uploaded.rom`
+							payload=`echo "=== Flashing card $gpu_index ===" && amdvbflash -p $gpu_index $extra_args /tmp/amd.uploaded.rom`
 						fi
 						exitcode=$?
 						echo "$payload"
 						if [[ $exitcode == 0 ]]; then
 							echo "$payload" | message ok "ROM flashing OK, now reboot" payload --id=$cmd_id
 							[[ $need_reboot -eq 1 ]] && nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+						else if [[ $exitcode == 2 ]]; then
+							echo "$payload" | message ok "ROM already flashed" payload --id=$cmd_id
 						else
-							echo "$payload" | message warn "ROM flashing failed" payload --id=$cmd_id
+							echo "$payload" | message warn "ROM flashing failed ($exitcode)" payload --id=$cmd_id
 						fi
 					fi
 
