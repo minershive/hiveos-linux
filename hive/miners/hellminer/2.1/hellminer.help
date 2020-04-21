@@ -1,0 +1,18 @@
+./hellminer --help
+
+Usage: hellminer [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -l, --list            list available OpenCL devices by ID (GPUs...)
+  --cpu=CPU             run N threads of Verushash on CPU (default: 1)
+  --gpu=LIST            use specified GPU device IDs to mine, for example to
+                        use the first three: 0,1,2 (default: 0)
+  --instances=N         run N instances of Verushash per Solver (default: 1)
+  -c POOL, --connect=POOL
+                        example stratum+tcp://example.com:1234 (add "#xnsub"
+                        to enable extranonce.subscribe)
+  -u USER, --user=USER  username for connecting to the pool
+  -p PWD, --pwd=PWD     password for connecting to the pool
+  -v, --verbose         verbose mode (may be repeated for more verbosity)
+  --debug               enable debug mode (for developers only)
