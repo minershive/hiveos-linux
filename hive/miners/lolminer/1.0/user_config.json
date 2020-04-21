@@ -1,0 +1,104 @@
+{
+	"DEFAULTS" : {
+		"DEVICES" : "AUTO", 	
+		"APIPORT" : 0
+	},
+
+	"EXAMPLE_BEAM_SINGLE" : 
+	{
+		"COIN" : "BEAM",
+		"POOLS" : [
+			{"POOL" : "beam.sunpool.top",
+			 "PORT" : "3334",
+			 "USER" : "beam_public_key.worker",
+			 "PASS" : "x"}
+		]
+	},
+
+	"EXAMPLE_BEAM_TLS" : 
+	{
+		"COIN" : "BEAM",
+		"POOLS" : [
+			{"POOL" : "beam.suprnova.cc",
+			 "PORT" : "7777",
+			 "USER" : "beam_username.worker",
+			 "TLS" 	: 1,
+			 "PASS" : "x"},
+			{"POOL" : "beam.suprnova.cc",
+			 "PORT" : "7776",
+			 "USER" : "beam_username.worker",
+			 "TLS"  : 0,
+			 "PASS" : "x"}
+		]
+	},
+
+	"EXAMPLE_GRIN_29" : 
+	{
+		"COIN" : "GRIN-AD29",
+		"POOLS" : [
+			{"POOL" : "eu.stratum.grin-pool.org",
+			 "PORT" : "3416",
+			 "USER" : "Lolliedieb",
+			 "PASS" : "testRigName"}
+		]
+	},
+
+	"EXAMPLE_GRIN_31" : 
+	{
+		"COIN" : "GRIN-AT31",
+		"POOLS" : [
+			{"POOL" : "eu.stratum.grin-pool.org",
+			 "PORT" : "3416",
+			 "USER" : "Lolliedieb",
+			 "PASS" : "testRigName"}
+		]
+	},
+
+	"EXAMPLE_AION" : 
+	{
+		"COIN" : "AION",
+		"POOLS" : [
+			{"POOL" : "na.aionmine.org",
+			 "PORT" : "3333",
+			 "USER" : "yourWallet.worker",
+			 "PASS" : "x"}
+		]
+	},
+
+	"EXAMPLE_BTG_FAILOVER" : 
+	{
+		"COIN" : "BTG",
+		"POOLS" : [
+			{"POOL" : "btg-eu.coinblockers.com",
+			 "PORT" : "3333",
+			 "USER" : "yourWallet.worker",
+			 "PASS" : "x"},
+			{"POOL" : "btg.suprnova.cc",
+			 "PORT" : "8866",
+			 "USER" : "yourWallet.worker",
+			 "PASS" : "x"}
+		]
+	},	
+
+	"EXAMPLE_MNX" : 
+	{
+		"COIN" : "MNX",
+		"POOLS" : [
+			{"POOL" : "eu.minexpool.nl",
+			 "PORT" : "9999",
+			 "USER" : "yourWallet.worker",
+			 "PASS" : "x"}
+		]
+	},
+
+	"EXAMPLE_ZERO" : 
+	{
+		"COIN" : "ZER",
+		"POOLS" : [
+			{"POOL" : "zero.easymine.rocks",
+			 "PORT" : "2000",
+			 "USER" : "yourWallet.worker",
+			 "PASS" : "x"}
+		]
+	}
+}
