@@ -404,7 +404,6 @@ function do_command() {
 							echo "$payload" | message warn "ROM flashing failed ($exitcode)" payload --id=$cmd_id
 						fi
 					fi
-
 				fi
 			fi
 
@@ -494,8 +493,7 @@ function do_command() {
 						continue
 					fi
 
-
-
+					# Flashing
 					local gpu_index=""
 					for gpu_index in $gpu_list; do
 						payload+=`echo "=== Flashing card $gpu_index ==="`
