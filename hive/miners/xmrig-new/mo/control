@@ -1,8 +1,8 @@
 Package: hive-miners-xmrig-new-mo
-Version: 0.6-01
+Version: 0.6-02
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-xmrig-new-mo-5.4.0
+Depends: hive-miners-xmrig-new-mo-5.11.0
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - XMRig-MoneroOcean fork
