@@ -1,0 +1,8 @@
+Package: hive-miners-hellminer
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-hellminer-2.1
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - Hellminer
