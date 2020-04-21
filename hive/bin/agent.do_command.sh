@@ -8,7 +8,7 @@ nv_mn=0
 nv_af=0
 nv_wd=0
 
-function do_nvstop () {
+function do_nvstop() {
 	nv_as=$(screen -ls | grep -c autoswitch)
 	nv_mn=$(screen -ls | grep -c miner)
 	nv_af=$(screen -ls | grep -c autofan)
@@ -17,7 +17,7 @@ function do_nvstop () {
 	return $?
 }
 
-function do_nvstart () {
+function do_nvstart() {
 	#echo "nvstart $MAINTENANCE, $nv_wd, $nv_mn, $nv_af, $nv_as"
 	[[ $MAINTENANCE == 2 ]] && return
 	rm /run/hive/NV_OFF > /dev/null 2>&1
@@ -39,7 +39,7 @@ function backslash() {
 
 ####
 
-function do_command () {
+function do_command() {
 	#body=$1
 	[[ -z $command ]] && command=`echo "$body" | jq -r '.command'` #get command for batch
 
@@ -398,7 +398,7 @@ function do_command () {
 						if [[ $exitcode == 0 ]]; then
 							echo "$payload" | message ok "ROM flashing OK, now reboot" payload --id=$cmd_id
 							[[ $need_reboot -eq 1 ]] && nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
-						else if [[ $exitcode == 2 ]]; then
+						elif [[ $exitcode == 2 ]]; then
 							echo "$payload" | message ok "ROM already flashed" payload --id=$cmd_id
 						else
 							echo "$payload" | message warn "ROM flashing failed ($exitcode)" payload --id=$cmd_id
