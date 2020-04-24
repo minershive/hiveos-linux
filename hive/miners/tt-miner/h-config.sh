@@ -28,19 +28,22 @@ function miner_config_gen() {
 
   DRV_VERS=`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//' | tr '.' ' ' | awk '{print $1}'`
   echo -e -n "${GREEN}NVidia${NOCOLOR} driver ${GREEN}${DRV_VERS}${NOCOLOR}-series detected "
-  #if [ ${DRV_VERS} -ge 396 ]; then
-    if [ ${DRV_VERS} -ge 410 ]; then
-      if [ ${DRV_VERS} -ge 418 ]; then
-        echo -e "(${BCYAN}CUDA 10.1${NOCOLOR} compatible)"
-        CUDA_VERS='-101'
-      else
-        echo -e "(${BCYAN}CUDA 10.0${NOCOLOR} compatible)"
-        CUDA_VERS='-100'
-      fi
-    else
-      echo -e "(${BCYAN}CUDA 9.2${NOCOLOR} compatible)"
-      CUDA_VERS='-92'
-    fi
+  if [ ${DRV_VERS} -ge 430 ]; then
+     echo -e "(${BCYAN}CUDA 10.2${NOCOLOR} compatible)"
+     CUDA_VERS='-102'
+  elif [ ${DRV_VERS} -ge 418 ]; then
+    echo -e "(${BCYAN}CUDA 10.1${NOCOLOR} compatible)"
+    CUDA_VERS='-101'
+  elif [ ${DRV_VERS} -ge 410 ]; then
+    echo -e "(${BCYAN}CUDA 10.0${NOCOLOR} compatible)"
+    CUDA_VERS='-100'
+  elif [ ${DRV_VERS} -ge 396 ]; then
+    echo -e "(${BCYAN}CUDA 9.2${NOCOLOR} compatible)"
+    CUDA_VERS='-92'
+  else
+    echo -e "(${RED}CUDA less then 9.2 - update your Nvidia card drivers! ${NOCOLOR})"
+    CUDA_VERS=''
+  fi
 
   echo "-algo ${TT_MINER_ALGO}${CUDA_VERS}" >> $MINER_CONFIG
 
