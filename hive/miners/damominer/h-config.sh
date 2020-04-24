@@ -80,7 +80,7 @@ function miner_config_gen() {
 
   #"devices": "",
   if [[ ! -z $DAMOMINER_USER_CONFIG ]]; then
-    conf+="$DAMOMINER_USER_CONFIG"
+    conf+=" $DAMOMINER_USER_CONFIG"
   fi
 
   echo $conf > $MINER_CONFIG
