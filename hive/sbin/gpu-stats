@@ -24,8 +24,8 @@ function putstats {
 	#echo $2
 	#temps+=($1)
 	#fans+=($2)
-	bus_temp_fan+=("$1;$2;$3;$4;$5;$6")
-	#echo "$1 $2 $3 $4 $5 $6"
+	bus_temp_fan+=("$1;$2;$3;$4;$5;$6;$7;$8")
+	#echo "$1 $2 $3 $4 $5 $6 $7 $8"
 }
 
 # add all gpus as cpu. they will be replaced later with real data.
@@ -101,6 +101,22 @@ function amd_stats {
 			echo "Error: temp unknown for card $cardno" >&2
 		fi
 
+		jtemp="0"
+		if [[ -e ${hwmondir}temp2_input ]]; then
+			jtemp=`head -1 ${hwmondir}temp2_input`
+			jtemp=$(( jtemp / 1000 ))
+		else
+			echo "Error: jtemp unknown for card $cardno" >&2
+		fi
+
+		mtemp="0"
+		if [[ -e ${hwmondir}temp3_input ]]; then
+			mtemp=`head -1 ${hwmondir}temp3_input`
+			mtemp=$(( mtemp / 1000 ))
+		else
+			echo "Error: mtemp unknown for card $cardno" >&2
+		fi
+
 
 		local power='0'
 		[[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]] &&
@@ -108,7 +124,7 @@ function amd_stats {
 		[[ -z power ]] && power='0'
 
 
-		putstats $busid "amd" $temp $speed "0" "$power"
+		putstats $busid "amd" $temp $speed "0" "$power" "$jtemp" "$mtemp"
 
 
 		#cardcount=$(( cardcount + 1 ))
@@ -148,7 +164,7 @@ function nvidia_stats {
 		local powerlimit=`awk -F', ' '{printf("%d", $6)}' <<< $s`
 		[[ $power == "[Not Supported]" || $power == "0" ]] && power=$powerlimit
 		# remark: $power always != "[Not Supported]" because use "%d" in printf function, when power == "0" can use current PL for GTX1050ti
-		putstats "$busid" "nvidia" "$temp" "$fan" "$load" "$power"
+		putstats "$busid" "nvidia" "$temp" "$fan" "$load" "$power" "0" "0"
 		#echo "$busid" "nvidia" "$temp" "$fan" "$load" "$power"
 	done <<<"$stats"
 }
@@ -191,13 +207,20 @@ while read -r s; do
 	fans+=("${params[3]}")
 	load+=("${params[4]}")
 	power+=("${params[5]}")
+	jtemps+=("${params[6]}")
+	mtemps+=("${params[7]}")
+
 done <<< "$sorted"
 
 #echo "Temp: ${temps[@]}"
+#echo "Temp2: ${jtemps[@]}"
+#echo "Temp3: ${mtemps[@]}"
 #echo "Fans: ${fans[@]}"
 #echo "Power: ${power[@]}"
 
 jsontemps=`printf '%s\n' "${temps[@]}" | jq --raw-input . | jq --slurp -c .`
+jsonjtemps=`printf '%s\n' "${jtemps[@]}" | jq --raw-input . | jq --slurp -c .`
+jsonmtemps=`printf '%s\n' "${mtemps[@]}" | jq --raw-input . | jq --slurp -c .`
 jsonfans=`printf '%s\n' "${fans[@]}" | jq --raw-input . | jq --slurp -c .`
 jsonload=`printf '%s\n' "${load[@]}" | jq --raw-input . | jq --slurp -c .`
 jsonpower=`printf '%s\n' "${power[@]}" | jq --raw-input . | jq --slurp -c .`
@@ -207,12 +230,14 @@ jsonbrand=`printf '%s\n' "${brand[@]}" | jq --raw-input . | jq --slurp -c .`
 
 jq -c -n \
 --argjson temp "$jsontemps" \
+--argjson jtemp "$jsonjtemps" \
+--argjson mtemp "$jsonmtemps" \
 --argjson fan "$jsonfans" \
 --argjson load "$jsonload" \
 --argjson power "$jsonpower" \
 --argjson busids "$jsonbusids" \
 --argjson brand "$jsonbrand" \
-'{$temp, $fan, $load, $power, $busids, $brand}'
+'{$temp, $jtemp, $mtemp, $fan, $load, $power, $busids, $brand}'
 
 
 

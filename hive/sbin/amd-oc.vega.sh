@@ -6,6 +6,10 @@ VEGA20=$( lspci -vnns $busid | grep VGA -A 2 | grep AMD -A 2 | grep Vega -A 2 | 
 
 echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
 
+if [[ $NAVI_COUNT -ne 0 ]]; then
+    python /hive/opt/upp/upp.py -i /sys/class/drm/card$cardno/device/pp_table set smcPPTable/FanStopTemp=20 smcPPTable/FanStartTemp=25 --write
+fi
+
 
 function _SetcoreVDDC {
 	if [[ $VEGA20 -ne 0 || $NAVI_COUNT -ne 0  ]]; then

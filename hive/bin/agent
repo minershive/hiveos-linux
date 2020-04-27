@@ -222,6 +222,8 @@ function loop {
 
 	[[ -z $gpu_stats ]] && gpu_stats='{}'
 	local temp=$(jq 'if .temp then .temp else empty end' <<< $gpu_stats)
+	local jtemp=$(jq 'if .jtemp then .jtemp else empty end' <<< $gpu_stats)
+	local mtemp=$(jq 'if .mtemp then .mtemp else empty end' <<< $gpu_stats)
 	local fan=$(jq 'if .fan then .fan else empty end' <<< $gpu_stats)
 	local power=$(jq 'if .power then .power else empty end' <<< $gpu_stats)
 
@@ -287,6 +289,8 @@ function loop {
 	fi
 
 	temp=$(sanitize_temp $temp)
+	jtemp=$(sanitize_temp $jtemp)
+	mtemp=$(sanitize_temp $mtemp)
 	fan=$(sanitize_fan $fan)
 	power=$(sanitize_power $power)
 	khs=$(sanitize_total_hashrate $khs)
@@ -306,13 +310,15 @@ function loop {
 		--argjson meta "$meta" \
 		--argjson miner_stats "$stats" \
 		--argjson temp "$temp" \
+		--argjson jtemp "$jtemp" \
+		--argjson mtemp "$mtemp" \
 		--argjson fan "$fan" \
 		--argjson power "$power" \
 		--arg df "$df" \
 		--argjson mem "[$mem]" \
 		--argjson cputemp "$cputemp" \
 		--argjson cpuavg "[$cpuavg]" \
-		'{ "params": { $meta, $temp, $fan, $power, $df, $mem, $cputemp, $cpuavg }}'
+		'{ "params": { $meta, $temp, $jtemp, $mtemp, $fan, $power, $df, $mem, $cputemp, $cpuavg }}'
 		2>/dev/null
 	)
 
