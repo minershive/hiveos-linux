@@ -29,15 +29,15 @@ else
 	local ac=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $2}'`
 	local rj=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $3}'`
 	local ver=`echo $stats_raw | jq -r '.[0]'`
-	ver=`echo $ver | sed 's/\(.*\)-//'`
+	ver=`echo $ver | sed 's/^[[:alpha:]]\+//' | sed 's/^-//'`
 
 	local algo="ethash"
 	[[ $ETHMINER_FORK == "kawpowminer" ]] && algo="kawpow"
-	[[ $ETHMINER_FORK == "progpow" ]] && algo="progpow"
-	[[ $ETHMINER_FORK == "serominer" ]] && algo="progpow"
-	[[ $ETHMINER_FORK == "ubqminer" ]] && algo="ubiqhash"
-	[[ $ETHMINER_FORK == "zilminer" ]] && algo="zilliqahash"
-	[[ $ETHMINER_FORK == "teominer" ]] && algo="tethashv1"
+	[[ $ETHMINER_FORK == "progpow" ]]     && algo="progpow"
+	[[ $ETHMINER_FORK == "serominer" ]]   && algo="progpow"
+	[[ $ETHMINER_FORK == "ubqminer" ]]    && algo="ubiqhash"
+	[[ $ETHMINER_FORK == "zilminer" ]]    && algo="zilliqahash"
+	[[ $ETHMINER_FORK == "teominer" ]]    && algo="tethashv1"
 
 	local stats_detail=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstatdetail"}' | nc -w $API_TIMEOUT localhost $MINER_API_PORT | jq '.result'`
 	if [[ $? -ne 0 || -z $stats_detail || $stats_detail == "null" ]]; then
