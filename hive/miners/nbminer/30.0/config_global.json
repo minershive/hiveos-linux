@@ -18,5 +18,7 @@
   "secondary-url2": "",
   "secondary-user2": "",
   "secondary-intensity": "",
-  "temperature-limit": 85
+  "memory-tweak": "",
+  "temperature-limit": 85,
+  "verbose": false
 }
