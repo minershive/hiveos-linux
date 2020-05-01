@@ -3,6 +3,6 @@ Version: 0.6-07
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-ethminer-ethash-0.17.1
+Depends: hive-miners-ethminer-ethash-0.19.0
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - ETHminer
