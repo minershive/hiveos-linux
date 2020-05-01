@@ -1,8 +1,8 @@
 Package: hive-miners-nbminer
-Version: 0.6-38
+Version: 0.6-39
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-nbminer-29.1
+Depends: hive-miners-nbminer-30.0
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - NBMiner
