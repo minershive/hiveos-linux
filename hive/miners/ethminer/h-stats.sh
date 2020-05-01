@@ -29,8 +29,10 @@ else
 	local ac=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $2}'`
 	local rj=`echo $stats_raw | jq -r '.[2]' | awk -F';' '{print $3}'`
 	local ver=`echo $stats_raw | jq -r '.[0]'`
+	ver=`echo $ver | sed 's/\(.*\)-//'`
 
 	local algo="ethash"
+	[[ $ETHMINER_FORK == "kawpowminer" ]] && algo="kawpow"
 	[[ $ETHMINER_FORK == "progpow" ]] && algo="progpow"
 	[[ $ETHMINER_FORK == "serominer" ]] && algo="progpow"
 	[[ $ETHMINER_FORK == "ubqminer" ]] && algo="ubiqhash"
