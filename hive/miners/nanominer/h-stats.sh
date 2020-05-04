@@ -82,7 +82,8 @@ else
      algo=`echo $stats_raw | jq -r '."Algorithms"[] | keys' | jq .[$n-1]`
 
      t_khs=`echo $stats_raw | jq -rc '."Algorithms"[].'$algo'."Total"."Hashrate"'`
-     t_khs=`printf "%f\n" $t_khs | awk '{print $1/1000}'`
+#     t_khs=`printf "%f\n" $t_khs | awk '{print $1/1000}'`
+     t_khs=`echo $t_khs | awk '{printf "%.4f",$1/1000}'`
      eval "khs$nom=\$t_khs"
      if [[ ${algo,,} =~ "random" ]]; then
        [[ $uptime -lt 60 ]] && head -n 50 $MINER_LOG_BASENAME.log > ${MINER_LOG_BASENAME}_head.log
@@ -97,7 +98,7 @@ else
        for (( j = 0; j < $gpu_count; j++ )); do
          #gpu element name = echo $stats_raw | jq -rc '."Algorithms"[].'$algo' | keys' | jq .[1]
          t_hs=`echo $stats_raw | jq -rc '."Algorithms"[].'$algo'."GPU '$j'"."Hashrate"'`
-         t_hs=`printf "%f\n" $t_hs`
+         t_hs=`echo $t_hs | awk '{ printf "%.4f", $1 }'`
          hs+="$t_hs "
          #fan+=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Fan"'`" "
          #temp+=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Temperature"'`" "
