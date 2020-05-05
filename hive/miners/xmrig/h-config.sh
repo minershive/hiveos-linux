@@ -80,9 +80,9 @@ function miner_config_gen() {
 	tls_fp=$(jq -r '."tls-fingerprint"' <<< "$conf")
 	[[ -z $tls_fp || $tls_fp == "null" ]] && tls_fp="null"
 	variant=$(jq -r '."variant"' <<< "$conf")
-	[[ -z $variant= || $variant= == "null" ]] && variant=-1
+	[[ -z $variant || $variant == "null" ]] && variant=-1
 	rig_id=$(jq -r '."rig-id"' <<< "$conf")
-	[[ -z $rig_id= || $rig_id= == "null" ]] && rig_id=""
+	[[ -z $rig_id || $rig_id == "null" ]] && rig_id="$WORKER_NAME"
 	nicehash=$(jq -r .nicehash <<< "$conf")
 	[[ -z $nicehash || $nicehash == "null" ]] && nicehash="false"
 
