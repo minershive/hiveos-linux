@@ -28,7 +28,7 @@ else
 	local ir_gpu=`echo $stats_raw | jq '.[11]'`
 	local ver=`echo $stats_raw | jq -r '.[0]'`
 	local algo="ethash"
-	[[ `echo $META | jq -r .phoenixminer.coin` == "UBQ" ]] && algo="ubiqhash"
+	[[ `echo $META | jq -r .phoenixminer.coin` == "UBQ" ]] && algo="ubqhash"
 
 	local uptime=`echo "$stats_raw" | jq -r '.[1]' | awk '{print $1*60}'`
 	[[ $uptime -lt 60 ]] && head -n 50 $MINER_LOG_BASENAME.log > ${MINER_LOG_BASENAME}_head.log
