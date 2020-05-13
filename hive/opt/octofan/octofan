@@ -653,6 +653,7 @@ get_temp_json () {
   temps+=`cat $CLI_OUTPUT | grep "Temperature No. 1" | cut -d " " -f 5`" " #out
   temps+=`cat $CLI_OUTPUT | grep "PSU T2:" | cut -d " " -f 4`" " #psu in
   temps+=`cat $CLI_OUTPUT | grep "PSU T1:" | cut -d " " -f 4`" " #psu out
+  temps+=`cat $CLI_OUTPUT | grep "PSU T3:" | cut -d " " -f 4`" " #psu board
 
   echo ${temps[@]} | tr " " "\n" | jq -cs '.'
 }
@@ -660,10 +661,10 @@ get_temp_json () {
 get_psu_json () {
   check_cli_output
 
-  # local voltage_ac=`cat $CLI_OUTPUT | grep "PSU Vac:" | cut -d " " -f 4`
+  local voltage_ac=`cat $CLI_OUTPUT | grep "PSU Vac:" | cut -d " " -f 4`
   # local amperage_ac=`cat $CLI_OUTPUT | grep "PSU Iac:" | cut -d " " -f 4`
   local power_ac=`cat $CLI_OUTPUT | grep "PSU Pac:" | cut -d " " -f 4`
-  # local voltage_dc=`cat $CLI_OUTPUT | grep "PSU Vdc:" | cut -d " " -f 4`
+  local voltage_dc=`cat $CLI_OUTPUT | grep "PSU Vdc:" | cut -d " " -f 4`
   # local amperage_dc=`cat $CLI_OUTPUT | grep "PSU Idc:" | cut -d " " -f 4`
   # local power_dc=`cat $CLI_OUTPUT | grep "PSU Pdc:" | cut -d " " -f 4`
 
@@ -684,7 +685,11 @@ get_psu_json () {
   #    --arg power_dc $power_dc \
   #    '{$voltage_ac, $amperage_ac, $power_ac, $voltage_dc, $amperage_dc, $power_dc}'
 
-  jq -cns --arg power_ac $power_ac '{$power_ac}'
+  jq -cns \
+    --arg power_ac $power_ac \
+    --arg voltage_ac $voltage_ac \
+    --arg voltage_dc $voltage_dc \
+    '{$power_ac, $voltage_ac, $voltage_dc}'
 }
 
 # get_fan_json_calc () {
@@ -765,7 +770,19 @@ check_avrdude () {
   if [[ `dpkg -s avrdude 2>/dev/null | grep -c "ok installed"` -eq 0 ]]; then
     [[ -f "/etc/avrdude.conf" ]] && rm -f "/etc/avrdude.conf"
     apt-get install -y avrdude
-#    cp /hive/opt/octofan/avrdude.conf   /etc/avrdude.conf
+#    cp /hive/opt/octofan/avrdude.conf    /etc/avrdude.conf
+  fi
+}
+
+check_snmpd () {
+  if [[ `dpkg -s snmpd 2>/dev/null | grep -c "ok installed"` -eq 0 ]]; then
+    [[ -f "/etc/snmp/snmpd.conf" ]] && rm -f "/etc/snmp/snmpd.conf"
+    apt-get install -y snmpd
+    if [[ ! -L /etc/snmp/snmpd.conf ]]; then #check for symlink
+      mv /etc/snmp/snmpd.conf /etc/snmp/snmpd~.conf
+      ln -sf /hive/etc/snmpd.conf /etc/snmp/snmpd.conf
+    fi
+    service snmpd restart
   fi
 }
 
@@ -1151,6 +1168,7 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
       echo2 "> Starting octofan"
       check_config
       check_firmware | tee "$FIRMWARE_UPDATE_LOG"
+      check_snmpd
 
       #start new screen
       screen -dm -S octofan $0 run
@@ -1168,6 +1186,7 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
       echo2 "> Starting octofan"
       check_config
       check_firmware | tee "$FIRMWARE_UPDATE_LOG"
+      check_snmpd
 
       screen -dm -S octofan $0 run
       echo2 "Octofan screen started"
