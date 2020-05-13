@@ -28,7 +28,7 @@ function miner_config_gen() {
 
   DRV_VERS=`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//' | tr '.' ' ' | awk '{print $1}'`
   echo -e -n "${GREEN}NVidia${NOCOLOR} driver ${GREEN}${DRV_VERS}${NOCOLOR}-series detected "
-  if [ ${DRV_VERS} -ge 430 ]; then
+  if [ ${DRV_VERS} -ge 440 ]; then
      echo -e "(${BCYAN}CUDA 10.2${NOCOLOR} compatible)"
      CUDA_VERS='-102'
   elif [ ${DRV_VERS} -ge 418 ]; then
