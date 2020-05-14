@@ -284,6 +284,30 @@ function install_nvs() { # @force_install
 	return $exitcode
 }
 
+function cuda_sync(){
+   gpu_count_nvidia=`gpu-detect NVIDIA`
+   CUDA_LIBS=( "libcudart.so" "libnvrtc.so" "libnvrtc-builtins.so" )
+   if [[ $gpu_count_nvidia -gt 0 ]]; then
+      DRV_VERS=`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//' | tr '.' ' ' | awk '{print $1}'`
+      if [ ${DRV_VERS} -ge 440 ]; then
+         CUDA_VERS='10.2'
+      elif [ ${DRV_VERS} -ge 418 ]; then
+         CUDA_VERS='10.1'
+      elif [ ${DRV_VERS} -ge 410 ]; then
+         CUDA_VERS='10.0'
+      elif [ ${DRV_VERS} -ge 396 ]; then
+         CUDA_VERS='9.2'
+      else
+         CUDA_VERS=''
+      fi
+      for libname in "${CUDA_LIBS[@]}"; do
+         if [[ ! -e "hive/lib/$libname" ]] || [[ "$(realpath /hive/lib/$libname)" != "$(realpath /hive/lib/${libname}.${CUDA_VERS})" ]] && [[ ! -z "$CUDA_VERS" ]]; then
+           ln -f -s $(realpath /hive/lib/${libname}.${CUDA_VERS}) /hive/lib/$libname
+         fi
+      done
+   fi
+}
+
 
 function install_driver() { # @url or @file
 	# it must exist
@@ -344,6 +368,7 @@ function install_driver() { # @url or @file
 	echo -e "${GREEN}> Driver installation successful${NOCOLOR}" # ${WHITE}REBOOT NOW!${NOCOLOR}
 
 	# send new driver version
+	cuda_sync
 	hello > /dev/null 2>&1
 	return 0
 }
@@ -359,9 +384,14 @@ case $1 in
   nvidia-driver-update  123		download and install latest driver from series 123.*
   nvidia-driver-update  123.45		download and install specific driver version 123.45
   nvidia-driver-update  -l | --list	list available driver versions
+  nvidia-driver-update  -c | --cuda	sync symlinks to CUDA RT libraries with installed driver
   nvidia-driver-update  -n | --nvs	reinstall nvidia-settings only
   nvidia-driver-update  -r | --remove	remove downloaded driver packages except currently installed
   nvidia-driver-update  -h | --help	display help"
+	;;
+
+	-c|--cuda)
+		cuda_sync
 	;;
 
 	-l|--list)

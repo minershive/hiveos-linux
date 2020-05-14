@@ -316,6 +316,8 @@ if [[ $X_DISABLED == 0 && $DISKLESS != 1 && $MAINTENANCE != 2 ]]; then
 	fi
 fi
 
+# Sync CUDA RTL symlinks
+[[ $GPU_COUNT_NVIDIA -gt 0 ]] && nvidia-driver-update --cuda
 
 # Apply amd-oc before miner start
 [[ $MAINTENANCE != 2 ]] && amd-oc-safe
