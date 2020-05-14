@@ -1,0 +1,2 @@
+unset LD_PRELOAD
+z-enemy $1 $2
