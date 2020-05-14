@@ -113,7 +113,7 @@ function miner_config_gen() {
 		[[ ${nicehash,,} = "true" || ${url,,} = *"nicehash"* ]] && c_nicehash='true' || c_nicehash='false'
 		pool=$(cat <<EOF
 				{"algo": "$XMRIG_NEW_ALGO", "coin": null, "url": "$url", "user": "$XMRIG_NEW_TEMPLATE",
-				"pass": "$XMRIG_NEW_PASS", "rig-id": "$XMRIG_NEW_WORKER", "nicehash": $c_nicehash,
+				"pass": "$XMRIG_NEW_PASS", "rig-id": "$WORKER_NAME", "nicehash": $c_nicehash,
 				"keepalive": true, "enabled": true, "tls": $tls, "tls-fingerprint": $tls_fp, "daemon": false,
 				"self-select": $self_select}
 EOF
