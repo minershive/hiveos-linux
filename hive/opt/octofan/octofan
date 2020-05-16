@@ -29,6 +29,8 @@ DEF_SLEEP_TIME=10
 
 OCTOFAN_BIN="/hive/opt/octofan/fan_controller_cli"
 CLI_OUTPUT="/tmp/fan_controller_cli_output"
+CLI_ERROR_COUNTER="/tmp/octofan_cli_error_count"
+CLI_TMP_OUTPUT="/tmp/octofan_cli_temp.txt"
 OCTOFAN_PERCENT_PWM="/hive/opt/octofan/octofan_percent_pwm"
 PSU_LAST_POWER_FILENAME="/tmp/octofan_psu_last_power"
 
@@ -476,19 +478,26 @@ blink_to_find () {
 }
 
 fan_autodetect () {
-  check_cli_output
+  # check_cli_output
 
-  local i=0
-  local fan_no=
-  local line=
+  if [[ -f $CLI_OUTPUT ]]; then
 
-  while read -r line ; do
-    [[ `echo $line | cut -d " " -f 5` -eq 0 ]] && continue
-    fan_no=`echo $line | cut -d " " -f 3`
+    local i=0
+    local fan_no=
+    local line=
 
-    eval "FAN$i=\$fan_no"
-    ((i++))
-  done < <(cat $CLI_OUTPUT | grep "FAN No." | grep "RPM:" | grep -v "max")
+    while read -r line ; do
+      [[ `echo $line | cut -d " " -f 5` -eq 0 ]] && continue
+      fan_no=`echo $line | cut -d " " -f 3`
+
+      eval "FAN$i=\$fan_no"
+      ((i++))
+    done < <(cat $CLI_OUTPUT | grep "FAN No." | grep "RPM:" | grep -v "max")
+  else
+    FAN0=$DEF_FAN0
+    FAN1=$DEF_FAN1
+    FAN2=$DEF_FAN2
+  fi
 }
 
 load_def_values () {
@@ -630,7 +639,18 @@ get_file_time_diff () {
 }
 
 check_cli_output () {
-  [[ `get_file_time_diff` -gt 5 ]] && $OCTOFAN_BIN -r > $CLI_OUTPUT
+  local i=0
+  if [[ `get_file_time_diff` -gt 5 ]]; then
+    $OCTOFAN_BIN -r > "$CLI_TMP_OUTPUT"
+    if [[ `cat "$CLI_TMP_OUTPUT" | grep -c "Serial No: "` -eq 1 ]]; then
+      mv "$CLI_TMP_OUTPUT" $CLI_OUTPUT >> /dev/null
+      echo "" > "$CLI_ERROR_COUNTER"
+    else
+      echo "error getting cli output" >> "$CLI_ERROR_COUNTER"
+    fi
+
+    [[ `cat "$CLI_ERROR_COUNTER" | grep -c "error getting cli output"` -gt 50 ]] && echo "" > $CLI_OUTPUT
+  fi
 }
 
 # get_temp () {
@@ -642,54 +662,62 @@ check_cli_output () {
 # }
 
 get_temp_json () {
-  check_cli_output
+  # check_cli_output
 
   # local temps=
   # for i in {0..4}; do
   #   temps+=`cat $CLI_OUTPUT | grep "Temperature No. $i" | cut -d " " -f 5`" "
   # done
 
-  temps+=`cat $CLI_OUTPUT | grep "Temperature No. 0" | cut -d " " -f 5`" " #in
-  temps+=`cat $CLI_OUTPUT | grep "Temperature No. 1" | cut -d " " -f 5`" " #out
-  temps+=`cat $CLI_OUTPUT | grep "PSU T2:" | cut -d " " -f 4`" " #psu in
-  temps+=`cat $CLI_OUTPUT | grep "PSU T1:" | cut -d " " -f 4`" " #psu out
-  temps+=`cat $CLI_OUTPUT | grep "PSU T3:" | cut -d " " -f 4`" " #psu board
+  if [[ -f $CLI_OUTPUT ]]; then
+    temps+=`cat $CLI_OUTPUT | grep "Temperature No. 0" | cut -d " " -f 5`" " #in
+    temps+=`cat $CLI_OUTPUT | grep "Temperature No. 1" | cut -d " " -f 5`" " #out
+    temps+=`cat $CLI_OUTPUT | grep "PSU T2:" | cut -d " " -f 4`" " #psu in
+    temps+=`cat $CLI_OUTPUT | grep "PSU T1:" | cut -d " " -f 4`" " #psu out
+    temps+=`cat $CLI_OUTPUT | grep "PSU T3:" | cut -d " " -f 4`" " #psu board
 
-  echo ${temps[@]} | tr " " "\n" | jq -cs '.'
+    echo ${temps[@]} | tr " " "\n" | jq -cs '.'
+  else
+    echo "[]"
+  fi
 }
 
 get_psu_json () {
-  check_cli_output
+  # check_cli_output
 
-  local voltage_ac=`cat $CLI_OUTPUT | grep "PSU Vac:" | cut -d " " -f 4`
-  # local amperage_ac=`cat $CLI_OUTPUT | grep "PSU Iac:" | cut -d " " -f 4`
-  local power_ac=`cat $CLI_OUTPUT | grep "PSU Pac:" | cut -d " " -f 4`
-  local voltage_dc=`cat $CLI_OUTPUT | grep "PSU Vdc:" | cut -d " " -f 4`
-  # local amperage_dc=`cat $CLI_OUTPUT | grep "PSU Idc:" | cut -d " " -f 4`
-  # local power_dc=`cat $CLI_OUTPUT | grep "PSU Pdc:" | cut -d " " -f 4`
+  if [[ -f $CLI_OUTPUT ]]; then
+    local voltage_ac=`cat $CLI_OUTPUT | grep "PSU Vac:" | cut -d " " -f 4`
+    # local amperage_ac=`cat $CLI_OUTPUT | grep "PSU Iac:" | cut -d " " -f 4`
+    local power_ac=`cat $CLI_OUTPUT | grep "PSU Pac:" | cut -d " " -f 4`
+    local voltage_dc=`cat $CLI_OUTPUT | grep "PSU Vdc:" | cut -d " " -f 4`
+    # local amperage_dc=`cat $CLI_OUTPUT | grep "PSU Idc:" | cut -d " " -f 4`
+    # local power_dc=`cat $CLI_OUTPUT | grep "PSU Pdc:" | cut -d " " -f 4`
 
-  # Normalize PSU power
-  if (( `echo "$power_ac < 30" | bc -l` )); then
-    [[ -f $PSU_LAST_POWER_FILENAME ]] && power_ac=`cat $PSU_LAST_POWER_FILENAME | tail -1` || power_ac=0
+    # Normalize PSU power
+    if (( `echo "$power_ac < 30" | bc -l` )); then
+      [[ -f $PSU_LAST_POWER_FILENAME ]] && power_ac=`cat $PSU_LAST_POWER_FILENAME | tail -1` || power_ac=0
+    else
+      echo $power_ac > $PSU_LAST_POWER_FILENAME
+    fi
+    [[ -z $power_ac ]] && power_ac=0
+
+    # jq -cns \
+    #    --arg voltage_ac $voltage_ac \
+    #    --arg amperage_ac $amperage_ac \
+    #    --arg power_ac $power_ac \
+    #    --arg voltage_dc $voltage_dc \
+    #    --arg amperage_dc $amperage_dc \
+    #    --arg power_dc $power_dc \
+    #    '{$voltage_ac, $amperage_ac, $power_ac, $voltage_dc, $amperage_dc, $power_dc}'
+
+    jq -cns \
+      --arg power_ac $power_ac \
+      --arg voltage_ac $voltage_ac \
+      --arg voltage_dc $voltage_dc \
+      '{$power_ac, $voltage_ac, $voltage_dc}'
   else
-    echo $power_ac > $PSU_LAST_POWER_FILENAME
+    echo "[]"
   fi
-  [[ -z $power_ac ]] && power_ac=0
-
-  # jq -cns \
-  #    --arg voltage_ac $voltage_ac \
-  #    --arg amperage_ac $amperage_ac \
-  #    --arg power_ac $power_ac \
-  #    --arg voltage_dc $voltage_dc \
-  #    --arg amperage_dc $amperage_dc \
-  #    --arg power_dc $power_dc \
-  #    '{$voltage_ac, $amperage_ac, $power_ac, $voltage_dc, $amperage_dc, $power_dc}'
-
-  jq -cns \
-    --arg power_ac $power_ac \
-    --arg voltage_ac $voltage_ac \
-    --arg voltage_dc $voltage_dc \
-    '{$power_ac, $voltage_ac, $voltage_dc}'
 }
 
 # get_fan_json_calc () {
@@ -732,17 +760,21 @@ rpm_to_percent () {
 # }
 
 get_fan_json_percent () {
-  check_cli_output
+  # check_cli_output
 
-  local fans=
-  local fan=0
-  for j in {0..2}; do
-    eval "i=\$FAN$j"
-    fan=`cat $CLI_OUTPUT | grep "FAN No. $i RPM in percent:" | cut -d " " -f 7`
-    fans+=$fan" "
-  done
+  if [[ -f $CLI_OUTPUT ]]; then
+    local fans=
+    local fan=0
+    for j in {0..2}; do
+      eval "i=\$FAN$j"
+      fan=`cat $CLI_OUTPUT | grep "FAN No. $i RPM in percent:" | cut -d " " -f 7`
+      fans+=$fan" "
+    done
 
-  echo ${fans[@]} | tr " " "\n" | jq -cs '.'
+    echo ${fans[@]} | tr " " "\n" | jq -cs '.'
+  else
+    echo "[]"
+  fi
 }
 
 get_fan_json () {
@@ -770,7 +802,7 @@ check_avrdude () {
   if [[ `dpkg -s avrdude 2>/dev/null | grep -c "ok installed"` -eq 0 ]]; then
     [[ -f "/etc/avrdude.conf" ]] && rm -f "/etc/avrdude.conf"
     apt-get install -y avrdude
-#    cp /hive/opt/octofan/avrdude.conf    /etc/avrdude.conf
+#    cp /hive/opt/octofan/avrdude.conf   /etc/avrdude.conf
   fi
 }
 
@@ -1131,15 +1163,15 @@ fi
 
 load_def_values
 
-if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
+if [[ $1 == "get_fan_json" || $1 == "-f" ]]; then
+  get_fan_json_percent
+elif [[ $1 == "get_temp_json" || $1 == "-t" ]]; then
+  get_temp_json
+elif [[ $1 == "get_psu_json" || $1 == "-p" ]]; then
+  get_psu_json
+elif [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
   if [[ $1 == "update_text" || $1 == "-ut" ]];  then
     update_text $2 $3
-  elif [[ $1 == "get_fan_json" || $1 == "-f" ]]; then
-    get_fan_json
-  elif [[ $1 == "get_temp_json" || $1 == "-t" ]]; then
-    get_temp_json
-  elif [[ $1 == "get_psu_json" || $1 == "-p" ]]; then
-    get_psu_json
   elif [[ $1 == "write_cli_log" || $1 == "-wl" ]]; then
     write_cli_log
   elif [[ $1 == "blink_error" || $1 == "-e" ]]; then
@@ -1168,7 +1200,6 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
       echo2 "> Starting octofan"
       check_config
       check_firmware | tee "$FIRMWARE_UPDATE_LOG"
-      check_snmpd
 
       #start new screen
       screen -dm -S octofan $0 run
@@ -1193,16 +1224,5 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
     fi
   fi
 else
-  # if [[ $1 == "calc_fan_speed" ]]; then
-  #   echo 0
-  # el
-  if [[ $1 == "get_fan_json" || $1 == "-f" ]]; then
-    echo "[]"
-  elif [[ $1 == "get_temp_json" || $1 == "-t" ]]; then
-    echo "[]"
-  elif [[ $1 == "get_psu_json" || $1 == "-p" ]]; then
-    echo "[]"
-  else
-    echo "No Octofan hardware found"
-  fi
+  echo "No Octofan hardware found"
 fi
