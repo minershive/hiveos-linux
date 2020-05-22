@@ -72,12 +72,16 @@ for (( i=${#MEM_STATE[@]}; i < $n; ++i )); do
 	MEM_STATE[$i]=${MEM_STATE[$i-1]}
 done
 
+[[ ! -z $MVDD ]] &&
+MVDD=($MVDD) &&
+for (( i=${#MVDD[@]}; i < $n; ++i )); do
+	MVDD[$i]=${MVDD[$i-1]}
+done
 
-
-[[ ! -z $FAN ]] &&
-FAN=($FAN) &&
-for (( i=${#FAN[@]}; i < $n; ++i )); do
-	FAN[$i]=${FAN[$i-1]}
+[[ ! -z $VDDCI ]] &&
+VDDCI=($VDDCI) &&
+for (( i=${#VDDCI[@]}; i < $n; ++i )); do
+	VDDCI[$i]=${VDDCI[$i-1]}
 done
 
 [[ ! -z $REF ]] &&
@@ -86,12 +90,27 @@ for (( i=${#REF[@]}; i < $n; ++i )); do
 	REF[$i]=${REF[$i-1]}
 done
 
+[[ ! -z $FAN ]] &&
+FAN=($FAN) &&
+for (( i=${#FAN[@]}; i < $n; ++i )); do
+	FAN[$i]=${FAN[$i-1]}
+done
+
+[[ ! -z $PL ]] &&
+PL=($PL) &&
+for (( i=${#PL[@]}; i < $n; ++i )); do
+	PL[$i]=${PL[$i-1]}
+done
+
 
 echo "CORE_CLOCK = ${CORE_CLOCK[*]}"
 echo "CORE_STATE = ${CORE_STATE[*]}"
 echo "CORE_VDDC  = ${CORE_VDDC[*]}"
 echo "MEM_CLOCK  = ${MEM_CLOCK[*]}"
 echo "MEM_STATE  = ${MEM_STATE[*]}"
+echo "MVDD       = ${MVDD[*]}"
+echo "VDDCI      = ${VDDCI[*]}"
+echo "PL         = ${PL[*]}"
 echo "FAN        = ${FAN[*]}"
 echo "REF        = ${REF[*]}"
 

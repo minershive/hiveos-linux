@@ -64,19 +64,19 @@ function _SetmemClock {
 	fi
 }	
 
-if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} > 0 ]]; then
+if [[ ! -z $MEM_CLOCK && ${MEM_CLOCK[$i]} -gt 0 ]]; then
 	_SetmemClock ${MEM_CLOCK[$i]}
 fi
 
-if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} > 0 ]]; then
+if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} -gt 0 ]]; then
 	_SetcoreClock ${CORE_CLOCK[$i]} ${CORE_VDDC[$i]}
 fi
 
-if [[ ! -z $CORE_VDDC && ${CORE_VDDC[$i]} > 0 ]]; then
+if [[ ! -z $CORE_VDDC && ${CORE_VDDC[$i]} -gt 0 ]]; then
 	_SetcoreVDDC ${CORE_VDDC[$i]}
 fi
 
-[[ ! -z $REF && ${REF[$i]} > 0 ]] && amdmemtweak --gpu $card_idx --REF ${REF[$i]}
+[[ ! -z $REF && ${REF[$i]} -gt 0 ]] && amdmemtweak --gpu $card_idx --REF ${REF[$i]}
 
 	echo 1 > /sys/class/drm/card$cardno/device/hwmon/hwmon*/pwm1_enable
 	echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
@@ -85,13 +85,13 @@ fi
 	if [[ $VEGA20 -ne 0 || $NAVI_COUNT -ne 0 ]]; then
 		rocm-smi -d  $cardno --setfan 50%
 	else	
-		vegatool -i $cardno  --set-fanspeed 50}
+		vegatool -i $cardno  --set-fanspeed 50
 	fi
 
 
 
 
-[[ ! -z $FAN && ${FAN[$i]} > 0 ]] &&
+[[ ! -z $FAN && ${FAN[$i]} -gt 0 ]] &&
 	if [[ $VEGA20 -ne 0 || $NAVI_COUNT -ne 0 ]]; then
 		rocm-smi -d  $cardno --setfan ${FAN[$i]}%
 	else	
