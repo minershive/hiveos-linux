@@ -63,7 +63,7 @@ python /hive/opt/upp/upp.py -i /sys/class/drm/card$cardno/device/pp_table set $a
 cat /sys/class/drm/card$cardno/device/pp_od_clk_voltage
 
 if [[ ! -z $PL && ${PL[$i]} -gt 0 ]]; then
-	echo ${PL[$i]}000000 > /sys/class/drm/card$cardno/device/hwmon/hwmon*/power1_cap
+	echo "${PL[$i]}000000" > /sys/class/drm/card$cardno/device/hwmon/hwmon*/power1_cap
 fi
 
 #[[ ! -z $REF && ${REF[$i]} > 0 ]] && amdmemtweak --gpu $i --REF ${REF[$i]}
@@ -73,4 +73,4 @@ fi
 	echo 5 > /sys/class/drm/card$cardno/device/pp_power_profile_mode
 	vegatool -i $cardno --set-fanspeed 50
 
-[[ ! -z $FAN && ${FAN[$i]} > 0 ]] && vegatool -i $cardno  --set-fanspeed ${FAN[$i]}
+[[ ! -z $FAN && ${FAN[$i]} -gt 0 ]] && vegatool -i $cardno  --set-fanspeed ${FAN[$i]}

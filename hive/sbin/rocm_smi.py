@@ -478,7 +478,6 @@ def confirmOutOfSpecWarning(autoRespond):
 
     Parameters:
     autoRespond -- Response to automatically provide for all prompts
-    """
 
     print('''
           ******WARNING******\n
@@ -493,6 +492,8 @@ def confirmOutOfSpecWarning(autoRespond):
           MAY NOT BE COVERED BY YOUR BOARD OR SYSTEM MANUFACTURER'S WARRANTY.
           Please use this utility with caution.
           ''')
+    """
+
     if not autoRespond:
         user_input = input('Do you accept these terms? [y/N] ')
     else:
