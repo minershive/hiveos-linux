@@ -6,7 +6,7 @@ VEGA20=$( lspci -vnns $busid | grep VGA -A 2 | grep AMD -A 2 | grep Vega -A 2 | 
 
 NAVI_VDDCI_MIN=750
 NAVI_VDDCI_MAX=850
-NAVI_MVDD_MIN=1200
+NAVI_MVDD_MIN=1250
 NAVI_MVDD_MAX=1350
 
 echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
@@ -28,11 +28,11 @@ if [[ $NAVI_COUNT -ne 0 ]]; then
     	OverDrive8Table/ODSettingsMin/3=700 OverDrive8Table/ODSettingsMin/5=700 OverDrive8Table/ODSettingsMin/7=700 \
     	--write
 fi
-#    	smcPPTable/FanTargetTemperature=85 
-#    	smcPPTable/MemMvddVoltage/3=5200
-#    	smcPPTable/MemVddciVoltage/3=3200
-#		smcPPTable/FanPwmMin=35
-#    	OverDrive8Table/ODFeatureCapabilities/9=0 \
+#	smcPPTable/FanTargetTemperature=85 
+#	smcPPTable/MemMvddVoltage/3=5200
+#	smcPPTable/MemVddciVoltage/3=3200
+#	smcPPTable/FanPwmMin=35
+#	OverDrive8Table/ODFeatureCapabilities/9=0
 
 function _SetcoreVDDC {
 	if [[ $VEGA20 -ne 0 || $NAVI_COUNT -ne 0  ]]; then
