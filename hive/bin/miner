@@ -97,10 +97,11 @@ function start() {
 	#	echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
 	#	exit 1
 
-	[[ -z $MINER ]] &&
-		message warn "No miner is set" > /dev/null &&
-		echo -e "${YELLOW}No miner is set in config, exiting ${NOCOLOR}" &&
+	if [[ -z $MINER ]]; then
+		message warn "No miner is set" > /dev/null
+		echo -e "${YELLOW}No miner is set in config, exiting ${NOCOLOR}"
 		exit 1
+	fi
 
 	[[ -f /run/hive/cur_miner ]] && rm /run/hive/cur_miner
 
