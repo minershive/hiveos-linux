@@ -32,6 +32,13 @@ function miner_config_gen() {
     #"url": "stratum+tcp://btm.f2pool.com:9221",
     #"url1": "",
     #"url2": "",
+    grep -q "://" <<< $url
+    result=$?
+    if [[ -z $NBMINER_TLS ]]; then
+       [[ $result -ne 0 ]] && url="stratum+tcp://${url}"
+    else
+       [[ $result -ne 0 ]] && url="stratum+ssl://${url}"
+    fi
     add_param='{ "url'$i'": "'$url'" }'
     conf=`jq --null-input --argjson conf "$conf" --argjson add_param "$add_param" '$conf + $add_param'`
 

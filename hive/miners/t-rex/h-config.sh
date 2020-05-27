@@ -27,7 +27,12 @@ function miner_config_gen() {
 	for line in $TREX_URL; do
 	    local url=`head -n 1 <<< "$line"`
 	    grep -q "://" <<< $url
-	    [[ $? -ne 0 ]] && url="stratum+tcp://${url}"
+	    result=$?
+	    if [[ -z $TREX_TLS ]]; then
+	       [[ $result -ne 0 ]] && url="stratum+tcp://${url}"
+	    else
+	       [[ $result -ne 0 ]] && url="stratum+ssl://${url}"
+	    fi
 
 	    pool=$(cat <<EOF
 		{"user": "$TREX_TEMPLATE", "url": "$url", "pass": "$TREX_PASS" }
