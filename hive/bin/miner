@@ -84,6 +84,8 @@ function kill_hanged() {
 
 
 function start() {
+	[[ -e $RUNNING_FLAG ]] && rm $RUNNING_FLAG
+
 	kill_hanged
 
 	session_count=`screen -ls miner | grep -c ".miner"`
@@ -145,10 +147,11 @@ function start() {
 	screen -S miner -X title $MINER #set nice title
 	echo $MINER >> /run/hive/cur_miner ##add miner-name to the list of working miners
 
-	[[ -e $RUNNING_FLAG ]] && rm $RUNNING_FLAG
-	touch $RUNNING_FLAG
+	# do not start watchdog here
+	#touch $RUNNING_FLAG
 
 	# close bash window #0
+	sleep 0.2
 	screen -S miner -p bash -X stuff 'exit\n'
 
 	return 0
@@ -156,6 +159,8 @@ function start() {
 
 
 function stop() {
+	[[ -e $RUNNING_FLAG ]] && rm $RUNNING_FLAG
+
 	#echo -e "Stopping ${CYAN}$MINER${NOCOLOR}"
 	#screen -S miner -X quit
 
@@ -207,8 +212,6 @@ function stop() {
 		done
 		rm /run/hive/cur_miner
 	fi
-
-	[[ -e $RUNNING_FLAG ]] && rm $RUNNING_FLAG
 
 	#remove khs so no confusing for watchdog
 	#[[ -e /run/hive/khs ]] && rm /run/hive/khs

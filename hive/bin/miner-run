@@ -4,6 +4,8 @@
 
 export DEBIAN_FRONTEND=noninteractive
 export LD_LIBRARY_PATH=/hive/lib
+RUNNING_FLAG="/run/hive/MINER_RUN"
+
 
 [[ ! -e $RIG_CONF ]] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && exit 1
 [[ ! -e $WALLET_CONF ]] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && exit 1
@@ -160,6 +162,9 @@ fi
 
 # Run miner ==========================================================================
 [[ ! -z $MINER_STOP && -f $MINER_STOP ]] && rm $MINER_STOP > /dev/null 2>&1
+
+# start watchdog here for primary miner
+[[ "$MINER_NAME" == "$MINER" ]] && touch $RUNNING_FLAG
 
 # miner minimal work time in seconds for log rotation
 miner_min_time=30
