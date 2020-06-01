@@ -340,22 +340,26 @@ function do_command() {
 					fsize=`cat /tmp/amd.uploaded.rom | wc -c`
 					#echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded${queue}.rom
 					#fsize=`cat /tmp/amd.uploaded${queue}.rom | wc -c`
-					local gpu_index=""
-					for gpu_index in $gpu_list; do
-						#local gpu_index_hex=$gpu_index
-						#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
-						# payload+=`echo "=== Flashing card $gpu_index ===" && `
-						#payload+=`echo "Flashing card by CMD: atiflash -p $gpu_index $extra_args /tmp/amd.uploaded${queue}.rom"`
-						payload+=`echo "=== Flashing card $gpu_index ===" && amdvbflash -p $gpu_index $extra_args /tmp/amd.uploaded.rom`
-						exitcode=$?
-						if [[ $exitcode == 0 ]]; then
-							meta_good+=($gpu_index)
-						else
-							meta_bad+=($gpu_index)
-							errors=1
-						fi
-						payload+=`echo -e "\r\n"`
-					done
+					if [[ $fsize -lt 200000 ]]; then #too short file
+						message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping" --id=$cmd_id
+					else
+						local gpu_index=""
+						for gpu_index in $gpu_list; do
+							#local gpu_index_hex=$gpu_index
+							#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
+							# payload+=`echo "=== Flashing card $gpu_index ===" && `
+							#payload+=`echo "Flashing card by CMD: atiflash -p $gpu_index $extra_args /tmp/amd.uploaded${queue}.rom"`
+							payload+=`echo "=== Flashing card $gpu_index ===" && amdvbflash -p $gpu_index $extra_args /tmp/amd.uploaded.rom`
+							exitcode=$?
+							if [[ $exitcode == 0 ]]; then
+								meta_good+=($gpu_index)
+							else
+								meta_bad+=($gpu_index)
+								errors=1
+							fi
+							payload+=`echo -e "\r\n"`
+						done
+					fi
 				done
 				local meta=$(jq -n --arg good "`echo ${meta_good[@]} | tr " " ","`" --arg bad "`echo ${meta_bad[@]} | tr " " ","`" '{$good,$bad}')
 				local reboot_msg=""
@@ -383,7 +387,7 @@ function do_command() {
 					[[ ! -z $force && $force == "1" ]] && extra_args="-f" || extra_args=""
 					echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded.rom
 					fsize=`cat /tmp/amd.uploaded.rom | wc -c`
-					if [[ -z $fsize || $fsize < 250000 ]]; then #too short file
+					if [[ $fsize -lt 200000 ]]; then #too short file
 						message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping" --id=$cmd_id
 					else
 						if [[ $gpu_index == -1 ]]; then # -1 = all
@@ -487,7 +491,7 @@ function do_command() {
 					# Save ROM
 					echo "$rom_base64" | base64 -d | gzip -d > /tmp/nvidia.uploaded.rom
 					fsize=`cat /tmp/nvidia.uploaded.rom | wc -c`
-					if [[ -z $fsize || $fsize < 200000 ]]; then #too short file
+					if [[ $fsize -lt 200000 ]]; then #too short file
 						message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping" --id=$cmd_id
 						errors=1
 						continue
@@ -558,7 +562,7 @@ function do_command() {
 					[[ ! -z $force && $force == "1" ]] && force=1 || force=0
 					echo "$rom_base64" | base64 -d | gzip -d > /tmp/nvidia.uploaded.rom
 					fsize=`cat /tmp/nvidia.uploaded.rom | wc -c`
-					if [[ -z $fsize || $fsize < 200000 ]]; then #too short file
+					if [[ $fsize -lt 200000 ]]; then #too short file
 						message warn "ROM file size is only $fsize bytes, there is something wrong with it, skipping" --id=$cmd_id
 					else
 						screen -wipe > /dev/null 2>&1
