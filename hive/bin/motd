@@ -356,11 +356,12 @@ gpu_info() {
 		local mem=${info[3]}
 		local vbios=${info[4]}
 		local output=
-		[[ $show_vbios -eq 1 && ! -z $vbios ]] && vbios=" ($vbios)" || vbios=
-		if [[ $brand == "nvidia" || ($name =~ "NVIDIA" && ! $name =~ "nForce") ]]; then
+		[[ ! -z $mem ]] && mem+=" "
+		[[ $show_vbios -eq 1 && ! -z $vbios ]] && vbios="($vbios)" || vbios=
+		if [[ $brand == "nvidia" || ( $name =~ (NVIDIA|GeForce) && ! $name =~ nForce ) ]]; then
 			output=`printf "%b%2s%b" "$BBLUE" "$idx" "$NOCOLOR $busid $GREEN$name$NOCOLOR $mem$vbios"`
 			((idx++))
-		elif [[ $brand == "amd" || ($name =~ "Advanced Micro Devices" && ! $name =~ "RS880" && ! $name =~ "Stoney") ]]; then
+		elif [[ $brand == "amd" || ( $name =~ (Radeon|RX) && ! $name =~ (RS880|Stoney) ) ]]; then
 			output=`printf "%b%2s%b" "$BBLUE" "$idx" "$NOCOLOR $busid $RED$name$NOCOLOR $mem$vbios"`
 			((idx++))
 		else
