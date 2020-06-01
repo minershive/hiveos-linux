@@ -91,12 +91,15 @@ if miner status > /dev/null; then
 fi
 
 
-# update pci.ids if older than 1 month
-if [[ -e /usr/share/misc/pci.ids ]]; then
-	db_ts=`stat -c %Y /usr/share/misc/pci.ids`
-	db_date=`stat -c %y /usr/share/misc/pci.ids | cut -d" " -f1`
-	[[ $(( $db_ts + 30*24*3600 )) -lt `date +%s` ]] &&
-		echo -e "${CYAN}> Updating pci.ids ($db_date)${NOCOLOR}" &&
+PCIIDS=/hive/etc/pci.ids
+if [[ -e $PCIIDS ]]; then
+	[[ $PCIIDS -nt /usr/share/misc/pci.ids ]] &&
+	echo -e "${CYAN}> Updating pci.ids to version `grep -m 1 -oP "Version: \K.*" $PCIIDS`${NOCOLOR}" &&
+	cp -f $PCIIDS /usr/share/misc/pci.ids
+else
+	# update pci.ids if older than 1 month
+	[[ $(( `stat -c %Y /usr/share/misc/pci.ids` + 30*24*3600 )) -lt `date +%s` ]] &&
+		echo -e "${CYAN}> Updating pci.ids${NOCOLOR}" &&
 		update-pciids
 fi
 
