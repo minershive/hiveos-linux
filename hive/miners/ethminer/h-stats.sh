@@ -33,7 +33,6 @@ else
 
 	local algo="ethash"
 	[[ $ETHMINER_FORK == "kawpowminer" ]] && algo="kawpow"
-	[[ $ETHMINER_FORK == "ethercore" ]]   && algo="progpow"
 	[[ $ETHMINER_FORK == "progpow" ]]     && algo="progpow"
 	[[ $ETHMINER_FORK == "serominer" ]]   && algo="progpow"
 	[[ $ETHMINER_FORK == "ubqminer" ]]    && algo="ubqhash"
