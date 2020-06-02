@@ -1,7 +1,0 @@
-Package: hive-miners-smine-0.3.1
-Version: 0.6-01
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - S-mine v0.3.1

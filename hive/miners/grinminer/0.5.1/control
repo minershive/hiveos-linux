@@ -1,7 +1,0 @@
-Package: hive-miners-grinminer-0.5.1
-Version: 0.6-03
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner

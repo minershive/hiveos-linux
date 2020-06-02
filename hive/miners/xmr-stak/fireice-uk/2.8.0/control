@@ -1,7 +1,0 @@
-Package: hive-miners-xmr-stak-fireice-uk-2.8.0
-Version: 0.6-02
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - xmr-stak v2.8.0 (original by fireice-uk)

@@ -1,7 +1,0 @@
-Package: hive-miners-ccminer-djm34-1.1.26-cuda100
-Version: 0.6-01
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner ccminer-djm34 v1.1.26 CUDA 10.0
