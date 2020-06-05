@@ -2,7 +2,7 @@
 
 # HugePages tunning
 function HugePagesTune(){
-   if [[ `echo $SRBMINER_ALGO | grep -c "^randomx"` -gt 0 ]]; then
+   if [[ `echo $SRBMINER_ALGO | grep -c "^random"` -gt 0 ]]; then
      echo "Apply HugePages tuning for RandomX ..."
      hugepages -rx
    fi
