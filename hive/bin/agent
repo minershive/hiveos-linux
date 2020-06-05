@@ -12,7 +12,7 @@ API_TIMEOUT=15 #timeout to wait for miner API response, can take very long time 
 
 LAST_OK=$(( $(date +%s) - 431700 ))
 force_stop=0
-
+rebooting=0
 
 LAST_COMMAND=$(( $(date +%s) - 86100 )) #time when the last command from webface was received
 CUR_PUSH_INTERVAL=$PUSH_INTERVAL #current push interval
@@ -198,7 +198,7 @@ function loop {
 	AGENT_GZIP=0
 	PUSH_INTERVAL=10
 	. $RIG_CONF
-	. $WALLET_CONF
+	[[ -e $WALLET_CONF ]] && . $WALLET_CONF
 
 	# stop using claymore as default
 	#[[ -z $MINER ]] && MINER="claymore"
@@ -212,12 +212,16 @@ function loop {
 	date
 
 	# check filesystem status
-	if [[ ! -w /tmp ]]; then
-		echo "Filesystem is read-only, rebooting"
+	if [[ ! -w / ]]; then
 		sleep 10 # wait. maybe sreboot was called
-		mount | message error "Filesystem is read-only, rebooting" payload
+		echo "Filesystem is read-only, rebooting"
+		[[ $rebooting != 1 ]] && rebooting=1 && mount | message error "Filesystem is read-only, rebooting" payload
 		# using reboot as sreboot most probably failed
-		reboot
+		reboot -f
+		sleep 5
+		echo "Reboot failed!"
+		# remount to make some things working
+		[[ ! -w /tmp ]] && echo "Remounting /tmp" && mount none /tmp -t tmpfs -o size=100m,mode=1777 2>/dev/null
 	fi
 
 	[[ -z $gpu_stats ]] && gpu_stats='{}'
