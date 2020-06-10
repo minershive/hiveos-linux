@@ -5,7 +5,7 @@ if [[ $? -ne 0 || -z $stats_raw ]]; then
   echo -e "${YELLOW}Failed to read $miner from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
   [[ `echo $stats_raw | jq -r '.connection.uptime'` -lt 260 ]] && head -n 150 ${MINER_LOG_BASENAME}.log > ${MINER_LOG_BASENAME}_head.log
-  local cpu_threads=`cat ${MINER_LOG_BASENAME}_head.log | grep "READY threads" | tail -1 | awk '{print $6}' | cut -d '/' -f 1`
+  local cpu_threads=`cat ${MINER_LOG_BASENAME}_head.log | grep "cpu" | grep "READY threads" | tail -1 | awk '{print $6}' | cut -d '/' -f 1`
   local gpu_bus_ids=`cat ${MINER_LOG_BASENAME}_head.log | grep '|..[[:digit:]] |...[[:digit:]] | ' | awk '{ printf $6"\n" }' | cut -d ':' -f 1`
   local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
   local temp=$(jq '.temp' <<< $gpu_stats)
