@@ -1,0 +1,63 @@
+# Pool websites:
+#   http://xpmforall.org
+#   http://coinsforall.io
+
+server = "coinsforall.io";
+port = "6666";
+
+# Your XPM payout address
+address = "";
+
+# You can give this machine a custom name
+# Computer name is used as default
+name = "rig_name";
+
+# GPU crash handling
+# Enter OS terminal command here
+# for example:
+#   onCrash = "shutdown -r 1"
+onCrash = "0";
+
+# - Valid cpuload range: 0 to 4
+# - More than 2 does not make sense
+# - You can use 0 for really slow CPUs
+cpuload = "1";
+
+# Target Cunningham chain length, default = auto (adjust to difficulty)
+target = "auto";
+
+# Sieve size in stripes (1 stripe = 16384 bits)
+# Big sieve size gives more candidates with less prime probability
+sieveSize = "210";
+
+# Weave depth (primes number count using by sieve)
+# Big weave depth increases prime probability, but sieve generate less candidates
+weaveDepth = "65536";
+
+# Sieve layers number, optimal value is target*2; default = auto (target*2)
+width = "auto";
+
+# Sieve window size
+windowSize = "12288";
+
+# Maximal bit size of multipliers using with primorials 13, 14 and 15;
+# Default values are 24, 31, 35
+# Less values increases prime probability, but sieve generate less candidates
+multiplierLimits = ["24", "31", "35"];
+
+# - The following settings have one entry per GPU
+# - If you have more than 4 just add more entries or leave it as is to use defaults
+# - All entries must be separated by commas and set between double quotes
+
+# 0 = don't use device
+# 1 = use device
+#devices =        ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"];
+
+# sieves per round value, default = 5
+#sievePerRound = ["5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5"];
+
+# -1 means don't change; not supported for NVidia
+#corefreq =       ["-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1"];
+#memfreq =        ["-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1"];
+#powertune =      ["-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1"];
+#fanspeed =       ["-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1"];

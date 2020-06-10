@@ -1,0 +1,8 @@
+Package: hive-miners-xpmclient-extremal-ik7-cuda
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-xpmclient-extremal-ik7-cuda-10.3
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - XPM Miner eXtremal-ik7 Cuda

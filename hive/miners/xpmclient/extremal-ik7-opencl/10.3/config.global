@@ -1,0 +1,77 @@
+# Pool websites:
+#   http://xpmforall.org
+#   http://coinsforall.io
+
+server = "coinsforall.io";
+port = "6666";
+
+# Your XPM payout address
+address = "AMgtSW8ge2mvqxaiWo11GqTKx6rQ2J57yA";
+
+# You can give this machine a custom name
+# Computer name is used as default
+#name = "custom_name";
+
+# Platform:
+#  "amd": AMD GCN cards
+#  "amd legacy": AMD HD5xxx & HD6xxx cards
+#  "amd vega": AMD Vega cards
+platform = "amd";
+
+# GPU crash handling
+# Enter OS terminal command here
+# for example:
+#   onCrash = "shutdown -r 1"
+onCrash = "";
+
+# - Valid cpuload range: 0 to 4
+# - More than 2 does not make sense
+# - You can use 0 for really slow CPUs
+cpuload = "1";
+
+# Target Cunningham chain length, default = auto (adjust to difficulty)
+target = "auto";
+
+# Sieve size in stripes (1 stripe = 16384 bits), recommended:
+#   420 for Radeon RX 4xx/RX 5xx
+#   480 for Radeon RX Vega56/Vega64
+#   630 for Radeon R9 2xx/3xx
+# Big sieve size gives more candidates with less prime probability
+sieveSize = "420";
+
+# Weave depth (primes number count using by sieve), recommended:
+#  36864 for Radeon RX Vega56/Vega64
+#  40960 for other cards
+# Big weave depth increases prime probability, but sieve generate less candidates
+weaveDepth = "40960";
+
+# Sieve layers number, optimal value is target*2; default = auto (target*2)
+width = "auto";
+
+# Sieve window size. Recommended values:
+#   4096 for Radeon R9 2xx/3xx
+#   8192 for Radeon RX 4xx/RX 5xx, Vega56/64
+windowSize = "4096";
+
+# Maximal bit size of multipliers using with primorials 13, 14 and 15;
+# Default values are 24, 31, 35
+# Less values increases prime probability, but sieve generate less candidates
+multiplierLimits = ["24", "31", "35"];
+
+# - The following settings have one entry per GPU
+# - If you have more than 4 just add more entries or leave it as is to use defaults
+# - All entries must be separated by commas and set between double quotes
+
+
+# 0 = don't use device
+# 1 = use device
+devices =        ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"];
+
+# sieves per round value, default = 5
+sievePerRound = ["5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5"];
+
+# -1 means don't change
+corefreq =       ["-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1"];
+memfreq =        ["-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1"];
+powertune =      ["20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20"];
+fanspeed =       ["-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1"];

@@ -1,0 +1,13 @@
+#define STRIPES 420
+#define WIDTH 20
+#define PCOUNT 40960
+#define TARGET 10
+#define SIZE 4096
+#define LSIZE 256
+#define LSIZELOG2 8
+#define LIMIT13 26
+#define LIMIT14 33
+#define LIMIT15 36
+#define SIEVERANGE1 18
+#define SIEVERANGE2 26
+#define SIEVERANGE3 48

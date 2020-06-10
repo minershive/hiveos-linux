@@ -1,0 +1,87 @@
+# Pool websites:
+#   http://xpmforall.org
+#   http://coinsforall.io
+
+server = "coinsforall.io";
+port = "6666";
+
+# Your XPM payout address
+address = "";
+
+# You can give this machine a custom name
+# Computer name is used as default
+name = "custom_name";
+
+# Kernel type
+#   generic - OpenCL kernel
+#   asm - experimental kernel created using GCN assembly, no any warranty!!!
+#     this kernel doesn't support Tahiti (HD7970/R9 280X) and Navi (Radeon RX5700)
+#     other GPUs can work
+kernelType = "generic";
+
+# GPU crash handling
+# Enter OS terminal command here
+# for example:
+#   onCrash = "shutdown -r 1"
+onCrash = "";
+
+# - Valid cpuload range: 0 to 4
+# - More than 2 does not make sense
+# - You can use 0 for really slow CPUs
+cpuload = "1";
+
+# Target Cunningham chain length, default = auto (adjust to difficulty)
+target = "auto";
+
+# Sieve size in stripes (1 stripe = 16384 bits), recommended for asm kernel:
+#   Radeon R9 29x/39x (Hawaii) - ???
+#   Radeon Fury X/Nano - ???
+#   Radeon RX 4xx/RX 5xx - 480
+#   Radeon RX Vega & Radeon VII - 480
+# Big sieve size gives more candidates with less prime probability
+sieveSize = "480";
+
+# Weave depth (primes number count using by sieve), recommended for asm kernel:
+#  36864 for Radeon RX 4xx/RX 5xx (asm kernel), Vega56/64 (any kernel)
+#   Radeon R9 29x/39x (Hawaii) - ???
+#   Radeon Fury X/Nano - ???
+#   Radeon RX 4xx/RX 5xx - 36864
+#   Radeon RX Vega & Radeon VII - 36864
+# Big weave depth increases prime probability, but sieve generate less candidates
+weaveDepth = "36864";
+
+# Sieve layers number, optimal value is target*2; default = auto (target*2)
+width = "auto";
+
+# Sieve window size. Recommended values:
+#   Radeon R9 29x/39x (Hawaii) - 4096
+#   Radeon Fury X/Nano - 4096
+#   Radeon RX 4xx/RX 5xx - 8192
+#   Radeon RX Vega & Radeon VII - 8192
+windowSize = "8192";
+
+# Maximal bit size of multipliers using with primorials 13, 14 and 15;
+# Default values are 24, 31, 35
+# Less values increases prime probability, but sieve generate less candidates
+multiplierLimits = ["24", "31", "35"];
+
+# For debugging purposes only
+# platform = "";
+# compilerFlags = "";
+
+# - The following settings have one entry per GPU
+# - If you have more than 4 just add more entries or leave it as is to use defaults
+# - All entries must be separated by commas and set between double quotes
+
+# 0 = don't use device
+# 1 = use device
+devices =        ["1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1", "1"];
+
+# sieves per round value, default = 5
+sievePerRound = ["5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5"];
+
+# -1 means don't change
+corefreq =       ["-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1"];
+memfreq =        ["-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1"];
+powertune =      ["20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20", "20"];
+fanspeed =       ["-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1"];
