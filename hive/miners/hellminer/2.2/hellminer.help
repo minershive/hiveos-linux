@@ -1,0 +1,12 @@
+Usage: hellminer [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -l, --list            list available CPU threads
+  --cpu=CPU             use N threads on CPU (default: 1)
+  --instances=N         run N instances per Solver (default: 1)
+  -c HOST:PORT          example: na.luckpool.net:3956#xnsub
+  -u USER, --user=USER  username: RDWx2Sa8iyeLVTMUUi5ypY357ZXH5tNf56
+  -p PWD, --pwd=PWD     password: x
+  -v, --verbose         verbose mode (may be repeated for more verbosity)
+  --debug               enable debug mode (for developers only)
