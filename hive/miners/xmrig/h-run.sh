@@ -3,8 +3,8 @@
 # HugePages tunning
 function HugePagesTune(){
    XMRIG_ALGO=`cat config.json | jq -r '.pools[0].algo'`
-   echo "Start HugePages tuning for RandomX ..."
    if [[ `echo $XMRIG_ALGO | grep -c "^rx\/"` -gt 0 || `echo $XMRIG_ALGO | grep -c "^random\/"` -gt 0 ]]; then
+       echo "HugePages tuning for RandomX ..."
        hugepages -rx
    fi
 }
