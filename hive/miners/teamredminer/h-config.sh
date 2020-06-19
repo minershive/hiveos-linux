@@ -29,6 +29,10 @@ function miner_config_gen() {
     worker_name=" --eth_worker $TEAMREDMINER_WORKER"
   fi
 
+  if [[ $TEAMREDMINER_ALGO = "nimiq" && ! -z $TEAMREDMINER_WORKER ]]; then
+    worker_name=" --nimiq_worker $TEAMREDMINER_WORKER"
+  fi
+
   [[ ! -z $TEAMREDMINER_PASS ]] && pass=" -p $TEAMREDMINER_PASS"
 
   # while read -r line; do

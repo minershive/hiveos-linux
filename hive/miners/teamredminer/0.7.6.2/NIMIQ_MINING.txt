@@ -1,0 +1,31 @@
+Team Red Miner Nimiq Mining
+============================
+This document provides some quick pointers on how to best test and
+tune for the Nimiq argon2 variant.
+
+Pools
+-----
+TRM only support Nimiq dumb mode mining, and not over secure
+websockets but plain tcp. At the time of writing, no pools support
+this variant. Therefore, we have a separate proxy project that is
+needed here:
+
+https://github.com/Kerney666/trm_nimiq_proxy
+
+We also provide a proxy at 18.196.209.223:4444 connecting to
+nimiq.icemining.ca for easy testing. See our example scripts.
+
+Use the --nimiq_worker=myrig argument to set a device name for your
+workers that is passed to the pool(s).
+
+
+Tuning
+------
+Nimiq tuning is more or less identical to Turtlecoin Chukwa
+tuning. See our separate tuning guide TRTL_CHUKWA_TUNING.txt.
+
+
+Nimiq Tuning Parameters
+-----------------------
+There are no tuning parameters for Nimiq, it just runs. Play with your
+clocks to adjust behavior and power draw.
