@@ -71,31 +71,54 @@ function miner_config_gen() {
 #		echo -en "\n" >> $MINER_CONFIG
 #	fi
 
-	if [[ ! -z $ETHMINER_TEMPLATE && ! -z $ETHMINER_SERVER ]]; then
+	case $MINER_FORK in
+	   quarkchain)
+	     if [[ ! -z $ETHMINER_TEMPLATE && ! -z $ETHMINER_SERVER ]]; then
 		local url=
-		local protocol=
 		local server=
-		grep -q -E '^(stratum|http|zil).*://' <<< $ETHMINER_SERVER
+
+		grep -q -E '^(stratum|http|https).*://' <<< $ETHMINER_SERVER
 		if [[ $? == 0 ]]; then
 			protocol=$(awk -F '://' '{print $1"://"}' <<< $ETHMINER_SERVER)
 			server=$(awk -F '://' '{print $2}' <<< $ETHMINER_SERVER)
 		else #no protocol in server
-			protocol="stratum+tcp://"
+			protocol="http://"
 			server=$ETHMINER_SERVER
 		fi
+			url="$protocol$server:$ETHMINER_PORT"
+			local wallet="--coinbase $ETHMINER_TEMPLATE"
+			echo $url    >> $MINER_CONFIG
+			echo $wallet >> $MINER_CONFIG
+	     fi
+             ;;
+	   *)
+		if [[ ! -z $ETHMINER_TEMPLATE && ! -z $ETHMINER_SERVER ]]; then
+			local url=
+			local protocol=
+			local server=
 
-		url+=$protocol
+			grep -q -E '^(stratum|http|zil).*://' <<< $ETHMINER_SERVER
+			if [[ $? == 0 ]]; then
+				protocol=$(awk -F '://' '{print $1"://"}' <<< $ETHMINER_SERVER)
+				server=$(awk -F '://' '{print $2}' <<< $ETHMINER_SERVER)
+			else #no protocol in server
+				protocol="stratum+tcp://"
+				server=$ETHMINER_SERVER
+			fi
 
-		ETHMINER_TEMPLATE=$(sed 's/\//%2F/g' <<< $ETHMINER_TEMPLATE) #HTML special chars
-		EMAIL=$(sed 's/@/%40/g' <<< $EMAIL) #HTML special chars
+			url+=$protocol
 
-		url+=$ETHMINER_TEMPLATE
-		[[ ! -z $ETHMINER_PASS ]] && url+=":$ETHMINER_PASS"
+			ETHMINER_TEMPLATE=$(sed 's/\//%2F/g' <<< $ETHMINER_TEMPLATE) #HTML special chars
+			EMAIL=$(sed 's/@/%40/g' <<< $EMAIL) #HTML special chars
 
-		url+="@$server:$ETHMINER_PORT"
+			url+=$ETHMINER_TEMPLATE
+			[[ ! -z $ETHMINER_PASS ]] && url+=":$ETHMINER_PASS"
 
-		echo "-P $url" >> $MINER_CONFIG
-	fi
+			url+="@$server:$ETHMINER_PORT"
+
+			echo "-P $url" >> $MINER_CONFIG
+		fi
+	esac
 
 	[[ ! -z $ETHMINER_USER_CONFIG ]] && echo "$ETHMINER_USER_CONFIG" >> $MINER_CONFIG
 
