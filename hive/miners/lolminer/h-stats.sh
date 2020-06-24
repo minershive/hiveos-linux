@@ -30,8 +30,11 @@ else
 		GRIN-AD29|GRIN-C29D|GRIN-C29M)
 			algo="cuckoo"
 			;;
-		GRIN-AT31|GRIN-AT32|GRIN-C31|GRIN-C32|GRIN-AUTO)
-			algo="cuckoo"
+		GRIN-AT31|GRIN-C31)
+			algo="cuckootoo31"
+			;;
+		GRIN-AT32|GRIN-C32)
+			algo="cuckootoo32"
 			;;
 		ZEL)
 			algo="equihash 125/4"
