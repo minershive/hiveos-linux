@@ -21,18 +21,16 @@ function miner_config_gen() {
 	else
 	    coin=$LOLMINER_ALGO
 	fi
-	conf="--coin $coin\n"
+	if [[ $LOLMINER_ALGO ~= "BEAM-" || $LOLMINER_ALGO ~= "EQUI" || $LOLMINER_ALGO == "C29D" || $LOLMINER_ALGO == "C29Z" || $LOLMINER_ALGO == "C31" || $LOLMINER_ALGO == "C32" ]]; then
+	   conf="--algo $coin\n"
+	else
+	   conf="--coin $coin\n"
+	fi
 	local host_cnt=$(echo $LOLMINER_SERVER | wc -w)
 	if [[ $host_cnt -gt 1 ]]; then
 		# URL
 		local url=$(echo $LOLMINER_SERVER | tr ' ' ';' )
-		[[ ! -z $LOLMINER_SERVER ]]   && conf+="--pool $url\n"
-		# PORT
-		conf+="--port "
-		for ((i=0; i<$host_cnt; i++)); do
-			conf+="$LOLMINER_PORT"
-			[[ $i -eq $((host_cnt-1)) ]] && conf+="\n" || conf+=";"
-		done
+		[[ ! -z $LOLMINER_SERVER ]]   && conf+="--pool $url:$LOLMINER_PORT\n"
 		# WALLET
 		conf+="--user "
 		for ((i=0; i<$host_cnt; i++)); do

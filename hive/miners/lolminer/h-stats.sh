@@ -24,16 +24,19 @@ else
 		BEAM-II)
 			algo="equihash 150/5/3"
 			;;
+		BEAM-III)
+			algo="beamhashv3"
+			;;
 		EXCC)
 			algo="equihash 144/5"
 			;;
-		GRIN-AD29|GRIN-C29D|GRIN-C29M)
+		MWC-C29|GRIN-C29M)
 			algo="cuckoo"
 			;;
-		GRIN-AT31|GRIN-C31)
+		MWC-C31)
 			algo="cuckootoo31"
 			;;
-		GRIN-AT32|GRIN-C32)
+		GRIN-C32)
 			algo="cuckootoo32"
 			;;
 		ZEL)
