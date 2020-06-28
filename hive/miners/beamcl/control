@@ -1,8 +1,8 @@
 Package: hive-miners-beamcl
-Version: 0.6-02
+Version: 0.6-03
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-beamcl-1.0.63
+Depends: hive-miners-beamcl-1.0.82
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner
+Description: Hive miner - Beam OpenCL miner

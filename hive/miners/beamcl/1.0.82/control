@@ -1,0 +1,8 @@
+Package: hive-miners-beamcl-1.0.82
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - Beam OpenCL miner v1.0.82 "BeamHash III"
+
