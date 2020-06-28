@@ -21,56 +21,45 @@ function miner_config_gen() {
 	else
 	    coin=$LOLMINER_ALGO
 	fi
-	if [[ $LOLMINER_ALGO ~= "BEAM-" || $LOLMINER_ALGO ~= "EQUI" || $LOLMINER_ALGO == "C29D" || $LOLMINER_ALGO == "C29Z" || $LOLMINER_ALGO == "C31" || $LOLMINER_ALGO == "C32" ]]; then
+	#  
+	if [[ "$LOLMINER_ALGO" =~ "BEAM-" || $LOLMINER_ALGO =~ "EQUI" || $LOLMINER_ALGO == "C29D" || $LOLMINER_ALGO == "C29Z" || $LOLMINER_ALGO == "C31" || $LOLMINER_ALGO == "C32" ]]; then
 	   conf="--algo $coin\n"
 	else
 	   conf="--coin $coin\n"
 	fi
 	local host_cnt=$(echo $LOLMINER_SERVER | wc -w)
-	if [[ $host_cnt -gt 1 ]]; then
-		# URL
-		local url=$(echo $LOLMINER_SERVER | tr ' ' ';' )
-		[[ ! -z $LOLMINER_SERVER ]]   && conf+="--pool $url:$LOLMINER_PORT\n"
+	LOLMINER_SERVER=($LOLMINER_SERVER)
+	LOLMINER_PORT=($LOLMINER_PORT)
+	for ((i=0; i<$host_cnt; i++)); do
+		#URL
+		local url="${LOLMINER_SERVER[$i]}:${LOLMINER_PORT[$i]}"
+		echo ${LOLMINER_PORT[$i]}
+		conf+="--pool $url\n"
 		# WALLET
-		conf+="--user "
-		for ((i=0; i<$host_cnt; i++)); do
-			conf+="$LOLMINER_TEMPLATE"
-			[[ $i -eq $((host_cnt-1)) ]] && conf+="\n" || conf+=";"
-		done
+		conf+="--user $LOLMINER_TEMPLATE\n"
 		# PASSWORD
 		if [[ ! -z $LOLMINER_PASS ]]; then
-			conf+="--pass "
+			conf+="--pass $LOLMINER_PASS\n"
+		fi
+	done
+	
+
+	# TLS and other options
+	while read -r line; do 
+		[[ -z $line ]] && continue
+		local tls_cnt=$(echo "$line" | grep -e "--tls" | awk '{print $2}' | tr ';' ' ' | wc -w)
+		if [[ $tls_cnt -eq 1 ]]; then
+			local tls_val=$(echo "$line" | grep -e "--tls" | awk '{print $2}')
 			for ((i=0; i<$host_cnt; i++)); do
-				conf+="$LOLMINER_PASS"
-				[[ $i -eq $((host_cnt-1)) ]] && conf+="\n" || conf+=";"
+				conf+="--tls $tls_val\n"
 			done
+		else
+			conf+="$line\n"
 		fi
-		# TLS and other options
-		while read -r line; do 
-			[[ -z $line ]] && continue
-			local tls_cnt=$(echo "$line" | grep -e "--tls" | awk '{print $2}' | tr ';' ' ' | wc -w)
-			if [[ $tls_cnt -eq 1 ]]; then
-				local tls_val=$(echo "$line" | grep -e "--tls" | awk '{print $2}')
-				conf+="--tls "
-				for ((i=0; i<$host_cnt; i++)); do
-					conf+="$tls_val"
-					[[ $i -eq $((host_cnt-1)) ]] && conf+="\n" || conf+=";"
-				done
-			else
-				conf+="$line\n"
-			fi
-		done <<< "$LOLMINER_USER_CONFIG"
-	else
-		[[ ! -z $LOLMINER_SERVER ]]   && conf+="--pool $LOLMINER_SERVER\n"
-		[[ ! -z $LOLMINER_PORT ]]     && conf+="--port $LOLMINER_PORT\n"
-		[[ ! -z $LOLMINER_TEMPLATE ]] && conf+="--user $LOLMINER_TEMPLATE\n"
-		[[ ! -z $LOLMINER_PASS ]]     && conf+="--pass $LOLMINER_PASS\n"
-		if [[ ! -z $LOLMINER_USER_CONFIG ]]; then
-			conf+="$LOLMINER_USER_CONFIG\n"
-		fi
-	fi
+	done <<< "$LOLMINER_USER_CONFIG"
+
 	conf+="--apiport $MINER_API_PORT\n"
 	conf+=`cat $GLOBAL_CONFIG`"\n"
-	
+
 	echo -e "$conf" > $MINER_CONFIG
 }
