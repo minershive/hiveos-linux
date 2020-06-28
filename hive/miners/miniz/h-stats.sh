@@ -18,6 +18,10 @@ else
 
   local uptime=`get_miner_uptime`
   local algo=$(jq ".algorithm"<<< "$stats_raw"|tr -d '"' |tr ',' "/" | tr '[:upper:]' '[:lower:]')
+  
+# Hardcode remapping to avoid warning at miner start
+  [[ $algo == "equihash 144/5s" ]] && algo="beamhashv3"
+#
 
   stats=$(jq -c --arg ac "$ac" --arg rj "$rj" --arg uptime "$uptime" --arg hs_units "hs" \
                 --arg algo "$algo" \
