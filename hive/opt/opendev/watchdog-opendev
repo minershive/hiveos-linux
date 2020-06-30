@@ -42,9 +42,10 @@ watchdog_ping() {
 	#send ping signal to WD, if WD does not receive it for a while, then WD RESET the MB.
 	pinging=1
 	local port=22
+	t2=`date +%s` || t2=0
 	while true
 	do
-		t1=`date +%s` || t1=0
+		t1=$t2
 		if [[ $pinging -eq 1 ]] && nc -w 1 -z localhost $port 2>&1; then
 			echo "Pinging watchdog"
 			echo -n "~U" > $PORT || break;
@@ -55,7 +56,7 @@ watchdog_ping() {
 		fi
 		sleep 5
 		t2=`date +%s` || t2=0
-		[[ $t2 -eq 0 || $t1 -eq 0 || $(( t2 - t1 )) -ge 10 ]] && pinging=0 || pinging=1
+		[[ $t2 -eq 0 || $t1 -eq 0 || $(( t2 - t1 )) -gt 10 ]] && pinging=0 || pinging=1
 	done
 
 	message error "opendev wd error"
