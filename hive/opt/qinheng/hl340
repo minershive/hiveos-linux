@@ -68,8 +68,9 @@ do
 		echo "Pinging watchdog"
 		echo -ne $ping > $PORT || break;
 	else
-		echo "NOT pinging watchdog (sshd port $port)"
-		port=`cat /etc/ssh/sshd_config 2>/dev/null | grep -oP "^Port[\s]+\K[0-9]+"`
+		logger -s -t "$(basename "$0")" "NOT pinging watchdog - sshd port: $port, enabled: $pinging"
+		port=`grep -oP "^Port[\s]+\K[0-9]+" /etc/ssh/sshd_config 2>/dev/null | tail -n 1`
+		[[ -z $port ]] && port=22
 	fi
 	sleep 5
 	t2=`date +%s` || t2=0

@@ -55,11 +55,12 @@ else
 	while true
 	do
 		echo "Sending keepallive packet to SRR:$srrSerial on slot:$slot. Message: $packet1"
-		#[[ `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]] && echo -n "$packet1" | xxd -r -p |socat - UDP-DATAGRAM:255.255.255.255:1051,broadcast > /dev/null &
 		if nc -w 1 -z localhost $port 2>&1; then
 			echo -n "$packet1" | xxd -r -p | socat - UDP-DATAGRAM:255.255.255.255:1051,broadcast > /dev/null &
 		else
-			port=`cat /etc/ssh/sshd_config 2>/dev/null | grep -oP "^Port[\s]+\K[0-9]+"`
+			logger -s -t "$(basename "$0")" "NOT pinging watchdog - sshd port: $port"
+			port=`grep -oP "^Port[\s]+\K[0-9]+" /etc/ssh/sshd_config 2>/dev/null | tail -n 1`
+			[[ -z $port ]] && port=22
 		fi
 		sleep 5
 	done

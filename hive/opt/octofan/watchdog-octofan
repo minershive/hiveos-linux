@@ -52,11 +52,12 @@ while true; do
 		echo "Octofan in maintenance mode"
 	else
 		echo "Pinging watchdog"
-		#[[ `nc -w 2 -zv localhost 22 2>&1 | grep -c succeeded` -gt 0 ]] && $bin_name -s
 		if nc -w 1 -z localhost $port 2>&1; then 
 			$bin_name -s
 		else
-			port=`cat /etc/ssh/sshd_config 2>/dev/null | grep -oP "^Port[\s]+\K[0-9]+"`
+			logger -s -t "$(basename "$0")" "NOT pinging watchdog - sshd port: $port"
+			port=`grep -m 1 -oP "^Port[\s]+\K[0-9]+" /etc/ssh/sshd_config 2>/dev/null | tail -n 1`
+			[[ -z $port ]] && port=22
 		fi
 	fi
 	sleep 5
