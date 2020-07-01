@@ -1,0 +1,7 @@
+Package: hive-miners-nq-miner-0.99.7
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - nq-miner v0.99.7
