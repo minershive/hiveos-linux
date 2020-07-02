@@ -35,6 +35,7 @@ else
 	[[ $ETHMINER_FORK == "kawpowminer" ]] && algo="kawpow"
 	[[ $ETHMINER_FORK == "progpow" ]]     && algo="progpow"
 	[[ $ETHMINER_FORK == "serominer" ]]   && algo="progpow"
+	[[ $ETHMINER_FORK == "ethercore" ]]   && algo="progpow"
 	[[ $ETHMINER_FORK == "ubqminer" ]]    && algo="ubqhash"
 	[[ $ETHMINER_FORK == "zilminer" ]]    && algo="zilliqahash"
 	[[ $ETHMINER_FORK == "teominer" ]]    && algo="tethashv1"
