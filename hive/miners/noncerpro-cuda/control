@@ -1,8 +1,8 @@
 Package: hive-miners-noncerpro-cuda
-Version: 0.6-03
+Version: 0.6-04
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-noncerpro-cuda-3.3.0
+Depends: hive-miners-noncerpro-cuda-3.3.1
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - NoncerPro Nimiq CUDA miner
