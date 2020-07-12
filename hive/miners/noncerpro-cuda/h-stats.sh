@@ -25,7 +25,7 @@ else
          --arg ver `miner_ver` --arg uptime "$uptime" \
          --argjson fan "$fan" --argjson temp "$temp" \
         '{hs: [.devices[].hashrate], hs_units: "hs", $algo, $temp,
-        $fan, $uptime, ar: [$ac, 0, $inv], $ver}' <<< "$stats_raw")
+        $fan, $uptime, ar: [$ac, $inv], $ver}' <<< "$stats_raw")
 fi
 
   [[ -z $khs ]] && khs=0
