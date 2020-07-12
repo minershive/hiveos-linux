@@ -61,8 +61,14 @@ function echo2 {
 }
 
 
+function get_payload() {
+	echo "$gpu_stats" | jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i
+		([]; . + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+"  Temp: "+.[1]+"C  Fan: "+.[2]+"%  Power: "+.[3]+"W"' 2>/dev/null
+}
+
+
 #check $GPU_DETECT_JSON and do nothing while not exist
-while true; do 
+while true; do
 	if [ -f $GPU_DETECT_JSON ]; then
 		gpu_detect_json=`cat $GPU_DETECT_JSON`
 		all_card_number=`echo "$gpu_detect_json" | jq ". | length"`
@@ -99,23 +105,18 @@ while true; do
 		# TODO There is must be the way to remove space or use the whole value inside the quotes
 		#declare -a card_names_array=(`echo "$gpu_detect_json" | jq '[ . | to_entries[] | select(.value) | .value.name ] | .[]'`)
 		
-		#set AMD $cardnum array
 		if [[ $amd_cards_number > 0 ]]; then
-			cardnum=()
-			for j in ${amd_indexes_array[@]}
-			do
-				#get bus_id amd gpu
-				cardnum_bus_id=${card_bus_ids_array[j]}
-				dirs=`ls -d1 /sys/class/drm/card*/device/pp_table | sort --version-sort` #natural sort for 10+ cards
-				[[ -z $dirs ]] && break
-				for dir in $dirs; do
-					basedir=${dir%/*} #cut off /pp_table
-					busid_dirs=`cat $basedir/uevent | grep PCI_SLOT_NAME | awk -F= '{print substr($2,6)}'`
-					if [[ $busid_dirs == $cardnum_bus_id ]]; then
-						[[ $dir =~ \/card([0-9a-z]+)\/ ]]
-						cardnum[$j]=${BASH_REMATCH[1]}
-					fi
-				done
+			card_num=()
+			card_fanmin=()
+			card_fanmax=()
+			card_hwmon=()
+			for j in ${amd_indexes_array[@]}; do
+				[[ `echo /sys/bus/pci/devices/0000:${card_bus_ids_array[j]}/drm/card*/` =~ \/card([0-9]+)\/ ]] &&
+					card_num[$j]=${BASH_REMATCH[1]}
+				card_hwmon[$j]=`realpath /sys/class/drm/card${card_num[j]}/device/hwmon/hwmon*/`
+				[[ -z ${card_hwmon[$j]} ]] && echo2 "${RED}Unable to get HWMON dir for gpu ${card_bus_ids_array[j]}${NOCOLOR}" && continue
+				[[ -e ${card_hwmon[$j]}/pwm1_max ]] && card_fanmax[$j]=`head -1 ${card_hwmon[$j]}/pwm1_max` || card_fanmax[$j]=255
+				[[ -e ${card_hwmon[$j]}/pwm1_min ]] && card_fanmin[$j]=`head -1 ${card_hwmon[$j]}/pwm1_min` || card_fanmin[$j]=0
 			done
 		fi
 		break
@@ -127,7 +128,7 @@ while true; do
 done
 
 
-check_gpu () {
+check_gpu() {
 	if [[ $nvidia_indexes_array == '[]' && $amd_indexes_array == '[]' ]]; then
 		echo2 "No ${RED}AMD${NOCOLOR} or ${GREEN}NVIDIA${NOCOLOR} cards detected"
 		exit 1
@@ -148,7 +149,7 @@ check_gpu () {
 
 
 
-get_fan_speed () {
+get_fan_speed() {
 	local cur_temp=$1
 	local prev_temp=$2
 	local cur_fan_speed=$3
@@ -161,14 +162,12 @@ get_fan_speed () {
 	if [[ -z "${cur_temp##*[!0-9]*}" || -z "${cur_fan_speed##*[!0-9]*}" ]]; then
 		if [[ $REBOOT_ON_ERROR == 1 ]]; then
 			local msg="Autofan: error in temp readings, rebooting"
-			local payload=`cat $GPU_STATS_JSON | jq -r -C .`
-			echo "$payload" | message warning "$msg" payload
+			get_payload | message warning "$msg" payload
 			nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 		else
 			if [[ $error_in_temp_readings == 0 ]]; then
 				local msg="Autofan: error in temp readings"
-				local payload=`cat $GPU_STATS_JSON | jq -r -C .`
-				echo "$payload" | message warning "$msg" payload
+				get_payload | message warning "$msg" payload
 				error_in_temp_readings=1
 			fi
 		fi
@@ -204,7 +203,7 @@ get_fan_speed () {
 	fi
 
 	if [[ $6 == "Nvidia" && ! -z $prev_fan && ! -z $pprev_fan ]]; then
-		if [[ $cur_temp -le $HIGH_TEMP && $cur_temp -le $prev_temp ]]; then 
+		if [[ $cur_temp -le $HIGH_TEMP && $cur_temp -le $prev_temp ]]; then
 				#[[ $cur_fan_speed -gt $prev_fan ]] && target_fan_speed=$(( $target_fan_speed - 1 ))
 				[[ $target_fan_speed -lt 0 ]] && target_fan_speed=0
 				
@@ -288,14 +287,12 @@ check_overheat() {
 			if [[ $t -gt 120 ]]; then
 				if [[ $REBOOT_ON_ERROR == 1 ]]; then
 					local msg="Autofan: GPU temperature $t is unreal, driver error, rebooting"
-					local payload=`cat $GPU_STATS_JSON | jq -r -C .`
-					echo "$payload" | message warning "$msg" payload
+					get_payload | message warning "$msg" payload
 					nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 				else
 					if [[ $temperature_is_unreal == 0 ]]; then
 						local msg="Autofan: GPU temperature $t is unreal, driver error"
-						local payload=`cat $GPU_STATS_JSON | jq -r -C .`
-						echo "$payload" | message warning "$msg" payload
+						get_payload | message warning "$msg" payload
 						temperature_is_unreal=1
 					fi
 				fi
@@ -315,8 +312,8 @@ check_overheat() {
 				else
 					msg+=", mining stopped"
 				fi
-				local payload=`cat $GPU_STATS_JSON | jq -r -C .`
-				echo "$payload" | message warning "$msg" payload
+
+				get_payload | message warning "$msg" payload
 
 				if [[ $CRITICAL_TEMP_ACTION == "reboot" ]]; then
 					nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
@@ -359,7 +356,7 @@ do_miner_action() {
 
 
 # TODO merge with amd_auto_fan_control
-nvidia_auto_fan_control () {
+nvidia_auto_fan_control() {
 	args=
 	#set start index
 	local fan_idx=0
@@ -424,8 +421,37 @@ nvidia_auto_fan_control () {
 }
 
 
+amd_get_fan_speed() {
+	local index="$1"
+	local speed=0
+	[[ -z "${card_hwmon[index]}" ]] && return 1
+	local fan=`head -1 ${card_hwmon[index]}/pwm1 2>/dev/null`
+	[[ $fan -gt ${card_fanmin[index]} && ${card_fanmax[index]} -gt ${card_fanmin[index]} ]] &&
+		speed=$(( (fan - ${card_fanmin[index]}) * 100 / (${card_fanmax[index]} - ${card_fanmin[index]}) ))
+	echo "$speed"
+}
 
-amd_auto_fan_control () {
+
+amd_set_fan_speed() {
+	local index="$1"
+	[[ -z "${card_hwmon[index]}" ]] && return 1
+	local fan="$2"
+	local sign="$3" # must be 1 or -1
+	local speed=$(( fan*(${card_fanmax[index]} - ${card_fanmin[index]})/100 + ${card_fanmin[index]} ))
+	echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null
+	if [[ $? -ne 0 && "`head -1 ${card_hwmon[index]}/pwm1_enable 2>/dev/null`" == "2" ]]; then
+		echo 1 > ${card_hwmon[index]}/pwm1_enable 2>/dev/null || return 2
+		echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null || return 3
+	fi
+	for (( i=1; i <= 16; i++ )); do
+		fan=`head -1 ${card_hwmon[index]}/pwm1 2>/dev/null` || return 4
+		[[ $(( fan*sign )) -ge $(( speed*sign )) ]] && return 0
+		echo $(( speed + i*sign )) > ${card_hwmon[index]}/pwm1 2>/dev/null || return 5
+	done
+}
+
+
+amd_auto_fan_control() {
 	for index in ${amd_indexes_array[@]}; do
 		# TODO Theese fields maybe moved inside `get_fan_speed` replaced by on amd_indexes_array[@] as argument
 		local gpu_temperature=${temperatures_array[index]}
@@ -436,26 +462,18 @@ amd_auto_fan_control () {
 		local brand="AMD   "
 		#event_by_temperature $gpu_temperature
 		get_fan_speed "$gpu_temperature" "$gpu_temperature_previous" "$gpu_fan_speed" "$card_bus_id" $index $brand
+
 		if [[ $target_fan_speed -gt $gpu_fan_speed ]]; then
-			for (( i=0; i <= 10; i++ ))
-			do
-				wolfamdctrl -i ${cardnum[index]} --set-fanspeed $(( $target_fan_speed + $i )) 1>/dev/null
-				[[ $(wolfamdctrl -i ${cardnum[index]} --show-fanspeed | tr -d %) -ge $target_fan_speed ]] && break
-			done
-		fi
-		if [[ $target_fan_speed -lt $gpu_fan_speed && $target_fan_speed -lt $MAX_FAN ]]; then
-			for (( i=0; i <= 10; i++ ))
-			do
-				wolfamdctrl -i ${cardnum[index]} --set-fanspeed $(( $target_fan_speed - $i )) 1>/dev/null
-				[[ $(wolfamdctrl -i ${cardnum[index]} --show-fanspeed | tr -d %) -le $target_fan_speed ]] && break
-			done
+			amd_set_fan_speed $index $target_fan_speed 1
+		elif [[ $target_fan_speed -lt $gpu_fan_speed ]]; then
+			amd_set_fan_speed $index $target_fan_speed -1
 		fi
 	done
 }
 
 
 auto_fan_control() {
-	while true;	do
+	while true; do
 		unset ENABLED
 		TARGET_TEMP= #unset tt if it's not in config anymore
 		CRITICAL_TEMP=
@@ -485,7 +503,7 @@ auto_fan_control() {
 		[[ $VERY_HIGH_TEMP -gt $CRITICAL_TEMP ]] && VERY_HIGH_TEMP=$CRITICAL_TEMP
 		[[ -z $VERY_HIGH_FAN ]] && VERY_HIGH_FAN=$(( $MAX_FAN - 10 ))
 		[[ -z $AUTO_SPEED ]] && AUTO_SPEED=$DEF_AUTO_SPEED
-				
+
 		SLEEP_TIME=$DEF_SLEEP_TIME
 		
 		
@@ -499,7 +517,8 @@ auto_fan_control() {
 
 		#trying to read data 10 times
 		for read_count in {1..10}; do
-			declare -a temperatures_array=(`cat $GPU_STATS_JSON | tail -1 | jq -r ".temp | .[]"`)
+			gpu_stats="$(cat $GPU_STATS_JSON 2>/dev/null)"
+			declare -a temperatures_array=(`echo "$gpu_stats" | jq -r ".temp | .[]"`)
 			#echo ${temperatures_array[@]}
 			[[ -n $temperatures_array ]] && break
 			echo2 "${RED}Can't get temperature data from gpu-stats ($read_count)${NOCOLOR}"
@@ -513,14 +532,12 @@ auto_fan_control() {
 		if [[ -z $temperatures_array || $temperatures_array == 'null' ]]; then
 			if [[ $REBOOT_ON_ERROR == 1 ]]; then
 				local msg="GPU driver error, no temps, rebooting"
-				local payload=`cat $GPU_STATS_JSON | jq -r -C .`
-				echo "$payload" | message err "$msg" payload
+				get_payload | message err "$msg" payload
 				nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 			else
 				if [[ $error_in_temp_readings == 0 ]]; then
 					local msg="GPU driver error, no temps"
-					local payload=`cat $GPU_STATS_JSON | jq -r -C .`
-					echo "$payload" | message warning "$msg" payload
+					get_payload | message warning "$msg" payload
 				fi
 			fi
 			error_in_temp_readings=1
@@ -528,7 +545,7 @@ auto_fan_control() {
 			continue
 		fi
 
-	
+
 		#miner_stop will work
 		check_overheat
 
@@ -559,7 +576,7 @@ auto_fan_control() {
 				PREV_MAX_FAN=$MAX_FAN
 			fi
 
-			declare -a fans_array=(`cat $GPU_STATS_JSON | tail -1 | jq -r ".fan | .[]"`)
+			declare -a fans_array=(`echo "$gpu_stats" | jq -r ".fan | .[]"`)
 			[[ $DEBUG_COMMANDS == 1 ]] && echo "Fans: ${fans_array[@]}"
 			gpu_info=
 
