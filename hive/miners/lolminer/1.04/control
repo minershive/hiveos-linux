@@ -1,0 +1,7 @@
+Package: hive-miners-lolminer-1.04
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - lolMiner v1.04
