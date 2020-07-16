@@ -3,6 +3,6 @@ Version: 0.6-97
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-gminer-2.17
+Depends: hive-miners-gminer-2.18
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - Gminer
