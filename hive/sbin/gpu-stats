@@ -52,7 +52,7 @@ function internal_stats {
 		busid=`echo $line | awk '{print $1}'`
 
 		[[ ! -z $busid ]] &&
-			putstats $busid "cpu" "0" "0" "0" "0"
+			putstats $busid "cpu" "0" "0" "0" "0" "0" "0"
 	done <<< "$cards"
 }
 
