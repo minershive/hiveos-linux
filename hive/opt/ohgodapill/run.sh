@@ -7,8 +7,8 @@
 
 while true; do
 	#Sleep before running
-	[[ ! -z $OHGODAPILL_START_TIMEOUT ]] &&
-		sleep $OHGODAPILL_START_TIMEOUT
+	[[ $OHGODAPILL_START_TIMEOUT -ne 0 ]] &&
+		sleep ${OHGODAPILL_START_TIMEOUT#-}
 
 	/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2 $@ > /var/run/hive/ohgodapill 2>&1
 

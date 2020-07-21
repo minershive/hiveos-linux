@@ -2,9 +2,6 @@
 #[ -t 1 ] &&
 . colors
 
-# it is used to save OC settings to apply only changes on next run. can be disabled
-# it must be reset after X server restart
-#NVIDIA_OC_FILE=/run/hive/nvidia-oc
 
 date
 echo ""
@@ -66,23 +63,12 @@ fi
 
 [[ -z $PLIMIT || $PLIMIT == "" ]] && PLIMIT=0
 
-[[ -z $OHGODAPILL_ENABLED || $OHGODAPILL_ENABLED == "" ]] && OHGODAPILL_ENABLED=0
 
-#Start OhGodAnETHlargementPill. It will exit if its 0
-OHGODAPILL_RUNNING=`ps aux | grep /hive/opt/ohgodapill/run.sh | grep -v grep | wc -l`
-if [[ $OHGODAPILL_ENABLED == 1 ]]; then
-	if [[ $OHGODAPILL_RUNNING -eq 0 ]]; then
-		echo "> Start OhGodAnETHlargementPill"
-		nohup /hive/opt/ohgodapill/run.sh $OHGODAPILL_ARGS > /dev/null 2>&1 &
-		sleep 1
-		sync
-	fi
-else
-	if [[ $OHGODAPILL_RUNNING -ne 0 ]]; then
-		pkill -f '/hive/opt/ohgodapill/run.sh'
-		pkill -f '/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2'
-	fi
-fi
+# kill Pill if running 
+pkill -f '/hive/opt/ohgodapill/run.sh'
+pkill -f '/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2'
+[[ "$OHGODAPILL_ENABLED" -eq 1 && "$OHGODAPILL_START_TIMEOUT" -lt 0 ]] && PILLFIX=1 || PILLFIX=0
+
 
 #pad arrays
 [[ ! -z $CLOCK ]] && CLOCK=($CLOCK) || CLOCK=(0)
@@ -107,20 +93,6 @@ done
 
 declare -a FANCNT=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.fan_cnt'`)
 
-# load previous settings from file
-if [[ ! -z $NVIDIA_OC_FILE && -f $NVIDIA_OC_FILE ]]; then
-	source $NVIDIA_OC_FILE
-	PREV_CLOCK=($PREV_CLOCK)
-	PREV_MEM=($PREV_MEM)
-	PREV_PLIMIT=($PREV_PLIMIT)
-	PREV_FAN=($PREV_FAN)
-	#echo ""
-	#echo "OLD CORE  = ${PREV_CLOCK[*]}"
-	#echo "OLD MEM    = ${PREV_MEM[*]}"
-	#echo "OLD PLIMIT = ${PREV_PLIMIT[*]}"
-	#echo "OLD FAN    = ${PREV_FAN[*]}"
-fi
-
 echo ""
 
 echo "CORE   = ${CLOCK[*]}"
@@ -131,13 +103,8 @@ echo "FANCNT = ${FANCNT[*]}"
 
 echo ""
 
-pgrep --full nvidia-persistenced > /dev/null
-if [[ $? -ne 0 ]]; then
-	nvidia-persistenced --persistence-mode
-	#nvidia-smi -pm 1
-#else
-#	nvidia-smi -pm 1
-fi
+pgrep --full nvidia-persistenced > /dev/null || nvidia-persistenced --persistence-mode
+
 
 _IFS=$IFS && IFS=$'\n'
 declare -a NAME=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.name'`)
@@ -153,58 +120,49 @@ exitcode=0
 
 for (( i=0; i < $n; ++i )); do
 
-	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${BUSID[$i]} ${GREEN}${NAME[$i]} ${RAM[$i]}${NOCOLOR}, PL: ${PLMIN[$i]}, ${PLDEF[$i]}, ${PLMAX[$i]}  ${YELLOW}=== `date +"%T"`${NOCOLOR}"
+	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${BUSID[$i]} ${GREEN}${NAME[$i]} ${RAM[$i]}${NOCOLOR}, PL: ${PLMIN[$i]}, ${PLDEF[$i]}, ${PLMAX[$i]} ${YELLOW}=== `date +"%T"`${NOCOLOR}"
 
-	if [[ "${PREV_PLIMIT[$i]}" == "${PLIMIT[$i]}" ]]; then
-		echo "PLIMIT was already set to ${PLIMIT[$i]}"
+	pldef=${PLDEF[$i]%%[!0-9]*}
+	if [[ ! -z $PLIMIT && ${PLIMIT[$i]} -gt 0 ]]; then
+		# check limits
+		#if [[ $pldef -gt 0 ]]; then
+		#	plmax=${PLMAX[$i]%%[!0-9]*}
+		#	plmin=${PLMIN[$i]%%[!0-9]*}
+		#	[[ $plmax -gt $pldef && ${PLIMIT[$i]} -gt $plmax ]] && PLIMIT[$i]=${PLMAX[$i]%%[!0-9\.]*} && echo -e "${RED}Power limit was set to MAX value${NOCOLOR}"
+		#	[[ $plmin -lt $pldef && ${PLIMIT[$i]} -lt $plmin ]] && PLIMIT[$i]=${PLMIN[$i]%%[!0-9\.]*} && echo -e "${RED}Power limit was set to MIN value${NOCOLOR}"
+		#fi
+		nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl ${PLIMIT[$i]}`
+		nvcode=$?
+
 	else
-		pldef=${PLDEF[$i]%%[!0-9]*}
-		if [[ ! -z $PLIMIT && ${PLIMIT[$i]} -gt 0 ]]; then
-			# check limits
-			#if [[ $pldef -gt 0 ]]; then
-			#	plmax=${PLMAX[$i]%%[!0-9]*}
-			#	plmin=${PLMIN[$i]%%[!0-9]*}
-			#	[[ $plmax -gt $pldef && ${PLIMIT[$i]} -gt $plmax ]] && PLIMIT[$i]=${PLMAX[$i]%%[!0-9\.]*} && echo -e "${RED}Power limit was set to MAX value${NOCOLOR}"
-			#	[[ $plmin -lt $pldef && ${PLIMIT[$i]} -lt $plmin ]] && PLIMIT[$i]=${PLMIN[$i]%%[!0-9\.]*} && echo -e "${RED}Power limit was set to MIN value${NOCOLOR}"
-			#fi
-			nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl ${PLIMIT[$i]}`
+		#if [[ $plcur != $pldef ]]; then
+			echo "Restoring default power limit ${pldef}"
+			nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl $pldef`
 			nvcode=$?
-	
-		else
-			#if [[ $plcur != $pldef ]]; then
-				echo "Restoring default power limit ${pldef}"
-				nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl $pldef`
-				nvcode=$?
-			#fi
-		fi
-		[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
-		nvresult=`grep -v "^$" <<< "$nvresult"`
-		[[ ! -z $nvresult ]] && echo -e "${color}$nvresult${NOCOLOR}"
-		[[ $nvcode -ge 124 ]] && echo -e "${RED}nvidia-smi failed by timeout$NOCOLOR"
-		[[ $nvcode -ne 0 ]] && exitcode=$nvcode
+		#fi
 	fi
+	[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
+	nvresult=`grep -v "^$" <<< "$nvresult"`
+	[[ ! -z $nvresult ]] && echo -e "${color}$nvresult${NOCOLOR}"
+	[[ $nvcode -ge 124 ]] && echo -e "${RED}nvidia-smi failed by timeout$NOCOLOR"
+	[[ $nvcode -ne 0 ]] && exitcode=$nvcode
 	
 	#not working
 	#nvidia-smi -i ${i} -ac 4004,1911
 
 	args=
-	[[ -z $PREV_POWERMIZER ]] &&
-		args+=" -a [gpu:$i]/GPUPowerMizerMode=1"
+	args+=" -a [gpu:$i]/GPUPowerMizerMode=1"
 
 	fans_count=${FANCNT[$i]}
 	[[ -z $fans_count || $fans_count == "null" ]] && fans_count=1
 
-	if [[ "${PREV_FAN[$i]}" == "${FAN[$i]}" ]]; then
-		echo "FAN was already set to ${FAN[$i]}"
+	if [[ -z $FAN || ${FAN[$i]} == 0 ]]; then
+		args+=" -a [gpu:$i]/GPUFanControlState=0"
 	else
-		if [[ -z $FAN || ${FAN[$i]} == 0 ]]; then
-			args+=" -a [gpu:$i]/GPUFanControlState=0"
-		else
-			args+=" -a [gpu:$i]/GPUFanControlState=1"
-			for (( z = $fan_idx; z < $(( $fan_idx+$fans_count )); z++ )); do
-				args+=" -a [fan:$z]/GPUTargetFanSpeed=${FAN[$i]}"
-			done
-		fi
+		args+=" -a [gpu:$i]/GPUFanControlState=1"
+		for (( z = $fan_idx; z < $(( $fan_idx+$fans_count )); z++ )); do
+			args+=" -a [fan:$z]/GPUTargetFanSpeed=${FAN[$i]}"
+		done
 	fi
 
 	fan_idx=$(( $fan_idx+$fans_count ))
@@ -223,21 +181,18 @@ for (( i=0; i < $n; ++i )); do
 	elif [[ ${NAME[$i]} =~ "1660" ]]; then x=2
 	fi
 
-	if [[ "${PREV_CLOCK[$i]}" == "${CLOCK[$i]}" ]]; then
-		echo "CORE CLOCK was already set to ${CLOCK[$i]}"
-	else
-		[[ ! -z $CLOCK && "${PREV_CLOCK[$i]}" != "${CLOCK[$i]}" ]] &&
-			args+=" -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]}"
-	fi
+	[[ ! -z $CLOCK ]] &&
+		args+=" -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]}"
 	
-	if [[ "${PREV_MEM[$i]}" == "${MEM[$i]}" ]]; then
-		echo "MEM CLOCK was already set to ${MEM[$i]}"
-	else
-		[[ ! -z $MEM ]] &&
+	if [[ ! -z $MEM ]]; then
+		if [[ $PILLFIX -eq 1 && "${NAME[$i]}" =~ 1080 ]]; then
+			args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=0"
+		else
 			args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]}"
+		fi
 	fi
 
-	[[ ! -z $LOGO_BRIGHTNESS && "${PREV_LOGO_BRIGHTNESS}" != "${LOGO_BRIGHTNESS}" ]] &&
+	[[ ! -z $LOGO_BRIGHTNESS ]] &&
 		args+=" -a [gpu:$i]/GPULogoBrightness=$LOGO_BRIGHTNESS"
 
 	if [[ ! -z $args ]]; then
@@ -253,16 +208,61 @@ for (( i=0; i < $n; ++i )); do
 	
 done
 
-# save settings to file
-if [[ ! -z $NVIDIA_OC_FILE ]]; then
-	data="PREV_POWERMIZER=1"$'\n'
-	data+="PREV_LOGO_BRIGHTNESS=$LOGO_BRIGHTNESS"$'\n'
-	data+="PREV_CLOCK=\"${CLOCK[*]}\""$'\n'
-	data+="PREV_MEM=\"${MEM[*]}\""$'\n'
-	data+="PREV_FAN=\"${FAN[*]}\""$'\n'
-	data+="PREV_PLIMIT=\"${PLIMIT[*]}\""$'\n'
-	echo "$data" > $NVIDIA_OC_FILE
+
+# start Pill if needed
+if [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
+	echo
+	echo -e "${YELLOW}===${NOCOLOR} Starting OhGodAnETHlargementPill ${YELLOW}=== `date +"%T"`${NOCOLOR}"
+	sleep 1
+
+	if [[ "$PILLFIX" -eq 1 ]]; then
+		# phase 0
+		/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2 > /var/run/hive/ohgodapill 2>&1 &
+		sleep 1
+		#pkill -f '/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2' >/dev/null
+		kill $!
+		wait $! 2>/dev/null
+
+		# phase 1
+		args=
+		for (( i=0; i < $n; ++i )); do
+			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 ]] &&
+				args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[3]=-1000"
+		done
+		if [[ ! -z $args ]]; then
+			echo -e "${RED}"
+			nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args`
+			nvcode=$?
+			[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
+			nvresult=`grep -v "^$" <<< "$nvresult"`
+			echo -e "${NOCOLOR}$nvresult"
+			[[ $nvcode -ne 0 ]] && exitcode=$nvcode
+			sleep 1
+		fi
+	
+		# phase 2
+		args=
+		for (( i=0; i < $n; ++i )); do
+			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 ]] &&
+				args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[3]=${MEM[$i]}"
+		done
+		if [[ ! -z $args ]]; then
+			echo -e "${RED}"
+			nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args`
+			nvcode=$?
+			[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
+			nvresult=`grep -v "^$" <<< "$nvresult"`
+			echo -e "${NOCOLOR}$nvresult"
+			[[ $nvcode -ne 0 ]] && exitcode=$nvcode
+			sleep 1
+		fi
+	fi
+
+	echo
+	echo "Pill will be ready in ${OHGODAPILL_START_TIMEOUT#-} sec"
+	nohup /hive/opt/ohgodapill/run.sh $OHGODAPILL_ARGS > /dev/null 2>&1 &
 fi
+
 
 #
 #if [ -z $CPUFREQ ]; then
