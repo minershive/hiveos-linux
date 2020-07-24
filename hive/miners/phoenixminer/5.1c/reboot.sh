@@ -1,0 +1,1 @@
+../phoenixminer-on-reboot
