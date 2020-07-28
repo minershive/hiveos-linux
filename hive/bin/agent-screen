@@ -51,7 +51,7 @@ function restart_agent() {
 	# close bash window #0
 	screen -S agent -p bash -X stuff 'exit\n'
 
-	return 1 #was not running, started
+	return 0
 }
 
 
@@ -128,7 +128,7 @@ case $1 in
 			echo "Restarting agent"
 			restart_agent
 			screen -x -S agent >/dev/null # attach to screen again
-			exit 1
+			exit
 		fi
 	;;
 esac
