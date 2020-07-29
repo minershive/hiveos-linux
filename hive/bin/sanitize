@@ -81,12 +81,14 @@ sanitize_hash_value() {
 }
 
 function sanitize_temp() {
-  local t_json=$@
+  local t_json="$@"
   local s_values=
-  local a_values=`echo $t_json | jq -r .[]`
-  for i_value in $a_values; do
+  local a_values= #`echo $t_json | jq -r .[]`
+  readarray -t a_values < <(echo "$t_json" | jq -r .[])
+  for i_value in "${a_values[@]}"; do
     [[ ! -z "$s_values" ]] && s_values+=","
-    s_values+=`sanitize_value $i_value $TEMP_MIN $TEMP_MAX $TEMP_FALLBACK_MIN $TEMP_FALLBACK_MAX`
+    [[ -z "$i_value" || "$i_value" == "null" ]] && s_values+="null" ||
+        s_values+=`sanitize_value "$i_value" $TEMP_MIN $TEMP_MAX $TEMP_FALLBACK_MIN $TEMP_FALLBACK_MAX`
   done
   echo "[$s_values]"
 }

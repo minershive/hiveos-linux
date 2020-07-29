@@ -38,7 +38,7 @@ function all_gpu_stats {
 		busid=`echo $line | awk '{print $1}'`
 
 		[[ ! -z $busid ]] &&
-			putstats $busid "cpu" "0" "0" "0" "0" "0" "0"
+			putstats $busid "cpu" "0" "0" "0" "0" "" ""
 	done <<< "$cards"
 }
 
@@ -52,7 +52,7 @@ function internal_stats {
 		busid=`echo $line | awk '{print $1}'`
 
 		[[ ! -z $busid ]] &&
-			putstats $busid "cpu" "0" "0" "0" "0" "0" "0"
+			putstats $busid "cpu" "0" "0" "0" "0" "" ""
 	done <<< "$cards"
 }
 
@@ -101,20 +101,20 @@ function amd_stats {
 			echo "Error: temp unknown for card $cardno" >&2
 		fi
 
-		jtemp="0"
+		jtemp=""
 		if [[ -e ${hwmondir}temp2_input ]]; then
 			jtemp=`head -1 ${hwmondir}temp2_input`
 			jtemp=$(( jtemp / 1000 ))
-		else
-			echo "Error: jtemp unknown for card $cardno" >&2
+		#else
+		#	echo "Error: jtemp unknown for card $cardno" >&2
 		fi
 
-		mtemp="0"
+		mtemp=""
 		if [[ -e ${hwmondir}temp3_input ]]; then
 			mtemp=`head -1 ${hwmondir}temp3_input`
 			mtemp=$(( mtemp / 1000 ))
-		else
-			echo "Error: mtemp unknown for card $cardno" >&2
+		#else
+		#	echo "Error: mtemp unknown for card $cardno" >&2
 		fi
 
 
@@ -164,7 +164,7 @@ function nvidia_stats {
 		local powerlimit=`awk -F', ' '{printf("%d", $6)}' <<< $s`
 		[[ $power == "[Not Supported]" || $power == "0" ]] && power=$powerlimit
 		# remark: $power always != "[Not Supported]" because use "%d" in printf function, when power == "0" can use current PL for GTX1050ti
-		putstats "$busid" "nvidia" "$temp" "$fan" "$load" "$power" "0" "0"
+		putstats "$busid" "nvidia" "$temp" "$fan" "$load" "$power" "" ""
 		#echo "$busid" "nvidia" "$temp" "$fan" "$load" "$power"
 	done <<<"$stats"
 }

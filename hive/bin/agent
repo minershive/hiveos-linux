@@ -310,19 +310,15 @@ function loop {
 
 	stats_json=$(
 		jq -n \
-		--arg miner "$MINER" \
 		--argjson meta "$meta" \
-		--argjson miner_stats "$stats" \
 		--argjson temp "$temp" \
-		--argjson jtemp "$jtemp" \
-		--argjson mtemp "$mtemp" \
 		--argjson fan "$fan" \
 		--argjson power "$power" \
 		--arg df "$df" \
 		--argjson mem "[$mem]" \
 		--argjson cputemp "$cputemp" \
 		--argjson cpuavg "[$cpuavg]" \
-		'{ "params": { $meta, $temp, $jtemp, $mtemp, $fan, $power, $df, $mem, $cputemp, $cpuavg }}'
+		'{ "params": { $meta, $temp, $fan, $power, $df, $mem, $cputemp, $cpuavg }}'
 		2>/dev/null
 	)
 
@@ -332,6 +328,18 @@ function loop {
 		json=`echo "$request" "$stats_json" | jq -s -c '.[0] * .[1]' 2>/dev/null` &&
 			request="$json" ||
 			echo -e "${RED}Stats json parsing error${NOCOLOR}"
+	fi
+
+	if [[ "$jtemp" =~ [0-9] ]]; then
+		stats_json=$(jq -n --argjson jtemp "$jtemp" '{ "params": { $jtemp }}' 2>/dev/null) &&
+			json=`echo "$request" "$stats_json" | jq -s -c '.[0] * .[1]' 2>/dev/null` &&
+				request="$json"
+	fi
+
+	if [[ "$mtemp" =~ [0-9] ]]; then
+		stats_json=$(jq -n --argjson mtemp "$mtemp" '{ "params": { $mtemp }}' 2>/dev/null) &&
+			json=`echo "$request" "$stats_json" | jq -s -c '.[0] * .[1]' 2>/dev/null` &&
+				request="$json"
 	fi
 
 	# Add miners stats to json
