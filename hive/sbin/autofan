@@ -41,7 +41,7 @@ DEF_NO_AMD=0
 #Reboot rig if GPU error (enable-1/disable-0)
 DEF_REBOOT_ON_ERROR=0
 # mem temp
-DEF_MEM_TEMP=100
+DEF_TARGET_MEM_TEMP=100
 # smart mode (target temp depends on fan speed)
 DEF_SMART_MODE=0
 #######################################################################
@@ -192,7 +192,7 @@ get_fan_speed() {
 
 	target_fan_speed=$cur_fan_speed # global
 	local core_target_temp=$TARGET_TEMP
-	local mem_target_temp=$MEM_TEMP
+	local mem_target_temp=$TARGET_MEM_TEMP
 
 	local max_fan=$MAX_FAN
 	local min_fan=$MIN_FAN
@@ -251,7 +251,7 @@ get_fan_speed() {
 			
 			if [[ $diff -gt 1 ]]; then
 				# spin up fan in advance
-				[[ $(( cur_temp + diff )) -gt $target_temp ]] &&
+				[[ $(( cur_temp + diff - 1 )) -gt $target_temp ]] &&
 					target_fan_speed=$(( (cur_fan_speed*(cur_temp + diff) + prev_temp - 1)/prev_temp + 1 )) && msg="++"
 
 				# spin up fan in advance even more
@@ -270,8 +270,8 @@ get_fan_speed() {
 			[[ $target_fan_speed -gt $cur_fan_speed ]] && target_fan_speed=$cur_fan_speed
 
 			# spin down fan in advance
-			[[ $diff -lt -1 && $(( cur_temp + diff + 2 )) -lt $target_temp ]] &&
-				target_fan_speed=$(( cur_fan_speed*(cur_temp + diff)/target_temp + 1 )) && msg="-"
+			#[[ $diff -lt -1 && $(( cur_temp + diff + 2 )) -lt $target_temp ]] &&
+			#	target_fan_speed=$(( cur_fan_speed*(cur_temp + diff)/target_temp + 1 )) && msg="-"
 		fi
 	fi	
 
@@ -536,7 +536,7 @@ amd_auto_fan_control() {
 
 auto_fan_control() {
 	local last_stats=0
-	local VARIABLES=("ENABLED" "TARGET_TEMP" "CRITICAL_TEMP" "CRITICAL_TEMP_ACTION" "MIN_FAN" "MAX_FAN" "NO_AMD" "REBOOT_ON_ERROR" "MEM_TEMP" "SMART_MODE")
+	local VARIABLES=("ENABLED" "TARGET_TEMP" "CRITICAL_TEMP" "CRITICAL_TEMP_ACTION" "MIN_FAN" "MAX_FAN" "NO_AMD" "REBOOT_ON_ERROR" "TARGET_MEM_TEMP" "SMART_MODE")
 
 	while true; do
 		for var in "${VARIABLES[@]}"; do
@@ -593,7 +593,7 @@ auto_fan_control() {
 		fi
 
 		readarray -t memtemp_array < <(echo "$gpu_stats" | jq -r "if .mtemp then .mtemp | .[] else empty end" 2>/dev/null)
-		[[ -z $memtemp_array || $memtemp_array == 'null' || ${#memtemp_array[@]} -ne ${#temperatures_array[@]} ]] &&
+		[[ ${#memtemp_array[@]} -ne ${#temperatures_array[@]} ]] &&
 			memtemp_array=()
 
 		# miner_stop will work
@@ -620,10 +620,10 @@ auto_fan_control() {
 			done
 
 			if [[ $changed -gt 0 ]]; then
-				echo2 -n "${PURPLE} Target ${WHITE}$TARGET_TEMP°C "
-				[[ ${#memtemp_array[@]} -gt 0 ]] && echo2 -n "${PURPLE} Max Mem ${WHITE}$MEM_TEMP°C "
-				echo2 -n "${PURPLE} Miner ${WHITE}${CRITICAL_TEMP_ACTION:-stop} ${PURPLE}at ${WHITE}$CRITICAL_TEMP°C "
-				echo2 -n "${PURPLE} Fan ${WHITE}$MIN_FAN%${PURPLE}..${WHITE}$MAX_FAN% "
+				echo2 -n "${PURPLE} Target ${WHITE}${TARGET_TEMP}°C "
+				[[ ${#memtemp_array[@]} -gt 0 ]] && echo2 -n "${PURPLE} Max Mem ${WHITE}${TARGET_MEM_TEMP}°C "
+				echo2 -n "${PURPLE} Miner ${WHITE}${CRITICAL_TEMP_ACTION:-stop} ${PURPLE}at ${WHITE}${CRITICAL_TEMP}°C "
+				echo2 -n "${PURPLE} Fan ${WHITE}${MIN_FAN}%${PURPLE}..${WHITE}${MAX_FAN}% "
 				[[ $SMART_MODE == 1 ]] && echo2 -n "${PURPLE} Smart Mode ${WHITE}1°/${FAN_TEMP_SHIFT}% "
 				[[ $NO_AMD == 1 && $amd_cards_number -gt 0 ]] && echo2 -n "${PURPLE} No ${BRED}AMD ${WHITE}enabled "
 				[[ $REBOOT_ON_ERROR == 1 ]] && echo2 -n "${PURPLE} Reboot on error ${WHITE}enabled "
