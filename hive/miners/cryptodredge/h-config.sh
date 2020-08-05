@@ -55,6 +55,8 @@ function miner_config_gen() {
 		"cryptonight-gpu" )
 			algo="cngpu"
 		;;
+		"cryptonight-tlo" )
+			algo="cntlo"
 		"cryptonight-trtl" )
 			algo="cnturtle"
 		;;
