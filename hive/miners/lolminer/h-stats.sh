@@ -45,6 +45,8 @@ else
 		*)
 			algo=$(echo $stats_raw | jq -r '.Mining.Algorithm')
 			[[ $algo == "BeamHash III" ]] && algo="beamhashv3"
+			[[ $algo == "Cuckaroo 29-40" ]] && algo="cuckaroo29b"
+			[[ $algo == "Cuckaroo 29-32" ]] && algo="cuckaroo29s"
 			;;
 	esac
 	local Rejected=`echo $stats_raw | jq -c -r ".Session.Submitted - .Session.Accepted"`

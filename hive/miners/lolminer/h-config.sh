@@ -22,7 +22,7 @@ function miner_config_gen() {
 	    coin=$LOLMINER_ALGO
 	fi
 	#  
-	if [[ "$LOLMINER_ALGO" =~ "BEAM-" || $LOLMINER_ALGO =~ "EQUI" || $LOLMINER_ALGO == "C29D" || $LOLMINER_ALGO == "C29Z" || $LOLMINER_ALGO == "C31" || $LOLMINER_ALGO == "C32" ]]; then
+	if [[ "$LOLMINER_ALGO" =~ "BEAM-" || $LOLMINER_ALGO =~ "EQUI" || $LOLMINER_ALGO =~ "C29" || $LOLMINER_ALGO =~ "CR29" || $LOLMINER_ALGO == "C31" || $LOLMINER_ALGO == "C32" ]]; then
 	   conf="--algo $coin\n"
 	else
 	   conf="--coin $coin\n"
