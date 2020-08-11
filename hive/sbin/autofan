@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AUTOFAN_VERSION="2.29"
+AUTOFAN_VERSION="2.30"
 
 if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
 	source /etc/environment
@@ -197,11 +197,14 @@ get_fan_speed() {
 	local max_fan=$MAX_FAN
 	local min_fan=$MIN_FAN
 
+	local msg=
+
 	# change target temp according to fan speed
-	[[ $cur_fan_speed -gt 1 && $SMART_MODE == 1 && $FAN_TEMP_SHIFT -gt 3 ]] &&
+	[[ $cur_fan_speed -ge 1 && $SMART_MODE == 1 && $FAN_TEMP_SHIFT -gt 3 ]] &&
 		core_target_temp=$(( TARGET_TEMP - (50 - cur_fan_speed + FAN_TEMP_SHIFT/2)/FAN_TEMP_SHIFT ))
 
-	local msg=
+	# if speed is zero set it to 1 
+	[[ $cur_fan_speed -lt 1 ]] && cur_fan_speed=1
 
 	# use mem temp
 	if (( core_cur_temp <= (core_target_temp + 1) && mem_cur_temp > core_target_temp && mem_cur_temp >= (mem_target_temp - 2) )); then
@@ -219,10 +222,6 @@ get_fan_speed() {
 	if [[ -z $cur_temp ]]; then
 		target_fan_speed=$max_fan
 	
-	# if speed is zero set to middle value MIN-MAX
-	elif [[ $cur_fan_speed -le 1 ]]; then
-		target_fan_speed=$(( (max_fan + min_fan)/2 ))
-
 	# +1/-1 degree do nothing
 	elif [[ $cur_temp -ge $(( target_temp - hyst )) && $cur_temp -le $(( target_temp + hyst )) ]]; then
 		target_fan_speed=$cur_fan_speed
@@ -484,11 +483,12 @@ amd_set_fan_speed() {
 	[[ -z "${card_hwmon[index]}" ]] && return 1
 	local fan="$2"
 	local speed=$(( fan*(card_fanmax[index] - card_fanmin[index])/100 + card_fanmin[index] ))
-	echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null
-	if [[ $? -ne 0 && "`head -1 ${card_hwmon[index]}/pwm1_enable 2>/dev/null`" == "2" ]]; then
-		echo 1 > ${card_hwmon[index]}/pwm1_enable 2>/dev/null || return 2
-		echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null || return 3
-	fi
+	echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null && return 0
+	local pwm
+	pwm="`head -1 ${card_hwmon[index]}/pwm1_enable 2>/dev/null`" || return 2
+	[[ "$pwm" == "1" ]] && return 3
+	echo 1 > ${card_hwmon[index]}/pwm1_enable 2>/dev/null || return 4
+	echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null || return 5
 }
 
 
