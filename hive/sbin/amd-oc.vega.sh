@@ -53,6 +53,9 @@ function _SetcoreClock {
 		echo c > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
 
 	else
+		vegatool -i $cardno  --core-state 1 --core-clock $(($1-60))
+		vegatool -i $cardno  --core-state 2 --core-clock $(($1-50))
+		vegatool -i $cardno  --core-state 3 --core-clock $(($1-40))
 		vegatool -i $cardno  --core-state 4 --core-clock $(($1-30))
 		vegatool -i $cardno  --core-state 5 --core-clock $(($1-20))
 		vegatool -i $cardno  --core-state 6 --core-clock $(($1-10))
