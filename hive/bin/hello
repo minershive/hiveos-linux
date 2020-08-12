@@ -301,6 +301,7 @@ if [[ ! -z $wallet && $wallet != "null" ]]; then
 fi
 
 # Nvidia config ================================================================
+nvidia-driver-update -c
 nvidia_oc=$(echo $response | jq '.result.nvidia_oc' --raw-output)
 if [[ ! -z $nvidia_oc && $nvidia_oc != "null" ]]; then
 	echo "Saving NVIDIA OC config"
@@ -374,7 +375,7 @@ if [[ ! -z $coolbox && $coolbox != "null" ]]; then
 	fi
 fi
 
-# Repositpry URLs ==============================================================
+# Repository URLs ==============================================================
 HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
 repository_list=$(echo $response | jq '.result.repository_list' --raw-output)
 [[ -z $repository_list || $repository_list == "null" ]] &&
