@@ -9,12 +9,22 @@
 	exit 1
 
 # set timeout for fan test
-timeout=7
+timeout=15
 
 # use for testing without applying anything
 DEBUG=0
 
 export DISPLAY=":0"
+
+
+amd_set_fan_pwm() {
+	local hwmondir="$1"
+	local fanpwm="$2"
+	[[ ! -e "$hwmondir" ]] && return
+	echo "$fanpwm" > ${hwmondir}/pwm1 2>/dev/null && return
+	echo 1 > ${hwmondir}/pwm1_enable && echo "$fanpwm" > ${hwmondir}/pwm1
+	return
+}
 
 
 stop_fans() {
@@ -55,13 +65,12 @@ stop_fans() {
 				continue
 
 			echo "auto" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
-			echo 1 > ${hwmondir}/pwm1_enable
-			echo 0 > ${hwmondir}/pwm1 #wolfamdctrl -i $cardno --set-fanspeed 0 1>/dev/null
+			amd_set_fan_pwm "$hwmondir" 0
 		done
 	fi
 
 	echo -e "${CYAN}> Checking fans speed...${NOCOLOR}"
-	sleep 3
+	sleep 10
 	stats=`gpu-stats`
 	fans=(`jq -r ".fan | .[]" <<< "$stats" 2>/dev/null`)
 	busids=(`jq -r ".busids | .[]" <<< "$stats" 2>/dev/null`)
@@ -129,18 +138,18 @@ test_gpu() {
 		cardno=${AMD_CARDID["$busid"]}
 		hwmondir=`realpath /sys/class/drm/card${cardno}/device/hwmon/hwmon*/ 2>&1`
 		[[ $? -ne 0 ]] && echo -e "${RED}Setting GPU with busid $busid failed${NOCOLOR}" && return
-		[[ -e ${hwmondir}/pwm1_max ]] && fanmax=`head -1 ${hwmondir}/pwm1_max` || fanmax=0
-		[[ $fanmax -eq 0 ]] && echo -e "${RED}Setting GPU with busid $busid failed (Max fan is unknown)${NOCOLOR}" && return
+		[[ -e ${hwmondir}/pwm1_max ]] && fanmax=`head -1 ${hwmondir}/pwm1_max 2>/dev/null` || fanmax=255
+		[[ "$fanmax" -eq 0 ]] && echo -e "${RED}Setting GPU with busid $busid failed (Max fan is unknown)${NOCOLOR}" && return
 		# apply fan setting to 100%
 		[[ "$DEBUG" == "1" ]] && echo "-i $cardno --set-fanspeed 100" ||
-			echo $fanmax > ${hwmondir}/pwm1 #wolfamdctrl -i $cardno --set-fanspeed 100 1>/dev/null
+			amd_set_fan_pwm "$hwmondir" "$fanmax"
 		# sleep for(timeout) in sec
 		for ((i=0; i<$timeout; i++)); do
 			echo -n "." && sleep 1
 		done
 		# set fan speed to 0% again
 		[[ "$DEBUG" == "1" ]] && echo "-i $cardno --set-fanspeed 0" ||
-			echo 0 > ${hwmondir}/pwm1 #wolfamdctrl -i $cardno --set-fanspeed 0 1>/dev/null
+			amd_set_fan_pwm "$hwmondir" 0
 		echo -e "${GREEN}OK${NOCOLOR}"
 		sleep 1
 	fi
