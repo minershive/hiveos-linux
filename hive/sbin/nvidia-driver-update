@@ -289,7 +289,9 @@ function cuda_sync(){
    CUDA_LIBS=( "libcudart.so" "libnvrtc.so" "libnvrtc-builtins.so" )
    if [[ $gpu_count_nvidia -gt 0 ]]; then
       DRV_VERS=`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//' | tr '.' ' ' | awk '{print $1}'`
-      if [ ${DRV_VERS} -ge 440 ]; then
+      if [ ${DRV_VERS} -ge 450 ]; then
+         CUDA_VERS='11.0'
+      elif [ ${DRV_VERS} -ge 440 ]; then
          CUDA_VERS='10.2'
       elif [ ${DRV_VERS} -ge 418 ]; then
          CUDA_VERS='10.1'
