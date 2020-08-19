@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AUTOFAN_VERSION="2.30"
+AUTOFAN_VERSION="2.31"
 
 if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
 	source /etc/environment
@@ -19,7 +19,7 @@ DEBUG_COMMANDS=
 SLEEP_TIME=15
 
 # min difference between target and critical temp
-MIN_TEMP_DIFF=15
+MIN_TEMP_DIFF=10
 
 # smart mode dependance (1° per this value of fan speed)
 FAN_TEMP_SHIFT=10
@@ -47,15 +47,16 @@ DEF_SMART_MODE=0
 #######################################################################
 
 
-#we will restart miner only it was stopped by this script
+# we will restart miner only it was stopped by this script
 miner_stopped_by_overheat=0
-#flag that the message was sent
+# flag that the message was sent
 unable_to_set_fan_speed=0
-#flag if we met 511, 460, etc
+# flag if we met 511, 460, etc
 temperature_is_unreal=0
-#unparsable data
+# unparsable data
 error_in_temp_readings=0
-
+#
+critical_temp_exceeded=0
 
 ###
 # Log write
@@ -203,7 +204,7 @@ get_fan_speed() {
 	[[ $cur_fan_speed -ge 1 && $SMART_MODE == 1 && $FAN_TEMP_SHIFT -gt 3 ]] &&
 		core_target_temp=$(( TARGET_TEMP - (50 - cur_fan_speed + FAN_TEMP_SHIFT/2)/FAN_TEMP_SHIFT ))
 
-	# if speed is zero set it to 1 
+	# if speed is zero set it to 1
 	[[ $cur_fan_speed -lt 1 ]] && cur_fan_speed=1
 
 	# use mem temp
@@ -221,7 +222,7 @@ get_fan_speed() {
 	# if GPU disabled
 	if [[ -z $cur_temp ]]; then
 		target_fan_speed=$max_fan
-	
+
 	# +1/-1 degree do nothing
 	elif [[ $cur_temp -ge $(( target_temp - hyst )) && $cur_temp -le $(( target_temp + hyst )) ]]; then
 		target_fan_speed=$cur_fan_speed
@@ -317,15 +318,14 @@ get_fan_speed() {
 ###
 # What we must to do if temperature reached some limits
 check_overheat() {
-	if [[ $miner_stopped_by_overheat == 1 ]] && miner status > /dev/null; then
-#	if [[ true ]]; then
-		local t
+	local t
+
+	[[ $miner_stopped_by_overheat == 1 ]] && miner status > /dev/null && miner_stopped_by_overheat=0
+
+	if [[ $miner_stopped_by_overheat == 1 ]]; then
 		local allisok=1
 		for t in "${temperatures_array[@]}"; do
-			if [[ $t -ge $(( CRITICAL_TEMP - MIN_TEMP_DIFF )) ]]; then #cold enough to start miner again
-				allisok=0
-				break
-			fi
+			(( t > CRITICAL_TEMP - MIN_TEMP_DIFF + 1 )) && allisok=0 && break
 		done
 		if [[ $allisok == 1 ]]; then
 			miner_stopped_by_overheat=0 #let's forget about this
@@ -334,10 +334,10 @@ check_overheat() {
 			message ok "$msg"
 			#echo2 "${GREEN}$msg${NOCOLOR}"
 		fi
+
 	elif [[ $miner_stopped_by_overheat == 0 ]]; then
-		local t
 		for t in "${temperatures_array[@]}"; do
-			#reboot on driver error
+			# reboot on driver error
 			if [[ $t -gt 120 ]]; then
 				if [[ $REBOOT_ON_ERROR == 1 ]]; then
 					local msg="Autofan: GPU temperature $t is unreal, driver error, rebooting"
@@ -351,14 +351,19 @@ check_overheat() {
 					fi
 				fi
 				break
-			fi
 
-			#stop on CRITICAL_TEMP
-			if [[ $t -ge $CRITICAL_TEMP && $t -le 120 ]]; then #do not process temp 511, 460, etc
+			# prevent critical action for 1 cycle if temp is within 20° from TARGET_TEMP
+			elif [[ $t -gt $CRITICAL_TEMP && $t -lt $(( TARGET_TEMP + 20 )) && $critical_temp_exceeded == 0 ]]; then
+				echo2 "${YELLOW}Warning: critical temp exceeded $t°C > ${CRITICAL_TEMP}°C, waiting${NOCOLOR}"
+				critical_temp_exceeded=1
+
+			# stop on CRITICAL_TEMP
+			elif [[ $t -gt $CRITICAL_TEMP ]]; then #do not process temp 511, 460, etc
+				critical_temp_exceeded=0
 				miner_stopped_by_overheat=1
 				miner stop
 
-				local msg="GPU reached ${CRITICAL_TEMP}°C"
+				local msg="GPU exceeded ${CRITICAL_TEMP}°C"
 				if [[ $CRITICAL_TEMP_ACTION == "reboot" ]]; then
 					msg+=", rebooting"
 				elif [[ $CRITICAL_TEMP_ACTION == "shutdown" ]]; then
@@ -375,6 +380,8 @@ check_overheat() {
 				fi
 
 				break
+			else
+				critical_temp_exceeded=0
 			fi
 		done
 	fi
@@ -553,7 +560,7 @@ auto_fan_control() {
 			ref="$def"
 		done
 
-		[[ $(( CRITICAL_TEMP - MIN_TEMP_DIFF )) -le $TARGET_TEMP ]] && CRITICAL_TEMP=$(( TARGET_TEMP + MIN_TEMP_DIFF + 5 ))
+		[[ $(( CRITICAL_TEMP - MIN_TEMP_DIFF )) -lt $TARGET_TEMP ]] && CRITICAL_TEMP=$(( TARGET_TEMP + MIN_TEMP_DIFF ))
 
 		# wating for gpu-stats
 		now=$(date +%s)
