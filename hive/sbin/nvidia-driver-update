@@ -17,7 +17,7 @@ DRVREGEXP="${DRVPATTERN}\K[0-9\.]+(?=\.run)"
 function get_freespace() { # @silent
 	local space=`df -k --output=avail $DRVPATH | tail -n 1 2>&1`
 	[[ $space -ge $(( $MINFREEMB * 1024 )) ]] && return 0
-	[[ -z $1 ]] &&
+	[[ -z "$1" ]] &&
 		echo -e "" &&
 		echo -e "${YELLOW}> Free space is less than ${WHITE}${MINFREEMB} MB${YELLOW} ($(( $space/1024 )) MB)${NOCOLOR}"
 	return 1
@@ -31,7 +31,7 @@ function free_space() { # @url for package to keep
 	get_freespace 1 && return 0
 	# step 2. remove some packages
 	echo -e "${YELLOW}> Removing old driver packages${NOCOLOR}"
-	remove_packages $url
+	remove_packages "$url"
 	get_freespace 1 && return 0
 	# step 3. clean ${DRVPATH} completely
 	if [[ ! -z ${DRVPATH} && ${#DRVPATH} -gt 2 && -n "$(ls -A ${DRVPATH})" ]]; then
@@ -63,9 +63,9 @@ function get_latest() { # returns $latest_version
 	echo -e ""
 	echo -en "${CYAN}> Getting the latest stable version - ${NOCOLOR}"
 	local list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY ${URL}VERSIONS.txt`
-	[[ -z $list ]] && echo -e "${RED}Failed${NOCOLOR}" && return 1
+	[[ -z "$list" ]] && echo -e "${RED}Failed${NOCOLOR}" && return 1
 	latest_version=`echo "$list" | grep -oP "$DRVREGEXP" | tail -n 1`
-	[[ -z $latest_version ]] && echo -e "${RED}Error${NOCOLOR}" && return 2
+	[[ -z "$latest_version" ]] && echo -e "${RED}Error${NOCOLOR}" && return 2
 	echo -e "${WHITE}${latest_version}${NOCOLOR}"
 	return 0
 }
@@ -93,24 +93,24 @@ function remove_packages() { # @filename to skip, returns $removed_packages
 	[[ $cnt -eq 0 ]] && return 0
 
 	local skip=
-	if [[ ! -z $1 ]]; then
-		skip=`basename $1`
+	if [[ ! -z "$1" ]]; then
+		skip=`basename "$1"`
 		# skip only if it exists
 		#[[ ! -f ${DRVPATH}$skip ]] && skip=
 	fi
 
 	# skip current version by default
-	[[ -z $skip ]] && get_current && skip="${DRVPATTERN}${current_version}.run"
+	[[ -z "$skip" ]] && get_current && skip="${DRVPATTERN}${current_version}.run"
 
 	removed_packages=0
 	for drv in "${files[@]}"
 	do
-		local basename=`basename $drv`
+		local basename=`basename "$drv"`
 		if [[ "$basename" == "$skip" ]]; then
 			echo -e "${GREEN}> Skipping - ${WHITE}$basename${NOCOLOR}"
 		else
 			echo -e "${YELLOW}> Deleting - ${WHITE}$basename${NOCOLOR}"
-			unlink $drv
+			unlink "$drv"
 			((removed_packages++))
 		fi
 	done
@@ -124,10 +124,10 @@ function list_packages() {
 		local last=
 		for drv in "${versions[@]}"
 		do
-			this=${drv%.*}
-			if [[ "$last" != "$this" || -z $last ]]; then
-				[[ ! -z $last ]] && echo -e ""
-				last=$this
+			this="${drv%.*}"
+			if [[ "$last" != "$this" || -z "$last" ]]; then
+				[[ ! -z "$last" ]] && echo -e ""
+				last="$this"
 				echo -ne "  ${WHITE}$this${NOCOLOR}"
 			fi
 			[[ -f "${DRVPATH}${DRVPATTERN}${drv}.run" ]] &&
@@ -145,7 +145,7 @@ function list_packages() {
 	echo -en "${YELLOW}> Downloaded packages -${NOCOLOR}"
 	for drv in "${files[@]}"
 	do
-		local basename=`basename $drv`
+		local basename=`basename "$drv"`
 		echo -en "${YELLOW} $basename ${NOCOLOR}"
 	done
 	echo -e ""
@@ -154,15 +154,15 @@ function list_packages() {
 
 function check_package() { # @filename
 	#local basename=`basename $1`
-	[[ ! -f ${DRVPATH}$1 ]] && return 1
+	[[ ! -f "${DRVPATH}$1" ]] && return 1
 	#echo -e ""
 	echo -e "${CYAN}> Checking package integrity${NOCOLOR}"
 	local exitcode=1
 	# check size. zero file exits with 0
-	local size=`stat -c %s ${DRVPATH}$1`
+	local size=`stat -c %s "${DRVPATH}$1"`
 	if [[ $size -gt 1000 ]]; then
-		chmod +x ${DRVPATH}$1
-		${DRVPATH}$1 --check
+		chmod +x "${DRVPATH}$1"
+		"${DRVPATH}$1" --check
 		exitcode=$?
 	fi
 	[[ $exitcode -ne 0 ]] && echo -e "${RED}> Check failed${NOCOLOR}"
@@ -172,73 +172,73 @@ function check_package() { # @filename
 
 function get_url() { # @version or @url, returns $url
 	# latest stable
-	if [[ -z $1 ]]; then
+	if [[ -z "$1" ]]; then
 		get_latest || return $?
 		url="${URL}${DRVPATTERN}${latest_version}.run"
 	# 440.95.01 format
-	elif [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+	elif [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 		url="https://uk.download.nvidia.com/tesla/$1/${DRVPATTERN}$1.run"
 	# 123.45 format
-	elif [[ $1 =~ ^[0-9]+\.[0-9]+$ ]]; then
+	elif [[ "$1" =~ ^[0-9]+\.[0-9]+$ ]]; then
 #		local last=
 #		get_versions
 #		if [[ $? -eq 0 ]]; then
 #			for drv in "${versions[@]}"
 #			do
-#				[[ $drv == $1 ]] && last=$drv && break
+#				[[ "$drv" == "$1" ]] && last="$drv" && break
 #			done
 #		fi
-#		if [[ ! -z $last ]]; then
+#		if [[ ! -z "$last" ]]; then
 #			url="${URL}${DRVPATTERN}${last}.run"
 #		else
 #			echo -e "${YELLOW}> ${WHITE}$1${YELLOW} was not found in the list. Trying to get it from NVIDIA${NOCOLOR}"
 			url="https://download.nvidia.com/XFree86/Linux-x86_64/$1/${DRVPATTERN}$1.run"
 #		fi
 	# 123 format
-	elif [[ $1 =~ ^[0-9]+$ ]]; then
+	elif [[ "$1" =~ ^[0-9]+$ ]]; then
 		get_versions || return $?
 		local last=
 		for drv in "${versions[@]}"
 		do
-			[[ ${drv%.*} == $1 ]] && last=$drv && continue
-			[[ ! -z $last ]] && break
+			[[ "${drv%.*}" == "$1" ]] && last="$drv" && continue
+			[[ ! -z "$last" ]] && break
 		done
-		[[ -z $last ]] && echo -e "${RED}> Unable to find latest driver version for $1 series${NOCOLOR}" && return 1
+		[[ -z "$last" ]] && echo -e "${RED}> Unable to find latest driver version for $1 series${NOCOLOR}" && return 1
 		echo -e "${GREEN}> Latest driver for $1 series - ${WHITE}$last${NOCOLOR}"
 		url="${URL}${DRVPATTERN}${last}.run"
 	# url
 	else
-		url=$1
+		url="$1"
 	fi
-	[[ -z $url ]] && return 1
+	[[ -z "$url" ]] && return 1
 	return 0
 }
 
 
 function get_package() { # @url or @file, returns $package
 	local exitcode=0
-	local url=$1
+	local url="$1"
 
-	package=`basename $url`
-	[[ -z $package ]] && echo -e "${RED}> No file name in $url${NOCOLOR}" && return 1
+	package=`basename "$url"`
+	[[ -z "$package" ]] && echo -e "${RED}> No file name in $url${NOCOLOR}" && return 1
 
 	# check if file already exists and it is good
 	local exist=0
-	if [[ -f ${DRVPATH}$package ]]; then
+	if [[ -f "${DRVPATH}$package" ]]; then
 		echo -e ""
 		echo -e "${YELLOW}> Driver package already exists${NOCOLOR}"
-		check_package $package && return 0
+		check_package "$package" && return 0
 		exist=1
 	fi
 
 	# local file
-	if [[ $url != ftp* && $url != http* ]]; then
+	if [[ "$url" != ftp* && "$url" != http* ]]; then
 		#[[ ! -f $url ]] &&  echo -e "${RED} Unable to get from $url" && return 1
-		realpath=`realpath $url`
+		realpath=`realpath "$url"`
 		[[ "$realpath" == "${DRVPATH}$package" ]] && return 1
-		cp $url ${DRVPATH}$package
+		cp "$url" "${DRVPATH}$package"
 		[[ $? -ne 0 ]] && echo -e "${RED}> Unable to get file from - ${WHITE}$url${NOCOLOR}" && return 1
-		check_package $package
+		check_package "$package"
 		return $?
 	fi
 
@@ -252,13 +252,13 @@ function get_package() { # @url or @file, returns $package
 		[[ $exitcode -ne 0 ]] && echo -e "${RED}> Download error ($exitcode)${NOCOLOR}" && return $exitcode
 
 		# check it again
-		check_package $package && return 0
+		check_package "$package" && return 0
 
 		# if file existed before, delete it and try download again. it would help if it was already broken
 		[[ $exist -eq 0 ]] && return 1
 		echo -e ""
 		echo -e "${YELLOW}> File is broken. Deleting it and downloading again${NOCOLOR}"
-		unlink ${DRVPATH}$package
+		unlink "${DRVPATH}$package"
 		exist=0
 	done
 }
@@ -269,7 +269,7 @@ function install_nvs() { # @force_install
 	#nvs_version=`dpkg -s nvidia-settings 2>&1 | grep '^Version: ' | sed 's/Version: //'`
 	local nvs_version=`nvidia-settings --version | grep version | awk '{print $3}'`
 	# Install strictly  361.42
-	if [[ $nvs_version != 361.42* || $1 -eq 1 ]]; then
+	if [[ "$nvs_version" != 361.42* || $1 -eq 1 ]]; then
 		echo -e ""
 		echo -e "${CYAN}> Reinstalling nvidia-settings (current $nvs_version)${NOCOLOR}"
 		#apt remove -y --allow-change-held-packages --purge nvidia-settings
@@ -324,20 +324,20 @@ function install_driver() { # @url or @file, @force_install
 	# it must exist
 	[[ ! -d ${DRVPATH} ]] && mkdir ${DRVPATH}
 	
-	get_url $1 || return $?
+	get_url "$1" || return $?
 
 	# check avaliable space and try to get some
-	free_space $url
+	free_space "$url"
 	[[ $? -ne 0 ]] && echo -e "${RED}> Not enough free space to continue${NOCOLOR}" && return 1
 
-	get_package $url || return $?
+	get_package "$url" || return $?
 
 	#cd $DRVPATH
 	export TMPDIR=$DRVPATH
 	local basename=`basename $package`
 	# this check is redundant
-	[[ ! -f ${DRVPATH}$basename ]] && echo -e "${RED}> $basename not found${NOCOLOR}" && return 1
-	#check_package $basename
+	[[ ! -f "${DRVPATH}$basename" ]] && echo -e "${RED}> $basename not found${NOCOLOR}" && return 1
+	#check_package "$basename"
 
 	screen -wipe > /dev/null 2>&1
 	sleep 1
@@ -351,10 +351,11 @@ function install_driver() { # @url or @file, @force_install
 	nvstop
 	exitcode=$?
 	if [[ $exitcode -eq 0 ]]; then
-		echo -e ""
-		echo -e "${CYAN}> Installing driver. ${WHITE}PLEASE WAIT!${NOCOLOR}"
 		local cmdline="--accept-license --no-questions --ui=none --dkms --no-opengl-files" #--install-libglvnd #--tmpdir=/hive-drivers-pack
-		[[ $2 -eq 1 ]] && cmdline="$cmdline --no-cc-version-check" # ignore GCC version mismatch
+		# ignore GCC version mismatch
+		[[ $2 -eq 1 ]] && cmdline="$cmdline --no-cc-version-check" && local mode=" (forced mode)"
+		echo -e ""
+		echo -e "${CYAN}> Installing driver${mode}. ${WHITE}PLEASE WAIT!${NOCOLOR}"
 		${DRVPATH}$basename $cmdline
 		exitcode=$?
 		[[ $exitcode -eq 0 ]] &&
@@ -389,10 +390,9 @@ function install_driver() { # @url or @file, @force_install
 
 driver=
 force=
-remove=
 
-for param in $@; do
-	case $param in
+while [[ ! -z $1 ]]; do
+	case "$1" in
 		--help|-h)
 			echo "Usage:
   nvidia-driver-update  		download and install latest stable GeForce driver version
@@ -400,10 +400,10 @@ for param in $@; do
   nvidia-driver-update  123		download and install latest GeForce driver from series 123.*
   nvidia-driver-update  123.45		download and install GeForce specific driver version 123.45
   nvidia-driver-update  440.95.01	download and install Tesla specific driver version 440.95.01
+  nvidia-driver-update  -f | --force	force install to bypass some DKMS build errors
   nvidia-driver-update  -l | --list	list available driver versions
   nvidia-driver-update  -c | --cuda	sync symlinks to CUDA RT libraries with installed driver
   nvidia-driver-update  -n | --nvs	reinstall nvidia-settings only
-  nvidia-driver-update  -f | --force	force install to bypass some DKMS build errors
   nvidia-driver-update  -r | --remove	remove downloaded driver packages except currently installed
   nvidia-driver-update  -h | --help	display help"
 			exit
@@ -425,7 +425,8 @@ for param in $@; do
 		;;
 
 		-r|--remove)
-			remove=1
+			remove_packages
+			exit
 		;;
 
 		-f|--force)
@@ -440,11 +441,9 @@ for param in $@; do
 			driver="$1"
 		;;
 	esac
+	shift
 done
 
-
-[[ $remove -eq 1 ]] && remove_packages
-[[ ! -z "$driver" ]] && install_driver "$driver" "$force"
-
+install_driver "$driver" "$force"
 
 exit
