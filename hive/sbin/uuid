@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -o pipefail
+
+echo -e "UUID update utility v0.1\n"
+
+
+root=`df / | grep " /$" | awk '{print $1}'`
+[[ $root != /dev/* ]] && echo "Error: unable to get root partition" && exit 1
+
+uuid=`blkid $root | grep -oP " UUID=\"\K[^\"]+"`
+[[ $? -ne 0 || -z $uuid ]] && echo "Error: unable to get uuid of $root" && exit 2
+
+if ! grep -q "$uuid" /etc/fstab; then
+	echo "Error: UUID not found in FSTAB"
+	exit 3
+fi
+echo "> Root partition: $root, UUID: $uuid"
+
+[[ "$1" != "--new" ]] && echo -e "\n use with --new to update UUID on root partition\n" && exit
+
+#sleep 5
+
+echo "> Changing UUID"
+tune2fs -O ^uninit_bg $root > /dev/null || echo "Error: tune2fs feature clearing failed"
+tune2fs -U random $root > /dev/null || echo "Error: UUID changing failed"
+tune2fs -O +uninit_bg $root > /dev/null || echo "Error: tune2fs feature setting failed"
+
+new_uuid=`blkid $root | grep -oP " UUID=\"\K[^\"]+"`
+[[ $? -ne 0 || -z $new_uuid ]] && echo "Error: unable to get new UUID of $root" && exit 4
+
+if [[ ! -z $new_uuid && $new_uuid != $uuid ]]; then
+	echo "> New UUID: $new_uuid"
+	sed -i "s/$uuid/$new_uuid/g" /etc/fstab
+	grep -q "$new_uuid" /etc/fstab && echo "> FSTAB update complete" || "> FSTAB update failed"
+	update-grub 2>/dev/null && echo "> GRUB update complete" || "> GRUB update failed"	
+fi
+
+exit 0
