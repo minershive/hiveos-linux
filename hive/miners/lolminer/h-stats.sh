@@ -44,8 +44,10 @@ else
 			;;
 		*)
 			algo=$(echo $stats_raw | jq -r '.Mining.Algorithm')
-			[[ $algo == "BeamHash III" ]] && algo="beamhashv3"
+			[[ $algo == "BeamHash III" ]]   && algo="beamhashv3"
+			[[ $algo == "Cuckoo 29" ]]      && algo="cuckoo cycle"
 			[[ $algo == "Cuckaroo 29-40" ]] && algo="cuckaroo29b"
+			[[ $algo == "Cuckaroo 29-48" ]] && algo="cuckaroo29i"
 			[[ $algo == "Cuckaroo 29-32" ]] && algo="cuckaroo29s"
 			;;
 	esac
