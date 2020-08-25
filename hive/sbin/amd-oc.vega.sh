@@ -4,9 +4,9 @@
 VEGA20=$( lspci -vnns $busid | grep VGA -A 2 | grep AMD -A 2 | grep Vega -A 2 | grep "Vega 20" | wc -l )
 #NAVI=$( lspci -vnns $busid | grep Navi | wc -l )
 
-NAVI_VDDCI_MIN=750
+NAVI_VDDCI_MIN=650
 NAVI_VDDCI_MAX=850
-NAVI_MVDD_MIN=1250
+NAVI_MVDD_MIN=1200
 NAVI_MVDD_MAX=1350
 
 echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
