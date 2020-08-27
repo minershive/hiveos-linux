@@ -99,8 +99,24 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 					else
 						memvendor=${meminfo[4]}
 					fi
+
+				mem=
+				# get card id
+				[[ `echo /sys/bus/pci/devices/0000:$busid/drm/card*/` =~ \/card([0-9]+)\/ ]]
+				cardno=${BASH_REMATCH[1]}
+				if [[ -z $cardno ]]; then
+					echo "ERROR: can not match card id for GPU $busid" >&2
+				else
+					if [[ -e /sys/class/drm/card$cardno/device/mem_info_vram_total ]]; then
+						mem="`cat /sys/class/drm/card$cardno/device/mem_info_vram_total 2>/dev/null`" && mem="$(( $mem/1024/1024 )) MB" || mem=
+					elif [[ -e /sys/kernel/debug/dri/$cardno/amdgpu_vram ]]; then
+						mem="`stat -c %s /sys/kernel/debug/dri/$cardno/amdgpu_vram 2>/dev/null`" && mem="$(( $mem/1024/1024 )) MB" || mem=
+					fi
+				fi
+				[[ -z "$mem" ]] && mem=`dmesg | grep -oP "amdgpu 0000:${busid}: VRAM:\s\K[^\s]+"`
 				#[   26.705145] amdgpu 0000:07:00.0: VRAM: 4096M 0x0000000000000000 - 0x00000000FFFFFFFF (4096M used)
-				mem=`dmesg | grep -oE "amdgpu 0000:${busid}: VRAM:\s.*" | sed -n 's/.*VRAM:\s\([0-9MG]\+\).*/\1/p'`
+				#mem=`dmesg | grep -oE "amdgpu 0000:${busid}: VRAM:\s.*" | sed -n 's/.*VRAM:\s\([0-9MG]\+\).*/\1/p'`
+				
 				additional=" ($mem, ${meminfo[3]}, ${meminfo[4]})"
 				if [[ $1 == "listjson" ]]; then
 					gpujson=`jq -n -c --arg busid "$busid" --arg name "$name" --arg brand "amd" --arg subvendor "$subvendor" \
