@@ -36,17 +36,13 @@ if [[ ! -z $new_uuid && $new_uuid != $uuid ]]; then
 	echo "> New UUID: $new_uuid"
 	sed -i "s/$uuid/$new_uuid/g" /etc/fstab
 	grep -q "$new_uuid" /etc/fstab && echo "> FSTAB update complete" || "> FSTAB update failed"
-	sed -i "s/$uuid/$new_uuid/g" /boot/grub/grub.cfg
-	grep -q "$new_uuid" /boot/grub/grub.cfg && echo "> GRUB update complete" || "> GRUB update failed"
-	[[ -f /boot/grub/grub.efi.cfg ]] && sed -i "s/$uuid/$new_uuid/g" /boot/grub/grub.efi.cfg
-	
-#	update-grub 2>/dev/null && echo "> GRUB update complete" || "> GRUB update failed"
+	update-grub 2>/dev/null && echo "> GRUB update complete" || "> GRUB update failed"
 	if [[ ! -z $efi_part ]]; then
-		mkdir /home/user/tmp_efi
-		mount ${efi_part} /home/user/tmp_efi
-		sed -i "s/$uuid/$new_uuid/g" /home/user/tmp_efi/EFI/BOOT/grub.cfg
-		umount /home/user/tmp_efi
-		rmdir /home/user/tmp_efi
+		mkdir /var/tmp_uuid_efi
+		mount ${efi_part} /var/tmp_uuid_efi
+		sed -ure "s/search --fs-uuid.+?/search --fs-uuid ${new_uuid} --set root/g" -i /var/tmp_uuid_efi/EFI/BOOT/grub.cfg
+		umount /var/tmp_uuid_efi
+		rmdir /var/tmp_uuid_efi
 	fi
 fi
 
