@@ -35,6 +35,9 @@ old_miner=
 last_log=0
 miner_restart_count=0
 lastgood=`date +%s`
+gpu_detect_time=0
+badgpu_count=
+
 
 [[ -e $RUNNING_FLAG ]] && wd_algo=$(cat $RUNNING_FLAG) && old_flag_time=$(stat --printf %Y $RUNNING_FLAG)
 
@@ -200,17 +203,26 @@ function check_la() {
 
 
 function check_gpu() {
-	# check if gpu-stat stop working most likely because of hanged gpu
-	local gpu_cnt=`cat $GPU_STATS_JSON | jq 'length' 2>/dev/null`
-	if [[ "$gpu_cnt" == "0" ]]; then
+	# reread gpu_detect only on change
+	local ts=`stat -c %Y $GPU_DETECT_JSON 2>/dev/null`
+	if [[ ! -z $ts && $gpu_detect_time -ne $ts ]]; then
+		gpu_detect_time=$ts
+		badgpu_count=`cat $GPU_DETECT_JSON 2>/dev/null | jq -r '[ .[] | .brand | select(.=="cpu") ] | length' 2>/dev/null`
+	fi
+
+	# check gpu-stats for gpu count
+	local gpu_stats=`cat $GPU_STATS_JSON 2>/dev/null`
+	local current_count
+	current_count=`echo "$gpu_stats" | jq -r '[ .brand | .[] | select(.=="cpu") ] | length' 2>/dev/null`
+	if [[ $? -ne 0 || -z $current_count || ( ! -z $badgpu_count && $current_count -gt $badgpu_count ) ]]; then
 		# check few times to be sure
 		if [[ $gpu_err_count -ge 3 ]]; then
-			echo -e "{RED}GPU are lost, rebooting ${NOCOLOR}"
-			cat $GPU_STATS_JSON | message error "GPU are lost, rebooting" payload >/dev/null
+			echo -e "${RED}GPU are lost, rebooting ${NOCOLOR}"
+			echo "$gpu_stats" | message error "GPU are lost, rebooting" payload >/dev/null
 			sreboot
 		else
-			echo -e "{RED}GPU are lost, waiting ${NOCOLOR}"
-			#[[ $gpu_err_count -eq 0 ]] && cat $GPU_STATS_JSON | message warning "GPU are lost" payload >/dev/null
+			echo -e "${RED}GPU are lost, waiting ${NOCOLOR}"
+			#[[ $gpu_err_count -eq 0 ]] && echo "$gpu_stats" | message warning "GPU are lost" payload >/dev/null
 		fi
 		((gpu_err_count++))
 	else
