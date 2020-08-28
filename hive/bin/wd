@@ -218,7 +218,9 @@ function check_gpu() {
 		# check few times to be sure
 		if [[ $gpu_err_count -ge 3 ]]; then
 			echo -e "${RED}GPU are lost, rebooting ${NOCOLOR}"
-			echo "$gpu_stats" | message error "GPU are lost, rebooting" payload >/dev/null
+			local gpu_info=`echo "$gpu_stats" | jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i
+					([]; . + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+"  Temp: "+.[1]+"C  Fan: "+.[2]+"%  Power: "+.[3]+"W"' 2>/dev/null`
+			echo "$gpu_info" | message error "GPU are lost, rebooting" payload >/dev/null
 			sreboot
 		else
 			echo -e "${RED}GPU are lost, waiting ${NOCOLOR}"
