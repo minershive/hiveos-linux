@@ -1,0 +1,8 @@
+Package: hive-miners-xmrig-new-klaro
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Depends: hive-miners-xmrig-new-klaro-5.6.0
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - XMRig-Klaro fork with RandomXHFPI support
