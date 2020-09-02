@@ -1,0 +1,7 @@
+Package: hive-miners-miniz-1.6v6
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - miniZ v1.6v6 CUDA 10.0
