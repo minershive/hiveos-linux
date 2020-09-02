@@ -1,7 +1,7 @@
 Package: hive-miners-xmrig-new-xmrig-6.3.2
-Version: 0.6-05
+Version: 0.6-06
 Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - XMRig v6.3.2 + CUDA plugin v6.3.1
+Description: Hive miner - XMRig v6.3.2 + CUDA plugin v6.3.2
