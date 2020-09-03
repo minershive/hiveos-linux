@@ -201,7 +201,8 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
 fi
 
 #Coolbox Autofan
-if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
+# if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
+if [[ `lsusb -v -d 10c4:ea60 | grep iSerial | awk '{print $3}'` == 'COOLBOX_AUTOFAN' ]]; then
 	coolbox_serial=`$COOLBOX --get_serial`
 	if [[ ! -z $coolbox_serial ]]; then
 		coolbox_json=$(

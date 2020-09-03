@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+################################################################################
+# Firmware info
+FIRMWARE_UPDATE_LOG="/hive/opt/coolbox/fw_update.log"
+MAINTENANCE_SEM_NAME="/tmp/coolbox_maintenance"
+################################################################################
+
 if [[ -z $COOLBOX_CONF ]]; then #reread env variables as after upgrade this can be empty
   source /etc/environment
   export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
@@ -7,7 +13,8 @@ fi
 
 . colors
 
-CLI_OUTPUT=/run/hive/coolbox_output
+CLI_OUTPUT=/run/hive/coolbox
+HELPFILE=/hive/opt/coolbox/read.me
 SERIAL_LENGTH=88
 
 MIN_WD_RESET_INTERVAL=3
@@ -20,11 +27,33 @@ error_in_read_configs=0
 # Log write
 function echo2 {
   echo -e "$1"
+  echo -e $1 >> $FIRMWARE_UPDATE_LOG
 }
 
-check_config () {
+check_config() {
   if [ ! -f $COOLBOX_CONF ]; then
     echo2 "${RED}No config $COOLBOX_CONF${NOCOLOR}"
+  fi
+}
+
+check_sem() {
+if [[ -f $MAINTENANCE_SEM_NAME ]]; then
+  a=0
+  let a=`date +%s`-`stat --format='%Y' $MAINTENANCE_SEM_NAME`
+  if [[ a -le 60 ]]; then
+    #echo2 "Coolbox is in maintenance mode. Command ignored."
+    return 1 #coolbox is in maintenance mode
+  else
+    return 0
+  fi
+fi
+}
+
+check_avrdude() {
+  if [[ `dpkg -s avrdude 2>/dev/null | grep -c "ok installed"` -eq 0 ]]; then
+    [[ -f "/etc/avrdude.conf" ]] && rm -f "/etc/avrdude.conf"
+    apt-get install -y avrdude
+#    cp /hive/opt/octofan/avrdude.conf   /etc/avrdude.conf
   fi
 }
 
@@ -34,20 +63,78 @@ get_file_time_diff(){
   echo $a
 }
 
+start_listner(){
+  screen -dm -c /hive/opt/coolbox/screenrc.coolbox bash
+  for i in {1..25}; do
+    sleep 0.2 #it needs some time? it happens that you'll have "No screen session found" without sleep
+    local session_count=`screen -ls coolbox | grep -c "coolbox"`
+    [[ $session_count -gt 0 ]] && break #echo -e "Found screen miner in $i iterations" &&
+    [[ $i -ge 25 ]] && echo -e "${RED}screen miner not found in 25 iterations, check logs and maybe flash drive speed${NOCOLOR}"
+  done
+
+  screen -S coolbox -X screen 1 stty -F /dev/ttyUSB0 raw ispeed 9600 ospeed 9600 -ignpar cs8 -cstopb -echo
+  sleep 0.2
+
+  screen -S coolbox -X screen 1 cat /dev/ttyUSB0
+}
+
+stop_listner(){
+  local screens=(`screen -ls coolbox | grep -Po "\K[0-9]+(?=\.coolbox)" | sort --unique`)
+  for pid in "${screens[@]}"; do
+    timeout 1 screen -S $pid.coolbox -X quit
+  done
+
+  #removing listner output
+  rm -f $CLI_OUTPUT
+#  rm -f ${CLI_OUTPUT}_50
+}
+
 send_request(){
-  local rtn=
-  stty -F /dev/ttyUSB0 raw ispeed 9600 ospeed 9600 -ignpar cs8 -cstopb -echo
+  check_sem
+  [[ $? -ne 0 ]] && return 1 #coolbox is in maintenance mode
+
+  #check coolbox listner
+  local session_count=`screen -ls coolbox | grep -c "coolbox"`
+  if [[ $session_count -eq 0 ]]; then #starting coolbox listner
+    start_listner
+  fi
+
+  if [[ `get_file_time_diff` -gt 30 ]]; then
+    stop_listner
+    start_listner
+  fi
+
   echo -n $1 > /dev/ttyUSB0
-  read -t 2 -d \$ rtn < /dev/ttyUSB0
-  echo $rtn
+  sleep 0.5
+
+# for i in {1..20}; do
+#    if [[ `tail -1 $CLI_OUTPUT` =~ "}" ]]; then 
+#      tail -50 $CLI_OUTPUT > ${CLI_OUTPUT}_50
+#
+#      if [[ -f ${CLI_OUTPUT}_50 ]]; then
+#        local rtn=`awk 'FNR==NR && /\{/ { line=NR } FNR!=NR && FNR >= line && FNR <= line+50' ${CLI_OUTPUT}_50 ${CLI_OUTPUT}_50`
+#        echo "$rtn" | tr -s '\n'
+#      fi
+#      break
+#    fi
+#    sleep 0.2
+#  done
+
+#  tail -50 $CLI_OUTPUT > ${CLI_OUTPUT}_50
+
+  if [[ -f ${CLI_OUTPUT} ]]; then
+    local rtn=`tail -1 ${CLI_OUTPUT}`
+    echo "$rtn"
+  fi
 }
 
 get_stats(){
-  # read fresh data from cache
-  if [[ `get_file_time_diff` -lt 5 ]]; then
-    cat $CLI_OUTPUT
-    return 0
-  fi
+#  cache disabled becouse now there are several commands
+#  # read fresh data from cache
+#  if [[ `get_file_time_diff` -lt 5 ]]; then
+#    cat $CLI_OUTPUT
+#    return 0
+#  fi
 
   WATCHDOG=0
   AUTO_FAN=0
@@ -69,7 +156,7 @@ get_stats(){
   if [ -f $GPU_STATS_JSON ]; then
     temp_array=`cat $GPU_STATS_JSON | tail -1 | jq -c ".temp"`
 
-	local cpu_indexes_array=`cat $GPU_DETECT_JSON | jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'` #'
+    local cpu_indexes_array=`cat $GPU_DETECT_JSON | jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'` #'
 
     #remove Internal Gpus
     [[ $cpu_indexes_array != '[]' && ! -z $cpu_indexes_array ]] &&
@@ -99,45 +186,223 @@ get_stats(){
 
   request_str='{"gpu_temp":'$temp_array',"target_temp":'$TARGET_TEMP',"manual_fan_speed":'$MANUAL_FAN',"fan_mode":'$FAN_MODE',"watchdog":'$WATCHDOG',"wd_reset_interval":'$WD_RESET_INTERVAL'}'
 
-  local answer_str=`send_request $request_str`
+  send_request $request_str
+
+#  local answer_str=`send_request $request_str`
 
   #j6dhnD9A3/gDLAnyU8W3HFOWWWJJdSRMA4lXqN62HR6Xy6aglnJx9ISSBM1yOgDMWamERZF2y6qVW82oqEZ5rQ==^{"casefan": [85,85,0,85], "thermosensors": [25,37]}$
 
-  if [[ ${answer_str:88:1} == "^" ]]; then
-    echo $answer_str > $CLI_OUTPUT
-    echo $answer_str
-  fi
+#  if [[ ${answer_str:88:1} == "^" ]]; then
+#    echo $answer_str > $CLI_OUTPUT
+#    echo $answer_str
+#  fi
 }
 
 get_serial(){
-  #[[ `get_file_time_diff` -lt 5 ]] && coolbox_stats=`cat $CLI_OUTPUT` || coolbox_stats=`send_request '^00000000000$'`
-  [[ `get_file_time_diff` -lt 5 ]] && coolbox_stats=`cat $CLI_OUTPUT` || coolbox_stats=`send_request '{}'`
-  [[ ${coolbox_stats:88:1} == "^" ]] && echo ${coolbox_stats:0:$SERIAL_LENGTH}
+  echo `lsusb -v -d 10c4:ea60 | grep iProduct | awk '{print $3}'`
 }
 
 get_json(){
-  coolbox_stats=`get_stats`
+  for i in {1..10}; do
+    local answer=`get_stats`
+    echo $answer | jq '.thermosensors' >> /dev/null 2>&1
+    if [[ $? -eq 0 ]] && [[ $answer =~ "thermosensors" ]]; then
+      break
+    else
+      answer=
+    fi
+    sleep 0.2 #it needs some time? it happens when listner just started
+  done
 
-  pos=`expr $SERIAL_LENGTH + 1`
-
-  echo ${coolbox_stats:$pos} | jq -c '.'
-
-  #fan_count=`expr ${coolbox_stats:$pos:2} + 0`
-  #fans=
-  #for (( i = 0; i < $fan_count; i++ )); do
-  #  pos=`expr $SERIAL_LENGTH + 3 + 3 \* $i`
-  #  fans+=`expr ${coolbox_stats:$pos:3} + 0`" "
-  #done
-  #echo ${fans[@]} | tr " " "\n" | jq -cs '.'
+  [[ $answer =~ "thermosensors" ]] && echo "$answer" | jq -c '.'
 
   #echo '{"casefan": [55,55,0,550], "thermosensors": [23,32,350]}'
 }
 
-if [[ `lsusb | grep -c 1a86:7523` -eq 1 ]]; then
+diagnostic(){
+  for i in {1..10}; do
+    local answer=`send_request '{"diagnostic"}'`
+    echo $answer | jq '.reboot_errors' >> /dev/null 2>&1
+    if [[ $? -eq 0 ]] && [[ $answer =~ "reboot_errors" ]]; then 
+      break
+    else
+      answer=
+    fi
+    sleep 0.2 #it needs some time? it happens when listner just started
+  done
+
+  [[ $answer =~ "reboot_errors" ]] && echo "$answer"
+}
+
+show_help(){
+  cat $HELPFILE
+}
+
+pc_shutdown(){
+  for i in {1..10}; do
+    local answer=`send_request '{"pc_shutdown"}'`
+    echo $answer | jq '.message' >> /dev/null 2>&1
+    if [[ $? -eq 0 ]] && [[ $answer =~ "Shutdown PC" ]]; then
+      break
+    else
+      answer=
+    fi
+    sleep 0.2 #it needs some time? it happens when listner just started
+  done
+
+  [[ $answer =~ "Shutdown PC" ]] && echo "$answer" | jq -r '.message'
+}
+
+fan_check(){
+  for i in {1..10}; do
+    local answer=`send_request '{"fan_check"}'`
+    echo $answer | jq '.message' >> /dev/null 2>&1
+    if [[ $? -eq 0 ]] && [[ $answer =~ "fan check" ]]; then
+      break
+    else
+      answer=
+    fi
+    sleep 0.2 #it needs some time? it happens when listner just started
+  done
+
+  [[ $answer =~ "fan check" ]] && echo "$answer" | jq -r '.message'
+}
+
+msg(){
+  for i in {1..10}; do
+    local answer=`send_request '{"message":"'$1'"}'`
+    echo "$answer" | jq '.message' >> /dev/null 2>&1
+    if [[ $? -eq 0 ]] && [[ $answer =~ "message" ]]; then
+      break
+    else
+      answer=
+    fi
+    sleep 0.2 #it needs some time? it happens when listner just started
+  done
+
+  [[ $answer =~ "message" ]] && echo "$answer" | jq -r '.message'
+}
+
+firmware_update(){
+  check_sem
+  [[ $? -ne 0 ]] && echo "Coolbox is already in maintenance mode. Please wait a minute for the previous process to complete."&& return 1 #coolbox is in maintenance mode
+
+  local fw_new_version=
+
+  local diag_json=`diagnostic`
+  #{"mcu_version":"m328p","pcb_version":"1012","fw_version":"2310","msg_errors":0,"reboot_errors":0}
+  local mcu_version=`echo $diag_json | jq -r '.mcu_version'`
+  [[ -z $mcu_version ]] && echo "mcu_version is empty" && return 1
+
+  local pcb_version=`echo $diag_json | jq -r '.pcb_version'`
+  [[ -z $pcb_version ]] && echo "pcb_version is empty" && return 1
+
+  local fw_cur_version=`echo $diag_json | jq -r '.fw_version'`
+  [[ -z $fw_cur_version ]] && echo "fw_cur_version is empty" && return 1
+
+  if [[ -z $1 ]]; then
+    #update to latest version
+    cd /hive/opt/coolbox
+    #echo "find -name \"${mcu_version}_${pcb_version}_*.hex\" | sort | tail -1 | cut -d \"_\" -f 3 | cut -d \".\" -f 1"
+    fw_new_version=`find -name "${mcu_version}_${pcb_version}_*.hex" | sort | tail -1 | cut -d "_" -f 3 | cut -d "." -f 1`
+    if [[ $fw_cur_version -eq $fw_new_version ]]; then
+      echo "Coolbox firmware is up to date already."
+      return 0
+    fi
+  else
+    #force update to specific version
+    fw_new_version=$1
+  fi
+
+  check_sem
+  [[ $? -ne 0 ]] && echo "Coolbox is already in maintenance mode. Please wait a minute for the previous process to complete."&& return 1 #coolbox is in maintenance mode
+
+  #create maintenance sem file
+  echo "$(date +"%Y-%m-%d %T") - update firmware" > $MAINTENANCE_SEM_NAME
+
+  local FW_FILENAME="${mcu_version}_${pcb_version}_${fw_new_version}"
+  local FIRMWARE_MD5=`cat $FW_FILENAME.md5`
+
+
+  echo2 "$(date +"%Y-%m-%d %T")"
+  echo2 "Updating fan controller firmware | FW_FILENAME=$FW_FILENAME.hex | FW_VERSION=$fw_new_version | FIRMWARE_MD5=$FIRMWARE_MD5 |"
+  echo2 "Checking firmware MD5 sum"
+
+  local fw_sum="null"
+  fw_sum=`md5sum $FW_FILENAME.hex`
+  if [[ ! $FIRMWARE_MD5 == $fw_sum ]]; then
+    echo2 "Firmware MD5 sum mismatch. ${RED}Firmware update aborted.${NOCOLOR}"
+    rm -f ${MAINTENANCE_SEM_NAME}
+    return 5
+  else
+    echo2 "Firmware MD5 sum ${GREEN}OK${NOCOLOR}."
+    check_avrdude
+    cp /hive/opt/coolbox/avrdude.conf   /etc/avrdude.conf
+
+    local t_error_txt=
+    local exit_code=0
+
+    #stoping listner
+    stop_listner
+
+    echo2 "$(date +"%Y-%m-%d %T") Stopping miner"
+    miner stop
+    sleep 10
+
+    echo2 "$(date +"%Y-%m-%d %T")"
+    echo2 "Flashing the firmware $FW_FILENAME.hex"
+    echo2 "Executing: ${YELLOW}avrdude -p ${mcu_version} -c arduino -P /dev/ttyUSB0 -b 9600 -U flash:w:/hive/opt/coolbox/$FW_FILENAME.hex:a${NOCOLOR}"
+    t_error_txt=`avrdude -p ${mcu_version} -c arduino -P /dev/ttyUSB0 -b 9600 -U flash:w:/hive/opt/coolbox/$FW_FILENAME.hex:a 2>&1`
+    if [[ $? -ne 0 ]]; then
+      exit_code=5
+      echo2 "$(date +"%Y-%m-%d %T") ${RED}Error on flashing firmware${NOCOLOR}: $t_error_txt"
+    fi
+
+    rm -f ${MAINTENANCE_SEM_NAME}
+
+    echo2 "Checking firmware"
+    diag_json=`diagnostic`
+    fw_cur_version=`echo $diag_json | jq -r '.fw_version'`
+    if [[ $fw_cur_version -ne $fw_new_version ]] || [[ $exit_code -gt 0 ]]; then
+      exit_code=5
+      echo2 "$(date +"%Y-%m-%d %T") ${RED}Firmware is not updated${NOCOLOR}, current version: $fw_cur_version"
+    else
+      echo2 "$(date +"%Y-%m-%d %T") ${GREEN}Firmware successfully updated${NOCOLOR}, current version: $fw_cur_version"
+    fi
+
+    echo2 "$(date +"%Y-%m-%d %T") Starting miner"
+    miner start
+    sleep 3
+
+    #checking max fan rpm
+    #fan_check
+
+    echo2 ""
+    echo2 "$(date +"%Y-%m-%d %T") Done"
+    return $exit_code
+  fi
+}
+
+if [[ `lsusb -v -d 10c4:ea60 | grep iSerial | awk '{print $3}'` == 'COOLBOX_AUTOFAN' ]]; then
   if [[ $1 == "--get_json" ]]; then
     echo `get_json`
   elif [[ $1 == "--get_serial" ]]; then
     echo `get_serial`
+  elif [[ $1 == "--diagnostic" ]]; then
+    echo `diagnostic`
+  elif [[ $1 == "--fan_check" ]]; then
+    echo `fan_check`
+  elif [[ $1 == "--msg" ]]; then
+    echo `msg $2`
+  elif [[ $1 == "--firmware-update" ]]; then
+    firmware_update $2
+  elif [[ $1 == "--help" ]]; then
+    show_help
+  elif [[ $1 == "--pc_shutdown" || $1 == "--shutdown" ]]; then
+    pc_shutdown
+  else
+    echo "Error: wrong command."
+    exit 1
   fi
 else
   if [[ $1 == "--get_json" ]]; then

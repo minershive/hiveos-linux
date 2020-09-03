@@ -42,6 +42,10 @@ echo s > /proc/sysrq-trigger
 echo u > /proc/sysrq-trigger
 
 if [[ $1 == "shutdown" ]]; then
+	#stop coolbox wathdog, to shutdown rig
+	if [[ `lsusb -v -d 10c4:ea60 | grep iSerial | awk '{print $3}'` == 'COOLBOX_AUTOFAN' ]]; then
+		echo `/hive/opt/coolbox/coolbox --shutdown`
+	fi
 	echo "Shutting down"
 	echo o > /proc/sysrq-trigger
 elif [[ $1 == "wakealarm" ]]; then
