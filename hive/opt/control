@@ -1,5 +1,5 @@
 Package: hive-opt
-Version: 0.6-27
+Version: 0.6-28
 Replaces: hive (<< 0.6)
 Section: base
 Priority: optional
