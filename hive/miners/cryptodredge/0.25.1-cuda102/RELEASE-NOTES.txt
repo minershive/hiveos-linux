@@ -1,0 +1,342 @@
+# Release 0.25.1 - (August 30, 2020)
+
+ * Fix high CPU usage on MTP when 'Received new job'
+
+# Release 0.25.0 - (August 29, 2020)
+
+ * Improve MTP algorithm
+ * Improve Argon2d (NIM) algorithm
+ * Add optimizer (Argon2d (NIM) only). Check Readme for more information
+ * Allow floating-point intensity (e.g. -i 6.5)
+ * Fix CryptoNight issue related to 'the launch timed out and was terminated'
+ * Remove --recompute option
+ * Remove obsolete algorithms
+ * Other minor fixes
+
+# Release 0.24.0 - (August 3, 2020)
+
+ * Improve Argon2d (NIM) algorithm
+ * Add --recompute option to set memory reduction factor (Argon2d (NIM) only)
+ * Fix high CPU usage on MTP-like, Argon2-like and CryptoNight-like algorithms
+ * Slightly improve Chukwa (Argon2-512) and Ninja (Argon2-256) algorithms
+ * MTP: Fix memory leaks
+ * New CryptoNightTLO algorithm
+ * Fix CryptoNightHaven issue related to 'Unsupported blob size'
+ * New Sha256csm algorithm
+ * Add --sni option to enable SNI (Server Name Indication) for the pool connection
+ * Other minor fixes
+
+# Release 0.23.0 - (February 14, 2020)
+
+ * New MTP-TCR algorithm
+ * MTP: Improve scratchpad initialization
+ * New CryptoNightUPX algorithm
+ * New CryptoNightZLS algorithm
+ * Improve CryptoNightGPU algorithm
+ * Fix some potential crashes
+ * Remove CryptoNightV8 and CryptoLightV7 (Aeon) algorithms
+ * Other minor fixes
+
+# Release 0.22.0 - (October 1, 2019)
+
+ * New X16RV2 algorithm
+ * Fix Stratum issue related to 'resource deadlock would occur'
+ * Fix ccminer API on Linux
+ * Other minor fixes
+
+# Release 0.21.0 - (August 9, 2019)
+
+ * New Chukwa (Argon2-512) algorithm
+ * New Chukwa WRKZ (Argon2-256) algorithm
+ * New CryptoNightConceal algorithm
+ * Add stratum+ssl support for secured pool connections
+ * Add SOCKS5 and HTTP proxy support for TCP and Websocket connections respectively
+ * Several bug fixes and improvements
+
+# Release 0.20.2 - (July 1, 2019)
+
+ * Improve Argon2d (NIM) algorithm
+ * Improve x16-like algorithms (X16R, X16S, X16RT, X21S)
+ * Slightly improve MTP algorithm for Turing GPUs
+ * Fix Argon2d (NIM) startDifficulty issue related to zero hashrate
+ * Fix --no-nvml option
+ * Other minor fixes
+
+# Release 0.20.1 - (June 3, 2019)
+
+ * Fix MTP issue related to many rejected shares
+ * Improve Argon2d algorithms
+ * Other minor fixes
+
+# Release 0.20.0 - (May 27, 2019)
+
+ * Improve MTP algorithm
+ * Improve Argon2d algorithms
+ * New Argon2d (NIM) algorithm (Dumb mode only)
+ * Add --hashrate option to set expected hashrate in kh/s and
+   calculate start difficulty (Argon2d (NIM) only)
+ * Add watchdog for Linux
+ * Other minor fixes
+
+# Release 0.19.1 - (May 13, 2019)
+
+ * Fix issue related to 'Handshake failed with fatal error SSL_ERROR_SSL'
+ * Fix crash after devfee's session is started
+ * Other minor fixes
+
+# Release 0.19.0 - (May 6, 2019)
+
+ * New Argon2d (250/4096) algorithms
+ * Improve MTP algorithm
+ * Improve CryptoNightGPU and CryptoNight-like algorithms
+ * Remove obsolete algorithms
+ * Other minor fixes
+
+# Release 0.18.0 - (April 3, 2019)
+
+ * New Argon2d (DYN) algorithm
+ * Support MTP and Cuckaroo29 on NiceHash
+ * Make API more compatible with ccminer API
+ * Support mining Aeternity on GPUs with 2 GB of memory (Linux only)
+ * Support mining Cuckaroo29 on GPUs with 4 GB of memory (Linux only)
+ * Indicate activity to suppress auto sleep mode (Windows only)
+
+# Release 0.17.0 - (February 17, 2019)
+
+ * Fix CryptoNightFastV2 for Masari
+ * New CryptoNightTurtle algorithm
+ * New CryptoNightGPU algorithm
+ * New Cuckaroo29 algorithm (Grin)
+ * New CuckooCycle algorithm (Aeternity)
+
+# Release 0.16.2 - (February 1, 2019)
+
+ * Support GINcoin on X16RT algorithm
+ * Fix P2Pool for Lyra2REv3
+ * Add CryptoNightFastv2 (Masari and Stellite) algorithm
+ * New CryptoNightSuperFast algorithm
+ * Other minor fixes
+
+# Release 0.16.1 - (January 11, 2019)
+
+ * Fix MTP issue related to many rejected shares
+ * Fix X16R and X16RT performance
+ * Remove Blake (2s), Exosis, Lbk3, Lyra2REv2, Polytimos and Skein algorithms
+ * Other minor fixes
+
+# Release 0.16.0 - (January 6, 2019)
+
+ * New X16RT algorithm
+ * Add Lyra2zz (LAPO) algorithm
+ * Stabilize MTP algorithm
+ * Other minor fixes
+
+# Release 0.15.2 - (December 31, 2018)
+
+ * Improve MTP algorithm
+ * Stabilize MTP algorithm
+
+# Release 0.15.1 - (December 29, 2018)
+
+ * Improve a bit MTP algorithm
+ * Fix MTP bug related to "Misaligned Address"
+ * Build MTP Linux version
+
+# Release 0.15.0 - (December 26, 2018)
+
+ * New MTP algorithm
+ * Fix Lyra2REv3 performance
+
+# Release 0.14.0 - (December 11, 2018)
+
+ * Improve X22i algorithm
+ * Improve Skunkhash algorithm
+ * Improve x16-like algorithms, as a secondary effect
+ * New Lyra2REv3 algorithm
+ * Fix Dedal bug described in Numus 1.5.0.3 release
+ * Implement "histo" API method
+ * Add --no-nvml option to force NVML off
+
+# Release 0.13.0 - (December 1, 2018)
+
+ * Improve X22i algorithm
+ * Improve Skunkhash algorithm
+ * New X21S algorithm
+ * New Lyra2vc0ban algorithm
+ * Fix Exosis and Dedal algorithm when started from BLAKE
+ * Add color hash order for x16
+
+# Release 0.12.0 - (November 28, 2018)
+
+ * Add Pipe (UOUcoin) algorithm
+ * Add Dedal (Numus) algorithm
+
+# Release 0.11.0 - (November 21, 2018)
+
+ * Improve following algorithms
+   BCD
+   BitCore
+   HMQ1725
+   Skunkhash
+   X17
+ * New X16R algorithm
+ * New X16S algorithm
+ * Implement "mining.ping" of Stratum
+ * Support "client.reconnect" of Stratum (Fix for MiningRigRentals.com)
+ * Fix several bugs of Stratum
+
+# Release 0.10.0 - (November 10, 2018)
+
+ * Improve X22i algorithm
+ * Improve BCD algorithm
+ * Improve X17 algorithm
+ * New HMQ1725 algorithm
+
+# Release 0.9.7 - (November 7, 2018)
+
+ * Improve Skunkhash
+ * Fix several bugs
+
+# Release 0.9.6 - (November 5, 2018)
+
+ * New X22i (SUQA) algorithm
+
+# Release 0.9.5 - (November 1, 2018)
+
+ * New X17 algorithm
+ * New BitCore algorithm
+ * Fix Exosis algorithm
+ * Fix several bugs
+
+# Release 0.9.4 - (October 30, 2018)
+
+ * New Exosis algorithm
+ * New C11 algorithm
+ * New Polytimos algorithm
+ * Improve Skunkhash
+ * New BCD (Bitcoin Diamond) algorithm
+
+# Release 0.9.3 - (October 19, 2018)
+
+ * New CryptoNight v8 (CNv2) algorithm
+ * Improve Allium and Phi2
+ * Other minor fixes
+
+# Release 0.9.2 - (September 26, 2018)
+
+ * New CryptoNightSaber (BitTube) algorithm
+ * Improve Allium and Phi2 for 1070, 1070 Ti, 1080, 1080 Ti
+ * Allow to set intensity per GPU
+ * Fix failover mechanism
+ * Disable miner to auto-start after system restart
+ * Add crash reporting mechanism. Check Readme for more information
+
+# Release 0.9.1 - (September 4, 2018)
+
+ * New CryptoNightHaven algorithm
+ * Fix issue related to many rejected shares on NiceHash pool
+   when used CryptoNight-like algorithms
+
+# Release 0.9.0 - (September 1, 2018)
+
+ * New Aeon algorithm
+ * New CryptoNightHeavy algorithm
+ * New CryptoNightV7 algorithm
+ * New Masari algorithm
+ * New Stellite algorithm
+ * New Lbk3 algorithm
+ * Fix issues related to miner shutdown
+ * Other minor fixes
+
+# Release 0.8.4 - (August 17, 2018)
+
+ * Improve Lyra2z for 1080 and 1080 Ti GPUs
+ * Improve Neoscrypt for 1080 and 1080 Ti GPUs
+ * Add --config option
+ * Other minor fixes
+
+# Release 0.8.3 - (August 7, 2018)
+
+ * Fix TCP and WebSocket connections used for API
+ * Fix Lyra2z performance on 1070 Ti and P104-100 graphics cards
+
+# Release 0.8.2 - (August 6, 2018)
+
+ * Fix Phi2 bug related to smart contracts
+ * Improve Tribus
+
+# Release 0.8.1 - (August 3, 2018)
+
+ * Improve Allium, Lyra2z, and Phi2 for low-end and middle-end graphics cards
+ * Fix P2Pool bug related to many rejected shares
+ * Fix TCP and WebSocket connections used for API
+ * Add power consumption monitoring
+
+# Release 0.8.0 - (July 28, 2018)
+
+ * Improve Allium
+ * Improve Lyra2z
+ * Improve Phi2
+ * New Tribus algorithm
+
+# Release 0.7.0 - (July 16, 2018)
+
+ * Improve defvee mechanism
+ * Add --retries, --retry-pause, and --timeout options.
+   Check Readme for more information
+ * Build first Linux version
+ * Other minor fixes
+
+# Release 0.6.0 - (July 1, 2018)
+
+ * Add ccminer 2.3 compatible API
+ * Add --cpu-priority option to set process priority (0 - 5)
+ * Other minor fixes
+
+# Release 0.5.1 - (June 29, 2018)
+
+ * Fix stratum for FreshGRLC.NET
+
+# Release 0.5.0 - (June 24, 2018)
+
+ * Handle CTRL-C signal
+ * Indicate activity to suppress auto sleep mode
+ * Add --no-watchdog option to force watchdog off
+ * Fix crash after devfee's session is started
+ * Add lyra2v2-old for -a option. Check Readme for more information
+ * Fix intensity
+ * Fix bug related to rolling logo
+
+# Release 0.4.1 - (June 18, 2018)
+
+ * Improve Lyra2REv2
+ * Add update notification
+ * Remove limitation for Lyra2Z
+ * Other minor fixes
+
+# Release 0.4.0 - (June 12, 2018)
+
+ * New Phi2 algorithm
+
+# Release 0.3.0 - (June 10, 2018)
+
+ * Add --log option to log output to file
+ * Add --no-color option to force color off
+ * Improve Lyra2REv2
+ * Fix reconnect bug with NiceHash pool
+ * Other minor fixes
+
+# Release 0.2.1 - (June 4, 2018)
+
+ * Fix bug with NiceHash pool
+ * Improve Lyra2REv2
+
+# Release 0.2.0 - (June 1, 2018)
+
+ * New Allium algorithm
+ * Add watchdog
+ * Improve NeoScrypt for low-end graphics cards
+ * Other minor fixes
+
+# Release 0.1.0 - (May 21, 2018)
+ * First public release
