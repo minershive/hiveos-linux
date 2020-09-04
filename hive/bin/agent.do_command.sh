@@ -94,32 +94,36 @@ function do_command() {
 			config=$(echo $body | jq '.config' --raw-output)
 			justwrite=$(echo $body | jq '.justwrite' --raw-output) #don't restart miner, just write config, maybe WD settings will be updated
 			if [[ ! -z $config && $config != "null" ]]; then
-				#scan for password change
-				echo "$config" > /tmp/rig.conf.new
-				while read line; do
-					[[ $line =~ ^RIG_PASSWD=\"(.*)\" ]] && NEW_PASSWD=${BASH_REMATCH[1]} && break
-				done < /tmp/rig.conf.new
-				rm /tmp/rig.conf.new
+				# scan for password change
+				[[ "$config" =~ $'\n'RIG_PASSWD=\"([^\"]+)\" ]] && NEW_PASSWD="${BASH_REMATCH[1]}" || NEW_PASSWD=
 
 				# Password change ---------------------------------------------------
-				if [[ ! -z $RIG_PASSWD && $RIG_PASSWD != $NEW_PASSWD ]]; then
-					echo -e "${RED}New password:${NOCOLOR} $NEW_PASSWD";
+				if [[ ! -z "$RIG_PASSWD" && "$RIG_PASSWD" != "$NEW_PASSWD" ]]; then
+					exitcode=0
+					[[ -z "$NEW_PASSWD" ]] && response="Empty password" && exitcode=1
+					[[ ! -w $RIG_CONF ]] && response="$RIG_CONF is read only" && exitcode=1
 
-					message warning "Password change received, wait for next message..." --id=$cmd_id
-					request=$(jq -n --arg rig_id "$RIG_ID" --arg passwd "$RIG_PASSWD" \
-					'{ "method": "password_change_received", "params": {$rig_id, $passwd}, "jsonrpc": "2.0", "id": 0}')
-					response=$(echo $request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=password_change_received" -H "Content-Type: application/json")
-
-					exitcode=$?
-					[ $exitcode -ne 0 ] &&
-						message error "Error notifying hive about \"password_change_received\"" --id=$cmd_id &&
-						return $exitcode #better exit because password will not be changed
-
-					error=$(echo $response | jq '.error' --raw-output)
-					[[ ! -z $error && $error != "null" ]] && echo -e "${RED}Server error:${NOCOLOR} `echo $response | jq '.error.message' -r`" && return 1
-
+					if [[ $exitcode -eq 0 ]]; then
+						echo -e "${YELLOW}New password:${NOCOLOR} $NEW_PASSWD";
+						#message warning "Rig password change received" --id=$cmd_id
+						request=$(jq -n --arg rig_id "$RIG_ID" --arg passwd "$RIG_PASSWD" \
+						'{ "method": "password_change_received", "params": {$rig_id, $passwd}, "jsonrpc": "2.0", "id": 0}')
+						response=$(echo $request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=password_change_received" -H "Content-Type: application/json")
+						exitcode=$?
+					fi
+					if [[ $exitcode -ne 0 ]]; then
+						echo "$response" | message error "Rig password change error ($exitcode)" payload --id=$cmd_id
+						return $exitcode # better exit because password will not be changed
+					fi
+					error=$(echo "$response" | jq '.error' --raw-output)
+					if [[ ! -z $error && $error != "null" ]]; then
+						msg="`echo "$response" | jq -r '.error.message'`"
+						echo -e "${RED}Server error:${NOCOLOR} $msg"
+						echo "$msg" | message error "Rig password change error" payload --id=$cmd_id
+						return 1
+					fi
 					echo "$response" | jq '.'
-					#after this there will be new password on server, so all new request should use new one
+					# after this there will be new password on server, so all new request should use new one
 				fi
 
 				# Write new config and load it ---------------------------------------
@@ -127,7 +131,7 @@ function do_command() {
 				echo "$config" > $RIG_CONF
 				[[ $bench -eq 1 ]] && sed -i "s/^MINER=.*/MINER=${MINER}/" $RIG_CONF
 				sync
-				. $RIG_CONF
+				source $RIG_CONF
 
 				# Save wallet if given -----------------------------------------------
 				local old_wallet=$(<$WALLET_CONF)
