@@ -7,14 +7,14 @@ RETRY_TIME=60
 
 arg_retry=0
 arg_check=0
-# will need to restart miner after
-arg_restartminer=0
 # send boot flag with hello message
 arg_boot=0
+# will need to restart miner after
+#arg_restartminer=0
 
 # check for arguments
 for var in "$@"; do
-	[[ $var == "restartminer" ]] && arg_restartminer=1 && continue
+#	[[ $var == "restartminer" ]] && arg_restartminer=1 && continue
 	[[ $var == "boot" ]] && arg_boot=1 && continue
 	# used internally
 	[[ $var == "retry" ]] && arg_retry=1 && continue
@@ -49,7 +49,8 @@ HIVE_URL="$HIVE_HOST_URL/worker/api"
 
 # retry again until success
 if [[ $arg_retry == 1 ]]; then
-	echo -e "${YELLOW}Will to try again in ${RETRY_TIME}s${NOCOLOR}"
+	echo -e "${YELLOW}Will try again in ${RETRY_TIME}s${NOCOLOR}"	
+	sleep $RETRY_TIME # increase delay on start
 	while true; do
 		sleep $RETRY_TIME
 		date
@@ -241,7 +242,7 @@ if [[ $exitcode -ne 0 ]]; then
 	echo -e "${RED}Error connecting to Hive server${NOCOLOR} $HIVE_HOST_URL"
 	human-curl-error $exitcode
 	[[ ! -z $RETRY_TIME && $RETRY_TIME != 0 && $arg_check == 0 ]] &&
-		echo -e "${YELLOW}Will to try again in ${RETRY_TIME}s${NOCOLOR}" &&
+		echo -e "${YELLOW}Will try again in ${RETRY_TIME}s${NOCOLOR}" &&
 		[[ $(screen -ls | grep -c hello) == 0 ]] &&
 			screen -dmS hello $0 retry
 	exit $exitcode
@@ -294,7 +295,7 @@ hostname-check
 	locale-setup "$SYSTEM_LANG"
 
 # Wallet config ================================================================
-old_wallet=$(<$WALLET_CONF)
+[[ -e $WALLET_CONF ]] && old_wallet=$(<$WALLET_CONF) || old_wallet=
 wallet=$(echo $response | jq '.result.wallet' --raw-output)
 if [[ ! -z $wallet && $wallet != "null" ]]; then
 	echo "Saving Wallet config"
@@ -303,6 +304,7 @@ fi
 
 # Nvidia config ================================================================
 nvidia-driver-update -c
+[[ -e $NVIDIA_OC_CONF ]] && old_nv_oc=$(<$NVIDIA_OC_CONF) || old_nv_oc=
 nvidia_oc=$(echo $response | jq '.result.nvidia_oc' --raw-output)
 if [[ ! -z $nvidia_oc && $nvidia_oc != "null" ]]; then
 	echo "Saving NVIDIA OC config"
@@ -312,6 +314,7 @@ else
 fi
 
 # AMD config ================================================================
+[[ -e $AMD_OC_CONF ]] && old_amd_oc=$(<$AMD_OC_CONF) || old_amd_oc=
 amd_oc=$(echo $response | jq '.result.amd_oc' --raw-output)
 if [[ ! -z $amd_oc && $amd_oc != "null" ]]; then
 	echo "Saving AMD OC config"
@@ -396,10 +399,15 @@ fi
 # [[ -e $REF_ID ]] && rm $REF_ID
 
 # Post actions =================================================================
-#restartminer - restart miner on success if wallet was changed
-if [[ $arg_restartminer == 1 ]]; then
-	[[ "$old_wallet" != "$(<$WALLET_CONF)" ]] && miner restart || miner start
-	#[[ $WD_ENABLED == 1 ]] && wd restart
+if [[ $arg_boot == 0 ]]; then
+	[[ -e $AMD_OC_CONF ]] && amd_oc=$(<$AMD_OC_CONF) || amd_oc=
+	[[ "$old_amd_oc" != "$amd_oc" ]] && amd-oc-safe
+
+	[[ -e $NVIDIA_OC_CONF ]] && nv_oc=$(<$NVIDIA_OC_CONF) || nv_oc=
+	[[ "$old_nv_oc" != "$nv_oc" ]] && nvidia-oc-log
+
+	[[ -e $WALLET_CONF ]] && wallet=$(<$WALLET_CONF) || wallet=
+	[[ "$old_wallet" != "$wallet" ]] && miner restart || miner start
 fi
 
 echo "Touching $HELLO_OK"

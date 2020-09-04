@@ -163,15 +163,15 @@ FILEEOF
 	echo -en "Set rig password as system? ${YELLOW}(Y/n)${NOCOLOR} "
 	ask_yn "y" && hive-passwd $passwd #Change password
 	
-	#try to connect
-	hello restartminer
+	# try to connect
+	hello #restartminer
 
-	if [ $? -eq 0 ]; then
+	if [[ $? -eq 0 ]]; then
 		#miner restart
 
-		#Apply OC if configs are available
-		[[ -f $AMD_OC_CONF ]] && amd-oc-safe
-		[[ -f $NVIDIA_OC_CONF ]] && nvidia-oc-log
+		# Apply OC if configs are available
+		#[[ -f $AMD_OC_CONF ]] && amd-oc-safe
+		#[[ -f $NVIDIA_OC_CONF ]] && nvidia-oc-log
 
 	 	echo -e "\n${BGREEN}Login OK. Happy mining!${NOCOLOR}\n"
 	 	exit 0
