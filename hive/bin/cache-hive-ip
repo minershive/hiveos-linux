@@ -13,8 +13,8 @@ query_timeout=15
 # name servers for queries
 dns_srv=("8.8.8.8" "1.1.1.1" "114.114.114.114")
 
-# update servers to cache
-upd_srv=("download.hiveos.farm")
+# other servers to cache
+add_srv=("download.hiveos.farm" "shell.hiveos.farm")
 
 # backup api servers
 bak_srv=("api-cf.hiveos.farm" "api.hiveos.farm")
@@ -212,8 +212,8 @@ function update_hosts {
 	done
 
 	local code=0
-	# add update hosts
-	for host in "${upd_srv[@]}"
+	# add other hosts
+	for host in "${add_srv[@]}"
 	do
 		add_host "$host" || code=$?
 	done
