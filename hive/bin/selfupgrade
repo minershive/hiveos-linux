@@ -34,6 +34,19 @@ VERSION=
 existing_repository_list=
 repository_list=
 
+
+#Check config grub and create symlink
+function check_grub {
+	if [[ -f /hive/etc/grub ]]; then
+		if [[ $(readlink /etc/default/grub) != "/hive/etc/grub" ]]; then
+			rm /etc/default/grub > /dev/null 2>&1
+			ln -s /hive/etc/grub /etc/default/grub > /dev/null 2>&1
+		fi
+		update-grub > /dev/null 2>&1
+	fi
+}
+
+
 for param in $@; do
 	case $param in
 		--help|-h)
@@ -211,6 +224,9 @@ apt-get clean
 #Reread env variables
 source /etc/environment
 export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+
+#update Grub
+check_grub
 
 #echo ------------------------------------------------------
 screen -wipe > /dev/null 2>&1 #Wipe possible dead screen
