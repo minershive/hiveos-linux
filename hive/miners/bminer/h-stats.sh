@@ -25,7 +25,7 @@
 
 		local hs2=`echo $devices_raw | jq -r .devices[].solvers[1].speed_info.hash_rate`
 		local hs_units2="hs"
-		khs2=`echo $hs2 | awk '{s+=$1} END {print s/1000}'` #"
+		khs2=`echo "$hs2" | awk '{s+=$1} END {print s/1000}'` #"
 
 		if [[ ! -z $BMINER_URL2 ]]; then
 			#dual mode
