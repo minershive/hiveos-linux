@@ -3,6 +3,8 @@
 #[ -t 1 ] &&
 . colors
 
+#. /hive/etc/amd.ids
+
 date
 
 cardno=0
@@ -29,6 +31,14 @@ done
 busids_dirs=`printf '%s\n' "${busids_dirs[@]}" | sort` #sorting by bus id
 #echo -e "$busids_dirs"
 
+
+# get gpu info from gpu-detect
+declare -A GPUINFO
+while IFS=";" read busid name vbios; do
+	GPUINFO["${busid:--}"]="$name $NOCOLOR$vbios"
+done < <( cat $GPU_DETECT_JSON 2>/dev/null | jq -r -c '.[] | (.busid+";"+.name+";"+.vbios)' 2>/dev/null )
+
+
 i=-1
 #for dir in $dirs; do
 for bdir in $busids_dirs; do
@@ -46,9 +56,11 @@ for bdir in $busids_dirs; do
 	busid=`echo $bdir | awk -F\; '{print $1}'`
 	busid=${busid#0000:} #trim prefix
 
-	[[ -z $cardno ]] && echo -e "${RED}ERROR: can not match card no in $dir${NOCOLOR}" && continue
-	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${PURPLE}$busid${NOCOLOR} /sys/class/drm/card$cardno ${YELLOW}===${NOCOLOR}"
+	name="${GPUINFO["$busid"]}"
+	[[ -z "$name" ]] && name="`lspci -vmms "$busid" 2>/dev/null | grep -oP "^Device:\s\K.*"`"
 
+	[[ -z $cardno ]] && echo -e "${RED}ERROR: can not match card no in $dir${NOCOLOR}" && continue
+	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${PURPLE}$busid${NOCOLOR} ${BRED}$name ${YELLOW}===${NOCOLOR}"
 
 	amdcovc -a $i
 
@@ -89,11 +101,19 @@ for bdir in $busids_dirs; do
 	[[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]] &&
 		pwr=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(average GPU)' | awk '{print $1}'`
 
+	meminfo=
+	if [[ -e /sys/kernel/debug/dri/$cardno/amdgpu_vram_mm ]]; then
+		vram=`grep -m 1 "^total:" /sys/kernel/debug/dri/$cardno/amdgpu_vram_mm`
+		#total: 2097152, used 978872 free 1118280
+		[[ ! -z "$vram" ]] &&
+			meminfo=`echo "$vram" | awk '{printf "%s %.2f MB, %s: %.2f MB, %s: %.2f MB", $1, $2/256, $3, $4/256, $5, $6/256}'` &&
+			echo "  Memory $meminfo"
+	fi
 
-	echo -en "  ${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${corev}mV"
-	echo -en " ${PURPLE}MDPM${NOCOLOR} $mem_dpm ${PURPLE}MEM${NOCOLOR} $mem_mhz $memv"
+	echo -n "  ${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${corev}mV"
+	echo -n " ${PURPLE}MDPM${NOCOLOR} $mem_dpm ${PURPLE}MEM${NOCOLOR} $mem_mhz $memv"
 	[[ ! -z $vddci ]] && echo -en " ${PURPLE}VDDCI${NOCOLOR} $vddci"
-	echo -en " ${PURPLE}REF${NOCOLOR} $ref"
-	echo -e  " ${PURPLE}PWR${NOCOLOR} $pwr W ${PURPLE}RPM${NOCOLOR} $fanrpm"
+	echo -n " ${PURPLE}REF${NOCOLOR} $ref"
+	echo    " ${PURPLE}PWR${NOCOLOR} $pwr W ${PURPLE}RPM${NOCOLOR} $fanrpm"
 
 done
