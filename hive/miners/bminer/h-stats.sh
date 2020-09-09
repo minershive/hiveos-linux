@@ -17,7 +17,11 @@
 		[[ -z $BMINER_ALGO ]] && BMINER_ALGO="stratum"
 
 		local dev_numbers=$(echo $stats_raw | jq -r '[ .miners | to_entries[] | select(.value) | .key|tonumber ]') #'
-		local bus_numbers=$(echo $gpu_detect_json | jq -r ".$dev_numbers.busid" |  awk '{printf("%d\n", "0x"$1)}' | jq -cs '.') #'
+		if [[ $cpu_indexes_array != '[]' ]]; then
+			local bus_numbers=$(echo $gpu_detect_json | jq -c "del(.$cpu_indexes_array)" | jq -r ".$dev_numbers.busid" |  awk '{printf("%d\n", "0x"$1)}' | jq -cs '.') #"
+		else
+			local bus_numbers=$(echo $gpu_detect_json | jq -r ".$dev_numbers.busid" |  awk '{printf("%d\n", "0x"$1)}' | jq -cs '.') #'
+		fi
 
 		devices_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:${MINER_API_PORT}/api/v1/status/solver`
 		#fucking bminer sorts it's keys as numerics, not natual, e.g. "1", "10", "11", "2", fix that with sed hack by replacing "1": with "01" once again:
