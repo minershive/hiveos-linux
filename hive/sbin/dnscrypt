@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+
+. colors
+
+VERSION="0.1"
+
+echo -e "DNSCrypt tool v$VERSION\n"
+
+# Exit codes
+#  1 - error / disabled
+#  2 - misconfiguration
+# 10 - not installed
+# 11 - incompatible version
+
+ver=
+
+function get_version() {
+	local info=`dpkg -s dnscrypt-proxy 2>/dev/null`
+	[[ ! "$info" =~ ' installed' ]] && return 1
+	[[ "$info" =~ Version:[[:space:]](.[0-9\.]*) ]] && echo "${BASH_REMATCH[1]}"
+	[[ ! "$info" =~ ~hiveos ]] && return 2
+	return 0
+}
+
+
+function check_version() {
+	ver=$(get_version)
+	[[ $? -ne 0 && ! -z "$ver" ]] &&
+		echo "${CYAN}> Current version: ${WHITE}$ver${NOCOLOR} - ${RED}incompatible version${NOCOLOR}" &&
+		return 11
+	[[ -z "$ver" ]] &&
+		echo "${CYAN}> Current version: ${RED}NOT INSTALLED${NOCOLOR}" &&
+		return 10
+	echo "${CYAN}> Current version: ${WHITE}$ver${NOCOLOR}"
+	return 0
+}
+
+
+function check_config() {
+	local server=`dig 127.0.0.1 +time=1 2>/dev/null | grep -oP "SERVER: \K[^(]+"`
+	if [[ "$server" == "127.0.2.1#53" ]]; then
+		echo "${CYAN}> Current state: ${GREEN}ENABLED${NOCOLOR}, using ${server/\#/:}"
+		return 0
+	fi
+	if [[ ! -z "$server" ]]; then
+		echo "${CYAN}> Current state: ${YELLOW}DISABLED${NOCOLOR}, using ${server/\#/:}"
+		return 1
+	fi
+	echo "${CYAN}> Current state: ${RED}MISCONFIGURED${NOCOLOR}"
+	return 2
+}
+
+
+function enable_service() {
+	systemctl enable dnscrypt-proxy 2>/dev/null
+	systemctl start dnscrypt-proxy
+	[[ ! -z "$1" ]] && return
+	local exitcode=1
+	local result
+	for(( i=0; i < 10; i++ )); do
+		sleep 1
+		result=$(check_config) && exitcode=0 && break
+	done
+	echo "$result"
+	return $exitcode
+}
+
+
+function disable_service() {
+	systemctl stop dnscrypt-proxy
+	systemctl disable dnscrypt-proxy 2>/dev/null
+	[[ ! -z "$1" ]] && return
+	local exitcode=1
+	local result
+	for(( i=0; i < 10; i++ )); do
+		sleep 1
+		result=$(check_config) && continue
+		exitcode=0
+		break
+	done
+	echo "$result"
+	return $exitcode
+}
+
+
+for param in "$@"; do
+	case "$param" in
+
+		-h|--help|help)
+			echo "${YELLOW}Usage${NOCOLOR}:
+  dnscrypt  -i | --install	install and enable proxy service
+  dnscrypt  -u | --uninstall	uninstall proxy service
+  dnscrypt  -e | --enable	enable and start proxy service
+  dnscrypt  -d | --disable	disable and stop proxy service
+  dnscrypt  -r | --restart	restart proxy service
+  dnscrypt  -s | --status	check proxy service status
+  dnscrypt  -l | --log		display proxy service log
+  dnscrypt  -t | --test		test proxy service resolving
+  "
+			exit
+		;;
+
+		-i|--install|install)
+			check_version
+			if [[ $? -gt 1 && ! -z "$ver" ]]; then
+				echo "${YELLOW}> Uninstalling version: ${WHITE}$ver${NOCOLOR}"
+				apt remove -y dnscrypt-proxy || exit
+				ver=
+			fi
+			[[ -z "$ver" ]] &&
+				echo "${YELLOW}> Installing package${NOCOLOR}" ||
+				echo "${YELLOW}> Updating package${NOCOLOR}"
+
+			#[[ -f dnscrypt-proxy_2.0.44~hiveos_amd64.deb ]] && 
+			#	dpkg --force-confnew -i dnscrypt-proxy_2.0.44~hiveos_amd64.deb ||
+			apt install -y dnscrypt-proxy=2.*~hiveos
+			exitcode=$?
+			[[ $exitcode -ne 0 ]] && echo "${RED}> FAILED ($?)${NOCOLOR}" && exit $exitcode
+
+			newver=$(get_version)
+			[[ "$newver" == "$ver" ]] &&
+				echo "${GREEN}> Version is up to date${NOCOLOR}" ||
+				echo "${GREEN}> Installed version: ${WHITE}$newver${NOCOLOR}"
+			enable_service
+			exit
+		;;
+
+		-u|--uninstall|uninstall)
+			check_version || exit
+			echo "${YELLOW}> Uninstalling package${NOCOLOR}"
+			apt remove -y dnscrypt-proxy
+			exitcode=$?
+			[[ $exitcode -eq 0 ]] &&
+				echo "${GREEN}> OK${NOCOLOR}" ||
+				echo "${RED}> FAILED ($?)${NOCOLOR}"
+			exit $exitcode
+		;;
+
+		-t|--test|test)
+			check_version || exit
+			dnscrypt-proxy -resolve hiveos.farm
+			exitcode=$?
+			[[ $exitcode -eq 0 ]] &&
+				echo "${GREEN}> OK${NOCOLOR}" ||
+				echo "${RED}> FAILED ($?)${NOCOLOR}"
+			exit $exitcode
+		;;
+
+		-e|--enable|enable)
+			check_version || exit
+			#check_config
+			echo "${YELLOW}> Enabling service${NOCOLOR}"
+			enable_service
+			exit
+		;;
+
+		-d|--disable|disable)
+			check_version || exit
+			#check_config
+			echo "${YELLOW}> Disabling service${NOCOLOR}"
+			disable_service
+			exit
+		;;
+
+		-r|--restart|restart)
+			check_version || exit
+			echo "${YELLOW}> Restarting service${NOCOLOR}"
+			systemctl restart dnscrypt-proxy && sleep 1
+			#systemctl status dnscrypt-proxy
+			check_config
+			exit
+		;;
+
+		-l|--log|log)
+			check_version || exit
+			systemctl status dnscrypt-proxy
+			exit
+		;;
+
+		-s|--status|status)
+			check_version || exit
+			check_config
+			exit
+		;;
+
+		*)
+			echo "${RED}> Unknown option ${WHITE}$param${NOCOLOR}"
+			exit 1
+		;;
+
+	esac
+done
+
+exit
