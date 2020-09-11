@@ -10,33 +10,50 @@ function miner_ver() {
 function miner_config_echo() {
   local MINER_VER=`miner_ver`
   miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/$MINER_NAME.conf"
-  miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/pools.txt"
 }
 
 function miner_config_gen() {
   local MINER_CONFIG="$MINER_DIR/$MINER_VER/$MINER_NAME.conf"
   mkfile_from_symlink $MINER_CONFIG
-  local MINER_POOLS="$MINER_DIR/$MINER_VER/pools.txt"
-  mkfile_from_symlink $MINER_POOLS
 
-  #generating pool template
-  [[ $SRBMINER_TLS -eq 1 ]] && local pool='{ "pool_use_tls": true }' || local pool={}
-  pool=$(jq -s '.[0] * .[1]' <<< "$pool {\"wallet\": \"$SRBMINER_TEMPLATE\"}")
-  pool=$(jq -s '.[0] * .[1]' <<< "$pool {\"password\": \"$SRBMINER_PASS\"}")
-  pool=$(jq -s '.[0] * .[1]' <<< "$pool {\"algorithm\": \"$SRBMINER_ALGO\"}")
-  [[ ! -z $SRBMINER_WORKER ]] && pool=$(jq -s '.[0] * .[1]' <<< "$pool {\"worker\": \"$SRBMINER_WORKER\"}")
-  [[ ${SRBMINER_URL,,} = *"nicehash"* ]] && pool=$(jq -s '.[0] * .[1]' <<< "$pool {\"nicehash\": true}")
-  #generating pool_config
-  local pool_config="{\"pools\": ["
-  while read -r line; do
-    [[ -z $line ]] && continue
-    pool=$(jq -cs '.[0] * .[1]' <<< "$pool {\"pool\": \"$line\"}")
-    [[ $pool_config != "{\"pools\": [" ]] && pool_config+=", "
-    pool_config+=$pool
-  done <<< "$SRBMINER_URL"
-  pool_config+="]}"
-  echo "$pool_config" | jq . > $MINER_POOLS
+  local algo=$SRBMINER_ALGO
+
+  dpkg --compare-versions "`miner_ver`" "gt" "0.4.7"; [[ $? -eq "0" ]] && local ver=1 || local ver=0;
+
+  if (( $ver )); then
+    local pool=
+    while read -r line; do
+      [[ ! -z $pool ]] && pool+='!'
+      [[ $SRBMINER_TLS -eq 1 ]] && local pool+='stratum+ssl://'
+      pool+=$line
+    done <<< "$SRBMINER_URL"
+  else
+    [[ $SRBMINER_TLS -eq 1 ]] && local pool+='stratum+ssl://'
+    local pool+=`head -n 1 <<< "$SRBMINER_URL"`
+  fi
+
+  local wallet=$SRBMINER_TEMPLATE
+
+  [[ ! -z $SRBMINER_PASS ]] && local pass=$SRBMINER_PASS || local pass=x
+
+  if [[ ! -z $SRBMINER_ALGO2 ]] && (( $ver )); then
+    algo+=';'$SRBMINER_ALGO2
+
+    local pool2=
+    while read -r line; do
+      [[ ! -z $pool2 ]] && pool2+='!'
+      [[ $SRBMINER_TLS2 -eq 1 ]] && local pool2+='stratum+ssl://'
+      pool2+=$line
+    done <<< "$SRBMINER_URL2"
+    pool+=';'$pool2
+
+    wallet+=';'$SRBMINER_TEMPLATE2
+
+    [[ ! -z $SRBMINER_PASS2 ]] && pass+=';'$SRBMINER_PASS2 || pass+=';'x
+  fi
+
+  local user_config=`echo $SRBMINER_USER_CONFIG`
 
   #generating config
-  echo "--algorithm $SRBMINER_ALGO --api-enable --api-port $MINER_API_PORT $SRBMINER_USER_CONFIG" > $MINER_CONFIG
+  echo "--algorithm $algo --pool $pool --wallet $wallet --password $pass $user_config" > $MINER_CONFIG
 }

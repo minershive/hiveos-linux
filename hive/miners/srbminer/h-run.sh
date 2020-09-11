@@ -18,4 +18,11 @@ HugePagesTune
 
 unset LD_LIBRARY_PATH
 
-unbuffer ./SRBMiner-MULTI `cat $MINER_NAME.conf` --log-file $MINER_LOG_BASENAME.log #| tee --append $MINER_LOG_BASENAME.log
+conf=`cat $MINER_NAME.conf`
+
+if [[ $conf=~';' ]]; then
+  conf=`echo $conf | tr -d '\'`
+#  conf=${conf//;/'\;'}
+fi
+
+eval "unbuffer ./SRBMiner-MULTI ${conf//;/'\;'} --api-enable --api-port $MINER_API_PORT --log-file $MINER_LOG_BASENAME.log"
