@@ -6,6 +6,8 @@ INTERVAL=10
 LOG="/var/log/hive-agent.log"
 LAST_STAT="/run/hive/last_stat.json"
 LAST_CMD_ID="/run/hive/last_cmd_id"
+LAST_OK_FILE="/run/hive/last_ok"
+CONF_SEQ="/run/hive/confseq"
 
 API_TIMEOUT=15 #timeout to wait for miner API response, can take very long time on 13+ gpus
 
@@ -216,12 +218,12 @@ function loop {
 		sleep 10 # wait. maybe sreboot was called
 		echo "Filesystem is read-only, rebooting"
 		[[ $rebooting != 1 ]] && rebooting=1 && mount | message error "Filesystem is read-only, rebooting" payload
+		# remount to make some things working
+		[[ ! -w /tmp ]] && echo "Remounting /tmp" && mount none /tmp -t tmpfs -o size=100m,mode=1777 2>/dev/null
 		# using reboot as sreboot most probably failed
 		reboot -f
 		sleep 5
 		echo "Reboot failed!"
-		# remount to make some things working
-		[[ ! -w /tmp ]] && echo "Remounting /tmp" && mount none /tmp -t tmpfs -o size=100m,mode=1777 2>/dev/null
 	fi
 
 	[[ -z $gpu_stats ]] && gpu_stats='{}'
@@ -470,6 +472,7 @@ function loop {
 	[[ ! -z $error && $error != "null" ]] && echo -e "${RED}Error response${NOCOLOR}: $error" && return 1
 
 	LAST_OK=$(date +%s)
+	echo "$LAST_OK" > $LAST_OK_FILE 2>/dev/null
 	if [[ $force_stop -eq 1 ]]; then
 		# always run wd before miner
 		wd start
@@ -498,7 +501,9 @@ function loop {
 		# save last id
 		[[ $cmd_id -gt 0 ]] && echo $cmd_id > $LAST_CMD_ID
 		do_command
+		confseq=`echo "$body" | jq -r '.confseq'`
 	else
+		confseq=
 		count=`echo "$response" | jq '.result.commands|length'`
 		echo "Got $count batch commands"
 		for (( i=0; i < $count; i++ )); do
@@ -510,7 +515,24 @@ function loop {
 			[[ $cmd_id -gt 0 ]] && echo $cmd_id > $LAST_CMD_ID
 			command=
 			do_command
+			newseq=`echo "$body" | jq -r '.confseq'`
+			[[ $newseq -gt $confseq ]] && confseq=$newseq
 		done
+	fi
+
+	if [[ ! -z $confseq && $confseq != "null" && -w /run ]]; then
+		if [[ $command != "OK" ]]; then
+			echo "$confseq" > $CONF_SEQ 2>/dev/null
+		elif [[ -e $CONF_SEQ ]]; then
+			curseq="$(<$CONF_SEQ)"
+			#echo "confseq = $confseq, current = $curseq"
+			if [[ "$curseq" != "$confseq" ]]; then
+				echo -e "${YELLOW}Config sequence mismatch, sending HELLO${NOCOLOR}"
+				echo "[`date`] < CONFSEQ MISMATCH, SENDING HELLO" >> $LOG
+				rm $CONF_SEQ
+				hello
+			fi
+		fi
 	fi
 
 	# ROH Fan controller blink error state
