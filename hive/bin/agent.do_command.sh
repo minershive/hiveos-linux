@@ -292,7 +292,8 @@ function do_command() {
 			listjson=`gpu-detect listjson AMD`
 			gpu_biosid=`echo "$listjson" | jq -r ".[$gpu_index].vbios" | sed -e 's/[\ ]/_/g'`
 			gpu_type=`echo "$listjson" | jq -r ".[$gpu_index].name" | sed -e 's/[\,\.\ ]//g'`
-			gpu_memsize=`echo "$listjson" | jq -r ".[$gpu_index].mem" | sed -e 's/^\(..\).*/\1/' | sed -e 's/.$/G/'`
+			#gpu_memsize=`echo "$listjson" | jq -r ".[$gpu_index].mem" | sed -e 's/^\(..\).*/\1/' | sed -e 's/.$/G/'`
+			gpu_memsize=$(echo "$listjson" | jq -r "if .[$gpu_index].mem then .[$gpu_index].mem else 0 end" | awk '{print int($1/1000)"G"}') #'
 			gpu_memtype=`echo "$listjson" | jq -r ".[$gpu_index].mem_type" | sed -e 's/[\,\.\ ]/_/g'`
 			if [[ ! -z $gpu_index && $gpu_index != "null" ]]; then
 				#local gpu_index_hex=$gpu_index
@@ -337,7 +338,7 @@ function do_command() {
 					fi
 					local force=$(echo $body | jq --arg queue $queue '.batch[$queue|tonumber].force' --raw-output)
 					local need_reboot=$(echo $body | jq '.reboot' --raw-output)
-					[[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
+					[[ $need_reboot == "1" || $need_reboot == "true" ]] && need_reboot=1 || need_reboot=0
 					[[ ! -z $force && $force == "1" ]] && extra_args="-f" || extra_args=""
 					# Save ROM
 					echo "$rom_base64" | base64 -d | gzip -d > /tmp/amd.uploaded.rom
@@ -367,7 +368,7 @@ function do_command() {
 				done
 				local meta=$(jq -n --arg good "`echo ${meta_good[@]} | tr " " ","`" --arg bad "`echo ${meta_bad[@]} | tr " " ","`" '{$good,$bad}')
 				local reboot_msg=""
-				echo "Batch. need_reboot="$need_reboot >>/home/user/amd_reboot.log
+				#echo "Batch. need_reboot="$need_reboot >>/home/user/amd_reboot.log
 				[[ $need_reboot -eq 1 && $errors == 0 ]] && reboot_msg=", now reboot"
 				if [ $errors == 0 ]; then
 					echo "$payload" | message ok "ROM flashing OK$reboot_msg" payload --id=$cmd_id --meta="$meta"
@@ -380,8 +381,8 @@ function do_command() {
 				local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
 				local rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
 				local need_reboot=$(echo $body | jq '.reboot' --raw-output)
-				[[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
-				echo "Single. need_reboot="$need_reboot >>/home/user/amd_reboot.log
+				[[ $need_reboot == "1" || $need_reboot == "true" ]] && need_reboot=1 || need_reboot=0
+				#echo "Single. need_reboot="$need_reboot >>/home/user/amd_reboot.log
 				if [[ -z $gpu_index || $gpu_index == "null" ]]; then
 					message error "No \"gpu_index\" given" --id=$cmd_id
 				elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
@@ -426,8 +427,7 @@ function do_command() {
 			gpu_biosid=`echo "$listjson" | jq -r ".[$gpu_index].vbios" | sed -e 's/[\ ]/_/g'`
 			gpu_type=`echo "$listjson" | jq -r ".[$gpu_index].name" | sed -e 's/[\,\.\ ]//g'`
 			#gpu_memsize=`echo "$listjson" | jq -r ".[$gpu_index].mem" | sed -e 's/^\(..\).*/\1/' | sed -e 's/.$/G/'`
-			#Fix for memsize > 10G
-			gpu_memsize=$(( $(echo "$listjson" | jq -r ".[$gpu_index].mem" | awk '{print $1}') / 1000 ))"G"
+			gpu_memsize=$(echo "$listjson" | jq -r "if .[$gpu_index].mem then .[$gpu_index].mem else 0 end" | awk '{print int($1/1000)"G"}') #'
 			rom_name="${WORKER_NAME}-$gpu_index-$gpu_type-$gpu_memsize-$gpu_biosid.rom"
 			#echo message info $rom_name
 			#return
@@ -464,7 +464,7 @@ function do_command() {
 				#return 0
 				local gpu_groups=$(echo $body | jq --raw-output '.batch | length')
 				local need_reboot=$(echo $body | jq '.reboot' --raw-output)
-				[[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
+				[[ $need_reboot == "1" || $need_reboot == "true" ]] && need_reboot=1 || need_reboot=0
 				local queue=0
 				local errors=0
 				local meta_good=()
@@ -531,7 +531,7 @@ function do_command() {
 				done
 				local meta=$(jq -n --arg good "`echo ${meta_good[@]} | tr " " ","`" --arg bad "`echo ${meta_bad[@]} | tr " " ","`" '{$good,$bad}')
 				local reboot_msg=""
-				[[ $need_reboot -eq 1 && $error == 0 ]] && reboot_msg=", now reboot"
+				[[ $need_reboot -eq 1 && $errors == 0 ]] && reboot_msg=", now reboot"
 				if [ $errors == 0 ]; then
 					echo "$payload" | message ok "ROM flashing OK$reboot_msg" payload --id=$cmd_id --meta="$meta"
 				else
@@ -556,7 +556,7 @@ function do_command() {
 				local gpu_index=$(echo $body | jq '.gpu_index' --raw-output)
 				local rom_base64=$(echo $body | jq '.rom_base64' --raw-output)
 				local need_reboot=$(echo $body | jq '.reboot' --raw-output)
-				[[ ! -z $need_reboot && $need_reboot == "1" ]] && need_reboot=1 || need_reboot=0
+				[[ $need_reboot == "1" || $need_reboot == "true" ]] && need_reboot=1 || need_reboot=0
 				if [[ -z $gpu_index || $gpu_index == "null" ]]; then
 				message error "No \"gpu_index\" given" --id=$cmd_id
 				elif [[ -z $rom_base64 || $rom_base64 == "null" ]]; then
@@ -579,49 +579,48 @@ function do_command() {
 						fi
 
 						if [[ $gpu_index == -1 ]]; then # -1 = all
-							#payload=`atiflashall $extra_args /tmp/amd.uploaded.rom`
 							local nv_list=`cat /run/hive/gpu-detect.json | jq "[.[] | select ( .brand == \"nvidia\" )]"`
-							local nv_count=$(echo $nv_list | jq ". | length")
+							local nv_count=$(echo "$nv_list" | jq ". | length")
 							payload=""
-							local err=0
+							local errors=0
 							for (( y=0; y < $nv_count; y++ ))
 							do
 								nvflash_linux -s -i$y -r
 								exitcode=$?
 								if [[ exitcode -ne 0 ]]; then
-									payload+=$(echo "Error remove write protect from card $y")
-									err=1
-									break
+									payload+="Error remove write protect from card $y"$'\n'
+									errors=1
 								fi
 
-								if [[ $force -eq 1 ]]; then
-									payload+=$(echo "=== Flashing card $y ===")
-									payload+=`hive-force-nvflash $y "/tmp/nvidia.uploaded.rom"`
+								if [[ $force -eq 1 && $exitcode -eq 0 ]]; then
+									payload+="=== Flashing card $y ==="$'\n'
+									payload+="$(hive-force-nvflash $y /tmp/nvidia.uploaded.rom)"$'\n'
 									exitcode=$?
-									[[ exitcode -ne 0 ]] && break
-									payload+=$(echo "========================")
+									[[ exitcode -ne 0 ]] && errors=1
 								fi
 							done
-							if [[ $force -eq 0 && err -eq 0 ]]; then
-								payload=$(echo "=== Flashing all cards ===")
-								payload+=`nvflash_linux -s -A "/tmp/nvidia.uploaded.rom"`
+
+							exitcode=$errors
+
+							if [[ $force -eq 0 && $errors -eq 0 ]]; then
+								payload="=== Flashing all cards ==="$'\n'
+								payload+="$(nvflash_linux -s -A /tmp/nvidia.uploaded.rom)"$'\n'
 								exitcode=$?
 							fi
 						else
 							#local gpu_index_hex=$gpu_index
 							#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
-							payload=`nvflash_linux -s -i$gpu_index -r`
+							payload="$(nvflash_linux -s -i$gpu_index -r)"
 							exitcode=$?
-							if [[ exitcode -eq 0 ]]; then
-								payload=$(echo "=== Flashing card $gpu_index ===")
+							if [[ $exitcode -eq 0 ]]; then
+								payload="=== Flashing card $gpu_index ==="$'\n'
 								if [[ $force -eq 1 ]]; then
-									payload+=`hive-force-nvflash $gpu_index "/tmp/nvidia.uploaded.rom"`
+									payload+="$(hive-force-nvflash $gpu_index /tmp/nvidia.uploaded.rom)"$'\n'
 								else
-									payload+=`nvflash_linux -s -A -i$gpu_index /tmp/nvidia.uploaded.rom`
+									payload+="$(nvflash_linux -s -A -i$gpu_index /tmp/nvidia.uploaded.rom)"$'\n'
 								fi
 								exitcode=$?
 							fi
-
 						fi
 						#exitcode=$?
 						echo "$payload"
