@@ -49,7 +49,7 @@ HIVE_URL="$HIVE_HOST_URL/worker/api"
 
 # retry again until success
 if [[ $arg_retry == 1 ]]; then
-	echo -e "${YELLOW}Will try again in ${RETRY_TIME}s${NOCOLOR}"	
+	echo -e "${YELLOW}Will try again in ${RETRY_TIME}s${NOCOLOR}"
 	sleep $RETRY_TIME # increase delay on start
 	while true; do
 		sleep $RETRY_TIME
@@ -270,8 +270,8 @@ if [[ -z "$config" || "$config" == "null" ]]; then
 fi
 
 # write config sequence
-#confseq=`jq '.result.confseq' --raw-output <<< "$response"`
-#[[ ! -z $confseq && $confseq != "null" ]] && echo "$confseq" > /tmp/confseq
+confseq=`jq '.result.confseq' --raw-output <<< "$response"`
+[[ ! -z $confseq && $confseq != "null" ]] && echo "$confseq" > /run/hive/confseq
 
 # stop screen session if not running from it
 [[ $arg_check == 0 ]] && hello_quit

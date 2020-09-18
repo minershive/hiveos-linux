@@ -4,7 +4,7 @@
 
 VERSION="0.1"
 
-echo -e "DNSCrypt tool v$VERSION\n"
+[[ ! " $@ " =~ ( -q | --quiet ) ]] && echo -e "DNSCrypt tool v$VERSION"
 
 # Exit codes
 #  1 - error / disabled
@@ -13,7 +13,6 @@ echo -e "DNSCrypt tool v$VERSION\n"
 # 11 - incompatible version
 
 ver=
-
 
 function get_version() {
 	local info=`dpkg -s dnscrypt-proxy 2>/dev/null`
@@ -27,12 +26,12 @@ function get_version() {
 function check_version() {
 	ver=$(get_version)
 	[[ $? -ne 0 && ! -z "$ver" ]] &&
-		echo "${CYAN}> Current version: ${WHITE}$ver${NOCOLOR} - ${RED}incompatible version${NOCOLOR}" &&
+		echo "${CYAN}> DNSCrypt version: ${WHITE}$ver${NOCOLOR} - ${RED}incompatible version${NOCOLOR}" &&
 		return 11
 	[[ -z "$ver" ]] &&
-		echo "${CYAN}> Current version: ${RED}NOT INSTALLED${NOCOLOR}" &&
+		echo "${CYAN}> DNSCrypt version: ${RED}NOT INSTALLED${NOCOLOR}" &&
 		return 10
-	echo "${CYAN}> Current version: ${WHITE}$ver${NOCOLOR}"
+	echo "${CYAN}> DNSCrypt version: ${WHITE}$ver${NOCOLOR}"
 	return 0
 }
 
@@ -40,14 +39,14 @@ function check_version() {
 function check_config() {
 	local server=`dig 127.0.0.1 +time=1 2>/dev/null | grep -oP "SERVER: \K[^(]+"`
 	if [[ "$server" == "127.0.2.1#53" ]]; then
-		echo "${CYAN}> Current state: ${GREEN}ENABLED${NOCOLOR}, using ${server/\#/:}"
+		echo "${CYAN}> DNSCrypt state: ${GREEN}ENABLED${NOCOLOR}, using ${server/\#/:}"
 		return 0
 	fi
 	if [[ ! -z "$server" ]]; then
-		echo "${CYAN}> Current state: ${YELLOW}DISABLED${NOCOLOR}, using ${server/\#/:}"
+		echo "${CYAN}> DNSCrypt state: ${YELLOW}DISABLED${NOCOLOR}, using ${server/\#/:}"
 		return 1
 	fi
-	echo "${CYAN}> Current state: ${RED}MISCONFIGURED${NOCOLOR}"
+	echo "${CYAN}> DNSCrypt state: ${RED}MISCONFIGURED${NOCOLOR}"
 	return 2
 }
 
@@ -112,11 +111,9 @@ for param in "$@"; do
 				echo "${YELLOW}> Installing package${NOCOLOR}" ||
 				echo "${YELLOW}> Updating package${NOCOLOR}"
 
-			#[[ -f dnscrypt-proxy_2.0.44~hiveos_amd64.deb ]] && 
-			#	dpkg --force-confnew -i dnscrypt-proxy_2.0.44~hiveos_amd64.deb ||
 			apt install -y dnscrypt-proxy=2.*~hiveos
 			exitcode=$?
-			[[ $exitcode -ne 0 ]] && echo "${RED}> FAILED ($?)${NOCOLOR}" && exit $exitcode
+			[[ $exitcode -ne 0 ]] && echo "${RED}> FAILED ($exitcode)${NOCOLOR}" && exit $exitcode
 
 			newver=$(get_version)
 			[[ "$newver" == "$ver" ]] &&
@@ -174,14 +171,23 @@ for param in "$@"; do
 
 		-l|--log|log)
 			check_version || exit
-			systemctl status dnscrypt-proxy
+			journalctl -u dnscrypt-proxy -b | tail -n 100
 			exit
 		;;
 
 		-s|--status|status)
 			check_version || exit
+			systemctl status dnscrypt-proxy
 			check_config
 			exit
+		;;
+
+		-v|--version|version)
+			exit 0
+		;;
+
+		-q|--quiet)
+			continue
 		;;
 
 		*)
@@ -191,5 +197,6 @@ for param in "$@"; do
 
 	esac
 done
+
 
 exit

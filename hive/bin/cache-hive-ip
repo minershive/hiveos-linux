@@ -2,13 +2,15 @@
 
 # !!!using only IPv4 addresses and interfaces!!!
 
+set -o pipefail
+
 [[ -t 1 ]] && . colors
 
 skip_local_dns=0
 query_timeout=15
 
-# use DNS over HTTPS (only Google and CloudFlare are supported). DNSCrypt is always used if running
-#USE_DOH="cf gg dc"
+# default DNS over HTTPS resolvers. DNSCrypt is always used if running
+DEF_USE_DOH="cloudflare google alidns-doh"
 
 # name servers for queries
 dns_srv=("8.8.8.8" "1.1.1.1" "114.114.114.114")
@@ -33,6 +35,7 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 "
 
+
 # globals
 declare -A HOSTS_CACHE
 query_servers=
@@ -56,7 +59,7 @@ function dns_servers {
 	# remove duplicates, empty and localhost
 	for addr in "${dns[@]}"
 	do
-		[[ $addr =~ ^127\.0\.0\.[0-9]+$ || ! $addr =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ || " ${dns_servers[@]} " =~ " $addr " ]] &&
+		[[ $addr =~ ^127\.0\.[0-9]{1,3}\.[0-9]{1,3}$ || ! $addr =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ || " ${dns_servers[@]} " =~ " $addr " ]] &&
 			continue
 		dns_servers+=("$addr")
 		query_servers+=" @$addr"
@@ -105,7 +108,7 @@ function resolve_DoH { # @output_array_name, @url, @mode [ cf | gg | dc ]
 
 	echo -n "${CYAN}> Resolving: ${WHITE}$host${NOCOLOR}"
 
-	if [[ "$mode" == "dc" ]]; then
+	if [[ "$mode" == "dnscrypt" ]]; then
 		echo -n " ${YELLOW}[DNSCrypt DoH]${NOCOLOR}"
 		readarray -t arr < <(dig -4 +noall +answer +retry=0 +time=$query_timeout "$host" "@$dc_ip" | grep -oP ".*\sA\s\K[^\s]+$")
 		if [[ ! -z "$arr" ]]; then
@@ -115,12 +118,15 @@ function resolve_DoH { # @output_array_name, @url, @mode [ cf | gg | dc ]
 			echo "${RED} - FAILED${NOCOLOR}"
 		fi
 		return 1
-	elif [[ "$mode" == "cf" ]]; then
+	elif [[ "$mode" == "cloudflare" || "$mode" == "cf" ]]; then
 		echo -n " ${YELLOW}[CloudFlare DoH]${NOCOLOR}"
-		query=`curl -L --connect-timeout $query_timeout --max-time $query_timeout --silent --resolve "cloudflare-dns.com:443:1.1.1.1" "https://cloudflare-dns.com/dns-query?ct=application/dns-json&name=$host&type=A" 2>/dev/null`
-	elif [[ "$mode" == "gg" ]]; then
+		query=`curl -L --connect-timeout $query_timeout --max-time $query_timeout --silent --resolve "cloudflare-dns.com:443:1.1.1.1" "https://cloudflare-dns.com/dns-query?ct=application/dns-json&type=A&name=$host" 2>/dev/null`
+	elif [[ "$mode" == "google" || $mode == "gg" ]]; then
 		echo -n " ${YELLOW}[Google DoH]${NOCOLOR}"
-		query=`curl -L --connect-timeout $query_timeout --max-time $query_timeout --silent --resolve "dns.google:443:8.8.8.8" "https://dns.google/resolve?name=$host&type=A" 2>/dev/null`
+		query=`curl -L --connect-timeout $query_timeout --max-time $query_timeout --silent --resolve "dns.google:443:8.8.8.8" "https://dns.google/resolve?type=A&name=$host" 2>/dev/null`
+	elif [[ "$mode" == "alidns-doh" || $mode == "ali" ]]; then
+		echo -n " ${YELLOW}[AliDNS DoH]${NOCOLOR}"
+		query=`curl -L --connect-timeout $query_timeout --max-time $query_timeout --silent --resolve "dns.alidns.com:443:223.5.5.5" "https://dns.alidns.com/resolve?type=A&name=$host" 2>/dev/null`
 	else
 		echo " ${YELLOW}[unknown]${RED} - FAILED${NOCOLOR}"
 		return 2
@@ -197,7 +203,9 @@ function add_host {
 
 function update_hosts {
 	[ ! -e $RIG_CONF ] && echo "> No $RIG_CONF" && return 1
-	. $RIG_CONF
+	USE_DOH=
+	DOH_ENABLED=
+	source $RIG_CONF
 	[[ -z "$HIVE_HOST_URL" ]] && echo "> HIVE_HOST_URL is empty" && return 2
 	local HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
 	[[ -z "$HOST" ]] && echo "> Unable to parse host name: $HIVE_HOST_URL" && return 3
@@ -210,9 +218,45 @@ function update_hosts {
 
 	newhosts+=$'\n'"# HIVEOS CACHE BEGIN"$'\n'
 
-	# use dnscrypt resolver if enabled
-	[[ ! " $USE_DOH " =~ ' dc ' && -f /etc/resolv.conf && " $( < /etc/resolv.conf ) " =~ nameserver[[:blank:]]*$dc_ip[[:space:]] ]] &&
-		USE_DOH="$USE_DOH dc"
+	# check dnscrypt
+	#[[ -f /etc/resolv.conf && " $( < /etc/resolv.conf ) " =~ nameserver[[:blank:]]*$dc_ip[[:space:]] ]] &&
+	[[ `dig 127.0.0.1 +time=1 2>/dev/null | grep -oP "SERVER: \K[^(]+"` =~ "$dc_ip#" ]] &&
+		DC_ENABLED=1 ||
+		DC_ENABLED=0
+
+	# use defaults
+	[[ -z "$USE_DOH" ]] && USE_DOH="$DEF_USE_DOH"
+
+	# do not use DoH if DOH_ENABLED = 0 or empty
+	[[ "$DOH_ENABLED" -eq 0 ]] && USE_DOH=
+
+	# disable dnscrypt if DOH_ENABLED != 2 and not empty
+	[[ "$DOH_ENABLED" -ne 2 && ! -z "$DOH_ENABLED" && $DC_ENABLED -eq 1 ]] &&
+		DC_ENABLED=0 &&
+		dnscrypt --quiet --disable
+
+	# install/enable dnscrypt if DOH_ENABLED = 2
+	if [[ "$DOH_ENABLED" -eq 2 && $DC_ENABLED -ne 1 ]]; then
+		[[ -t 1 ]] && REDIR=/dev/tty || REDIR=/dev/null
+		payload="$( dnscrypt --quiet --enable | tee $REDIR )"
+		exitcode=$?
+		if [[ $exitcode -ge 10 ]]; then
+			payload="$( dnscrypt --quiet --install | tee $REDIR )"
+			exitcode=$?
+		fi
+		if [[ $exitcode -ne 0 ]]; then
+			echo "$payload" | message error "DNSCrypt error ($exitcode)" payload
+			# disable temporarily to prevent further attemps
+			echo "DOH_ENABLED=1" >> $RIG_CONF
+		else
+			DC_ENABLED=1
+		fi
+		sleep 3 # warming up
+	fi
+
+	# always use dnscrypt resolver if it is enabled
+	[[ ! " $USE_DOH " =~ ' dnscrypt ' && $DC_ENABLED -eq 1 ]] && USE_DOH="dnscrypt $USE_DOH"
+
 	read -a doh_srv < <( echo "$USE_DOH" )
 
 	# add Hive API host and exit on error
