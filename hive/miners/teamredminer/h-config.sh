@@ -19,18 +19,21 @@ function miner_config_gen() {
   [[ -z $TEAMREDMINER_ALGO ]] && TEAMREDMINER_ALGO=lyra2z
 
   local conf="-a ${TEAMREDMINER_ALGO}"
+  local wallet="-u ${TEAMREDMINER_TEMPLATE}"
   local worker_name=
   local line=
   local pool=
   local pass=
   #local user_config=
 
-  if [[ $TEAMREDMINER_ALGO = "ethash" && ! -z $TEAMREDMINER_WORKER ]]; then
+  if [[ ! -z $TEAMREDMINER_WORKER && $TEAMREDMINER_ALGO = "ethash" ]]; then
     worker_name=" --eth_worker $TEAMREDMINER_WORKER"
-  fi
-
-  if [[ $TEAMREDMINER_ALGO = "nimiq" && ! -z $TEAMREDMINER_WORKER ]]; then
+  elif [[ ! -z $TEAMREDMINER_WORKER && $TEAMREDMINER_ALGO = "nimiq" ]]; then
     worker_name=" --nimiq_worker $TEAMREDMINER_WORKER"
+  elif [[ ! -z $TEAMREDMINER_WORKER && $TEAMREDMINER_ALGO == cn* ]]; then
+    worker_name=" --rig_id $TEAMREDMINER_WORKER"
+  elif [[ ! -z $TEAMREDMINER_WORKER ]]; then
+    wallet+=".$TEAMREDMINER_WORKER"
   fi
 
   [[ ! -z $TEAMREDMINER_PASS ]] && pass=" -p $TEAMREDMINER_PASS"
@@ -57,7 +60,7 @@ function miner_config_gen() {
     grep -q "://" <<< $pool
     [[ $? -ne 0 ]] && pool="stratum+tcp://${pool}"
 
-    conf+=" -o $pool -u ${TEAMREDMINER_TEMPLATE}${pass}${worker_name}"
+    conf+=" -o $pool ${wallet}${pass}${worker_name}"
 
   done
 
