@@ -19,7 +19,7 @@ gpu_err_count=0
 high_la_count=0
 
 LAST_STAT="/run/hive/last_stat.json"
-
+LAST_OK_FILE="/run/hive/last_ok"
 RUNNING_FLAG="/run/hive/MINER_RUN"
 
 old_modify_conf=0
@@ -43,10 +43,21 @@ badgpu_count=
 
 
 function loadconf() {
+	PUSH_INTERVAL=10
 	WD_ENABLED=
 	WD_MINHASHES_ALGO=
 	WD_MINHASHES=
 	WD_TYPE=
+	WD_CHECK_CONN=
+	WD_CHECK_GPU=
+	WD_MINER=
+	WD_REBOOT=
+	WD_MAX_LA=
+	#WD_POWER_ENABLED=
+	#WD_POWER_MIN=
+	#WD_POWER_MAX=
+	#WD_POWER_ACTION=
+
 	disable=0
 
 	if [ ! -f $RIG_CONF ]; then
@@ -60,7 +71,6 @@ function loadconf() {
 	fi
 
 	source $RIG_CONF
-
 
 	if [[ -z $WD_ENABLED || $WD_ENABLED != 1 ]]; then
 		[[ $(( `date +%s` - $last_log )) -ge 600 ]] && last_log=`date +%s` && echo -e "${YELLOW}Watchdog disabled in config${NOCOLOR}"
@@ -162,7 +172,7 @@ function set_lastgood() {
 		lastgood=`stat -c %Y $HASHRATE_KHS` ||
 		#lastgood=0 can't set it to 0, in case of boot agent may be late
 		lastgood=`date +%s` #let's count from now
-		
+
 	miner_restart_count=0
 }
 
@@ -265,6 +275,7 @@ function loop() {
 
 	local new=`date +%s`
 	[[ $change_conf -eq 1 || $change_miner -eq 1 ]] && now= && set_lastgood
+
 	# check and adjust time if changed too much
 	if [[ ! -z $now ]]; then
 		local diff=$(( $new - $now - $WD_SLEEP ))
@@ -290,9 +301,20 @@ function loop() {
 
 		return
 	fi
-	
+
 	local elapsed=$(( $now - $lastgood ))
 	#echo Elapsed $elapsed seconds
+
+	if [[ "$WD_CHECK_CONN" == "1" ]]; then
+		local last_ok=`stat -c%Y $LAST_OK_FILE 2>/dev/null`
+		local diff=$(( now - last_ok ))
+		if [[ $last_ok -ne 0 && $diff -gt 60 && $diff -gt $(( PUSH_INTERVAL*3 )) ]]; then
+			echo -e "${YELLOW}NO CONNECTION${NOCOLOR} for $diff seconds"
+			# reset last hash time so miner has some time after connection resumption
+			set_lastgood
+			return
+		fi
+	fi
 
 	echo -e "${RED}BARK${NOCOLOR} ${CYAN}$wd_name${NOCOLOR} $khs kHs $hashless for $elapsed seconds"
 
@@ -330,11 +352,15 @@ function run() {
 
 	loadconf
 
-	echo "MINER RESTART:  $WD_MINER minutes"
-	echo "REBOOT:         $WD_REBOOT minutes"
+	echo "MINER RESTART:     $WD_MINER minutes"
+	echo "REBOOT:            $WD_REBOOT minutes"
 
-	[[ "$WD_CHECK_GPU" == "1" ]] && echo "CHECK GPU:      Enabled"
-	[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && echo "MAX LA:         $WD_MAX_LA.0 (min $WD_MIN_LA.0)"
+	[[ "$WD_CHECK_CONN" == "1" ]] &&
+		echo "CHECK CONNECTION:  Enabled"
+	[[ "$WD_CHECK_GPU" == "1" ]] &&
+		echo "CHECK GPU OFFLINE: Enabled"
+	[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] &&
+		echo "MAX LOAD AVERAGE:  $WD_MAX_LA.0 (min $WD_MIN_LA.0)"
 
 	while true; do
 		[[ $disable -eq 0 ]] && loop
