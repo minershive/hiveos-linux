@@ -1,7 +1,0 @@
-Package: hive-miners-cpuminer-opt-rplant-4.5.5
-Version: 0.6-02
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - CPUminer-opt by rplant v4.5.5
