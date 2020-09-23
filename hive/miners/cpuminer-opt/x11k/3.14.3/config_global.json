@@ -5,7 +5,7 @@
 	"api-bind" : "127.0.0.1:4048",
 	"api-remote": false,
 
-	"url" : "stratum+tcp://mcmpool.eu:3580",
+	"url" : "mcmpool.eu:3580",
 	"user" : "KYAN_WALLET",
 	"pass" : "x",
 
