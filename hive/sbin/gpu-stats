@@ -60,7 +60,7 @@ function internal_stats {
 function amd_stats {
 	#cardcount=0;
 	#/sys/class/drm/card7/device/hwmon/hwmon10
-	local list=`lspci | grep -E "$GPU_STRING" | grep "Advanced Micro Devices" | grep -v -e "RS880"  -e "Stoney" -e "Wani" | awk '{print $1}'`
+	local list=`lspci | grep -E "$GPU_STRING" | grep "Advanced Micro Devices" | grep -v -e "RS880" -e "Stoney" -e "Wani" -e "Picasso" | awk '{print $1}'`
 
 	for hwmondir in /sys/class/drm/card*/device/hwmon/hwmon*/ ; do
 		#echo $hwmondir

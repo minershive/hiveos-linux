@@ -48,7 +48,7 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 
 
 	if [[ ! -z $2 && $2 == "AMD" ]]; then
-		list=`lspci | grep -E "$GPU_STRING" | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney"`
+		list=`lspci | grep -E "$GPU_STRING" | grep "Advanced Micro Devices" | grep -v -e "RS880" -e "Stoney" -e "Wani" -e "Picasso"`
 	elif [[ ! -z $2 && $2 == "NVIDIA" ]]; then
 		list=`lspci | grep -E "$GPU_STRING" | grep "NVIDIA" | grep -v "nForce"`
 	else
@@ -63,7 +63,7 @@ if [[ $1 == "list" || $1 == "listjson" ]]; then
 		unset gputype
 		[[ $s =~ "NVIDIA" && ! $s =~ "nForce" ]] &&
 			gputype="NVIDIA" && COLOR=$GREEN && gpu_brand_i=$((gpu_brand_i+1))
-		[[ $s =~ "Advanced Micro Devices" && ! $s =~ "RS880" && ! $s =~ "Stoney" ]] &&
+		[[ $s =~ "Advanced Micro Devices" && ! $s =~ "RS880" && ! $s =~ "Stoney" && ! $s =~ "Wani" && ! $s =~ "Picasso" ]] &&
 			gputype="AMD" && COLOR=$RED && gpu_brand_i=$((gpu_brand_i+1))
 
 		#[[ $s =~ ^([0-9a-z:.]+).*\[(.+)\] ]]
@@ -208,9 +208,9 @@ elif [[ $1 == "listnvidia" ]]; then
 	done <<<"$list"
 	exit 0
 elif [[ $1 == "AMD" ]]; then
-	lspci | grep -E "$GPU_STRING" | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | wc -l
+	lspci | grep -E "$GPU_STRING" | grep "Advanced Micro Devices" | grep -v -e "RS880" -e "Stoney" -e "Wani" -e "Picasso" | wc -l
 elif [[ $1 == "AMD_FIRST" ]]; then
-	lspci | grep -E "$GPU_STRING" | head -n 1 | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | wc -l
+	lspci | grep -E "$GPU_STRING" | head -n 1 | grep "Advanced Micro Devices" | grep -v -e "RS880" -e "Stoney" -e "Wani" -e "Picasso" | wc -l
 elif [[ $1 == "NVIDIA" ]]; then
 	lspci | grep -E "$GPU_STRING" | grep "NVIDIA" | grep -v "nForce" | wc -l
 elif [[ $1 == "NVIDIA_FIRST" ]]; then

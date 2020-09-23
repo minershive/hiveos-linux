@@ -141,7 +141,7 @@ done
 
 busids_dirs=`printf '%s\n' "${busids_dirs[@]}" | sort` #sorting by bus id
 
-list=`lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices" | grep -v -e "RS880"  -e "Stoney" | awk '{print $1}'`
+list=`lspci | grep -E "VGA|3D controller" | grep "Advanced Micro Devices" | grep -v -e "RS880" -e "Stoney" -e "Wani" -e "Picasso" | awk '{print $1}'`
 
 i=-1
 card_idx=-1
