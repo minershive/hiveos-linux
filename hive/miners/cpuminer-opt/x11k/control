@@ -1,8 +1,8 @@
 Package: hive-miners-cpuminer-opt-x11k
-Version: 0.6-02
+Version: 0.6-03
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-cpuminer-opt-x11k-3.4.13
+Depends: hive-miners-cpuminer-opt-x11k-3.14.3
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - CPUminer fork with X11K support
