@@ -329,8 +329,13 @@ function prepare {
 	[[ $mem -lt 3600 ]] && echo -e "${YELLOW}4 GB RAM is required, exiting${NOCOLOR}" && exit 1
 
 	PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
-	DISK_PART=`blkid | grep -m1 $PART_UUID | awk '{ print $1 }' | sed 's/://' | sed 's/\(^\/dev\/\)//'`
-	DISK_NAME=`echo ${DISK_PART} | sed 's/\([[:digit:]]\)//'`
+	DISK_PART=`blkid -U "${PART_UUID}" | sed 's/\(^\/dev\/\)//'`
+	if [[ "$(echo $DISK_PART | grep -c nvme)" -gt 0 ]];
+	then
+		DISK_NAME=${DISK_PART::-2} #cutoff partnumber pN
+	else
+		DISK_NAME=${DISK_PART::-1} #cutoff partnumber N
+	fi
 	DISK_SIZE=`cat /proc/partitions | grep -w "${DISK_NAME}" | awk '{ printf("%.f",$3/1024)}'`
 	PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
 
@@ -448,7 +453,8 @@ function prepare {
 	echo "archname=$archname" >> $TMPDIR/replace.conf
 	echo "root_dev=$DISK_NAME" >> $TMPDIR/replace.conf
 	echo "conf_loop=$conf_loop" >> $TMPDIR/replace.conf
-
+	echo "conf_part=${DISK_PART::-1}1" >> $TMPDIR/replace.conf
+	
 
 	#chroot to temp root
 	mount --bind /proc $TMPDIR/proc
@@ -490,7 +496,7 @@ function write {
 	if [[ -f old-config/rig.conf ]]; then
 		echo -e "\n${CYAN}> Writing Hive OS config to ${BPURPLE}$root_dev${NOCOLOR}"
 
-		dd if=/dev/${root_dev}1 of=new_conf.img bs=1M
+		dd if=/dev/${conf_part} of=new_conf.img bs=1M
 
 		LOOPDEV=$(losetup --find --show new_conf.img)
 		partprobe ${LOOPDEV}
@@ -501,9 +507,9 @@ function write {
 			cp -R old-config/* hive-config
 			sync
 
-			dd if=/new_conf.img of=/dev/${root_dev}1 bs=1M
+			dd if=/new_conf.img of=/dev/${conf_part} bs=1M
 		else
-			echo -e "${RED}Config was not written to ${BPURPLE}$root_dev${NOCOLOR}"
+			echo -e "${RED}Config was not written to ${BPURPLE}${conf_part}${NOCOLOR}"
 		fi
 	fi
 
