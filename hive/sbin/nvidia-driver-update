@@ -124,7 +124,7 @@ function list_packages() {
 		local last=
 		for drv in "${versions[@]}"
 		do
-			this="${drv%.*}"
+			this="${drv%%.*}"
 			if [[ "$last" != "$this" || -z "$last" ]]; then
 				[[ ! -z "$last" ]] && echo -e ""
 				last="$this"
@@ -170,16 +170,16 @@ function check_package() { # @filename
 }
 
 
-function get_url() { # @version or @url, @tesla=1,  returns $url
+function get_url() { # @version or @url, returns $url and $url_tesla
+	url_tesla=
 	# latest stable
 	if [[ -z "$1" ]]; then
 		get_latest || return $?
 		url="${URL}${DRVPATTERN}${latest_version}.run"
 	# 440.95.01 format
 	elif [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-		[[ "$2" != 0 ]] &&
-			url="https://uk.download.nvidia.com/tesla/$1/${DRVPATTERN}$1.run" ||
-			url="https://download.nvidia.com/XFree86/Linux-x86_64/$1/${DRVPATTERN}$1.run"
+		url="https://download.nvidia.com/XFree86/Linux-x86_64/$1/${DRVPATTERN}$1.run"
+		url_tesla="https://uk.download.nvidia.com/tesla/$1/${DRVPATTERN}$1.run"
 	# 123.45 format
 	elif [[ "$1" =~ ^[0-9]+\.[0-9]+$ ]]; then
 #		local last=
@@ -202,7 +202,7 @@ function get_url() { # @version or @url, @tesla=1,  returns $url
 		local last=
 		for drv in "${versions[@]}"
 		do
-			[[ "${drv%.*}" == "$1" ]] && last="$drv" && continue
+			[[ "${drv%%.*}" == "$1" ]] && last="$drv" && continue
 			[[ ! -z "$last" ]] && break
 		done
 		[[ -z "$last" ]] && echo -e "${RED}> Unable to find latest driver version for $1 series${NOCOLOR}" && return 1
@@ -332,12 +332,8 @@ function install_driver() { # @url or @file, @force_install
 	free_space "$url"
 	[[ $? -ne 0 ]] && echo -e "${RED}> Not enough free space to continue${NOCOLOR}" && return 1
 
-	if [[ "$url" =~ tesla ]]; then
-		get_package "$url"
-		if [[ $? -ne 0 ]]; then
-			get_url "$1" "0" || return $?
-			get_package "$url" || return $?
-		fi
+	if [[ ! -z "$url_tesla" ]]; then
+		get_package "$url" || get_package "$url_tesla" || return $?
 	else
 		get_package "$url" || return $?
 	fi
