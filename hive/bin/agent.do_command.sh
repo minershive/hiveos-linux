@@ -443,10 +443,12 @@ function do_command() {
 			if [[ ! -z $gpu_index && $gpu_index != "null" ]]; then
 				#local gpu_index_hex=$gpu_index
 				[[ -f /tmp/nvidia.saved.rom ]] && rm /tmp/nvidia.saved.rom
-				payload=`nvflash_linux -i$gpu_index -b /tmp/nvidia.saved.rom`
+				payload=`nvflash_linux -i$gpu_index -b /tmp/nvidia.saved.rom 2>&1`
 				exitcode=$?
+				# cleanup nvflash output
+				payload=`echo "${payload//$'\r'$'\n'/$'\n'}" | grep -vP "\x0d" | cat -s`
 				echo "$payload"
-				if [[ $exitcode == 0 ]]; then
+				if [[ $exitcode == 0 && -f /tmp/nvidia.saved.rom ]]; then
 					cat /tmp/nvidia.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "$rom_name" payload --id=$cmd_id #> /dev/null
 				else
 					echo "$payload" | message warn "Nvidia VBIOS saving failed" payload --id=$cmd_id
@@ -491,7 +493,6 @@ function do_command() {
 						continue
 					fi
 
-
 					# Save ROM
 					echo "$rom_base64" | base64 -d | gzip -d > /tmp/nvidia.uploaded.rom
 					fsize=`cat /tmp/nvidia.uploaded.rom | wc -c`
@@ -532,6 +533,8 @@ function do_command() {
 				local meta=$(jq -n --arg good "`echo ${meta_good[@]} | tr " " ","`" --arg bad "`echo ${meta_bad[@]} | tr " " ","`" '{$good,$bad}')
 				local reboot_msg=""
 				[[ $need_reboot -eq 1 && $errors == 0 ]] && reboot_msg=", now reboot"
+				# cleanup nvflash output
+				payload=`echo "${payload//$'\r'$'\n'/$'\n'}" | grep -vP "\x0d" | cat -s`
 				if [ $errors == 0 ]; then
 					echo "$payload" | message ok "ROM flashing OK$reboot_msg" payload --id=$cmd_id --meta="$meta"
 				else
@@ -623,6 +626,8 @@ function do_command() {
 							fi
 						fi
 						#exitcode=$?
+						# cleanup nvflash output
+						payload=`echo "${payload//$'\r'$'\n'/$'\n'}" | grep -vP "\x0d" | cat -s`
 						echo "$payload"
 						if [[ $exitcode == 0 ]]; then
 							echo "$payload" | message ok "ROM flashing OK, now reboot" payload --id=$cmd_id
