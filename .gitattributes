@@ -1,0 +1,1 @@
+hive/miners/gminer/*/miner filter=lfs diff=lfs merge=lfs -text
