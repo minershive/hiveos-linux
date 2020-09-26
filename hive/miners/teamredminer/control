@@ -1,8 +1,8 @@
 Package: hive-miners-teamredminer
-Version: 0.6-44
+Version: 0.6-45
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-teamredminer-0.7.10
+Depends: hive-miners-teamredminer-0.7.11
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - TeamRedMiner
