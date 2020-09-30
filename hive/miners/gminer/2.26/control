@@ -1,7 +1,7 @@
-Package: hive-miners-gminer-2.25
+Package: hive-miners-gminer-2.26
 Version: 0.6-01
 Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - Gminer v2.25
+Description: Hive miner - Gminer v2.26
