@@ -23,6 +23,8 @@
 		local dev_ids=$(echo $stats_raw | jq -r '.miners | to_entries[] | select(.value) | .key|tonumber') #'
 		for i in $dev_ids; do
 			local bus_id=`cat ${MINER_LOG_BASENAME}_head.log | grep "\[D${i}\] Starting miner for " | cut -d ":" -f 5`
+			#fucking bminer have different bus id format for AMD GPUs
+			[[ $bus_id =~ ' at ' ]] && bus_id=`cat ${MINER_LOG_BASENAME}_head.log | grep "\[D${i}\] Starting miner for " | cut -d ":" -f 6`
 			bus_id=$(( 0x${bus_id} ))
 			bus_numbers+="${bus_id} "
 		done
