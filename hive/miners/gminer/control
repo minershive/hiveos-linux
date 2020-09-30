@@ -1,8 +1,8 @@
 Package: hive-miners-gminer
-Version: 0.6-104
+Version: 0.6-105
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-gminer-2.24
+Depends: hive-miners-gminer-2.25
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - Gminer
