@@ -15,7 +15,8 @@ DESCRIPTION
 OPTIONS
 \t-h, --help\t\tshow current help
 \t-f, --force\t\tforce upgrade; it can help in situations when selfupgrade says Hive is up to date but actually it isn't
-\trepository URL\t\tset repository to get updates from; should start with http like http://download.hiveos.farm/repo/binary or http://127.0.0.1/repo/binary
+\t-m, --miners\t\tupdate all installed miners versions to latest (otherwise they will be updated on first use)
+\trepository URL\t\tset repository to get updates from; should start with http like http://download.hiveos.farm/repo/binary
 \tversion\t\t\tspecify version to upgrade or downgrade; should use the following format x.y-zz, like 0.6-65
 EXAMPLE
 \tselfupgrade 0.6-65 http://192.168.0.1/repo/binary -f
@@ -46,6 +47,7 @@ function check_grub {
 	fi
 }
 
+update_miners=0
 
 for param in $@; do
 	case $param in
@@ -53,6 +55,7 @@ for param in $@; do
 			echo -e "$help_context"
 			exit 0
 		;;
+
 		--force|-f) # it can help in situations when selfupgrade says Hive is up to date but this is not true
 			echo -e "${YELLOW}> Cleaning Hive apt lists${NOCOLOR}"
 			# force HiveOS lists download
@@ -62,6 +65,10 @@ for param in $@; do
 			rm -f /var/lib/dpkg/lock*
 			rm -f /var/lib/apt/lists/lock*
 			rm -f /var/cache/apt/archives/lock*
+		;;
+
+		--miners|-m)
+			update_miners=1
 		;;
 
 		http*) #Set user repository
@@ -160,16 +167,16 @@ if [[ $exitcode -eq 0 ]]; then
 		exitcode=0
 
 		hive_extra_packages=""
-		#check if hive-lib-dotnet is installed and if yes then add to checked packages
+		# check if hive-lib-dotnet is installed and if yes then add to checked packages
 		dpkg -s hive-lib-dotnet > /dev/null 2>&1 &&
 			hive_extra_packages="hive-lib-dotnet $hive_extra_packages"
 
-		#Here should be listed all non-miner packages so that versions check will work
+		# Here should be listed all non-miner packages so that versions check will work
 		apt-get install -y -f --only-upgrade hive hive-lib hive-opt hive-opt-algomap $hive_extra_packages
 		aexitcode=$?
 		[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 
-		#Update root miners packages, maybe some versions will be uninstalled
+		# Update root miners packages, maybe some versions will be uninstalled
 		packages=$(hpkg getlist miners | grep -v '[0-9]')
 		if [[ ! -z $packages ]]; then
 			echo -e "${YELLOW}> Checking miners packages${NOCOLOR}"
@@ -178,13 +185,15 @@ if [[ $exitcode -eq 0 ]]; then
 			[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 		fi
 
-		#Update version miners packages
-		packages=$(hpkg getlist miners | grep '[0-9]')
-		if [[ ! -z $packages ]]; then
-			echo -e "${YELLOW}> Checking miners version packages${NOCOLOR}"
-			apt-get install -y -f --only-upgrade $packages
-			aexitcode=$?
-			[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
+		if [[ $update_miners -ne 0 ]]; then
+			# Update version miners packages
+			packages=$(hpkg getlist miners | grep '[0-9]')
+			if [[ ! -z $packages ]]; then
+				echo -e "${YELLOW}> Checking miners version packages${NOCOLOR}"
+				apt-get install -y -f --only-upgrade $packages
+				aexitcode=$?
+				[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
+			fi
 		fi
 	else
 		apt-get install -y -f --only-upgrade --allow-downgrades --reinstall hive=$VERSION
