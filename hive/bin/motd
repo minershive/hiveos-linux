@@ -228,7 +228,7 @@ net_info() {
 
 disk_model=
 blk_dev=`mountpoint -d /` &&
-	disk_dev=`lsblk -no PKNAME /dev/block/$blk_dev` &&
+	disk_dev=`lsblk -no PKNAME /dev/block/$blk_dev 2>/dev/null` &&
 		disk_model=`lsblk -no VENDOR,MODEL,SIZE /dev/$disk_dev 2>/dev/null | head -n 1 | awk '{$1=$1};1'`
 
 disk_info() {
