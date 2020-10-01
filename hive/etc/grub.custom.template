@@ -2,7 +2,7 @@
 ##Be very careful! Do not do anything unless you are absolutely
 ##sure of what you are doing. Incorrect parameters can lead to the inability to boot the system!
 
-##Also keep in mind that the parameters will take effect only after the end of the self command and the system reboot.
+##Also keep in mind that the parameters will take effect only after the end of the selfupgrade command and the system reboot.
 
 ##One parameter per line.
 
