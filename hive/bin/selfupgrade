@@ -43,6 +43,18 @@ function check_grub {
 			rm /etc/default/grub > /dev/null 2>&1
 			ln -s /hive/etc/grub /etc/default/grub > /dev/null 2>&1
 		fi
+		if [[ -f /hive/etc/grub.custom ]]; then
+			source /etc/default/grub
+			old_cmdline=$GRUB_CMDLINE_LINUX_DEFAULT
+			add_cmdline=$(grep -Ev '^#' /hive/etc/grub.custom | grep -Ev '^$' | xargs | sed -e 's/\. /.\n/g')
+		else
+			[[ -f /hive/etc/grub.custom.template ]] && cp /hive/etc/grub.custom.template /hive/etc/grub.custom
+		fi
+		if [[ ! -z $add_cmdline ]]; then
+			echo -e "${YELLOW}> Add custom boot parameters to kernel. System restart is required to get the effect${NOCOLOR}"
+			new_cmdline="$old_cmdline $add_cmdline"
+			sed -ure "s/^GRUB_CMDLINE_LINUX_DEFAULT.+?/GRUB_CMDLINE_LINUX_DEFAULT=\"${new_cmdline}\"/g" -i /hive/etc/grub
+		fi
 		update-grub > /dev/null 2>&1
 	fi
 }
