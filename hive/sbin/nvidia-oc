@@ -175,7 +175,7 @@ for (( i=0; i < $n; ++i )); do
 	elif [[ ${NAME[$i]} =~ "P106-090" ]]; then x=1
 	elif [[ ${NAME[$i]} =~ "P104-100" ]]; then x=1
 	elif [[ ${NAME[$i]} =~ "P102-100" ]]; then x=1
-	elif [[ ${NAME[$i]} =~ "1660 Ti" || ${NAME[$i]} =~ "1660 SUPER" ]]; then x=4
+	elif [[ ${NAME[$i]} =~ "1660 Ti" || ${NAME[$i]} =~ "1660 SUPER" || ${NAME[$i]} =~ "1650 SUPER" ]]; then x=4
 	elif [[ ${NAME[$i]} =~ "RTX" ]]; then x=4
 	elif [[ ${NAME[$i]} =~ "1650" ]]; then x=2
 	elif [[ ${NAME[$i]} =~ "1660" ]]; then x=2
