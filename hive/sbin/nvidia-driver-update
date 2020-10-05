@@ -12,6 +12,87 @@ MINFREEMB=700
 
 DRVPATTERN="NVIDIA-Linux-x86_64-"
 DRVREGEXP="${DRVPATTERN}\K[0-9\.]+(?=\.run)"
+DRVNVIDIAURL="https://download.nvidia.com/XFree86/Linux-x86_64/"
+
+CUDA_VER=(
+	11.1 455.23.04
+	11.0 450.51.05
+	10.2 440.33
+	10.1 418.39
+	10.0 410.48
+	9.2  396.26
+	9.1  390.46
+	9.0  384.81
+	8.0  375.26
+	7.5  352.31
+	7.0  346.46
+)
+
+# in descending order!!!
+KERNEL_SUPPORT=(
+	5.6 "450 440.82 390.138"
+	5.4 "450 440.31 430.64 418.113 390.132"
+	5.0 "418 410.104 390.116 340.108"
+	4   ""
+)
+
+
+KERNEL_VER=
+function is_kernel_supported() { # @driver_version
+	local ver="$1"
+
+	if [[ "${#KERNEL_VER[@]}" -lt 3 ]]; then
+		# get kernel version as array
+		readarray -t KERNEL_VER < <( uname -r | tr [:punct:] "\n")
+		COMPAT_ARR=( ${KERNEL_SUPPORT[1]} )
+		for (( i=0; i < ${#KERNEL_SUPPORT[@]}; i+=2 )) ; do
+			readarray -t supp_ver < <(echo -e "${KERNEL_SUPPORT[$i]//./$'\n'}\n99")
+			[[ ${KERNEL_VER[0]} -gt ${supp_ver[0]} ]] && break
+			[[ ${KERNEL_VER[0]} -eq ${supp_ver[0]} && ${KERNEL_VER[1]} -gt ${supp_ver[1]} ]] && break
+			COMPAT_ARR=( ${KERNEL_SUPPORT[$((i+1))]} )
+		done
+	fi
+
+	readarray -t ver_arr < <(echo -e "${ver//./$'\n'}\n0\n0")
+	# minimal version is 384.81 CUDA 9.0
+	[[ "${ver_arr[0]}" -lt 384 || ( "${ver_arr[0]}" -eq 384 && "${ver_arr[1]#0}" -lt 81 ) ]] && return 2
+
+	[[ -z "${COMPAT_ARR[@]}" ]] && return 0
+
+	for ref in ${COMPAT_ARR[@]}; do
+		[[ "$ref" == "$ver" ]] && return 0
+		readarray -t ref_arr < <(echo -e "${ref//./$'\n'}\n0\n0")
+		if [[ ${ver_arr[0]} -gt ${ref_arr[0]} ]]; then
+			[[ ${ref_arr[1]#0} -eq 0 ]] && return 0
+			return 1
+		fi
+		if [[ ${ver_arr[0]} -eq ${ref_arr[0]} ]]; then
+			[[ ${ver_arr[1]#0} -gt ${ref_arr[1]#0} ]] && return 0
+			[[ ${ver_arr[1]#0} -eq ${ref_arr[1]#0} && ${ver_arr[2]#0} -ge ${ref_arr[2]#0} ]] && return 0
+		fi
+	done
+
+	return 1
+}
+
+
+function get_cuda_version() { # @driver_version, returns cuda_version
+	local ver="$1"
+	readarray -t ver_arr < <(echo -e "${ver//./$'\n'}\n0\n0")
+	cuda_version=
+
+	for (( i=1; i < ${#CUDA_VER[@]} ; i+=2 )); do
+		readarray -t ref_arr < <(echo -e "${CUDA_VER[$i]//./$'\n'}\n0\n0")
+		if [[ ${ver_arr[0]} -gt ${ref_arr[0]} ||
+			( ${ver_arr[0]} -eq ${ref_arr[0]} && ${ver_arr[1]#0} -gt ${ref_arr[1]#0} ) ||
+			( ${ver_arr[0]} -eq ${ref_arr[0]} && ${ver_arr[1]#0} -eq ${ref_arr[1]#0} && ${ver_arr[2]#0} -ge ${ref_arr[2]#0} ) ]]; then
+			cuda_version=${CUDA_VER[$((i-1))]}
+			return 0
+		fi
+	done
+
+	return 1
+}
 
 
 function get_freespace() { # @silent
@@ -45,14 +126,17 @@ function free_space() { # @url for package to keep
 
 
 function get_versions() { # returns $versions
-	echo -e ""
 	echo -ne "${CYAN}> Loading drivers list - ${NOCOLOR}"
 	local cnt=0
-	list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY $URL`
-	if [[ $? -eq 0 ]]; then
-		readarray -t versions < <(echo "$list" | grep -oP "$DRVREGEXP" | sort -u -V)
-		cnt=${#versions[@]}
+	local list=
+	if [[ "$extrepo" == 1 ]]; then
+		list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY $DRVNVIDIAURL` &&
+			readarray -t versions < <(echo "$list" | grep -oP "\>\K[0-9]+\.[0-9\.]+" | sort -u -V)
+	else
+		list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY $URL` &&
+			readarray -t versions < <(echo "$list" | grep -oP "$DRVREGEXP" | sort -u -V)
 	fi
+	cnt=${#versions[@]}
 	[[ $cnt -eq 0 ]] && echo -e "${RED}Failed${NOCOLOR}" && return 1
 	echo -e "${GREEN}$cnt${NOCOLOR}"
 	return 0
@@ -60,26 +144,35 @@ function get_versions() { # returns $versions
 
 
 function get_latest() { # returns $latest_version
-	echo -e ""
-	echo -en "${CYAN}> Getting the latest stable version - ${NOCOLOR}"
-	local list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY ${URL}VERSIONS.txt`
+	if [[ "$extrepo" == 1 ]]; then
+		echo -en "${WHITE}> The latest Release version - ${NOCOLOR}"
+		local list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY ${DRVNVIDIAURL}latest.txt`
+	else
+		echo -en "${WHITE}> The latest Stable version - ${NOCOLOR}"
+		local list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY ${URL}VERSIONS.txt`
+	fi
 	[[ -z "$list" ]] && echo -e "${RED}Failed${NOCOLOR}" && return 1
 	latest_version=`echo "$list" | grep -oP "$DRVREGEXP" | tail -n 1`
 	[[ -z "$latest_version" ]] && echo -e "${RED}Error${NOCOLOR}" && return 2
-	echo -e "${WHITE}${latest_version}${NOCOLOR}"
+	get_cuda_version "$latest_version" &&
+		echo -e "${WHITE}${latest_version} ${PURPLE}(CUDA $cuda_version)${NOCOLOR}" ||
+		echo -e "${WHITE}${latest_version}${NOCOLOR}"
 	return 0
 }
 
 
-function get_current() { # returns $current_vesion
-	smi=`nvidia-smi --help 2>&1`
+function get_current() { # @silent, returns $current_version
+	current_version=`nvidia-smi --help 2>&1 | grep -m 1 -oP "v\K[0-9\.]+"`
 	if [[ $? -ne 0 ]]; then
-		echo -e "${RED}> Installed version - UNKNOWN${NOCOLOR}"
+		[[ -z "$1" ]] && echo -e "${RED}> Installed version - UNKNOWN${NOCOLOR}"
 		current_version=
 		return 1
 	fi
-	current_version=`echo "$smi" | grep -m 1 -oP "v\K[0-9\.]+"`
-	echo -e "${GREEN}> Installed version - $current_version${NOCOLOR}"
+	if [[ -z "$1" ]]; then
+		get_cuda_version "$current_version" &&
+			echo -e "${GREEN}> Installed version - ${BGREEN}$current_version ${PURPLE}(CUDA $cuda_version)${NOCOLOR}" ||
+			echo -e "${GREEN}> Installed version - $current_version${NOCOLOR}"
+	fi
 	return 0
 }
 
@@ -120,20 +213,42 @@ function remove_packages() { # @filename to skip, returns $removed_packages
 
 function list_packages() {
 	get_versions
+	get_current 1
 	if [[ $? -eq 0 ]]; then
 		local last=
+		local cuda=
+		local incompat=
+		[[ $force -ne 1 ]] && level=1 || level=2
 		for drv in "${versions[@]}"
 		do
+			is_kernel_supported "$drv"
+			incompat=$?
+			[[ $incompat -ge $level ]] && continue
+			get_cuda_version "$drv"
+			if [[ "$cuda" != "$cuda_version" ]]; then
+				[[ ! -z $cuda ]] && echo ""
+				cuda="$cuda_version"
+				echo -e "${PURPLE}CUDA $cuda${NOCOLOR}"
+				last=
+			fi
 			this="${drv%%.*}"
 			if [[ "$last" != "$this" || -z "$last" ]]; then
 				[[ ! -z "$last" ]] && echo -e ""
 				last="$this"
 				echo -ne "  ${WHITE}$this${NOCOLOR}"
 			fi
-			[[ -f "${DRVPATH}${DRVPATTERN}${drv}.run" ]] &&
-				echo -ne "	${YELLOW}$drv${NOCOLOR}" ||
+
+			if [[ "$current_version" == "$drv" ]]; then
+				echo -ne "	${BGREEN}$drv${NOCOLOR}"
+			elif [[ $incompat -ne 0 ]]; then
+				echo -ne "	${RED}$drv${NOCOLOR}"
+			elif [[ -f "${DRVPATH}${DRVPATTERN}${drv}.run" ]]; then
+				echo -ne "	${CYAN}$drv${NOCOLOR}"
+			else
 				echo -ne "	$drv"
+			fi
 		done
+		echo ""
 	fi
 
 	get_latest
@@ -142,13 +257,15 @@ function list_packages() {
 	local files
 	readarray -t files < <(realpath ${DRVPATH}NVIDIA-Linux* | grep -oP "$DRVREGEXP" | sort -V)
 	[[ ${#files[@]} -eq 0 ]] && return 0
-	echo -en "${YELLOW}> Downloaded packages -${NOCOLOR}"
+	echo -en "${CYAN}> Downloaded packages -"
 	for drv in "${files[@]}"
 	do
 		local basename=`basename "$drv"`
-		echo -en "${YELLOW} $basename ${NOCOLOR}"
+		echo -en " $basename "
 	done
-	echo -e ""
+	echo -e "${NOCOLOR}"
+	[[ $force -eq 0 && "${#KERNEL_VER[@]}" -lt 3 && ${KERNEL_VER[0]} -ge 5 ]] &&
+		echo -e "${YELLOW}> Kernel ${BYELLOW}${KERNEL_VER[0]}.${KERNEL_VER[1]}${YELLOW} compatible versions are shown (use ${BYELLOW}--force${YELLOW} to override)${NOCOLOR}"
 }
 
 
@@ -178,7 +295,7 @@ function get_url() { # @version or @url, returns $url and $url_tesla
 		url="${URL}${DRVPATTERN}${latest_version}.run"
 	# 440.95.01 format
 	elif [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-		url="https://download.nvidia.com/XFree86/Linux-x86_64/$1/${DRVPATTERN}$1.run"
+		url="${DRVNVIDIAURL}$1/${DRVPATTERN}$1.run"
 		url_tesla="https://uk.download.nvidia.com/tesla/$1/${DRVPATTERN}$1.run"
 	# 123.45 format
 	elif [[ "$1" =~ ^[0-9]+\.[0-9]+$ ]]; then
@@ -194,7 +311,7 @@ function get_url() { # @version or @url, returns $url and $url_tesla
 #			url="${URL}${DRVPATTERN}${last}.run"
 #		else
 #			echo -e "${YELLOW}> ${WHITE}$1${YELLOW} was not found in the list. Trying to get it from NVIDIA${NOCOLOR}"
-			url="https://download.nvidia.com/XFree86/Linux-x86_64/$1/${DRVPATTERN}$1.run"
+			url="${DRVNVIDIAURL}$1/${DRVPATTERN}$1.run"
 #		fi
 	# 123 format
 	elif [[ "$1" =~ ^[0-9]+$ ]]; then
@@ -299,25 +416,16 @@ function cuda_sync() {
 	gpu_count_nvidia=`gpu-detect NVIDIA`
 	CUDA_LIBS=( "libcudart.so" "libnvrtc.so" "libnvrtc-builtins.so" )
 	if [[ $gpu_count_nvidia -gt 0 ]]; then
-		DRV_VERS=`nvidia-smi --help 2>/dev/null | grep -m 1 -oP "v\K[0-9]+"`
-		if [[ ${DRV_VERS} -ge 450 ]]; then
-			CUDA_VERS='11.0'
-		elif [[ ${DRV_VERS} -ge 440 ]]; then
-			CUDA_VERS='10.2'
-		elif [[ ${DRV_VERS} -ge 418 ]]; then
-			CUDA_VERS='10.1'
-		elif [[ ${DRV_VERS} -ge 410 ]]; then
-			CUDA_VERS='10.0'
-		elif [[ ${DRV_VERS} -ge 396 ]]; then
-			CUDA_VERS='9.2'
-		else
-			CUDA_VERS=''
+		cuda_version=
+		get_current 1 && get_cuda_version "$current_version"
+		CUDA_VERS="$cuda_version"
+		if [[ ! -z "$CUDA_VERS" ]]; then
+			for libname in "${CUDA_LIBS[@]}"; do
+				[[ ! -f /hive/lib/${libname}.${CUDA_VERS} ]] && echo -e "${RED}> Error: ${libname}.${CUDA_VERS} does not exist${NOCOLOR}" && continue
+				[[ ! -e "hive/lib/$libname" || "$(realpath /hive/lib/$libname)" != "$(realpath /hive/lib/${libname}.${CUDA_VERS})" ]] &&
+					ln -f -s $(realpath /hive/lib/${libname}.${CUDA_VERS}) /hive/lib/$libname
+			done
 		fi
-		for libname in "${CUDA_LIBS[@]}"; do
-			if [[ ! -e "hive/lib/$libname" ]] || [[ "$(realpath /hive/lib/$libname)" != "$(realpath /hive/lib/${libname}.${CUDA_VERS})" ]] && [[ ! -z "$CUDA_VERS" ]]; then
-				ln -f -s $(realpath /hive/lib/${libname}.${CUDA_VERS}) /hive/lib/$libname
-			fi
-		done
 	fi
 }
 
@@ -325,8 +433,28 @@ function cuda_sync() {
 function install_driver() { # @url or @file, @force_install
 	# it must exist
 	[[ ! -d ${DRVPATH} ]] && mkdir ${DRVPATH}
-	
+
 	get_url "$1" || return $?
+
+	# check compatibility
+	local ver=`echo "$url" | grep -oP "${DRVREGEXP}"`
+	if [[ ! -z "$ver" ]]; then
+		is_kernel_supported "$ver"
+		if [[ $? -ne 0 ]]; then
+			echo "${RED}> WARNING: this version is incompatible with kernel ${BRED}${KERNEL_VER[0]}.${KERNEL_VER[1]}${NOCOLOR}"
+			if [[ $force -ne 1 ]]; then
+				echo "${YELLOW}> Use ${BYELLOW}--force${YELLOW} to override on your own risk${NOCOLOR}" &&
+				return 1
+			fi
+		fi
+		if [[ $force -ne 1 ]]; then
+			get_current
+			if [[ "$current_version" == "$ver" ]]; then
+				echo "${YELLOW}> WARNING: this version is already installed (use ${BYELLOW}--force${YELLOW} to override)${NOCOLOR}" &&
+				return 1
+			fi
+		fi
+	fi
 
 	# check avaliable space and try to get some
 	free_space "$url"
@@ -394,24 +522,47 @@ function install_driver() { # @url or @file, @force_install
 }
 
 
-driver=
-force=
-
-while [[ ! -z "$1" ]]; do
-	case "$1" in
-		--help|-h)
-			echo "Usage:
-  nvidia-driver-update  		download and install latest stable GeForce driver version
+function show_help() {
+	echo "Usage:
+  nvidia-driver-update  		download and install recommended driver version
   nvidia-driver-update  URL		download and install driver from URL (http/https/ftp)
-  nvidia-driver-update  123		download and install latest GeForce driver from series 123.*
-  nvidia-driver-update  123.45		download and install GeForce specific driver version 123.45
-  nvidia-driver-update  440.95.01	download and install Tesla/GeForce specific driver version 440.95.01
-  nvidia-driver-update  -f | --force	force install to bypass some DKMS build errors
-  nvidia-driver-update  -l | --list	list available driver versions
+  nvidia-driver-update  123		download and install latest driver from series 123.*
+  nvidia-driver-update  123.45.06	download and install driver version 123.45.06
+  nvidia-driver-update  -f | --force	force install to bypass some DKMS build errors and etc
+  nvidia-driver-update  -l | --list	list available driver versions (compatible with current kernel)
+  nvidia-driver-update  -e | --ext	use external drivers repository
   nvidia-driver-update  -c | --cuda	sync symlinks to CUDA RT libraries with installed driver
   nvidia-driver-update  -n | --nvs	reinstall nvidia-settings only
   nvidia-driver-update  -r | --remove	remove downloaded driver packages except currently installed
-  nvidia-driver-update  -h | --help	display help"
+  nvidia-driver-update  -h | --help	display help
+Examples:
+  nvidia-driver-update --force 455
+  nvidia-driver-update --force --ext --list"
+}
+
+
+driver=
+force=
+extrepo=
+
+for param in $@; do
+	case "$param" in
+
+		-e|--ext)
+			extrepo=1
+		;;
+
+		-f|--force)
+			force=1
+		;;
+	esac
+done
+
+
+for param in $@; do
+	case "$param" in
+		--help|-h)
+			show_help
 			exit
 		;;
 
@@ -435,19 +586,15 @@ while [[ ! -z "$1" ]]; do
 			exit
 		;;
 
-		-f|--force)
-			force=1
-		;;
-
 		*)
-			[[ "$1" == -* ]] && echo -e "${YELLOW}> Unsupported option \"$1\"${NOCOLOR}" && exit 1
+			[[ "$param" == -* ]] && continue
+			#[[ "$param" == -* ]] && echo -e "${YELLOW}> Unsupported option \"$1\"${NOCOLOR}" && exit 1
 			#123
 			#123.45
 			#url/path
-			driver="$1"
+			driver="$param"
 		;;
 	esac
-	shift
 done
 
 install_driver "$driver" "$force"
