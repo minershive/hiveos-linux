@@ -1,8 +1,8 @@
 Package: hive-miners-lolminer
-Version: 0.6-49
+Version: 0.6-50
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-lolminer-1.09
+Depends: hive-miners-lolminer-1.10
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - lolMiner

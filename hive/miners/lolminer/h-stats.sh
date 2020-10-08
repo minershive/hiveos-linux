@@ -5,7 +5,7 @@ stats_raw=`curl --connect-timeout 2 --max-time ${API_TIMEOUT} --silent --noproxy
 if [[ $? -ne 0 || -z $stats_raw ]]; then
 	echo -e "${YELLOW}Failed to read $miner from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
-	khs=`echo $stats_raw | jq -r '.Session.Performance_Summary' | awk '{ print $1/1000 }'`
+	
 	local temp=$(jq '.temp' <<< $gpu_stats)
 	local fan=$(jq '.fan' <<< $gpu_stats)
 	[[ $cpu_indexes_array != '[]' ]] && #remove Internal Gpus
@@ -52,6 +52,16 @@ else
 			;;
 	esac
 	local Rejected=`echo $stats_raw | jq -c -r ".Session.Submitted - .Session.Accepted"`
+	local ver=`echo $stats_raw | jq -c -r ".Software" | awk '{ print $2 }'`
+	
+	if [[ "$ver" > "1.09" && "$algo" == "Ethash" ]]; then
+		units="mhs"
+		khs=`echo $stats_raw | jq -r '.Session.Performance_Summary' | awk '{ print $1*1000 }'`
+	else
+		khs=`echo $stats_raw | jq -r '.Session.Performance_Summary' | awk '{ print $1/1000 }'`
+		units="hs"
+	fi
+	algo=`echo "$algo" | awk '{print tolower($0)}'`
 	[[ $Rejected -lt 0 ]] && Rejected=0
 	stats=$(jq 	--argjson temp "$temp" \
 			--argjson fan "$fan" \
@@ -59,7 +69,8 @@ else
 			--argjson bus_numbers "$bus_numbers" \
 			--arg algo "$algo" \
 			--arg rej "$Rejected" \
-			'{hs: [.GPUs[].Performance], hs_units: "hs", $temp, $fan, uptime: .Session.Uptime, ar: [.Session.Accepted, $rej ], $bus_numbers, algo: $algo, ver: $ver}' <<< "$stats_raw")
+			--arg units "$units" \
+			'{hs: [.GPUs[].Performance], hs_units: $units, $temp, $fan, uptime: .Session.Uptime, ar: [.Session.Accepted, $rej ], $bus_numbers, algo: $algo, ver: $ver}' <<< "$stats_raw")
 fi
 
 [[ -z $khs ]] && khs=0
