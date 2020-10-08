@@ -7,8 +7,6 @@
 	if [[ $? -ne 0 || -z $stats_raw ]]; then
 		echo -e "${YELLOW}Failed to read $miner from 127.0.0.1:{$MINER_API_PORT}${NOCOLOR}"
 	else
-		[[ `wc -l ${MINER_LOG_BASENAME}_head.log | awk '{print $1}'` -lt 150 ]] && head -n 150 ${MINER_LOG_BASENAME}.log > ${MINER_LOG_BASENAME}_head.log
-
 		#fucking bminer sorts it's keys as numerics, not natual, e.g. "1", "10", "11", "2", fix that with sed hack by replacing "1": with "01":
 		stats_raw=$(echo "$stats_raw" | sed -E 's/"([0-9])":\s*\{/"0\1":\{/g' | jq -c --sort-keys .) #"
 
@@ -18,22 +16,27 @@
 		local hs_units="hs"
 		[[ -z $BMINER_ALGO ]] && BMINER_ALGO="stratum"
 
-		local dev_numbers=$(echo $stats_raw | jq -r '[ .miners | to_entries[] | select(.value) | .key|tonumber ]') #'
-		local bus_numbers=
-		local dev_ids=$(echo $stats_raw | jq -r '.miners | to_entries[] | select(.value) | .key|tonumber') #'
-		for i in $dev_ids; do
-			local bus_id=`cat ${MINER_LOG_BASENAME}_head.log | grep "\[D${i}\] Starting miner for " | cut -d ":" -f 5`
-			#fucking bminer have different bus id format for AMD GPUs
-			[[ $bus_id =~ ' at ' ]] && bus_id=`cat ${MINER_LOG_BASENAME}_head.log | grep "\[D${i}\] Starting miner for " | cut -d ":" -f 6`
-			bus_id=$(( 0x${bus_id} ))
-			bus_numbers+="${bus_id} "
+		local t_temp=$(jq '.temp' <<< $gpu_stats)
+		local t_fan=$(jq '.fan' <<< $gpu_stats)
+		local a_fans
+		local a_temp
+
+		local bus_numbers=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:${MINER_API_PORT}/api/v1/status/device \
+									| sed -E 's/"([0-9])":\s*\{/"0\1":\{/g' | jq --sort-keys '.devices[].pci_bus_id' | cut -d : -f 2 | perl -pe '$_=hex;$_.="\n"'`
+		local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
+		for bus_num in $bus_numbers; do
+			for ((j = 0; j < ${#all_bus_ids_array[@]}; j++)); do
+				if [[ "$(( 0x${all_bus_ids_array[$j]} ))" -eq "$bus_num" ]]; then
+					a_fans+=$(jq .[$j] <<< $t_fan)" "
+					a_temp+=$(jq .[$j] <<< $t_temp)" "
+					break
+				fi
+			done
 		done
-		bus_numbers=`echo ${bus_numbers[@]} | tr " " "\n" | jq -cs '.'`
-		# if [[ $cpu_indexes_array != '[]' ]]; then
-		# 	local bus_numbers=$(echo $gpu_detect_json | jq -c "del(.$cpu_indexes_array)" | jq -r ".$dev_numbers.busid" |  awk '{printf("%d\n", "0x"$1)}' | jq -cs '.') #"
-		# else
-		# 	local bus_numbers=$(echo $gpu_detect_json | jq -r ".$dev_numbers.busid" |  awk '{printf("%d\n", "0x"$1)}' | jq -cs '.') #'
-		# fi
+
+		bus_numbers=`echo $bus_numbers | tr ' ' '\n' | jq -cs '.'`
+		a_fans=`echo $a_fans | tr ' ' '\n' | jq -cs '.'`
+		a_temp=`echo $a_temp | tr ' ' '\n' | jq -cs '.'`
 
 		devices_raw=`curl --connect-timeout 2 --max-time $API_TIMEOUT --silent --noproxy '*' http://127.0.0.1:${MINER_API_PORT}/api/v1/status/solver`
 		#fucking bminer sorts it's keys as numerics, not natual, e.g. "1", "10", "11", "2", fix that with sed hack by replacing "1": with "01" once again:
@@ -61,8 +64,9 @@
 						--arg total_khs "$khs" \
 						--arg total_khs2 "$khs2" \
 						--argjson bus_numbers "$bus_numbers" --argjson bus_numbers2 "$bus_numbers" \
+						--argjson fan "$a_fans" --argjson temp "$a_temp" \
 						'{$total_khs, hs: [.miners[].solver.solution_rate], $hs_units,
-							temp: [.miners[].device.temperature], fan: [.miners[].device.fan_speed], $uptime, $algo,
+							$temp, $fan, $uptime, $algo,
 							ar: [.stratum.accepted_shares, .stratum.rejected_shares], $bus_numbers,
 							$total_khs2, $hs2, $hs_units2, $algo2, ar2: [$ac2, $rj2], $bus_numbers2,
 							ver: .version}' <<< "$stats_raw")
@@ -73,8 +77,9 @@
 						--arg hs_units "$hs_units" \
 						--arg total_khs "$khs" \
 						--argjson bus_numbers "$bus_numbers" \
+						--argjson fan "$a_fans" --argjson temp "$a_temp" \
 						'{$total_khs, hs: [.miners[].solver.solution_rate], $hs_units,
-							temp: [.miners[].device.temperature], fan: [.miners[].device.fan_speed], $uptime, $algo,
+							$temp, $fan, $uptime, $algo,
 							ar: [.stratum.accepted_shares, .stratum.rejected_shares], $bus_numbers,
 							ver: .version}' <<< "$stats_raw")
 		fi
