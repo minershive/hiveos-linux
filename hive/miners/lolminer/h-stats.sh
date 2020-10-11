@@ -70,7 +70,9 @@ else
 			--arg algo "$algo" \
 			--arg rej "$Rejected" \
 			--arg units "$units" \
-			'{hs: [.GPUs[].Performance], hs_units: $units, $temp, $fan, uptime: .Session.Uptime, ar: [.Session.Accepted, $rej ], $bus_numbers, algo: $algo, ver: $ver}' <<< "$stats_raw")
+			--arg inv_all "$(echo $stats_raw | jq '[.GPUs[].Session_HWErr] | add')" \
+			--arg inv_gpu "$(echo $stats_raw | jq '.GPUs[].Session_HWErr' | jq -cs '.' | sed  's/,/;/g' | tr -d [ | tr -d ])" \
+			'{hs: [.GPUs[].Performance], hs_units: $units, $temp, $fan, uptime: .Session.Uptime, ar: [ .Session.Accepted, $rej, $inv_all, $inv_gpu ], $bus_numbers, algo: $algo, ver: $ver}' <<< "$stats_raw")
 fi
 
 [[ -z $khs ]] && khs=0
