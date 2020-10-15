@@ -84,7 +84,6 @@ function kill_hanged() {
 
 
 function start() {
-	[[ -e $RUNNING_FLAG ]] && rm $RUNNING_FLAG
 
 	kill_hanged
 
@@ -95,6 +94,9 @@ function start() {
 		return
 	fi
 
+	[[ -e $RUNNING_FLAG ]] && rm $RUNNING_FLAG
+	[[ -f /run/hive/cur_miner ]] && rm /run/hive/cur_miner
+
 	#[[ ! -z $MAINTENANCE && $MAINTENANCE -gt 0 ]] &&
 	#	echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
 	#	exit 1
@@ -104,8 +106,6 @@ function start() {
 		echo -e "${YELLOW}No miner is set in config, exiting ${NOCOLOR}"
 		exit 1
 	fi
-
-	[[ -f /run/hive/cur_miner ]] && rm /run/hive/cur_miner
 
 	echo -en "Starting ${CYAN}$MINER${NOCOLOR}"
 	#[[ ! -z $MINER2 ]] &&
