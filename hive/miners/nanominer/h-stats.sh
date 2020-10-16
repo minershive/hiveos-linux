@@ -61,8 +61,8 @@ else
   local t_fan=$(jq '.fan' <<< $gpu_stats)
 
   algo_count=`echo $stats_raw | jq '."Algorithms"[] | length'`
-   for (( n = 1; n <= $algo_count; n++ )); do
-     [[ n -eq 1 ]] && nom='' || nom=$n
+   for (( a = 1; a <= $algo_count; a++ )); do
+     [[ a -eq 1 ]] && nom='' || nom=$a
 
      temp=()
      fan=()
@@ -79,7 +79,7 @@ else
      t_khs=0
      num_cores=0
 
-     algo=`echo $stats_raw | jq -r '."Algorithms"[] | keys' | jq .[$n-1]`
+     algo=`echo $stats_raw | jq -r '."Algorithms"[] | keys' | jq .[$a-1]`
 
      t_khs=`echo $stats_raw | jq -rc '."Algorithms"[].'$algo'."Total"."Hashrate"'`
 #     t_khs=`printf "%f\n" $t_khs | awk '{print $1/1000}'`
