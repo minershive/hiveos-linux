@@ -125,11 +125,9 @@ function get_image_from_list {
 	# works for ftp also
 	list=`curl -fskL --list --connect-timeout $TIMEOUT --retry 2 "$URL" 2>/dev/null`
 	if [[ $? -eq 0 ]]; then
-		_IFS=$IFS; IFS=$'\n'
-		local arr=(`echo "$list" | grep -oP "$ARCHIVE_REGEX" | sed 's/%40/@/g' | sort -n -r -t "@" -k1`)
-		IFS=$_IFS
-		for img in "${arr[@]}"; do
-			urls+=("$URL$img")
+		readarray -t list < <( echo "$list" | grep -oP "$ARCHIVE_REGEX" | sed 's/%40/@/g' | sort -n -r -t "@" -k1 )
+		for img in "${list[@]}"; do
+			urls+=("${URL}${img}")
 		done
 	else
 		echo -e "${RED}> Unable to load images list from repository$NOCOLOR"
@@ -151,13 +149,13 @@ function get_image_from_list {
 	for url in "${urls[@]}"
 	do
 		ver=`basename "$url" 2>/dev/null`
-		info=`grep -A 5 "$ver" <<< "$versions"`
+		info=`echo "$versions" | grep -A 5 "$ver"`
 		[[ ! -z ${desc[$index]} ]] && ver+="${SEP}$WHITE${desc[$index]}$NOCOLOR" # desc[] is 0-based
 		if [[ ! -z info ]]; then
-			[[ "$info" =~ ( [0-9\.]+)-hiveos ]] && ver+="${SEP}${CYAN}K$NOCOLOR${BASH_REMATCH[1]}"
-			nvidia=`grep -oP "nvidia[^\s]* \K.*" <<< "$info"` && ver+="${SEP}${GREEN}N$NOCOLOR $nvidia"
-			amd=`grep -oP "amd[^\s]* \K.*" <<< "$info"` && ver+="${SEP}${RED}A$NOCOLOR $amd"
-			boot=`grep "^Dual" <<< "$info"` && ver+="${SEP}$boot"
+			[[ "$info" =~ ( [0-9]+\.[0-9]+\.[0-9]+)- ]] && ver+="${SEP}${CYAN}K$NOCOLOR${BASH_REMATCH[1]}"
+			nvidia=`echo "$info" | grep -oP "nvidia[^\s]* \K.*"` && ver+="${SEP}${GREEN}N$NOCOLOR $nvidia"
+			amd=`echo "$info" | grep -oP "amd[^\s]* \K.*"` && ver+="${SEP}${RED}A$NOCOLOR $amd"
+			boot=`echo "$info" | grep "^Dual"` && ver+="${SEP}$boot"
 		fi
 		((index++))
 		printf "%b%2s) %b\n" $WHITE $index "$NOCOLOR$ver"
