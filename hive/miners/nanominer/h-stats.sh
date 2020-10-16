@@ -100,10 +100,11 @@ else
          t_hs=`echo $stats_raw | jq -rc '."Algorithms"[].'$algo' | to_entries['$j'].value."Hashrate"'`
          t_hs=`echo $t_hs | awk '{ printf "%.4f", $1 }'`
          hs+="$t_hs "
-         let "n = j - 1"
+         #let "n = j - 1"
          #fan+=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Fan"'`" "
          #temp+=`echo $stats_raw | jq -rc '."Devices"[]."GPU '$j'"."Temperature"'`" "
-         bus_id=`echo $stats_raw | jq -rc '."Devices"[] | to_entries['$n'].value."Pci"' | awk '{printf("%d\n", "0x"$1)}'`
+         t_gpu=`echo $stats_raw | jq -r '."Algorithms"[].'$algo' | to_entries['$j'].key' | tr -d ' '`
+         bus_id=`echo $stats_raw | tr -d ' ' | jq -r '."Devices"[]."'$t_gpu'"."Pci"' | awk '{printf("%d\n", "0x"$1)}'`
          bus_ids+="$bus_id "
          local all_bus_ids_array=(`echo "$gpu_detect_json" | jq -r '[ . | to_entries[] | select(.value) | .value.busid [0:2] ] | .[]'`)
          for ((k = 0; k < ${#all_bus_ids_array[@]}; k++)); do
