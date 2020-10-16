@@ -37,6 +37,7 @@ miner_restart_count=0
 lastgood=`date +%s`
 gpu_detect_time=0
 badgpu_count=
+miner_restart_timer=0
 
 
 [[ -e $RUNNING_FLAG ]] && wd_algo=$(cat $RUNNING_FLAG) && old_flag_time=$(stat --printf %Y $RUNNING_FLAG)
@@ -127,7 +128,7 @@ function loadconf() {
 			[[ -e $map ]] && map_algo=$(cat $map | jq -r ".algomap.\"${miner_algo,,}\"")
 			if [[ ! -z $map_algo && $map_algo != "null" ]];then
 				wd_algo=$map_algo
-			else 
+			else
 				wd_algo=$miner_algo
 			fi
 			if [[ -e $RUNNING_FLAG ]]; then
@@ -256,7 +257,7 @@ function loop() {
 
 	[[ $WD_TYPE == algo && -z $wd_algo ]] && return
 
-	khs=
+	local khs=
 	[[ -e $HASHRATE_KHS ]] && khs=`cat $HASHRATE_KHS`
 	[[ -z $khs ]] && khs=0
 
@@ -292,18 +293,19 @@ function loop() {
 	fi
 	now=$new
 
-	if [[ $hashok == 1 ]]; then
+	local elapsed=$(( $now - $lastgood ))
+	#echo Elapsed $elapsed seconds
+
+	if [[ $hashok == 1 && $elapsed -le 90 ]]; then
 		set_lastgood
 		[[ $ok_count == 0 ]] && echo -e "${GREEN}OK${NOCOLOR} ${CYAN}$wd_name${NOCOLOR} $khs kHs $hashmore"
 
 		((ok_count++))
 		[[ $ok_count -ge $OK_MESSAGE_REDUCE ]] && ok_count=0
 
+		miner_restart_timer=0
 		return
 	fi
-
-	local elapsed=$(( $now - $lastgood ))
-	#echo Elapsed $elapsed seconds
 
 	if [[ "$WD_CHECK_CONN" == "1" ]]; then
 		local last_ok=`stat -c%Y $LAST_OK_FILE 2>/dev/null`
@@ -312,6 +314,18 @@ function loop() {
 			echo -e "${YELLOW}NO CONNECTION${NOCOLOR} for $diff seconds"
 			# reset last hash time so miner has some time after connection resumption
 			set_lastgood
+			# use restart timeout with max limit 10 min
+			miner_restart_timeout=`echo $WD_MINER 60 | awk '{print int($1*$2)}'`
+			[[ $miner_restart_timeout -gt 600 ]] && miner_restart_timeout=600
+			# restart miner to reduce power usage without connection
+			((miner_restart_timer++))
+			if [[ $(( miner_restart_timer * WD_SLEEP )) -gt $miner_restart_timeout ]]; then
+				echo -e "---"
+				echo -e "${YELLOW}Restarting ${CYAN}$wd_name${NOCOLOR} ${YELLOW}after $miner_restart_timeout seconds${NOCOLOR}"
+				echo -e "---"
+				miner restart
+				miner_restart_timer=0
+			fi
 			return
 		fi
 	fi
@@ -320,7 +334,7 @@ function loop() {
 
 	# check to reboot first
 	if [[ ! -z $WD_REBOOT ]]; then
-		reboot_timeout=`echo $WD_REBOOT 60 | awk '{print $1 * $2}'`
+		reboot_timeout=`echo $WD_REBOOT 60 | awk '{print int($1*$2)}'`
 		if [[ $elapsed -ge $reboot_timeout ]]; then
 			miner log | message danger "$wd_name low hashrate ($khs kH/s), rebooting" payload
 			echo -e "---"
@@ -334,7 +348,7 @@ function loop() {
 
 	# check to restart miner
 	if [[ ! -z $WD_MINER ]]; then
-		miner_restart_timeout=`echo $WD_MINER 60 | awk '{print $1 * $2}'`
+		miner_restart_timeout=`echo $WD_MINER 60 | awk '{print int($1*$2)}'`
 		if [[ $miner_restart_count == 0 && $elapsed -ge $miner_restart_timeout ]]; then
 			miner log | message warn "$wd_name low hashrate ($khs kH/s), restarting" payload
 			echo -e "---"
