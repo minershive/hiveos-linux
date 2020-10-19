@@ -33,17 +33,22 @@ stop_fans() {
 		local gpu_idx=0
 		local fan_idx=0
 		local args=
-		for busid in "${NVIDIA_BUSID[@]}"; do
-			local fan_count=${NVIDIA_FANS[$gpu_idx]}
-			[[ -z $fan_count || $fan_count == "null" ]] && fan_count=1
-			args+=" -a [gpu:$gpu_idx]/GPUPowerMizerMode=0"
-			args+=" -a [gpu:$gpu_idx]/GPUFanControlState=1"
-			for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
-				args+=" -a [fan:$i]/GPUTargetFanSpeed=0"
-			done
-			gpu_idx=$(( $gpu_idx+1 ))
-			fan_idx=$(( $fan_idx+$fan_count ))
-		done
+		#for busid in "${NVIDIA_BUSID[@]}"; do
+		#	local fan_count=${NVIDIA_FANS[$gpu_idx]}
+		#	[[ -z $fan_count || $fan_count == "null" ]] && fan_count=1
+		#	args+=" -a [gpu:$gpu_idx]/GPUPowerMizerMode=0"
+		#	args+=" -a [gpu:$gpu_idx]/GPUFanControlState=1"
+		#	args+=" -a [gpu:$gpu_idx]/GPULogoBrightness=0"
+		#	for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
+		#		args+=" -a [fan:$i]/GPUTargetFanSpeed=0"
+		#	done
+		#	gpu_idx=$(( $gpu_idx+1 ))
+		#	fan_idx=$(( $fan_idx+$fan_count ))
+		#done
+		args+=" -a GPUPowerMizerMode=0"
+		args+=" -a GPULogoBrightness=0"
+		args+=" -a GPUFanControlState=1"
+		args+=" -a GPUTargetFanSpeed=0"
 
 		if [[ ! -z $args ]]; then
 			# apply nvidia-settings
@@ -72,8 +77,8 @@ stop_fans() {
 	echo -e "${CYAN}> Checking fans speed...${NOCOLOR}"
 	sleep 10
 	stats=`gpu-stats`
-	fans=(`jq -r ".fan | .[]" <<< "$stats" 2>/dev/null`)
-	busids=(`jq -r ".busids | .[]" <<< "$stats" 2>/dev/null`)
+	fans=(`echo "$stats" | jq -r ".fan | .[]" 2>/dev/null`)
+	busids=(`echo "$stats" | jq -r ".busids | .[]" 2>/dev/null`)
 	i=0
 	for key in "${GPU_KEYS[@]}"; do
 		[[ ${fans[$key]} -ne 0 ]] && echo -e "${YELLOW}GPU#$i with busid ${busids[$key]} still spins fans - ${fans[$key]}%${NOCOLOR}"
@@ -87,10 +92,10 @@ test_gpu() {
 	index=${GPU_KEYS[$1]}
 	[[ -z $index ]] && echo -e "${RED}GPU #$1 not found${NOCOLOR}" && return
 
-	gpudata=`jq '.['$index']' <<< "$gpu_detect_json"`
-	busid=`jq -r .busid <<< "$gpudata"`
-	name=`jq -r .name <<< "$gpudata"`
-	brand=`jq -r .brand <<< "$gpudata"`
+	gpudata=`echo "$gpu_detect_json" | jq '.['$index']'`
+	busid=`echo "$gpudata" | jq -r .busid`
+	name=`echo "$gpudata" | jq -r .name`
+	brand=`echo "$gpudata" | jq -r .brand`
 
 	local COLOR=$YELLOW
 	[[ $brand == "nvidia" ]] && COLOR=$GREEN
@@ -113,6 +118,7 @@ test_gpu() {
 		done
 		# apply fan setting to 100%
 		args=" -a [gpu:$gpu_idx]/GPUFanControlState=1"
+		args+=" -a [gpu:$gpu_idx]/GPULogoBrightness=100"
 		for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
 			args+=" -a [fan:$i]/GPUTargetFanSpeed=100"
 		done
@@ -124,6 +130,7 @@ test_gpu() {
 		done
 		# set fan speed to 0% again
 		args=" -a [gpu:$gpu_idx]/GPUFanControlState=1"
+		args+=" -a [gpu:$gpu_idx]/GPULogoBrightness=0"
 		for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
 			args+=" -a [fan:$i]/GPUTargetFanSpeed=0"
 		done
