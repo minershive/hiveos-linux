@@ -25,12 +25,11 @@ hostnamectl set-hostname "$hostname"
 /hive/bin/cache-hive-ip resetonly
 
 
-
 find /hive -type f -name "*.log" -exec rm -f {} \;
 find /hive -type f -name "*.~" -exec rm -f {} \;
 
-find /hive/ccminer -type f -name "ccminer_*" -exec rm -f {} \;
-find /hive/custom/ -maxdepth 1 -mindepth 1 -type d -exec rm -rf {} \;
+[[ -d /hive/ccminer ]] && find /hive/ccminer -type f -name "ccminer_*" -exec rm -f {} \;
+[[ -d /hive/custom ]]  && find /hive/custom/ -maxdepth 1 -mindepth 1 -type d -exec rm -rf {} \;
 rm /hive/ethminer/progpow/kernel*
 
 mount --bind / /mnt && rm -rf /mnt/var/log/* && umount /mnt
