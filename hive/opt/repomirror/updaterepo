@@ -4,7 +4,7 @@
 # (or whatever is set on the remote repo server as the timezone for timestamps of the files in the repo)
 export TZ=UTC
 WGET="/usr/bin/wget -t 0 -T 20 -nv -e robots=off"
-[ -t 1 ] && WGET+=" -v"
+[[ -t 1 ]] && WGET+=" -v"
 
 function mydate() {
 	date --rfc-3339=seconds
@@ -47,13 +47,13 @@ do
 	rm -f $file
 done
 
-# Request re-sync of everything with conditional if-modified-since requests from the remote repo server, overwriting local files with 
-# ones from the remote server.
-# Because -c and -N do not seem to work too nicely in GNU wget (only larger-than-original new files get synced upon update), just use -N
-# instead of  trying to save bandwidth upon incomplete downloads
+# Request re-sync of everything except DEB files with conditional if-modified-since requests from the remote repo server,
+# overwriting local files with ones from the remote server. Using Packages for download DEB files later
+# Because -c and -N do not seem to work too nicely in GNU wget (only larger-than-original new files get synced upon update),
+# just use -N instead of  trying to save bandwidth upon incomplete downloads
 
 echo "$(mydate): Updating repo packages"
-${WGET} -r --level=1 -N "$repourl"
+${WGET} -r --no-parent --level=1 --reject=deb -N "$repourl"
 
 # Remove index files so directory contents will be generated via nginx
 # this may cause a certain amount of trash-talk from wget complaining about unavailable last-modified timestamps.
@@ -64,20 +64,46 @@ cd /var/www/html/repomirror/repo/binary
 # Check for md5 mismatches vs Packages file, if we have one from a successful download.
 # Insane Packages file will cause massive deletion of .deb files, but c'est la vie
 
-if [ -f Packages ]; then
-	# do a file with a list of bad downloads
-	TFN=`mktemp /tmp/pkgdnldXXXXXX`
-	echo "$(mydate): Checking and removing damaged or misdownloaded files using md5 sums from the fresh Packages file"
-	# this is ugly and needs some prettying in a more human-readable language
-	(cat Packages | tr '\n' '|' | sed  's/||/\\/g' | tr '\\' '\n') | perl -ne 'next unless (m/Filename.*.deb/); m/Filename: (.+?)\|.*MD5sum: ([0-9A-Fa-f]+)/; $fn = $1; $md = $2; $emd=`md5sum $fn`; $emd=~m/^([0-9A-Fa-f]+)/; $emd = $1;  if ($md ne $emd){print "$fn\n"; unlink ($fn);};' | tee $TFN
-	echo "$(mydate): Re-downloading removed files if any...."
-	for file in `cat $TFN | sed 's/.\///g'`
-	do
-		echo "Downloading ${repourl}/$file"
-		${WGET} ${repourl}/$file
-	done
-	#echo "Removing temproray files (${TFN})...."
-	rm -f $TFN
+#if [ -f Packages ]; then
+#	# do a file with a list of bad downloads
+#	TFN=`mktemp /tmp/pkgdnldXXXXXX`
+#	echo "$(mydate): Checking and removing damaged or misdownloaded files using md5 sums from the fresh Packages file"
+#	# this is ugly and needs some prettying in a more human-readable language
+#	(cat Packages | tr '\n' '|' | sed  's/||/\\/g' | tr '\\' '\n') | perl -ne 'next unless (m/Filename.*.deb/); m/Filename: (.+?)\|.*MD5sum: ([0-9A-Fa-f]+)/; $fn = $1; $md = $2; $emd=`md5sum $fn`; $emd=~m/^([0-9A-Fa-f]+)/; $emd = $1;  if ($md ne $emd){print "$fn\n"; unlink ($fn);};' | tee $TFN
+#	echo "$(mydate): Re-downloading removed files if any...."
+#	for file in `cat $TFN | sed 's/.\///g'`
+#	do
+#		echo "Downloading ${repourl}/$file"
+#		${WGET} ${repourl}/$file
+#	done
+#	#echo "Removing temproray files (${TFN})...."
+#	rm -f $TFN
+#fi
+
+if [[ -e Packages ]]; then
+	echo "$(mydate): Checking and downloading missed/damaged/incomplete files using fresh Packages listing"
+	cnt=0
+	while IFS="|:" read -a arr; do
+		declare -A info=( ["${arr[0]}"]="${arr[1]}" ["${arr[2]}"]="${arr[3]}" ["${arr[4]}"]="${arr[5]}" )
+		[[ -t 1 ]] && (( ++cnt % 100 == 0 )) && echo "Files processed: $cnt"
+		#echo "${info[Filename]} ${info[Size]} ${info[MD5sum]}"
+		file="${info[Filename]/.\/}"
+		[[ -z "$file" ]] && continue;
+		if [[ -e "${info[Filename]}" ]]; then
+			size=$(stat --format=%s "${info[Filename]}" 2>/dev/null) || size=0
+			if [[ ! -z "${info[Size]}" && "${info[Size]}" -gt $size ]]; then
+				echo "$file - incomplete download ($size/${info[Size]}), resuming"
+				${WGET} -c ${repourl}$file
+			fi
+			[[ -z "${info[MD5sum]}" || $(md5sum "${info[Filename]}" | awk '{printf $1}') == "${info[MD5sum]}" ]] && continue
+			echo "$file - bad MD5 sum, deleting"
+			unlink "${info[Filename]}"
+		fi
+		echo "Downloading ${repourl}$file"
+		${WGET} ${repourl}$file
+		# we can check again but repo may be updated during checking
+	done < <( cat -s Packages | grep -E "^$|^Filename|^MD5sum|^Size" | tr '\n' '|' | sed  's/||/\n/g' | tr -d ' ' )
+	[[ $cnt -gt 0 ]] && echo "Files processed: $cnt"
 fi
 
 echo "$(mydate): Done."

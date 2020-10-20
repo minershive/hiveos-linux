@@ -1,8 +1,8 @@
 Package: hive-opt-repomirror
-Version: 0.6-03
+Version: 0.6-04
 Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner local repo mirror website
-Depends: wget(>= 1.17), nginx-extras(>=1.10), cron, perl
+Depends: wget(>= 1.17), nginx-extras(>=1.10), cron
