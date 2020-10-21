@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+REPOPATH=/var/www/html/repomirror
+
 # for all the programs running from within the script, make sure they run in the "UTC" time zone
 # (or whatever is set on the remote repo server as the timezone for timestamps of the files in the repo)
 export TZ=UTC
@@ -39,10 +41,10 @@ echo "Working under $(pwd)"
 
 # wget will download to domain directory, so link it appropriately
 [[ ! -e /var/www/html/$domain ]] &&
-	ln -sf /var/www/html/repomirror /var/www/html/$domain
+	ln -sf $REPOPATH /var/www/html/$domain
 
 # remove files like RepoVer and other files which are not actual packages
-for file in `ls /var/www/html/repomirror/repo/binary/* | grep -v deb`
+for file in `ls $REPOPATH/repo/binary/* | grep -v deb`
 do
 	rm -f $file
 done
@@ -60,7 +62,7 @@ ${WGET} -r --no-parent --level=1 --reject=deb -N "$repourl"
 rm -f repomirror/repo/index.html
 rm -f repomirror/repo/binary/index.html
 
-cd /var/www/html/repomirror/repo/binary
+cd $REPOPATH/repo/binary
 # Check for md5 mismatches vs Packages file, if we have one from a successful download.
 # Insane Packages file will cause massive deletion of .deb files, but c'est la vie
 
@@ -85,7 +87,7 @@ if [[ -e Packages ]]; then
 	cnt=0
 	while IFS="|:" read -a arr; do
 		declare -A info=( ["${arr[0]}"]="${arr[1]}" ["${arr[2]}"]="${arr[3]}" ["${arr[4]}"]="${arr[5]}" )
-		[[ -t 1 ]] && (( ++cnt % 100 == 0 )) && echo "Files processed: $cnt"
+		(( ++cnt % 100 == 0 )) && [[ -t 1 ]] && echo "Files processed: $cnt"
 		#echo "${info[Filename]} ${info[Size]} ${info[MD5sum]}"
 		file="${info[Filename]/.\/}"
 		[[ -z "$file" ]] && continue;
@@ -103,7 +105,7 @@ if [[ -e Packages ]]; then
 		${WGET} ${repourl}$file
 		# we can check again but repo may be updated during checking
 	done < <( cat -s Packages | grep -E "^$|^Filename|^MD5sum|^Size" | tr '\n' '|' | sed  's/||/\n/g' | tr -d ' ' )
-	[[ $cnt -gt 0 ]] && echo "Files processed: $cnt"
+	echo "Files processed: $cnt"
 fi
 
 echo "$(mydate): Done."
