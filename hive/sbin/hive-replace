@@ -25,12 +25,12 @@ HIVE_URL=http://download.hiveos.farm
 STABLE_URL=$HIVE_URL/latest/
 VEGA_URL=$HIVE_URL/vega/
 BETA_URL=$HIVE_URL/beta/
-URL_MASK="^http.*hiveos-.*\.zip$"
+URL_MASK="^http.*hiveos-.*\.(zip|xz)$"
 
 # images archive
 ARCHIVE_URL=$HIVE_URL/history/
 #ARCHIVE_REGEX="\"\Khiveos-[^\"]+.zip(?=\")"
-ARCHIVE_REGEX="(\"|^)\Khiveos-[^\"]+.zip(?=($|\"))"
+ARCHIVE_REGEX="(\"|^)\Khiveos-[^\"]+.(zip|xz)(?=($|\"))"
 
 # download timeout
 TIMEOUT=20
@@ -41,7 +41,7 @@ url=
 root_dev=""
 farm_hash=""
 farm=""
-force=1 # we do not need md5 as archive integrity is checked anyway
+force=0
 no_confirm=0
 smb=0
 smbuser=
@@ -73,12 +73,12 @@ NOCOLOR='\033[0m'
 [[ $(uname -sr) == *hive* ]] && thishive=1
 
 
-#Get root
-if [[ $(id -u) -ne 0 ]]; then
-	echo "Root privileges required"
-	sudo chmod +x $0
-	exec sudo $myself $*
-fi
+
+function exit_handler {
+	echo 
+	echo "press any key to close session"
+	[[ -t 0 ]] && read -n 1 || read -t 600 -n 1
+}
 
 
 function url_decode() {
@@ -141,31 +141,31 @@ function get_image_from_list {
 	# try to get from Hive server
 	[[ -z $versions ]] && versions=`curl -fsLk --connect-timeout $TIMEOUT --retry 2 "${HIVE_URL}/VERSIONS.txt" 2>/dev/null`
 	[[ -z $versions ]] && echo -e "${RED}> Unable to load image descriptions$NOCOLOR"
-
 	local SEP=" · "
 	local index=0
 	echo -e "${YELLOW}> Select version to install:$NOCOLOR"
 	printf "%b%2s) %b\n" $WHITE $index "${NOCOLOR}Exit"
 	for url in "${urls[@]}"
 	do
-		ver=`basename "$url" 2>/dev/null`
-		info=`echo "$versions" | grep -A 5 "$ver"`
+		local ver=`basename "$url" 2>/dev/null`
+		[[ "$ver" =~ ^(.*)(\.zip|\.img\.xz)$ ]] && name="${BASH_REMATCH[1]}" || name="$ver"
+		info=`echo "$versions" | grep -A 6 "^$name"`
 		[[ ! -z ${desc[$index]} ]] && ver+="${SEP}$WHITE${desc[$index]}$NOCOLOR" # desc[] is 0-based
-		if [[ ! -z info ]]; then
-			[[ "$info" =~ ( [0-9]+\.[0-9]+\.[0-9]+)- ]] && ver+="${SEP}${CYAN}K$NOCOLOR${BASH_REMATCH[1]}"
-			nvidia=`echo "$info" | grep -oP "nvidia[^\s]* \K.*"` && ver+="${SEP}${GREEN}N$NOCOLOR $nvidia"
-			amd=`echo "$info" | grep -oP "amd[^\s]* \K.*"` && ver+="${SEP}${RED}A$NOCOLOR $amd"
-			boot=`echo "$info" | grep "^Dual"` && ver+="${SEP}$boot"
+		if [[ ! -z "$info" ]]; then
+			[[ "$info" =~ (\ [0-9]+\.[0-9]+\.[0-9]+)- ]] && ver+="${SEP}${CYAN}K$NOCOLOR${BASH_REMATCH[1]}"
+			nvidia=`echo "$info" | grep -m1 -oP "nvidia[^\s]* \K.*"` && ver+="${SEP}${GREEN}N$NOCOLOR $nvidia"
+			amd=`echo "$info" | grep -m1 -oP "amd[^\s]* \K.*"` && ver+="${SEP}${RED}A$NOCOLOR $amd"
+			boot=`echo "$info" | grep -m1 "^Dual"` && ver+="${SEP}$boot"
 		fi
 		((index++))
 		printf "%b%2s) %b\n" $WHITE $index "$NOCOLOR$ver"
 	done
 
 	# allow to select only in interactive shell
-	[[ ! -t 0 && -z $select ]] && echo -e "${RED}Run in interactive shell to select image or use ${WHITE}--list=${CYAN}N$NOCOLOR" && exit 0
+	[[ ! -t 0 && -z $select ]] && echo -e "${RED}Run in interactive shell to select image or use ${WHITE}--list=${CYAN}N$NOCOLOR" && return 1
 
 	if [[ ! -z $select ]]; then
-		[[ ! $select =~ [0-9]+ || $select -eq 0 || -z ${urls[$(( $select - 1 ))]} ]] && echo -e "${RED}Invalid selection, exiting$NOCOLOR" && exit 1
+		[[ ! $select =~ [0-9]+ || $select -eq 0 || -z ${urls[$(( $select - 1 ))]} ]] && echo -e "${RED}Invalid selection, exiting$NOCOLOR" && return 1
 		url=`url_decode "${urls[$(( $select - 1 ))]}"`
 		return 0
 	fi
@@ -183,41 +183,10 @@ function get_image_from_list {
 }
 
 
-function usage {
-	local code=$1
-	echo -e "${CYAN}Usage: hive-replace [option] <Path or URL to ZIP file with Hive OS image>${NOCOLOR}"
-	echo -e
-	echo -e "Options:"
-	echo -e "${GREEN}  -l|--list|--list=NUM    ${NOCOLOR}List images from Hive server and select for install"
-	echo -e "${GREEN}  -s|--stable             ${NOCOLOR}Download and install latest ${BCYAN}Stable$NOCOLOR image from Hive server"
-	echo -e "${GREEN}  --vega                  ${NOCOLOR}Download and install latest ${CYAN}Vega$NOCOLOR image from Hive server"
-	echo -e "${GREEN}  --beta                  ${NOCOLOR}Download and install latest ${CYAN}Beta$NOCOLOR image from Hive server"
-	echo -e "${GREEN}  --repo=URL              ${NOCOLOR}List images from URL and select for install (HTTP(S)/FTP)"
-	echo -e "${GREEN}  -y|--yes                ${NOCOLOR}Do not ask for confirmation, answer yes to all questions"
-#	echo -e "${GREEN}  -f|--force              ${NOCOLOR}Forced replace. Do not check the MD5 checksum of ZIP archive"
-	echo -e "${GREEN}  --hash=FARM_HASH        ${NOCOLOR}FARM_HASH from Web-interface. Optional for already configured rig"
-	echo -e "${GREEN}  --nfs                   ${NOCOLOR}To use NFS Shared resource. e.g.: ${GREEN}IP_NFS_server:/shared_dir/hive_zip${NOCOLOR}"
-	echo -e "${GREEN}  --smb                   ${NOCOLOR}To use Windows Shared resource. e.g.: ${GREEN}//IP_Windows_comp/shared_folder/hive_zip${NOCOLOR}"
-	echo -e "${GREEN}  --smbuser=Windows user  ${NOCOLOR}UserName for Windows Shared resource. Do not set this option for guest/anonymous access"
-	echo -e "${GREEN}  --smbpass=Windows pass  ${NOCOLOR}Password for Windows Shared resource. Do not set this option for guest/anonymous access"
-	echo -e "${GREEN}  -h|--help               ${NOCOLOR}Show this message"
-	[[ ! -z $code ]] && exit $code
-	echo -e
-	echo -e "Examples:"
-	echo -e "${GREEN}  hive-replace -y --stable${NOCOLOR}"
-	echo -e "${GREEN}  hive-replace -y --list${NOCOLOR}"
-	echo -e "${GREEN}  hive-replace -y --list=3${NOCOLOR}"
-	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 http://mylocalserver/hiveos-0.6-01@181121.zip${NOCOLOR}"
-	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 --nfs 192.168.10.100:/home/john/hive/hiveos-0.6-01@181121.zip${NOCOLOR}"
-	echo -e "${GREEN}  hive-replace -y --smb --smbuser=winuser --smbpass=secret //192.168.0.1/shared_folder/hiveos-0.6-01@181121.zip${NOCOLOR}"
-	exit 0
-}
-
-
 function check_packages {
-	[[ $checked -eq 1 ]] && return
+	[[ $checked -eq 1 ]] && return 0
 
-	local need_install=(lsof curl wget unzip unzip gdisk)
+	local need_install=(lsof curl wget unzip unzip gdisk xz-utils)
 	[[ $smb -eq 1 ]] && need_install+=(smbclient)
 	[[ $nfs -eq 1 ]] && need_install+=(nfs-common)
 
@@ -229,7 +198,7 @@ function check_packages {
 		echo -e "${CYAN}> Installing required packages: ${WHITE}${need_install[@]}${NOCOLOR}"
 		apt update
 		apt install -y "${need_install[@]}"
-		[[ $? -ne 0 ]] && echo -e "${RED}Failed to install required packages${NOCOLOR}" && exit
+		[[ $? -ne 0 ]] && echo -e "${RED}Failed to install required packages${NOCOLOR}" && exit 1
 		echo -e "${GREEN}> Installed required packages successfully${NOCOLOR}\n"
 	fi
 	checked=1
@@ -241,7 +210,6 @@ function get {
 	cd $TMPDIR
 	rm $TMPDIR/*hive* > /dev/null 2>&1
 
-	basename=`basename -s .zip "$url"`
 	archname=`basename "$url"`
 
 	if [[ $nfs -eq 1 || $smb -eq 1 ]]; then
@@ -263,22 +231,41 @@ function get {
 		url="$TMPDIR/share/$archname"
 	fi
 
-
-	#download VERSIONS.txt to get md5 later
-	if [[ $force -ne 1 ]]; then
-		#default is "http://download.hiveos.farm/VERSIONS.txt"
-		md5_url=$(dirname "$url")/VERSIONS.txt
-		#curl -s $md5_url > $TMPDIR/VERSIONS.txt
-		wget -q -O $TMPDIR/VERSIONS.txt $md5_url
-		[[ $? -ne 0 ]] && echo -e "${RED}Can't get $md5_url to check MD5 checksum. Use -f to ignore this.${NOCOLOR}" && return 1
-		mdsum=$(sed -n "/$archname/p" $TMPDIR/VERSIONS.txt | awk '{printf$2}')
-		[[ -z $mdsum ]] && echo -e "${RED}Can't get md5sum from $md5_url to check MD5 checksum. Use -f to ignore this.${NOCOLOR}" && return 1
+	echo -e "\n${CYAN}> Getting image size${NOCOLOR}"
+	if [[ $nfs -eq 1 || $smb -eq 1 ]]; then
+		archsize=`stat --format=%s "$url" | awk '{print int($1/1000000)}'`
+	else
+		archsize=`curl -s --head "$url" | grep -ioP "content-length:[^0-9]+\K[0-9]+" | awk '{print int($1/1000000)}'`
 	fi
 
-	# stop miner here to free some memory and prevent rig from rebooting on errors
-	[[ $thishive -eq 1 ]] && miner stop 2>/dev/null
+	if [[ $? -eq 0 && ! -z "$archsize" ]]; then
+		echo -e "${GREEN}Image size: ${WHITE}$archsize MB${NOCOLOR}"
+		reqmem=$(( `free -m | grep 'Mem' | awk '{print $7}'` - archsize - 150 ))
+		if [[ $force -eq 1 && $reqmem -lt 0 ]]; then
+			echo -e "${RED}Image is to big to fit in RAM ($reqmem MB), exiting${NOCOLOR}"
+			[[ $thishive -eq 1 ]] && echo -e "${YELLOW}Try to boot in maintenance mode without loading drivers${NOCOLOR}"
+			return 1
+		fi
+	else
+		[[ $force -eq 1 ]] && echo -e "${RED}Unable to get image size, exiting${NOCOLOR}" && return 1
+		echo -e "${RED}Unable to get image size${NOCOLOR}"
+	fi
 
-	#Copy|download hive image to tmmfs
+	# download VERSIONS.txt to get md5 later
+	#if [[ $force -ne 1 ]]; then
+	#	#default is "http://download.hiveos.farm/VERSIONS.txt"
+	#	md5_url=$(dirname "$url")/VERSIONS.txt
+	#	#curl -s $md5_url > $TMPDIR/VERSIONS.txt
+	#	wget -q -O $TMPDIR/VERSIONS.txt $md5_url
+	#	[[ $? -ne 0 ]] && echo -e "${RED}Can't get $md5_url to check MD5 checksum. Use -f to ignore this.${NOCOLOR}" && return 1
+	#	mdsum=$(sed -n "/$archname/p" $TMPDIR/VERSIONS.txt | awk '{printf$2}')
+	#	[[ -z $mdsum ]] && echo -e "${RED}Can't get md5sum from $md5_url to check MD5 checksum. Use -f to ignore this.${NOCOLOR}" && return 1
+	#fi
+
+	# stop miner here to free some memory and prevent rig from rebooting on errors
+	#[[ $thishive -eq 1 ]] && miner stop 2>/dev/null
+
+	# Copy|download hive image to tmpfs
 	echo -e "\n${CYAN}> Downloading image file${NOCOLOR}"
 	if [[ "$url" == *http* ||  "$url" == *ftp* ]]; then
 		echo ""
@@ -290,17 +277,21 @@ function get {
 		[[ $? -ne 0 ]] && echo -e "${RED}Copy Hive OS image failed${NOCOLOR}" && return 1
 	fi
 
-	#check md5
-	if [[ $force -ne 1 ]]; then
-		echo -e "\n${CYAN}> Checking MD5 summ of image file${NOCOLOR}"
-		mdsum_hive=$(md5sum $TMPDIR/$archname | awk '{printf$1}')
-		[[ $mdsum != $mdsum_hive ]] && echo -e "${RED}MD5 checksum of image file does not match${NOCOLOR}\nGot $mdsum_hive, expected $mdsum" && return 1
-	fi
+	# check md5
+	#if [[ $force -ne 1 ]]; then
+	#	echo -e "\n${CYAN}> Checking MD5 of image file${NOCOLOR}"
+	#	mdsum_hive=$(md5sum $TMPDIR/$archname | awk '{printf$1}')
+	#	[[ $mdsum != $mdsum_hive ]] && echo -e "${RED}MD5 checksum of image file does not match${NOCOLOR}\nGot $mdsum_hive, expected $mdsum" && return 1
+	#fi
 
-	#check zip integrity
-	echo -e "\n${CYAN}> Checking ZIP file integrity${NOCOLOR}"
-	unzip -t $TMPDIR/$archname > /dev/null
-	[[ $? -ne 0 ]] && echo -e "${RED}ZIP file is damaged${NOCOLOR}" && return 1
+	# check archive integrity
+	echo -e "\n${CYAN}> Checking archive integrity${NOCOLOR}"
+	if [[ $archname == *\.xz ]]; then
+		xz -t $TMPDIR/$archname > /dev/null
+	else #if [[ $archname == *\.zip ]]; then
+		unzip -t $TMPDIR/$archname > /dev/null
+	fi
+	[[ $? -ne 0 ]] && echo -e "${RED}Archive is damaged${NOCOLOR}" && return 1
 
 	echo -e "${GREEN}Hive OS image ready!${NOCOLOR}"
 	return 0
@@ -309,9 +300,9 @@ function get {
 
 # Starting actions
 function prepare {
-	#[[ $(tty) == *tty* ]] && echo "This script does not work in the local console, exiting" && exit 1
-	pstree -As $$ | grep -q "xinit" && echo -e "${RED}Hive-replace does not work in X server console! Run it from text local or remote shell$NOCOLOR" && exit 1
-	pstree -As $$ | grep -q -P "(ssh|shellinabox|hive-console)" || (echo -e "${YELLOW}Hive-replace does not work in X server console! Make sure it is not running from it$NOCOLOR"; sleep 5)
+	#[[ $(tty) == *tty* ]] && echo "This script does not work in the local console, exiting" && return 1
+	pstree -As $$ | grep -q "xinit" && echo -e "${RED}Hive-replace does not work in X server console! Run it from text local or remote shell$NOCOLOR" && return 1
+	pstree -As $$ | grep -q -P "(ssh|shellinabox|hive-console|screen)" || (echo -e "${YELLOW}Hive-replace does not work in X server console! Make sure it is not running from it$NOCOLOR"; sleep 5)
 
 	mem=$(free -m | awk 'NR == 2{print$2}')
 	#clear
@@ -324,12 +315,11 @@ function prepare {
 	echo
 	echo "Total RAM=$mem Mb"
 	echo
-	[[ $mem -lt 3600 ]] && echo -e "${YELLOW}4 GB RAM is required, exiting${NOCOLOR}" && exit 1
+	[[ $mem -lt 2900 && $force -ne 1 ]] && echo -e "${RED}At least 3 GB RAM is required, exiting${NOCOLOR}" && return 1
 
 	PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
 	DISK_PART=`blkid -U "${PART_UUID}" | sed 's/\(^\/dev\/\)//'`
-	if [[ "$(echo $DISK_PART | grep -c nvme)" -gt 0 ]];
-	then
+	if [[ "$(echo $DISK_PART | grep -c nvme)" -gt 0 ]]; then
 		DISK_NAME=${DISK_PART::-2} #cutoff partnumber pN
 	else
 		DISK_NAME=${DISK_PART::-1} #cutoff partnumber N
@@ -344,57 +334,58 @@ function prepare {
 		echo -e "${RED}Warning: After Hive OS installation, all your data on ${BPURPLE}$DISK_NAME${NOCOLOR} ${RED}will be lost!${NOCOLOR}"
 		echo -en "\nType ${GREEN}\"yes\"${NOCOLOR} if you want to install Hive OS on ${BPURPLE}$DISK_NAME${NOCOLOR}: "
 		read -t 90 answer
-		[[ $answer != "yes" ]] && echo -e "${YELLOW}\nBye, bye!${NOCOLOR}" && exit
+		[[ $answer != "yes" ]] && echo -e "${YELLOW}\nBye, bye!${NOCOLOR}" && exit 0
 	fi
 
-	##check programs
+	# check programs
 	check_packages
 
-	#create tmpfs
+	# create tmpfs
 	cat /proc/mounts | grep $TMPDIR > /dev/null 2>&1
 	if [[ $? -ne 0 ]]; then
 		mkdir $TMPDIR > /dev/null 2>&1
 		mount none $TMPDIR -t tmpfs -o size=3000m
 	fi
 
-
-	#get farm_hash or old config
+	# get farm_hash or old config
 	mkdir -p $TMPDIR/old-config
 	if [[ $thishive -eq 1 && -f /hive-config/rig.conf ]]; then
 		cp /hive-config/rig.conf ${TMPDIR}/old-config/
 	elif [[ ! -z $farm ]]; then
-		echo -e "HIVE_HOST_URL=\"http://api.hiveos.farm\"" > ${TMPDIR}/old-config/rig.conf
+		echo -e "HIVE_HOST_URL=\"https://api.hiveos.farm\"" > ${TMPDIR}/old-config/rig.conf
 		echo -e "FARM_HASH=$farm\n" >> ${TMPDIR}/old-config/rig.conf
 	fi
 	[[ $thishive -eq 1 && -d /hive-config/network ]] && cp -R /hive-config/network $TMPDIR/old-config/
 	[[ $thishive -eq 1 && -d /hive-config/openvpn ]] && cp -R /hive-config/openvpn $TMPDIR/old-config/
 	[[ $thishive -eq 1 && -d /hive-config/watchdog ]] && cp -R /hive-config/watchdog $TMPDIR/old-config/
 
+	# stop miner and some services to reduce RAM usage and prevent reboot
+
+	if [[ $thishive -eq 1 ]]; then
+		echo -e "\n${CYAN}> Stopping Hive OS services${NOCOLOR}"
+		autoswitch stop > /dev/null 2>&1
+		miner stop > /dev/null 2>&1
+		systemctl stop hive-watchdog
+		autofan stop > /dev/null 2>&1
+		systemctl stop hivex > /dev/null 2>&1
+		killall xinit > /dev/null 2>&1
+		#agent-screen stop
+	fi
+
+	# turn off swap here
+	swapoff -a
 
 	# get hive zip
-	get || exit
+	get || return
 
-	#Disable kernel message to tty
+	# Disable kernel message to tty
 	echo 0 > /proc/sys/kernel/printk
 	echo 1 > /proc/sys/kernel/sysrq
 	echo 0 > /proc/sysrq-trigger
 
+	# stop services and remount RO	
+	echo -e "\n${CYAN}> Stopping services${NOCOLOR}"
 
-	#stop services and remount RO
-	swapoff -a
-	
-	if [[ $thishive -eq 1 ]]; then
-		autoswitch stop > /dev/null 2>&1
-		miner stop > /dev/null 2>&1
-		systemctl stop hive-watchdog
-		#autofan stop > /dev/null 2>&1
-		systemctl stop hivex > /dev/null 2>&1
-		pkill -9 xinit > /dev/null 2>&1
-		#agent-screen stop
-	else
-		echo -e "\n${CYAN}> Stopping services${NOCOLOR}"
-	fi
-	
 	term=`tty | grep -oP "\Ktty[0-9]+"`
 	[[ ! -z $term ]] && term="|$term"
 
@@ -417,12 +408,20 @@ function prepare {
 	done
 
 	# Readonly remount
-	for MOUNTS in `cat /proc/mounts | grep $DISK_NAME | awk '{print $2}'`; do
-		mount -n -o remount,ro $MOUNTS > /dev/null 2>&1 || echo "Remounting $MOUNTS failed"
+	for MOUNT in `cat /proc/mounts | grep $DISK_NAME | awk '{print $2}'`; do
+		if [[ "$MOUNT" == "/hive-config" ]]; then
+			umount -f $MOUNT > /dev/null 2>&1 && mount -n -o ro $MOUNT > /dev/null 2>&1
+		else
+			mount -n -o remount,ro $MOUNT > /dev/null 2>&1
+		fi
+		exitcode=$?
+		[[ $exitcode -eq 0 ]] &&
+			echo "> mount read-only: $MOUNT" ||
+			echo "> mount read-only failed ($exitcode): $MOUNT"
 	done
 
 
-	#create temp root
+	# create temp root
 	echo -e "\n${CYAN}> Creating temporary root filesystem${NOCOLOR}"
 	mkdir -p $TMPDIR/{proc,sys,run,dev,usr,var,oldroot,bin,sbin,lib,tmp,usr/lib,usr/share,usr/lib/x86_64-linux-gnu,lib/lsb}
 	cp -aR /{bin,sbin,etc} $TMPDIR > /dev/null 2>&1
@@ -452,7 +451,6 @@ function prepare {
 	echo "root_dev=$DISK_NAME" >> $TMPDIR/replace.conf
 	echo "conf_loop=$conf_loop" >> $TMPDIR/replace.conf
 	echo "conf_part=${DISK_PART::-1}1" >> $TMPDIR/replace.conf
-	
 
 	#chroot to temp root
 	mount --bind /proc $TMPDIR/proc
@@ -474,16 +472,24 @@ function write {
 	echo -e "To prevent damage to your disk device\ndo not turn off your computer until the end of the process.\n"
 
 	if dd --help | grep -q "'progress'"; then
-		unzip -p $archname | dd of=/dev/$root_dev bs=1M status=progress
+		if [[ $archname == *\.xz ]]; then
+			xz -d -c $archname | dd of=/dev/$root_dev bs=1M status=progress
+		else #if [[ $archname == *\.zip ]]; then
+			unzip -p $archname | dd of=/dev/$root_dev bs=1M status=progress
+		fi
 		exitcode=$?
 	else
 		# show progress
 		( sleep 2; while true; do sleep 1; pkill -USR1 -f "dd of=/dev/" || break; echo -en "\r$(tail -n 1 ./progress 2>/dev/null )      "; done) &
-		unzip -p $archname | dd of=/dev/$root_dev bs=1M 2>./progress
+		if [[ $archname == *\.xz ]]; then
+			xz -d -c $archname | dd of=/dev/$root_dev bs=1M 2>./progress
+		else #if [[ $archname == *\.zip ]]; then
+			unzip -p $archname | dd of=/dev/$root_dev bs=1M 2>./progress
+		fi
 		exitcode=$?
 		[[ $exitcode -eq 0 ]] && echo -e "\r$(tail -n 1 ./progress 2>/dev/null)      "
 	fi 
-	[[ $exitcode -ne 0 ]] && echo -e "${RED}Write image failed, exiting$NOCOLOR" && return 1
+	[[ $exitcode -ne 0 ]] && echo -e "${RED}Write image failed, exiting$NOCOLOR" && return 2
 
 	# Fix GPT table if needed
 	sgdisk -e /dev/$root_dev > /dev/null 2>&1
@@ -491,7 +497,11 @@ function write {
 	partprobe /dev/$root_dev > /dev/null 2>&1
 
 	# Rewrite config partition
+	configured=0
 	if [[ -f old-config/rig.conf ]]; then
+	    # we do not need it any more
+	    rm $archname > /dev/null 2>&1
+
 		echo -e "\n${CYAN}> Writing Hive OS config to ${BPURPLE}$root_dev${NOCOLOR}"
 
 		dd if=/dev/${conf_part} of=new_conf.img bs=1M
@@ -504,8 +514,8 @@ function write {
 		if [[ $? -eq 0 ]]; then
 			cp -R old-config/* hive-config
 			sync
-
 			dd if=/new_conf.img of=/dev/${conf_part} bs=1M
+			configured=1
 		else
 			echo -e "${RED}Config was not written to ${BPURPLE}${conf_part}${NOCOLOR}"
 		fi
@@ -517,16 +527,17 @@ function write {
 	echo -e "${GREEN}Image writing to ${BPURPLE}$root_dev${GREEN} is successfull!${NOCOLOR}"
 	echo -e
 	echo -e "Your rig is configured and ready to work under Hive OS."
-	echo -e "After reboot it should appear on the web."
+
+	if [[ $configured -eq 1 ]]; then
+		[[ -e old-config/rig.conf ]] && source old-config/rig.conf
+		[[ ! -z "$RIG_ID" && ! -z "$RIG_PASSWD" && ! -z "$HIVE_HOST_URL" ]] &&
+			echo -e "RIG ID: $RIG_ID, API: $HIVE_HOST_URL"
+	fi
+
 	echo -e
 	echo -e "${GREEN}Have a happy mining!${NOCOLOR}"
-	echo -e "${YELLOW}Rebooting in 15 seconds${NOCOLOR}"
 
-	sleep 15
-
-	#Reboot
-	echo 1 > /proc/sys/kernel/sysrq
-	echo b > /proc/sysrq-trigger
+	return 0
 }
 
 
@@ -536,21 +547,91 @@ function start {
 	[[ -f "/replace.conf" ]] && source "/replace.conf"
 
 	if [[ $wr -ne 1 ]]; then
-		[[ -z $url ]] && echo -e "${YELLOW}Filesystem path or URL to Hive OS image is required.${NOCOLOR}\n" && usage
+		[[ -z "$url" ]] && echo -e "${YELLOW}Filesystem path or URL to Hive OS image is required.${NOCOLOR}\n" && usage
 		prepare
 	else
 		write
+		echo -e "${YELLOW}Rebooting in 20 seconds${NOCOLOR}"
+		sleep 20
+		# Reboot
+		echo 1 > /proc/sys/kernel/sysrq
+		echo b > /proc/sysrq-trigger
 	fi
+}
+
+
+function usage {
+	local code=$1
+	echo -e "${CYAN}Usage: hive-replace [option] <Path or URL to ZIP/XZ file with Hive OS image>${NOCOLOR}"
+	echo -e
+	echo -e "Options:"
+	echo -e "${GREEN}  -l|--list|--list=NUM    ${NOCOLOR}List images from Hive server and select for install"
+	echo -e "${GREEN}  -s|--stable             ${NOCOLOR}Download and install latest ${BCYAN}Stable$NOCOLOR image from Hive server"
+	echo -e "${GREEN}  --vega                  ${NOCOLOR}Download and install latest ${CYAN}Vega$NOCOLOR image from Hive server"
+	echo -e "${GREEN}  --beta                  ${NOCOLOR}Download and install latest ${CYAN}Beta$NOCOLOR image from Hive server"
+	echo -e "${GREEN}  --repo=URL              ${NOCOLOR}List images from URL and select for install (HTTP(S)/FTP)"
+	echo -e "${GREEN}  -y|--yes                ${NOCOLOR}Do not ask for confirmation, answer yes to all questions"
+	echo -e "${GREEN}  --force                 ${NOCOLOR}Force replace if RAM is less than 3GB. Use on your own risk"
+	echo -e "${GREEN}  --safe                  ${NOCOLOR}Run replace in safer way so running session can be resumed (run hive-replace or screen -r replace)"
+	echo -e "${GREEN}  --hash=FARM_HASH        ${NOCOLOR}FARM_HASH from Web-interface. Optional for already configured rig"
+	echo -e "${GREEN}  --nfs                   ${NOCOLOR}To use NFS Shared resource. e.g.: ${GREEN}IP_NFS_server:/shared_dir/hive_image${NOCOLOR}"
+	echo -e "${GREEN}  --smb                   ${NOCOLOR}To use Windows Shared resource. e.g.: ${GREEN}//IP_Windows_comp/shared_folder/hive_image${NOCOLOR}"
+	echo -e "${GREEN}  --smbuser=Windows user  ${NOCOLOR}UserName for Windows Shared resource. Do not set this option for guest/anonymous access"
+	echo -e "${GREEN}  --smbpass=Windows pass  ${NOCOLOR}Password for Windows Shared resource. Do not set this option for guest/anonymous access"
+	echo -e "${GREEN}  -h|--help               ${NOCOLOR}Show this message"
+	[[ ! -z $code ]] && exit $code
+	echo -e
+	echo -e "Examples:"
+	echo -e "${GREEN}  hive-replace -y --stable${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y --list${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y --list=3${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 http://mylocalserver/hiveos-0.6-01@181121.zip${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y --hash=46e9602837d0bda99f0 --nfs 192.168.10.100:/home/john/hive/hiveos-0.6-01@181121.zip${NOCOLOR}"
+	echo -e "${GREEN}  hive-replace -y --smb --smbuser=winuser --smbpass=secret //192.168.0.1/shared_folder/hiveos-0.6-01@181121.zip${NOCOLOR}"
+	exit 0
 }
 
 
 [[ $1 == "-h" || $1 == "--help" ]] && usage
 
+
+# Get root
+if [[ $(id -u) -ne 0 ]]; then
+	echo "Root privileges required"
+	sudo chmod +x $0
+	exec sudo $myself $*
+fi
+
+
+# check for running session and restore to it
+if [[ "`pstree -As $$`" != *-screen-* ]] && screen -ls replace 2>/dev/null | grep -q ".replace"; then
+	echo -e "Hive-replace session is already running"
+	if [[ -t 0 ]]; then
+		echo -e "Resuming..."
+		read -t 2 -n 1
+		screen -x -S replace
+	else
+		echo -e "Use interactive shell to connect to it!"
+	fi
+	exit
+fi
+
+
 listparams=
 
 for param in "$@"; do
 	case "$param" in
-		-f|--force)
+		--safe)
+			if [[ "`pstree -As $$`" != *-screen-* ]]; then
+				echo "Starting session"
+				screen -mS replace $0 $@ && exit
+				echo -e "${YELLOW}Session start failed. Running in common way...${NOCOLOR}"
+			else
+				# set exit handler to pause at the end
+				trap exit_handler EXIT
+			fi
+		;;
+		--force)
 			force=1
 		;;
 		-y|--yes)
