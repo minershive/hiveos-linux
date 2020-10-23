@@ -81,6 +81,8 @@ else
 
      algo=`echo $stats_raw | jq -r '."Algorithms"[] | keys' | jq .[$a-1]`
 
+     uptime=`echo $stats_raw | jq -rc '."WorkTime"'`
+
      t_khs=`echo $stats_raw | jq -rc '."Algorithms"[].'$algo'."Total"."Hashrate"'`
 #     t_khs=`printf "%f\n" $t_khs | awk '{print $1/1000}'`
      t_khs=`echo $t_khs | awk '{printf "%.4f",$1/1000}'`
@@ -123,8 +125,6 @@ else
 
      ac=`echo $stats_raw | jq -rc '."Algorithms"[].'$algo'."Total"."Accepted"'`
      rj=`echo $stats_raw | jq -rc '."Algorithms"[].'$algo'."Total"."Denied"'`
-
-     uptime=`echo $stats_raw | jq -rc '."WorkTime"'`
 
      algo=${algo#\"}; algo=${algo%\"};
 
