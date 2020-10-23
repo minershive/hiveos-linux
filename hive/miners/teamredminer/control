@@ -3,6 +3,6 @@ Version: 0.6-52
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-teamredminer-0.7.15
+Depends: hive-miners-teamredminer-0.7.16
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - TeamRedMiner
