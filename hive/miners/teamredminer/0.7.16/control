@@ -1,7 +1,7 @@
 Package: hive-miners-teamredminer-0.7.16
-Version: 0.6-01
+Version: 0.6-02
 Section: base
 Priority: optional
 Architecture: all
 Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - TeamRedMiner v0.7.16 BETA
+Description: Hive miner - TeamRedMiner v0.7.16c BETA
