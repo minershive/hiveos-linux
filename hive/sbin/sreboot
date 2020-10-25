@@ -2,8 +2,9 @@
 
 
 WAKEALARM_TIMEOUT=30 #default value
+CMD="$1"
 
-if [[ $1 == "-h" || $1 == "--help" ]]; then
+if [[ "$CMD" == "-h" || "$CMD" == "--help" ]]; then
 	. colors
 	echo -e "Reboots or shutdowns the system using sysrq"
 	echo -e "Usage:"
@@ -14,9 +15,15 @@ if [[ $1 == "-h" || $1 == "--help" ]]; then
 	exit 0
 fi
 
-if [[ $1 == "wakealarm" && ! -e /sys/class/rtc/rtc0/wakealarm ]]; then
+if [[ "$CMD" == "wakealarm" && ! -e /sys/class/rtc/rtc0/wakealarm ]]; then
 	message warn "wakealarm is not supported by this system"
 	exit 1
+fi
+
+if [[ -z "$CMD" && -e "$RIG_CONF" && -e /sys/class/rtc/rtc0/wakealarm ]]; then
+	POWERCYCLE=
+	source $RIG_CONF
+	[[ "$POWERCYCLE" == "1" ]] && CMD="wakealarm"
 fi
 
 #Do not try to stop miner here. Sometimes it hangs and prevents rig from rebooting
@@ -41,15 +48,22 @@ echo s > /proc/sysrq-trigger
 #umount /hive-config
 echo u > /proc/sysrq-trigger
 
-if [[ $1 == "shutdown" ]]; then
+if [[ "$CMD" == "wd" ]]; then
+	echo "Trying reset with watchdog"
+	/hive/opt/opendev/watchdog-opendev reset
+	/hive/opt/qinheng/hl340 reset
+	sleep 1
+	echo "Rebooting"
+	echo b > /proc/sysrq-trigger
+elif [[ "$CMD" == "shutdown" ]]; then
 	#stop coolbox wathdog, to shutdown rig
 	if [[ `lsusb -v -d 10c4:ea60 | grep iSerial | awk '{print $3}'` == 'COOLBOX_AUTOFAN' ]]; then
 		echo `/hive/opt/coolbox/coolbox --shutdown`
 	fi
 	echo "Shutting down"
 	echo o > /proc/sysrq-trigger
-elif [[ $1 == "wakealarm" ]]; then
-	[[ ! -z $2 ]] && WAKEALARM_TIMEOUT=$2
+elif [[ "$CMD" == "wakealarm" ]]; then
+	[[ ! -z "$2" ]] && WAKEALARM_TIMEOUT="$2"
 	echo "Shutting down, setting wakealarm to $WAKEALARM_TIMEOUT seconds"
 	echo 0 > /sys/class/rtc/rtc0/wakealarm
 	echo +$WAKEALARM_TIMEOUT > /sys/class/rtc/rtc0/wakealarm
@@ -65,4 +79,4 @@ for wd in "${watchdogs[@]}"; do
 	pkill -9 -f $wd #&& echo "$wd stopped"
 done
 
-reboot
+reboot -f
