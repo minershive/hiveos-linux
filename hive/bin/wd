@@ -1,46 +1,45 @@
 #!/usr/bin/env bash
 
+[ -t 1 ] && . /hive/bin/colors
+
+
 if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
 	source /etc/environment
-	export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+	export $(grep -vE '^$|^#' /etc/environment | cut -d= -f1) #export all variables from file
 fi
 
 # set minimum LA for watchdog to 2 * cores/threads + 1
 WD_MIN_LA=$(( $(nproc --all) * 2 + 1 ))
 
-WD_SLEEP=10 #seconds to sleep over iteration
-OK_MESSAGE_REDUCE=$(( 1 * 60 / $WD_SLEEP )) #e.g. only every 6th message will be displayed to reduce log
-
-[ -t 1 ] && . /hive/bin/colors
-
-ok_count=0
-check_count=0
-gpu_err_count=0
-high_la_count=0
+WD_SLEEP=10 # seconds to sleep over iteration
+OK_MESSAGE_REDUCE=$(( 1 * 60 / WD_SLEEP )) #e.g. only every 6th message will be displayed to reduce log
+KHS_OLD=120 # seconds that considered old hashrate
 
 LAST_STAT="/run/hive/last_stat.json"
 LAST_OK_FILE="/run/hive/last_ok"
 RUNNING_FLAG="/run/hive/MINER_RUN"
 
-old_modify_conf=0
-old_flag_time=0
+
+ok_count=0
+check_count=0
+gpu_err_count=0
+gpu_power_count=0
+high_la_count=0
+miner_restart_count=0
+miner_restart_timer=0
+disable=0
+
+
+now=
 minhash=
 wd_algo=
 wd_miner=
-disable=0
-change_conf=1
-change_miner=1
-old_algo=
-old_miner=
-last_log=0
-miner_restart_count=0
-lastgood=`date +%s`
-gpu_detect_time=0
+prev_algo=
+prev_miner=
+prev_bench=
+prev_modify_conf=
+prev_flag_time=
 badgpu_count=
-miner_restart_timer=0
-
-
-[[ -e $RUNNING_FLAG ]] && wd_algo=$(cat $RUNNING_FLAG) && old_flag_time=$(stat --printf %Y $RUNNING_FLAG)
 
 
 function loadconf() {
@@ -54,90 +53,87 @@ function loadconf() {
 	WD_MINER=
 	WD_REBOOT=
 	WD_MAX_LA=
-	#WD_POWER_ENABLED=
-	#WD_POWER_MIN=
-	#WD_POWER_MAX=
-	#WD_POWER_ACTION=
+	MAINTENANCE=
+	WD_POWER_ENABLED=
+	WD_POWER_MIN=
+	WD_POWER_MAX=
+	WD_POWER_ACTION=
 
-	disable=0
+	local prev_disable=$disable
 
-	if [ ! -f $RIG_CONF ]; then
-		if [[ $(( `date +%s` - $last_log )) -ge 600 ]]; then
-			echo -e "${RED}No config $RIG_CONF${NOCOLOR}"
-			echo "Watchdog disable"
-			last_log=`date +%s`
-		fi
+	if [[ ! -f $RIG_CONF ]]; then
+		[[ $disable != 1 ]] && echo "${RED}Watchdog disabled: no config ($RIG_CONF)${NOCOLOR}"
 		disable=1
 		return
 	fi
 
 	source $RIG_CONF
 
-	if [[ -z $WD_ENABLED || $WD_ENABLED != 1 ]]; then
-		[[ $(( `date +%s` - $last_log )) -ge 600 ]] && last_log=`date +%s` && echo -e "${YELLOW}Watchdog disabled in config${NOCOLOR}"
+	if [[ $WD_ENABLED != 1 ]]; then
+		[[ $disable != 1 ]] && echo "${YELLOW}Watchdog disabled in config ($RIG_CONF)${NOCOLOR}"
 		disable=1
 		return
 	fi
 
 	if [[ ! -z $MAINTENANCE && $MAINTENANCE -gt 0 ]]; then
-		[[ $(( `date +%s` - $last_log )) -ge 600 ]] && last_log=`date +%s` && echo -e "${YELLOW}Maintenance mode enabled, Watchdog disable${NOCOLOR}"
+		[[ $disable != 1 ]] && echo "${YELLOW}Watchdog disabled: maintenance mode is enabled${NOCOLOR}"
 		disable=1
+		return
 	fi
 
 	if [[ ! -e $RUNNING_FLAG ]]; then
-	#if [[ $(screen -ls miner | grep miner | wc -l) -eq 0 ]]; then
-		[[ $(( `date +%s` - $last_log )) -ge 600 ]] && last_log=`date +%s` && echo -e "${YELLOW}Miner not running, Watchdog disable${NOCOLOR}"
+		[[ $disable != 1 ]] && echo "${YELLOW}Watchdog disabled: miner is not running${NOCOLOR}"
 		disable=1
+		return
 	fi
 
-	benchmark check > /dev/null 2>&1
-	[[ $? == 0 ]] && bench=1 || bench=0
-	if [[ $bench -eq 1 ]];then
-		[[ $(( `date +%s` - $last_log )) -ge 600 ]] && last_log=`date +%s` && echo -e "${RED}Detect running or unfinished benchmark.\nWatchdog disable${NOCOLOR}"
+	benchmark check > /dev/null 2>&1 && bench=1 || bench=0
+	if [[ $bench == 1 ]]; then
+		[[ $prev_bench != $bench ]] && echo "${RED}Watchdog disabled: detected running or unfinished benchmark${NOCOLOR}"
+		prev_bench=$bench
 		disable=1
+		return
 	fi
 
-	[[ $disable -eq 1 ]] && return
+	[[ $prev_disable == 1 ]] && lastgood= && echo "${GREEN}Watchdog enabled${NOCOLOR}"
+	disable=0
 
 	miner_algo=
 	map_algo=
 	wd_miner=
 
-	if [[ $old_modify_conf == $(stat --printf %Y $RIG_CONF) ]]; then
-		change_conf=0
-	else
-		change_conf=1
-		miner_restart_count=0
-		old_modify_conf=$(stat --printf %Y $RIG_CONF)
+	local changed_conf=0
+	local changed_miner=0
+
+	local modify_conf=`stat --printf %Y $RIG_CONF`
+	if [[ $prev_modify_conf != $modify_conf ]]; then
+		[[ ! -z $prev_modify_conf ]] && changed_conf=1 && miner_restart_count=0
+		prev_modify_conf=$modify_conf
 	fi
 
-	if [[ $old_flag_time != $(stat --printf %Y $RUNNING_FLAG) && $miner_restart_count -eq 0 ]]; then
-		change_miner=1
+	local flag_time=`stat --printf %Y $RUNNING_FLAG`
+	if [[ -z $prev_flag_time ]]; then
+		wd_algo=$(< $RUNNING_FLAG)
+		prev_flag_time=$flag_time
+	elif [[ $prev_flag_time != $flag_time && $miner_restart_count -eq 0 ]]; then
+		changed_miner=1
 		wd_algo=
-		rm $LAST_STAT
-		old_flag_time=$(stat --printf %Y $RUNNING_FLAG)
-	else
-		change_miner=0
+		rm $LAST_STAT 2>/dev/null
+		prev_flag_time=$flag_time
 	fi
 
 	if [[ $WD_TYPE == algo ]]; then
-		old_miner=
-		[[ -e $LAST_STAT ]] && miner_algo=$(cat $LAST_STAT | jq -r ".params.miner_stats.algo")
+		prev_miner=
+		[[ -e $LAST_STAT ]] && miner_algo=`jq -r ".params.miner_stats.algo" $LAST_STAT 2>/dev/null`
 		if [[ ! -z $miner_algo && $miner_algo != "null" ]]; then
 			map="/hive/opt/algomap/"$MINER".json"
-			[[ -e $map ]] && map_algo=$(cat $map | jq -r ".algomap.\"${miner_algo,,}\"")
-			if [[ ! -z $map_algo && $map_algo != "null" ]];then
-				wd_algo=$map_algo
-			else
-				wd_algo=$miner_algo
-			fi
-			if [[ -e $RUNNING_FLAG ]]; then
-				[[ $wd_algo != $(cat $RUNNING_FLAG) ]] && echo $wd_algo > $RUNNING_FLAG && old_flag_time=$(stat --printf %Y $RUNNING_FLAG)
-			fi
+			[[ -e $map ]] && map_algo=`jq -r ".algomap.\"${miner_algo,,}\"" $map 2>/dev/null`
+			[[ ! -z $map_algo && $map_algo != "null" ]] && wd_algo=$map_algo || wd_algo=$miner_algo
+			[[ $wd_algo != $(< $RUNNING_FLAG) ]] && echo $wd_algo > $RUNNING_FLAG && prev_flag_time=$(stat --printf %Y $RUNNING_FLAG)
 		fi
-		minhash=$(echo $WD_MINHASHES_ALGO | jq ".\"${wd_algo}\"")
+		minhash=`echo $WD_MINHASHES_ALGO | jq ".\"${wd_algo}\""`
 	else
-		old_algo=
+		prev_algo=
 		if [[ ! -z $MINER ]]; then
 			wd_miner=$MINER
 			minhash=`echo $WD_MINHASHES | jq -r ".\"$MINER\""`
@@ -148,22 +144,22 @@ function loadconf() {
 		if [[ $WD_TYPE == algo ]]; then
 			if [[ -z $wd_algo ]]; then
 				wd_algo=$MINER # use miner name if algo is unknown
-				old_algo=$wd_algo
-			elif [[ $wd_algo != $old_algo ]]; then
+				prev_algo=$wd_algo
+			elif [[ $wd_algo != $prev_algo ]]; then
 				message warn "$wd_algo minimal hashrate is not set" > /dev/null 2>&1
-				echo -e "${RED}$wd_algo minimal hashrate is not set${NOCOLOR}"
-				old_algo=$wd_algo
+				echo "${RED}$wd_algo minimal hashrate is not set${NOCOLOR}"
+				prev_algo=$wd_algo
 			fi
 		else
-			if [[ $change_conf -eq 1 && $MINER != $old_miner ]]; then
+			if [[ $changed_conf -eq 1 && $MINER != $prev_miner ]]; then
 				message warn "$MINER minimal hashrate is not set" > /dev/null 2>&1 &&
-				echo -e "${RED}$MINER minimal hashrate is not set${NOCOLOR}"
-				old_miner=$MINER
+				echo "${RED}$MINER minimal hashrate is not set${NOCOLOR}"
+				prev_miner=$MINER
 			fi
 		fi
 	fi
 
-	last_log=0
+	[[ $changed_conf -eq 1 || $changed_miner -eq 1 || -z $lastgood ]] && set_lastgood && now=
 }
 
 
@@ -179,37 +175,42 @@ function set_lastgood() {
 
 
 function check_la() {
-
 	local max_la=$WD_MAX_LA
 	[[ $max_la -lt $WD_MIN_LA ]] && max_la=$WD_MIN_LA
-	local max_la2x=$(( $max_la * 2 ))
-	local la=`cat /proc/loadavg`
-	local la1=`awk '{printf int($1)}' <<< $la`
-	local la5=`awk '{printf int($2)}' <<< $la`
+	local max_la2x=$(( max_la * 2 ))
+	read la1 la5 la15 procs < /proc/loadavg
 
 	# reboot immediately if LA (5 min) >= maxLA
-	if [ $la5 -ge $max_la ]; then
-		echo -e "${RED}LA is more than $max_la: $la5, rebooting ${NOCOLOR}"
+	if [[ ${la5%.*} -ge $max_la ]]; then
+		echo "${RED}LA is more than ${max_la}.0: $la5, rebooting ${NOCOLOR}"
 		local top=`COLUMNS=110 top -bHn 1 | head -n 20`
-		message error "LA > $max_la, rebooting" payload <<< "$top" >/dev/null
+		echo "$top" | message error "LA > $max_la, rebooting" payload >/dev/null
 		sreboot
 	# reboot if LA (1 min) >= maxLA * 2
-	elif [ $la1 -ge $max_la2x ]; then
+	elif [[ ${la1%.*} -ge $max_la2x ]]; then
 		local top=`COLUMNS=110 top -bHn 1 | head -n 20`
 		# check few times to avoid short peaks
 		if [[ $high_la_count -ge 2 ]]; then
-			echo -e "${RED}LA is more than $max_la2x: $la1, rebooting ${NOCOLOR}"
-			message error "LA > $max_la2x, rebooting" payload <<< "$top" >/dev/null
+			echo "${RED}LA(1m) $la1 > ${max_la2x}.0, rebooting ${NOCOLOR}"
+			echo "$top" | message error "LA > $max_la2x, rebooting" payload >/dev/null
 			sreboot
 		else
-			echo -e "${RED}LA is more than $max_la2x: $la1, waiting ${NOCOLOR}"
-			[[ $high_la_count -eq 0 ]] && message warning "LA > $max_la2x" payload <<< "$top" >/dev/null
+			echo "${RED}LA(1m): $la1 > ${max_la2x}.0, waiting ${NOCOLOR}"
+			[[ $high_la_count -eq 0 ]] && echo "$top" | message warning "LA > $max_la2x" payload >/dev/null
 		fi
 		((high_la_count++))
 	else
 		high_la_count=0
-		[[ $check_count == 0 ]] && echo -e "${GREEN}OK${NOCOLOR} LA(5m): $la5.0 < $max_la.0, LA(1m): $la1.0 < $max_la2x.0"
+		[[ $check_count == 0 ]] &&
+			echo "${GREEN}OK${NOCOLOR} LA(5m): $la5 < ${max_la}.0, LA(1m): $la1 < ${max_la2x}.0"
 	fi
+}
+
+
+function get_gpu_info() {
+	jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i
+		([]; . + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+"  Temp: "+.[1]+"C  Fan: "+.[2]+"%  Power: "+.[3]+"W"' $GPU_STATS_JSON 2>/dev/null
+	return 0
 }
 
 
@@ -218,24 +219,21 @@ function check_gpu() {
 	local ts=`stat -c %Y $GPU_DETECT_JSON 2>/dev/null`
 	if [[ ! -z $ts && $gpu_detect_time -ne $ts ]]; then
 		gpu_detect_time=$ts
-		badgpu_count=`cat $GPU_DETECT_JSON 2>/dev/null | jq -r '[ .[] | .brand | select(.=="cpu") ] | length' 2>/dev/null`
+		badgpu_count=`jq -r '[ .[] | .brand | select(.=="cpu") ] | length' $GPU_DETECT_JSON 2>/dev/null`
 	fi
 
 	# check gpu-stats for gpu count
-	local gpu_stats=`cat $GPU_STATS_JSON 2>/dev/null`
 	local current_count
-	current_count=`echo "$gpu_stats" | jq -r '[ .brand | .[] | select(.=="cpu") ] | length' 2>/dev/null`
+	current_count=`jq -r '[ .brand | .[] | select(.=="cpu") ] | length' $GPU_STATS_JSON 2>/dev/null`
 	if [[ $? -ne 0 || -z $current_count || ( ! -z $badgpu_count && $current_count -gt $badgpu_count ) ]]; then
 		# check few times to be sure
 		if [[ $gpu_err_count -ge 3 ]]; then
-			echo -e "${RED}GPU are lost, rebooting ${NOCOLOR}"
-			local gpu_info=`echo "$gpu_stats" | jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i
-					([]; . + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+"  Temp: "+.[1]+"C  Fan: "+.[2]+"%  Power: "+.[3]+"W"' 2>/dev/null`
-			echo "$gpu_info" | message error "GPU are lost, rebooting" payload >/dev/null
+			echo "${RED}GPU are lost, rebooting ${NOCOLOR}"
+			get_gpu_info | message error "GPU are lost, rebooting" payload >/dev/null
 			sreboot
 		else
-			echo -e "${RED}GPU are lost, waiting ${NOCOLOR}"
-			#[[ $gpu_err_count -eq 0 ]] && echo "$gpu_stats" | message warning "GPU are lost" payload >/dev/null
+			echo "${RED}GPU are lost, waiting ${NOCOLOR}"
+			#[[ $gpu_err_count -eq 0 ]] && get_gpu_info | message warning "GPU are lost" payload >/dev/null
 		fi
 		((gpu_err_count++))
 	else
@@ -244,61 +242,107 @@ function check_gpu() {
 }
 
 
+function check_power() {
+	local msg=
+	local critical=0
+	totalpower=`jq -r '[ .power | .[] | tonumber ] | add' $GPU_STATS_JSON 2>/dev/null`
+	if [[ $? -ne 0 ]]; then
+		msg="Unable to get power usage"
+	elif [[ $totalpower -gt 10000 && $WD_POWER_MAX -lt 10000 ]]; then
+		msg="incorrect ${totalpower}W"
+	elif [[ $WD_POWER_MIN -gt 0 && $totalpower -lt $WD_POWER_MIN ]]; then
+		msg="${totalpower}W < ${WD_POWER_MIN}W"
+		critical=1
+	elif [[ $WD_POWER_MAX -gt $WD_POWER_MIN && $totalpower -gt $WD_POWER_MAX ]]; then
+		msg="${totalpower}W > ${WD_POWER_MAX}W${NOCOLOR}"
+		critical=1
+	else
+		[[ $check_count == 0 ]] &&
+			echo "${GREEN}OK${NOCOLOR} POWER: ${WHITE}$totalpower W${NOCOLOR} (${WD_POWER_MIN:-0}..${WD_POWER_MAX:-9999} W)"
+		gpu_power_count=0
+		return
+	fi
+	if [[ $critical -eq 0 ]]; then
+		echo "${YELLOW}GPU POWER: $msg${NOCOLOR}"
+		return
+	fi
+	echo "${RED}GPU POWER: $msg${NOCOLOR}"
+	if [[ $gpu_power_count -eq 3 ]]; then
+			get_gpu_info | message warn "GPU power $msg" payload >/dev/null
+	elif [[ $gpu_power_count -ge 6 ]]; then
+		get_gpu_info | message error "GPU power $msg, rebooting" payload >/dev/null
+		#WD_POWER_ACTION
+		sreboot
+	fi
+	((gpu_power_count++))
+}
+
+
 function loop() {
 	#echo -n "[`date`] "
 
 	# check every 2nd interval, ie 20 sec
-	if [[ $(( $check_count % 2 )) == 0 ]]; then
-		[[ "$WD_CHECK_GPU" == "1" ]] && check_gpu
+	if [[ $(( check_count % 2 )) == 0 ]]; then
 		[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && check_la
+		[[ "$WD_CHECK_GPU" == 1 ]] && check_gpu
+		[[ "$WD_POWER_ENABLED" == 1 ]] && check_power
 	fi
 	((check_count++))
 	[[ $check_count -ge $OK_MESSAGE_REDUCE ]] && check_count=0
 
-	[[ $WD_TYPE == algo && -z $wd_algo ]] && return
-
-	local khs=
-	[[ -e $HASHRATE_KHS ]] && khs=`cat $HASHRATE_KHS`
-	[[ -z $khs ]] && khs=0
-
-	if [[ -z $minhash || $minhash == "null" ]]; then
-		[[ $WD_TYPE != algo ]] && return
-		local hashok=`echo $khs | awk '{ print ($1 > 0) ? 1 : 0 }'` # float comparison
-		local hashmore="> 0"
-		local hashless="= 0"
-	else
-		local hashok=`echo $khs $minhash | awk '{ print ($1 >= $2) ? 1 : 0 }'` # float comparison
-		local hashmore=">= $minhash kHs"
-		local hashless="< $minhash kHs"
-	fi
+	[[ $disable -eq 1 || ($WD_TYPE == algo && -z $wd_algo) ]] && return
 
 	[[ $WD_TYPE == algo ]] && local wd_name=$wd_algo || local wd_name=$wd_miner
 
 	local new=`date +%s`
-	[[ $change_conf -eq 1 || $change_miner -eq 1 ]] && now= && set_lastgood
-
 	# check and adjust time if changed too much
 	if [[ ! -z $now ]]; then
-		local diff=$(( $new - $now - $WD_SLEEP ))
+		local diff=$(( new - now - WD_SLEEP ))
 		# must be 0 in most cases. adjust if diff is more than 2x sleep time
-		if [[ $diff -lt $(( -2*$WD_SLEEP )) || $diff -gt $(( 2*$WD_SLEEP )) ]]; then
+		if [[ $diff -lt $(( -2*WD_SLEEP )) || $diff -gt $(( 2*WD_SLEEP )) ]]; then
 			echo "Adjusting time: ${diff}s"
 			if [[ -e $HASHRATE_KHS ]]; then
 				local old=$( stat -c %Y $HASHRATE_KHS )
-				[[ $old == $lastgood || ( $old -ge $now && $old -le $(( $now + $WD_SLEEP )) ) ]] &&
-					touch -c -m --date=@$(( $old + $diff )) $HASHRATE_KHS
+				[[ $old == $lastgood || ( $old -ge $now && $old -le $(( now + WD_SLEEP )) ) ]] &&
+					touch -c -m --date=@$(( old + diff )) $HASHRATE_KHS
 			fi
 			lastgood=$(( $lastgood + $diff ))
 		fi
 	fi
 	now=$new
 
-	local elapsed=$(( $now - $lastgood ))
+	local elapsed=$(( now - lastgood ))
 	#echo Elapsed $elapsed seconds
 
-	if [[ $hashok == 1 && $elapsed -le 90 ]]; then
+	local khs=
+	if [[ -e $HASHRATE_KHS ]]; then
+		khs=$( < $HASHRATE_KHS)
+		if [[ $elapsed -gt $KHS_OLD && $(( now - `stat -c %Y $HASHRATE_KHS` )) -gt $KHS_OLD ]]; then
+			echo "${YELLOW}Hashrate value was not updated > $KHS_OLD sec, ignoring${NOCOLOR}"
+			khs=0
+		fi
+	fi
+	[[ -z $khs ]] && khs=0
+
+	local hashok=
+	if [[ -z $minhash || $minhash == "null" ]]; then
+		[[ $WD_TYPE != algo ]] && return
+		[[ ${khs%.*} -gt 0 ]] &&
+			hashok=1 ||
+			hashok=`echo "$khs" | awk '{ print ($1 > 0) ? 1 : 0 }'` # float comparison
+		local hashmore="> 0"
+		local hashless="= 0"
+	else
+		[[ ${khs%.*} -gt ${minhash%.*} ]] &&
+			hashok=1 ||
+			hashok=`echo "$khs" "$minhash" | awk '{ print ($1 >= $2) ? 1 : 0 }'` # float comparison
+		local hashmore=">= $minhash kHs"
+		local hashless="< $minhash kHs"
+	fi
+
+	if [[ $hashok == 1 ]]; then
 		set_lastgood
-		[[ $ok_count == 0 ]] && echo -e "${GREEN}OK${NOCOLOR} ${CYAN}$wd_name${NOCOLOR} $khs kHs $hashmore"
+		[[ $ok_count == 0 ]] && echo "${GREEN}OK${NOCOLOR} ${CYAN}$wd_name${NOCOLOR} $khs kHs $hashmore"
 
 		((ok_count++))
 		[[ $ok_count -ge $OK_MESSAGE_REDUCE ]] && ok_count=0
@@ -311,7 +355,7 @@ function loop() {
 		local last_ok=`stat -c%Y $LAST_OK_FILE 2>/dev/null`
 		local diff=$(( now - last_ok ))
 		if [[ $last_ok -ne 0 && $diff -gt 60 && $diff -gt $(( PUSH_INTERVAL*3 )) ]]; then
-			echo -e "${YELLOW}NO CONNECTION${NOCOLOR} for $diff seconds"
+			echo "${YELLOW}NO CONNECTION${NOCOLOR} for $diff seconds"
 			# reset last hash time so miner has some time after connection resumption
 			set_lastgood
 			# use restart timeout with max limit 10 min
@@ -320,9 +364,9 @@ function loop() {
 			# restart miner to reduce power usage without connection
 			((miner_restart_timer++))
 			if [[ $(( miner_restart_timer * WD_SLEEP )) -gt $miner_restart_timeout ]]; then
-				echo -e "---"
-				echo -e "${YELLOW}Restarting ${CYAN}$wd_name${NOCOLOR} ${YELLOW}after $miner_restart_timeout seconds${NOCOLOR}"
-				echo -e "---"
+				echo "---"
+				echo "${YELLOW}Restarting ${CYAN}$wd_name${NOCOLOR} ${YELLOW}after $miner_restart_timeout seconds${NOCOLOR}"
+				echo "---"
 				miner restart
 				miner_restart_timer=0
 			fi
@@ -330,16 +374,16 @@ function loop() {
 		fi
 	fi
 
-	echo -e "${RED}BARK${NOCOLOR} ${CYAN}$wd_name${NOCOLOR} $khs kHs $hashless for $elapsed seconds"
+	echo "${RED}BARK${NOCOLOR} ${CYAN}$wd_name${NOCOLOR} $khs kHs $hashless for $elapsed seconds"
 
 	# check to reboot first
 	if [[ ! -z $WD_REBOOT ]]; then
 		reboot_timeout=`echo $WD_REBOOT 60 | awk '{print int($1*$2)}'`
 		if [[ $elapsed -ge $reboot_timeout ]]; then
 			miner log | message danger "$wd_name low hashrate ($khs kH/s), rebooting" payload
-			echo -e "---"
-			echo -e "${RED}Rebooting after $WD_REBOOT minutes${NOCOLOR}"
-			echo -e "---"
+			echo "---"
+			echo "${RED}Rebooting after $WD_REBOOT minutes${NOCOLOR}"
+			echo "---"
 			#nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 			sreboot
 			return #for testing and if it does not work)
@@ -351,9 +395,9 @@ function loop() {
 		miner_restart_timeout=`echo $WD_MINER 60 | awk '{print int($1*$2)}'`
 		if [[ $miner_restart_count == 0 && $elapsed -ge $miner_restart_timeout ]]; then
 			miner log | message warn "$wd_name low hashrate ($khs kH/s), restarting" payload
-			echo -e "---"
-			echo -e "${YELLOW}Restarting ${CYAN}$wd_name${NOCOLOR} ${YELLOW}after $WD_MINER minutes${NOCOLOR}"
-			echo -e "---"
+			echo "---"
+			echo "${YELLOW}Restarting ${CYAN}$wd_name${NOCOLOR} ${YELLOW}after $WD_MINER minutes${NOCOLOR}"
+			echo "---"
 			miner_restart_count=1
 			miner restart
 		fi
@@ -369,15 +413,17 @@ function run() {
 	echo "MINER RESTART:     $WD_MINER minutes"
 	echo "REBOOT:            $WD_REBOOT minutes"
 
-	[[ "$WD_CHECK_CONN" == "1" ]] &&
+	[[ "$WD_CHECK_CONN" == 1 ]] &&
 		echo "CHECK CONNECTION:  Enabled"
-	[[ "$WD_CHECK_GPU" == "1" ]] &&
+	[[ "$WD_CHECK_GPU" == 1 ]] &&
 		echo "CHECK GPU OFFLINE: Enabled"
+	[[ "$WD_POWER_ENABLED" == 1 ]] &&
+		echo "CHECK GPU POWER:   ${WD_POWER_MIN:-0}..${WD_POWER_MAX:-9999} W" #${WD_POWER_ACTION:-reboot}
 	[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] &&
 		echo "MAX LOAD AVERAGE:  $WD_MAX_LA.0 (min $WD_MIN_LA.0)"
 
 	while true; do
-		[[ $disable -eq 0 ]] && loop
+		loop
 		sleep $WD_SLEEP
 		loadconf
 	done
@@ -393,8 +439,7 @@ case $1 in
 		#systemctl stop hive-watchdog
 	;;
 	start)
-		systemctl status hive-watchdog > /dev/null 2>&1
-		[[ $? -ne 0 ]] && systemctl start hive-watchdog
+		systemctl status hive-watchdog > /dev/null 2>&1 || systemctl start hive-watchdog
 	;;
 	restart)
 		systemctl restart hive-watchdog
@@ -407,7 +452,7 @@ case $1 in
 	;;
 	*)
 		bname=`basename $0`
-		echo -e "${YELLOW}Hashrate Watchdog${NOCOLOR}"
-		echo -e "Usage: ${CYAN}$bname start|stop|restart|log|status${NOCOLOR}"
+		echo "${YELLOW}Hashrate Watchdog${NOCOLOR}"
+		echo "Usage: ${CYAN}$bname start|stop|restart|log|status${NOCOLOR}"
 	;;
 esac
