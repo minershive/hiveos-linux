@@ -1,0 +1,299 @@
+#!/usr/bin/env bash
+
+. colors
+
+# by default Lighttpd is used. uninstall before changing it
+USE_NGINX=0
+
+# link Lighttpd instead of patching
+LINK_CONF=0
+
+# no backslashes!
+PKGPATH=/hive/opt/repomirror
+REPOPATH=/var/www/html/repomirror
+WWWPATH=/var/www/html/repo
+CRON=/etc/cron.hourly/hive-updaterepo
+REPOLOG=/var/log/hive-repo-sync.log
+
+
+function set_httpd() {
+	[[ ! -z $1 ]] && USE_NGINX=$1
+	[[ $USE_NGINX -eq 0 ]] && HTTPD=lighttpd || HTTPD=nginx
+}
+
+
+function check_upgrade() {
+	[[ $USE_NGINX -gt 1 ]] && return 1
+	if dpkg -s hive-opt-repomirror 2>/dev/null | grep -q installed; then
+		[[ -z "$1" ]] &&
+			echo "${YELLOW}> Depricated repomirror package is installed$NOCOLOR" &&
+			echo -e "  Use ${WHITE}repomirror --upgrade$NOCOLOR\n"
+		set_httpd $((USE_NGINX + 2))
+		return 1
+	fi
+	return 0
+}
+
+
+function do_upgrade() {
+	check_upgrade silent
+	[[ $USE_NGINX -lt 2 ]] && return 1
+	echo "${CYAN}> Upgrading $NOCOLOR"
+	mkdir -p /tmp${PKGPATH}
+	cp -f -r ${PKGPATH}/* /tmp${PKGPATH} || return
+	rm -f /tmp${PKGPATH}/control /tmp${PKGPATH}/postinst 2>/dev/null
+	apt remove -y nginx-extras hive-opt-repomirror
+	mkdir -p ${PKGPATH}
+	cp -f -r /tmp${PKGPATH}/* ${PKGPATH}
+	set_httpd $((USE_NGINX - 2))
+}
+
+
+function httpd_installed() {
+	if [[ $USE_NGINX -gt 1 ]]; then
+		dpkg -s nginx-extras 2>/dev/null | grep -q installed && return 0
+	else
+		dpkg -s $HTTPD 2>/dev/null | grep -q installed && return 0
+	fi
+	echo "${RED}> $HTTPD is not installed $NOCOLOR"
+	return 1
+}
+
+
+function httpd_enabled() {
+	local status=`systemctl list-unit-files | grep $HTTPD | awk '{printf $2}'`
+	[[ "$status" == "enabled" ]] && return 0
+	[[ "$status" == "disabled" ]] && return 1
+	return 2
+}
+
+
+function rm_check() {
+	check_upgrade
+	echo "${CYAN}> Checking configuration $NOCOLOR"
+	httpd_installed
+	status=$?
+	failed=$status
+
+	[[ ! -d $REPOPATH ]] && echo "${RED}> Repo directory does not exist ($REPOPATH)$NOCOLOR" && failed=10
+	[[ ! -d $WWWPATH ]] && echo "${RED}> WWW directory does not exist ($WWWPATH)$NOCOLOR" && failed=11
+	[[ ! -e $CRON ]] && echo "${RED}> Repo syncing is disabled $NOCOLOR" && failed=12
+
+	if [[ $status -eq 0 ]]; then
+		if ! systemctl status $HTTPD; then
+			echo "${RED}> $HTTPD is not running $NOCOLOR"
+			failed=13
+		elif [[ -e $WWWPATH ]]; then
+			ts=`date +%s`
+			echo "$ts" > $WWWPATH/test
+			data=`curl --retry 5 --retry-max-time 10 http://localhost/repo/test 2>/dev/null`
+			exitcode=$?
+			if [[ "$data" != "$ts" ]]; then
+				echo "${RED}> $HTTPD test failed ($exitcode)$NOCOLOR"
+				failed=14
+			else
+				echo "${GREEN}> $HTTPD test completed $NOCOLOR"
+			fi
+		fi
+	fi
+
+	if [[ $failed -eq 0 ]]; then
+	echo "${WHITE}
+> Mirror is synced every hour${YELLOW}
+Check logs in $REPOLOG or run sync manually
+To give alternate repo fetching URL please put it in /hive-config/repo-sync.url
+$NOCOLOR"
+	fi
+	return $failed
+}
+
+
+function rm_enable() {
+	check_upgrade
+	httpd_installed || return
+
+	httpd_enabled
+	if [[ $? -ne 0 ]]; then
+		echo "${CYAN}> Enabling $HTTPD $NOCOLOR"
+		systemctl enable $HTTPD 2>/dev/null
+	fi
+
+	systemctl status $HTTPD >/dev/null
+	[[ $? -ne 0 ]] &&
+		echo "${CYAN}> Starting $HTTPD $NOCOLOR" &&
+		systemctl start $HTTPD 2>/dev/null &&
+		sleep 2
+
+	if [[ ! -e $CRON ]]; then
+		echo "${CYAN}> Enabling repo syncing $NOCOLOR"
+		ln -sf ${PKGPATH}$CRON $CRON
+	fi
+
+	rm_check
+	return
+}
+
+
+function rm_disable() {
+	check_upgrade
+
+	if [[ -e $CRON ]]; then
+		echo "${CYAN}> Disabling repo syncing $NOCOLOR"
+		rm $CRON > /dev/null 2>&1
+	fi
+
+	httpd_installed || return
+
+	httpd_enabled &&
+		echo "${CYAN}> Disabling $HTTPD $NOCOLOR" &&
+		systemctl disable $HTTPD 2>/dev/null
+
+	systemctl status $HTTPD >/dev/null &&
+		echo "${CYAN}> Stopping $HTTPD $NOCOLOR" &&
+		systemctl stop $HTTPD 2>/dev/null
+
+	return
+}
+
+
+function rm_remove() {
+	check_upgrade || return
+	rm_disable || return
+	echo "${CYAN}> Uninstalling $HTTPD $NOCOLOR"
+	apt remove -y $HTTPD
+	return
+}
+
+
+function rm_install() {
+	check_upgrade || return
+
+	if [[ ! -d $REPOPATH ]]; then
+		echo "${CYAN}>Creating $REPOPATH $NOCOLOR"
+		mkdir -p $REPOPATH
+	fi
+
+	if [[ ! -d $WWWPATH ]]; then
+		echo "${CYAN}> Linking /repo $NOCOLOR"
+		ln -sf $REPOPATH $WWWPATH
+	fi
+
+	if [[ $USE_NGINX -ne 0 ]]; then
+		systemctl status lighttpd >/dev/null &&
+			echo "${YELLOW}> Disabling LIGHTTPD $NOCOLOR" &&
+			systemctl stop lighttpd 2>/dev/null &&
+			systemctl disable lighttpd 2>/dev/null
+
+		echo "${CYAN}> Installing $HTTPD $NOCOLOR"
+		mkdir -p /var/log/nginx
+		apt install --reinstall -y nginx || return
+		# check if nginx config is linked
+		NGCONF=/etc/nginx/sites-enabled/hive-repo.conf
+		if [[ ! -e $NGCONF ]]; then
+			echo "${CYAN}> Linking $NGCONF $NOCOLOR"
+			rm $NGCONF > /dev/null 2>&1
+			ln -sf ${PKGPATH}$NGCONF $NGCONF
+		fi
+		[[ -e /etc/nginx/sites-enabled/default ]] &&
+			rm -f /etc/nginx/sites-enabled/default
+		#systemctl restart nginx
+		/usr/sbin/nginx -s reload
+		rm_enable
+		return
+	fi
+
+	systemctl status nginx >/dev/null &&
+		echo "${YELLOW}> Disabling NGINX $NOCOLOR" &&
+		systemctl stop nginx 2>/dev/null &&
+		systemctl disable nginx 2>/dev/null
+
+	echo "${CYAN}> Installing $HTTPD $NOCOLOR"
+	apt install --reinstall -y lighttpd || return
+	#apt install -y --reinstall -o Dpkg::Options::="--force-confask,confnew,confmiss" lighttpd
+
+	LHCONF=/etc/lighttpd/lighttpd.conf
+	if [[ $LINK_CONF -eq 1 ]]; then
+		[[ -e $LHCONF && ! -e ${LHCONF}.bak ]] && mv -f $LHCONF ${LHCONF}.bak
+		echo "${CYAN}> Linking $LHCONF $NOCOLOR"
+		rm $LHCONF > /dev/null 2>&1
+		ln -sf ${PKGPATH}/$LHCONF $LHCONF
+	else
+		enablelisting='$HTTP["url"] =~ "^/repo($|/)" { server.dir-listing = "enable" }'
+		[[ -e $LHCONF &&  `grep -c -F -- "${enablelisting}" $LHCONF` -eq 0 ]] &&
+			echo -e "\n$enablelisting\n" >> $LHCONF &&
+			echo "${CYAN}> Enabling lighttpd directory listing $NOCOLOR"
+	fi
+
+	systemctl restart lighttpd
+	sleep 2
+	rm_enable
+	return
+}
+
+
+set_httpd
+
+case "$1" in
+	-i|--install|install)
+		rm_install
+		exit
+		;;
+
+	-u|--uninstall|uninstall)
+		rm_remove
+		exit
+		;;
+
+	-e|--enable|enable)
+		rm_enable
+		exit
+		;;
+
+	-d|--disable|disable)
+		rm_disable
+		exit
+		;;
+
+	-c|--check|check)
+		rm_check
+		exit
+		;;
+
+	-l|--log|log)
+		[[ -e $REPOLOG ]] && cat $REPOLOG 2>/dev/null || echo "> No log"
+		exit
+		;;
+
+	-s|--sync|sync)
+		(${PKGPATH}/updaterepo 2>&1) | tee $REPOLOG
+		exit
+		;;
+
+	--upgrade)
+		do_upgrade || exit
+		rm_install
+		apt -y autoremove
+		exit
+		;;
+
+	-h|--help|help)
+	echo "${WHITE}Usage:$NOCOLOR
+  repomirror  -i | --install	install httpd and enable repo syncing
+  repomirror  -e | --enable	enable httpd and repo syncing
+  repomirror  -d | --disable	disable httpd and repo syncing
+  repomirror  -c | --check	check configuration and httpd
+  repomirror  -s | --sync	sync repo manually
+  repomirror  -u | --uninstall	uninstall httpd and disable repo syncing
+  repomirror  -l | --log	display repo syncing log
+"
+		check_upgrade
+		exit 0
+		;;
+	*)
+		echo "${YELLOW}Unknown option. Use -h for help $NOCOLOR"
+		exit 1
+		;;
+esac
+
+
+exit
