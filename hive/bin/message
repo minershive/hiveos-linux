@@ -57,37 +57,35 @@ echo "$payload_json" | jq -n \
 #echo $request | jq .
 
 id=
-payload=
+payload_json=
 for i in "$@"; do
 	case $i in
 		-i=*|--id=*)
 			id="${i#*=}"
 			id_json=`jq --arg id "$id" -n '{"params": {$id}}'`
 			request=`echo "$request $id_json" | jq -sc '.[0] * .[1]'`
-			shift
 		;;
 		--meta=*)
 			meta="${i#*=}"
 			echo $meta | jq
 			meta_json=`jq --argjson meta "$meta" -n '{"params": {$meta}}'`
 			request=`echo "$request $meta_json" | jq -sc '.[0] * .[1]'`
-			shift
 		;;
-		payload)
+		payload|--payload)
 			#echo "With payload"
-			payload=$(cat)
-			payload_json=`echo -n "$payload" | jq -R -s '{"params": {"payload": .}}'`
-			request=`echo "$request $payload_json" | jq -sc '.[0] * .[1]'`
-			shift # past argument with no value
+			payload=$(cat -s)
+			# check for empty payload
+			if [[ "$payload" =~ [^[:space:]]+ ]]; then
+				payload_json=`echo -n "$payload" | jq -R -s '{"params": {"payload": .}}'` &&
+					request=`echo "$request $payload_json" | jq -sc '.[0] * .[1]'`
+			fi
 		;;
 		-f=*|--file=*)
 			[[ $type != "file" ]] && echo "Type \"file\" must be used" && exit 2
 			file="${i#*=}"
 			[[ ! -e $file ]] && echo "File not found: \"$file\"" && exit 1
-			payload=`cat "$file" | gzip -9 --stdout | base64 -w 0`
-			payload_json=`echo -n "$payload" | jq -R -s '{"params": {"payload": .}}'`
-			request=`echo "$request $payload_json" | jq -sc '.[0] * .[1]'`
-			shift # past argument with no value
+			payload_json=`cat "$file" | gzip -9 --stdout | base64 -w 0 | jq -R -s '{"params": {"payload": .}}'` &&
+				request=`echo "$request $payload_json" | jq -sc '.[0] * .[1]'`
 		;;
 		*)
 			# unknown option
@@ -97,7 +95,7 @@ done
 
 
 #date
-echo -e "> Sending ${payload:+with payload }\"$type\": ${MSGCOLOR}$data${NOCOLOR}"
+echo -e "> Sending ${payload_json:+with payload }\"$type\": ${MSGCOLOR}$data${NOCOLOR}"
 #echo $request
 echo "$request" | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass | if .params.payload then .params.payload |= "[\(.|length) bytes]" else . end'
 #Show output and exit for debug
