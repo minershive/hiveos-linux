@@ -120,15 +120,14 @@ if [ $exitcode -ne 0 ]; then
 fi
 
 #echo "[`date`] < $response" >> $LOG
-parsed=`jq . -c <<< "$response" 2>/dev/null`
+parsed=`echo "$response" | jq . -c 2>/dev/null`
 if [[ $? -ne 0 ]]; then
-	echo "$response"
+	error=`echo "$response" | grep -oP "<title>\K[^<]+"` && echo -e "${RED}Error:$NOCOLOR $error" || echo "$response"
 	exit 1
 fi
 
 echo "[`date`] < $response" >> $LOG
-error=`jq '.error' --raw-output <<< "$respone"`
-#[[ ! -z $error && $error != "null" ]] && echo -e "Error response: `echo $response | jq '.error' -r`" && exit 1
-[[ ! -z $error && $error != "null" ]] && echo "Error response: $error" && exit 1
+error=`echo "$response" | jq '.error' --raw-output`
+[[ ! -z $error && $error != "null" ]] && echo -e "${RED}Error response:$NOCOLOR $error" && exit 1
 
 exit 0
