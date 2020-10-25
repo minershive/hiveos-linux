@@ -60,7 +60,7 @@ cols=`tput cols`
 
 
 pretty_uptime() {
-	local t=`cat /proc/uptime | awk '{print int($1)}'`
+	local t=`awk '{print int($1)}' /proc/uptime`
 	local d=$((t/60/60/24))
 	local h=$((t/60/60%24))
 	local m=$((t/60%60))
@@ -94,11 +94,8 @@ sys_info1() {
 	echo -n "$SEP${BYELLOW}H $WHITE$(dpkg -s hive | grep -oP "^Version: \K.*$")$NOCOLOR"
 
 	if [[ $gpu_count_nvidia -gt 0 ]]; then
-		nv_version=`nvidia-smi --help 2>&1`
-		if [[ $? -eq 0 ]]; then
-			nv_version=`head -n 1 <<< "$nv_version" | awk '{print $NF}' | sed 's/v//'`
-			echo -n "$SEP${BGREEN}N $WHITE$nv_version$NOCOLOR"
-		fi
+		nv_version=`nvidia-smi --help 2>&1 | head -n 1 | grep -oP "v\K[0-9\.]+"`
+		[[ ! -z $nv_version ]] && echo -n "$SEP${BGREEN}N $WHITE$nv_version$NOCOLOR"
 	fi
 	
 	[[ $gpu_count_amd -gt 0 ]] && echo -n "$SEP${BRED}A $WHITE$amd_version$NOCOLOR"
@@ -109,7 +106,7 @@ sys_info1() {
 
 	if [[ $cols -lt 80 ]]; then
 		# short uptime with secs
-		local upt=`cat /proc/uptime | awk '{printf "%dd %02dh %02dm %02ds", $1/24/3600, $1/3600%24, $1/60%60, $1%60}'`
+		local upt=`awk '{printf "%dd %02dh %02dm %02ds", $1/24/3600, $1/3600%24, $1/60%60, $1%60}' /proc/uptime`
 		echo "${SEP}up $upt"
 	else
 		# uptime with secs
@@ -119,14 +116,13 @@ sys_info1() {
 
 
 sys_la() {
-	local lavg=(`cat /proc/loadavg | awk '{printf $1" "$2" "$3}'`)
+	local lavg=(`awk '{printf $1" "$2" "$3}' /proc/loadavg`)
 	local color=
 	echo -n "${SEP}LA"
 	for la in "${lavg[@]}"; do
-		local val=`awk '{printf int($1)}' <<< $la`
-		if [[ $val -le $cpus ]]; then
+		if [[ ${la%.*} -le $cpus ]]; then
 			color=$WHITE
-		elif [[ $val -gt $(( cpus*2 )) ]]; then
+		elif [[ ${la%.*} -gt $(( cpus*2 )) ]]; then
 			color=$BRED
 		else
 			color=$BYELLOW
@@ -175,7 +171,7 @@ sys_info_compact() {
 	echo -n "${SEP}AVL $color${mem[1]}G$NOCOLOR ($color${mem[3]}%$NOCOLOR)"
 
 	# short uptime with secs
-	local upt=`cat /proc/uptime | awk '{printf "%dd %02dh %02dm %02ds", $1/24/3600, $1/3600%24, $1/60%60, $1%60}'`
+	local upt=`awk '{printf "%dd %02dh %02dm %02ds", $1/24/3600, $1/3600%24, $1/60%60, $1%60}' /proc/uptime`
 	echo "${SEP}up $upt$NOCOLOR"
 }
 
@@ -185,8 +181,7 @@ net_info() {
 	for net in "${networks[@]}"; do
 		local nstat=`networkctl status $net`
 		echo -n "$WHITE$net$NOCOLOR"
-		#state=`grep " State:" <<< "$nstat" | awk -F ': ' '{print $2}'`
-		state=`grep -oP " State: \K.*(?= \()" <<< "$nstat"`
+		state=`echo "$nstat" | grep -oP " State: \K.*(?= \()"`
 		local color=
 		if [[ $state =~ routable ]]; then
 			color=$BGREEN
@@ -198,10 +193,10 @@ net_info() {
 			color=$BPURPLE
 		fi
 		echo -n "  $color$state$NOCOLOR"
-		dns=`grep -Pazo "DNS: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | tr -d '\0' | awk '{$1=$1};1'`
-		ips=`grep -Pazo "  Address: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | tr -d '\0' | awk '{$1=$1};1'`
-		gw=`grep -Pazo " Gateway: \K[0-9\.\s]+" <<< "$nstat" | tr '\n' ' ' | tr -d '\0' | awk '{$1=$1};1'`
-		driver=`grep "Driver:" <<< "$nstat" | awk -F ': ' '{print $2}'`
+		dns=`echo "$nstat" | grep -Pazo "DNS: \K[0-9\.\s]+" | tr '\n' ' ' | tr -d '\0' | awk '{$1=$1};1'`
+		ips=`echo "$nstat" | grep -Pazo "  Address: \K[0-9\.\s]+" | tr '\n' ' ' | tr -d '\0' | awk '{$1=$1};1'`
+		gw=`echo "$nstat" | grep -Pazo " Gateway: \K[0-9\.\s]+" | tr '\n' ' ' | tr -d '\0' | awk '{$1=$1};1'`
+		driver=`echo "$nstat" | grep "Driver:" | awk -F ': ' '{print $2}'`
 		[[ ! -z $ips ]] && echo -n "  ip $WHITE$ips$NOCOLOR"
 		[[ ! -z $gw ]] && echo -n "  gw $WHITE$gw$NOCOLOR"
 		[[ ! -z $dns ]] && echo -n "  dns $WHITE$dns$NOCOLOR"
@@ -257,7 +252,7 @@ sys_check() {
 	#	[[ -z $HIVE_HOST_URL ]] &&  MSG+=("${BRED}Error: no HIVE_HOST_URL in rig.conf$NOCOLOR")
 	#	[[ -z $WORKER_NAME ]] &&  MSG+=("${BRED}Error: no WORKER_NAME in rig.conf$NOCOLOR")
 	#fi
-	[[ -f /hive-config/.DISKLESS_AMD && $(cat /proc/mounts | grep "/ " | awk '{print $1}') == tmpfs ]] &&
+	[[ -f /hive-config/.DISKLESS_AMD && $(grep "/ " /proc/mounts | awk '{print $1}') == tmpfs ]] &&
 		MSG+=("${BYELLOW}Warning: This is diskless rig!$NOCOLOR")
 
 	[[ $MAINTENANCE -eq 1 ]] && MSG+=("${BYELLOW}Warning: Maintenance mode is enabled (with drivers loading)$NOCOLOR")
@@ -281,11 +276,7 @@ sys_check() {
 color_printf() {
 	local pad=$1
 	local str="$2"
-	# colored string length correction for printf formatting
-	#local wcolors=`wc -c <<< "$str"`
-	#local nocolors=`sed 's/\x1b\[[0-9;]*m//g' <<< "$str" | wc -c`
-	#local len=$(( $pad + wcolors - nocolors ))
-	local wocolors=`sed 's/\x1b\[[0-9;]*m//g' <<< "$str"`
+	local wocolors=`echo "$str" | sed 's/\x1b\[[0-9;]*m//g'`
 	local len=$(( $pad + ${#str} - ${#wocolors} ))
 	printf "%-${len}b" "$str"
 }
@@ -302,7 +293,7 @@ gpu_detect() {
 	[[ -z $ts ]] && return 1
 	[[ $gpu_detect_time -eq $ts ]] && return 0 # ! -z $gpu_detect_json
 	gpu_detect_time=$ts
-	readarray -t gpu_detect_json <<< "`cat $GPU_DETECT_JSON | jq -r -c '.[] | (.busid+";"+.brand+";"+.name+";"+.mem+";"+.vbios)' 2>/dev/null`"
+	readarray -t gpu_detect_json < <( jq -r -c '.[] | (.busid+";"+.brand+";"+.name+";"+.mem+";"+.vbios)' $GPU_DETECT_JSON 2>/dev/null )
 	[[ ${#gpu_detect_json[@]} -eq 0 ]] && return 1
 
 	# get max string length
@@ -312,8 +303,6 @@ gpu_detect() {
 	gpu_detect_maxlen=0
 	gpu_detect_maxlen_novbios=0
 	for line in "${gpu_detect_json[@]}"; do
-		# skip intel integrated graphics
-		#[[ $line =~ "Intel" ]] && continue
 		# skip all "cpu" gpus
 		[[ $line =~ ";cpu;" ]] && continue
 		# do not count type amd;nvidia;cpu
@@ -335,7 +324,8 @@ gpu_info() {
 
 	local all_stats=
 	[[ -f $GPU_STATS_JSON && `stat --printf %Y $GPU_STATS_JSON` -gt $(( `date +%s` - 30 )) ]] &&
-		all_stats=(`cat $GPU_STATS_JSON | jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i ([]; . + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+";"+.[1]+";"+.[2]+";"+.[3]' 2>/dev/null`)
+		readarray -t all_stats < <( jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i ([];
+			. + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+";"+.[1]+";"+.[2]+";"+.[3]' $GPU_STATS_JSON 2>/dev/null )
 
 	gpu_detect || return
 	local maxlen=gpu_detect_maxlen
@@ -349,7 +339,7 @@ gpu_info() {
 	local info
 	local stats
 	for gpu in "${gpu_detect_json[@]}"; do
-		readarray -t info <<< "${gpu//;/$'\n'}"
+		readarray -t info < <( echo "${gpu//;/$'\n'}" )
 		local busid=${info[0]}
 		local brand=${info[1]}
 		local name=${info[2]}
@@ -368,7 +358,7 @@ gpu_info() {
 			output=`printf "%2s%b" " " "$NOCOLOR $busid $YELLOW$name$NOCOLOR"`
 		fi
 		result+=`color_printf "$maxlen" "$output"`
-		readarray -t stats <<< "${all_stats[$count]//;/$'\n'}"
+		readarray -t stats < <( echo "${all_stats[$count]//;/$'\n'}" )
 		((count++))
 		local temp=${stats[1]}
 		local fan=${stats[2]}
@@ -397,7 +387,7 @@ gpu_compact() {
 
 	local gpu_stats=
 	[[ -f $GPU_STATS_JSON && `stat --printf %Y $GPU_STATS_JSON` -gt $(( `date +%s` - 30 )) ]] &&
-		gpu_stats=(`cat $GPU_STATS_JSON | jq --slurp -r -c '.[] | .brand, .busids, .temp, .fan, .power | join(";")' 2>/dev/null`)
+		readarray -t gpu_stats < <( jq --slurp -r -c '.[] | .brand, .busids, .temp, .fan, .power | join(";")' $GPU_STATS_JSON 2>/dev/null )
 
 	local brands=(${gpu_stats[0]//;/ })
 	local busids=(${gpu_stats[1]//;/ })
@@ -406,7 +396,8 @@ gpu_compact() {
 	local powers=(${gpu_stats[4]//;/ })
 	local first_idx=0
 
-	gpu_detect && grep "${busids[0]}" <<< "$gpu_detect_json" | grep -q Intel && first_idx=1
+	# skip internal gpu
+	[[ ${brands[0]} == "cpu" && ${busids[0]} =~ 00:* ]] && first_idx=1
 
 	[[ ! -z $1 ]] && local -n result=$1 || local result=
 	local idx
@@ -499,7 +490,7 @@ run_miners_array() {
 	[[ $need_sudo -eq 0 ]] && local sudo= || local sudo="sudo"
 	local windows
 	windows=`timeout 1 ${sudo} screen -S miner -Q windows | tail -n 1` || return 1
-	readarray -t windows <<< "${windows//  /$'\n'}"
+	readarray -t windows < <( echo "${windows//  /$'\n'}" )
 	local win
 	for win in "${windows[@]}"
 	do
@@ -605,19 +596,19 @@ show_log() {
 	# finish menu line
 	output+="${menu_color}="
 	
-	local menu_len; menu_len=`sed 's/\x1b\[[0-9;]*m//g' <<< "$output" | wc -m` || menu_len=$cols
+	local menu_len; menu_len=`echo "$output" | sed 's/\x1b\[[0-9;]*m//g' | wc -m` || menu_len=$cols
 	# make menu shorter if needed
 	if [[ $menu_len -gt $cols ]]; then
 		output=${output/syslog/SL}
 		output=${output/autofan/AF}
 		output=${output/agent/Ag}
 		output=${output/help/\?}
-		menu_len=`sed 's/\x1b\[[0-9;]*m//g' <<< "$output" | wc -m` || menu_len=$cols
+		menu_len=`echo "$output" | sed 's/\x1b\[[0-9;]*m//g' | wc -m` || menu_len=$cols
 	fi
 	# even more shorter
 	if [[ $menu_len -gt $cols ]]; then
 		output=${output//miner}
-		menu_len=`sed 's/\x1b\[[0-9;]*m//g' <<< "$output" | wc -m` || menu_len=$cols
+		menu_len=`echo "$output" | sed 's/\x1b\[[0-9;]*m//g' | wc -m` || menu_len=$cols
 	fi
 	while [[ $menu_len -lt $cols ]]; do
 		output+="="
@@ -662,7 +653,7 @@ show_log() {
 		else
 			# most tricky part. calc line wrapping for colored output
 			local arr
-			readarray -t arr <<< "`sed 's/\x1b\[[0-9;]*m//g' <<< \"$output\"`"
+			readarray -t arr < <( echo "$output" | sed 's/\x1b\[[0-9;]*m//g' )
 			local calc_lines=0
 			local length=$(( ${#arr[@]} - 1 ))
 			local real_lines
@@ -678,9 +669,9 @@ show_log() {
 		fi
 	fi
 
-	result+=`tail -n $needed_lines <<< "$output"`
+	result+=`echo "$output" | tail -n $needed_lines`
 	if [[ $need_padding -eq 1 ]]; then
-		[[ $padding -eq -1 ]] && padding=$(( needed_lines - `wc -l <<< "$output"` ))
+		[[ $padding -eq -1 ]] && padding=$(( needed_lines - `echo "$output" | wc -l` ))
 		output=
 		for((i=1; i<=padding; i++)); do
 			output+=$'\n'
@@ -747,7 +738,7 @@ function motd_watch() {
 			fi
 			buffer+=$'\n'
 			# strip colors and wrap lines for correct size
-			used_lines=`sed 's/\x1b\[[0-9;]*m//g; s/.\{'$((cols+1))'\}/&\n/g' <<< "$buffer" | wc -l`
+			used_lines=`echo "$buffer" | sed 's/\x1b\[[0-9;]*m//g; s/.\{'$((cols+1))'\}/&\n/g' | wc -l`
 			((used_lines--))
 		fi
 
@@ -844,7 +835,7 @@ cmd=`timeout -s9 3 ps --no-headers $PPID 2>/dev/null`
 if [[ $cmd =~ (-bash|motd) ]]; then
 	# do not wrap help in motd
 	tput rmam
-	unbuffer helpme | awk '{print $0" "}'
+	unbuffer helpme | tr -d '\r' | awk '{print $0" "}'
 	tput smam
 fi
 
