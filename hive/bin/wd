@@ -285,7 +285,8 @@ function loop() {
 	if [[ $(( check_count % 2 )) == 0 ]]; then
 		[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && check_la
 		[[ "$WD_CHECK_GPU" == 1 ]] && check_gpu
-		[[ "$WD_POWER_ENABLED" == 1 ]] && check_power
+		# do not check power if watchdog is disabled
+		[[ $disable -eq 0 && "$WD_POWER_ENABLED" == 1 ]] && check_power
 	fi
 	((check_count++))
 	[[ $check_count -ge $OK_MESSAGE_REDUCE ]] && check_count=0
