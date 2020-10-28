@@ -47,8 +47,12 @@ VERY_LOW_RAM=500
 LOW_DISK=2000
 VERY_LOW_DISK=1000
 
-HIGH_TEMP=70
-VERY_HIGH_TEMP=80
+CORE_HIGH_TEMP=70
+CORE_VERY_HIGH_TEMP=80
+
+MEM_HIGH_TEMP=90
+MEM_VERY_HIGH_TEMP=100
+
 
 WATCH_REFRESH=2
 
@@ -294,6 +298,7 @@ gpu_detect() {
 	[[ $gpu_detect_time -eq $ts ]] && return 0 # ! -z $gpu_detect_json
 	gpu_detect_time=$ts
 	readarray -t gpu_detect_json < <( jq -r -c '.[] | (.busid+";"+.brand+";"+.name+";"+.mem+";"+.vbios)' $GPU_DETECT_JSON 2>/dev/null )
+
 	[[ ${#gpu_detect_json[@]} -eq 0 ]] && return 1
 
 	# get max string length
@@ -322,23 +327,35 @@ gpu_detect() {
 gpu_info() {
 	[[ ! -f $GPU_DETECT_JSON ]] && return 1
 
-	local all_stats=
-	[[ -f $GPU_STATS_JSON && `stat --printf %Y $GPU_STATS_JSON` -gt $(( `date +%s` - 30 )) ]] &&
-		readarray -t all_stats < <( jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i ([];
-			. + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+";"+.[1]+";"+.[2]+";"+.[3]' $GPU_STATS_JSON 2>/dev/null )
-
 	gpu_detect || return
+
+	#[[ -f $GPU_STATS_JSON && `stat --printf %Y $GPU_STATS_JSON` -gt $(( `date +%s` - 30 )) ]] &&
+	#	readarray -t all_stats < <( jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i ([];
+	#		. + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+";"+.[1]+";"+.[2]+";"+.[3]' $GPU_STATS_JSON 2>/dev/null )
+
+	local gpu_stats=
+	[[ -f $GPU_STATS_JSON && `stat --printf %Y $GPU_STATS_JSON` -gt $(( `date +%s` - 30 )) ]] &&
+		readarray -t gpu_stats < <( jq --slurp -r -c '.[] | .busids, .temp, .fan, .power, .mtemp | join(";")' $GPU_STATS_JSON 2>/dev/null )
+
+	local busids=(${gpu_stats[0]//;/ })
+	local temps=(${gpu_stats[1]//;/ })
+	local fans=(${gpu_stats[2]//;/ })
+	local powers=(${gpu_stats[3]//;/ })
+	local mtemps=(${gpu_stats[4]//;/ })
+
+	[[ "${mtemps[@]}" =~ [0-9] ]] && local show_mem_temp=1 || local show_mem_temp=0
+
 	local maxlen=gpu_detect_maxlen
 	# cut vbios if it does not fit in line
 	local show_vbios=1
 	[[ $(( maxlen + 20 )) -gt $cols ]] && maxlen=gpu_detect_maxlen_novbios && show_vbios=0
 
 	[[ ! -z $1 ]] && local -n result=$1 || local result=
-	local idx=0
-	local count=0
+	local gpu_idx=0
+	local idx=-1
 	local info
-	local stats
 	for gpu in "${gpu_detect_json[@]}"; do
+		((idx++))
 		readarray -t info < <( echo "${gpu//;/$'\n'}" )
 		local busid=${info[0]}
 		local brand=${info[1]}
@@ -349,32 +366,44 @@ gpu_info() {
 		[[ ! -z $mem ]] && mem+=" "
 		[[ $show_vbios -eq 1 && ! -z $vbios ]] && vbios="($vbios)" || vbios=
 		if [[ $brand == "nvidia" || ( $name =~ (NVIDIA|GeForce) && ! $name =~ nForce ) ]]; then
-			output=`printf "%b%2s%b" "$BBLUE" "$idx" "$NOCOLOR $busid $GREEN$name$NOCOLOR $mem$vbios"`
-			((idx++))
+			output=`printf "%b%2s%b" "$BBLUE" "$gpu_idx" "$NOCOLOR $busid $GREEN$name$NOCOLOR $mem$vbios"`
+			((gpu_idx++))
 		elif [[ $brand == "amd" || ( $name =~ (Radeon|RX) && ! $name =~ (RS880|Stoney) ) ]]; then
-			output=`printf "%b%2s%b" "$BBLUE" "$idx" "$NOCOLOR $busid $RED$name$NOCOLOR $mem$vbios"`
-			((idx++))
+			output=`printf "%b%2s%b" "$BBLUE" "$gpu_idx" "$NOCOLOR $busid $RED$name$NOCOLOR $mem$vbios"`
+			((gpu_idx++))
 		else
 			output=`printf "%2s%b" " " "$NOCOLOR $busid $YELLOW$name$NOCOLOR"`
 		fi
 		result+=`color_printf "$maxlen" "$output"`
-		readarray -t stats < <( echo "${all_stats[$count]//;/$'\n'}" )
-		((count++))
-		local temp=${stats[1]}
-		local fan=${stats[2]}
-		local power=${stats[3]}
-		[[ "${stats[0]}" != "$busid" || $power -eq 0 ]] && result+=$'\n' && continue
+
+		[[ "${busids[$idx]}" != "$busid" || ${powers[$idx]} -eq 0 ]] && result+=$'\n' && continue
+
 		local color=$WHITE
-		if [[ $temp -ge 999 ]]; then
-			temp="???"
+		if [[ ${temps[$idx]} -ge 999 ]]; then
+			temps[$idx]="???"
 			color=$BPURPLE
-		elif [[ $temp -ge $VERY_HIGH_TEMP ]]; then
+		elif [[ ${temps[$idx]} -ge $CORE_VERY_HIGH_TEMP ]]; then
 			color=$BRED
-		elif [[ $temp -ge $HIGH_TEMP ]]; then
+		elif [[ ${temps[$idx]} -ge $CORE_HIGH_TEMP ]]; then
 			color=$BYELLOW
 		fi
-		[[ $power -gt 999 ]] && power="???"
-		result+=`printf "%b%3s%b°C %b%4s %b%% %b%4s %bW" "$color" "$temp" "$NOCOLOR" "$WHITE" "$fan" "$NOCOLOR" "$WHITE" "$power" "$NOCOLOR"`
+		result+=`printf "%b%3s%b°C " "$color" "${temps[$idx]}" "$NOCOLOR"`
+
+		if [[ $show_mem_temp -eq 1 ]]; then
+			local mcolor=$WHITE
+			if [[ ${mtemps[$idx]} -ge 999 ]]; then
+				mtemps[$idx]="???"
+				mcolor=$BPURPLE
+			elif [[ ${mtemps[$idx]} -ge $MEM_VERY_HIGH_TEMP ]]; then
+				mcolor=$BRED
+			elif [[ ${mtemps[$idx]} -ge $MEM_HIGH_TEMP ]]; then
+				mcolor=$BYELLOW
+			fi
+			result+=`printf "%b%3s%b°C " "$mcolor" "${mtemps[$idx]:---}" "$NOCOLOR"`
+		fi
+
+		[[ ${powers[$idx]} -gt 999 ]] && ${powers[$idx]}="???"
+		result+=`printf "%b%4s %b%% %b%4s %bW" "$WHITE" "${fans[$idx]}" "$NOCOLOR" "$WHITE" "${powers[$idx]}" "$NOCOLOR"`
 		result+=$'\n'
 	done
 	[[ -z $1 ]] && echo -n "$result"
@@ -387,17 +416,19 @@ gpu_compact() {
 
 	local gpu_stats=
 	[[ -f $GPU_STATS_JSON && `stat --printf %Y $GPU_STATS_JSON` -gt $(( `date +%s` - 30 )) ]] &&
-		readarray -t gpu_stats < <( jq --slurp -r -c '.[] | .brand, .busids, .temp, .fan, .power | join(";")' $GPU_STATS_JSON 2>/dev/null )
+		readarray -t gpu_stats < <( jq --slurp -r -c '.[] | .brand, .busids, .temp, .fan, .power, .mtemp | join(";")' $GPU_STATS_JSON 2>/dev/null )
 
 	local brands=(${gpu_stats[0]//;/ })
 	local busids=(${gpu_stats[1]//;/ })
 	local temps=(${gpu_stats[2]//;/ })
 	local fans=(${gpu_stats[3]//;/ })
 	local powers=(${gpu_stats[4]//;/ })
-	local first_idx=0
+	local mtemps=(${gpu_stats[5]//;/ })
 
 	# skip internal gpu
-	[[ ${brands[0]} == "cpu" && ${busids[0]} =~ 00:* ]] && first_idx=1
+	[[ ${brands[0]} == "cpu" && ${busids[0]} =~ 00:* ]] && local first_idx=1 || local first_idx=0
+
+	[[ "${mtemps[@]}" =~ [0-9] ]] && local show_mem_temp=1 || local show_mem_temp=0
 
 	[[ ! -z $1 ]] && local -n result=$1 || local result=
 	local idx
@@ -418,23 +449,42 @@ gpu_compact() {
 			result+=`printf "%b%${step}s%b" "$color" "${busids[$idx]/\.0}" "$NOCOLOR"`
 		done
 		result+=$'\n'
+
 		for((idx=first_idx; idx<last_idx; idx++)); do
 			local color=$WHITE
 			if [[ ${temps[$idx]} -ge 999 ]]; then
 				temps[$idx]="???"
 				color=$BPURPLE
-			elif [[ ${temps[$idx]} -ge $VERY_HIGH_TEMP ]]; then
+			elif [[ ${temps[$idx]} -ge $CORE_VERY_HIGH_TEMP ]]; then
 				color=$BRED
-			elif [[ ${temps[$idx]} -ge $HIGH_TEMP ]]; then
+			elif [[ ${temps[$idx]} -ge $CORE_HIGH_TEMP ]]; then
 				color=$BYELLOW
 			fi
 			result+=`printf "%b%$((step-2))s%b°C" "$color" "${temps[$idx]}" "$NOCOLOR"`
 		done
 		result+=$'\n'
+
+		if [[ $show_mem_temp -eq 1 ]]; then
+			for((idx=first_idx; idx<last_idx; idx++)); do
+				local color=$WHITE
+				if [[ ${mtemps[$idx]} -ge 999 ]]; then
+					mtemps[$idx]="???"
+					color=$BPURPLE
+				elif [[ ${mtemps[$idx]} -ge $MEM_VERY_HIGH_TEMP ]]; then
+					color=$BRED
+				elif [[ ${mtemps[$idx]} -ge $MEM_HIGH_TEMP ]]; then
+					color=$BYELLOW
+				fi
+				result+=`printf "%b%$((step-2))s%b°C" "$color" "${mtemps[$idx]:---}" "$NOCOLOR"`
+			done
+			result+=$'\n'
+		fi
+
 		for((idx=first_idx; idx<last_idx; idx++)); do
 			result+=`printf "%b%$((step-2))s%b %%" "$WHITE" "${fans[$idx]}" "$NOCOLOR"`
 		done
 		result+=$'\n'
+
 		for((idx=first_idx; idx<last_idx; idx++)); do
 			[[ ${powers[$idx]} -gt 999 ]] && powers[$idx]="???"
 			result+=`printf "%b%$((step-2))s%b W" "$WHITE" "${powers[$idx]}" "$NOCOLOR"`
