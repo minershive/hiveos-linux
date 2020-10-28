@@ -217,7 +217,7 @@ if [[ $exitcode -ne 0 ]];then
 		# Start autofan, wd, miners, autoswitch if we stopped them
 		echo -e "${YELLOW}> Starting autofan, watchdog, miners${NOCOLOR}"
 		autofan restart > /dev/null
-		#wd start
+		wd restart
 		miner start
 		[[ $as -ne 0 ]] && echo -e "${YELLOW}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 	fi
@@ -258,7 +258,7 @@ agent-screen restart
 # Start autofan, wd, miners, autoswitch
 echo -e "${YELLOW}> Starting autofan, watchdog, miners${NOCOLOR}"
 autofan restart > /dev/null
-#wd start
+wd restart
 miner start
 [[ $as -ne 0 ]] && echo -e "${YELLOW}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 
