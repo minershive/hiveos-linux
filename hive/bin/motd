@@ -291,6 +291,7 @@ gpu_detect_json=
 gpu_detect_time=0
 gpu_detect_maxlen=0
 gpu_detect_maxlen_novbios=0
+
 gpu_detect() {
 	#[[ ! -f $GPU_DETECT_JSON ]] && return 1
 	local ts=`stat -c %Y $GPU_DETECT_JSON 2>/dev/null`
@@ -341,7 +342,8 @@ gpu_info() {
 	local temps=(${gpu_stats[1]//;/ })
 	local fans=(${gpu_stats[2]//;/ })
 	local powers=(${gpu_stats[3]//;/ })
-	local mtemps=(${gpu_stats[4]//;/ })
+	local mtemps #=(${gpu_stats[4]//;/ })
+	readarray -t mtemps < <( echo "${gpu_stats[4]//;/$'\n'}" )
 
 	[[ "${mtemps[@]}" =~ [0-9] ]] && local show_mem_temp=1 || local show_mem_temp=0
 
@@ -352,11 +354,10 @@ gpu_info() {
 
 	[[ ! -z $1 ]] && local -n result=$1 || local result=
 	local gpu_idx=0
-	local idx=-1
+	local idx
 	local info
-	for gpu in "${gpu_detect_json[@]}"; do
-		((idx++))
-		readarray -t info < <( echo "${gpu//;/$'\n'}" )
+	for(( idx=0; idx < ${#gpu_detect_json[@]}; idx++ )); do
+		readarray -t info < <( echo "${gpu_detect_json[$idx]//;/$'\n'}" )
 		local busid=${info[0]}
 		local brand=${info[1]}
 		local name=${info[2]}
@@ -423,7 +424,8 @@ gpu_compact() {
 	local temps=(${gpu_stats[2]//;/ })
 	local fans=(${gpu_stats[3]//;/ })
 	local powers=(${gpu_stats[4]//;/ })
-	local mtemps=(${gpu_stats[5]//;/ })
+	local mtemps #=(${gpu_stats[5]//;/ })
+	readarray -t mtemps < <( echo "${gpu_stats[5]//;/$'\n'}" )
 
 	# skip internal gpu
 	[[ ${brands[0]} == "cpu" && ${busids[0]} =~ 00:* ]] && local first_idx=1 || local first_idx=0
