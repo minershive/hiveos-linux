@@ -6,10 +6,21 @@ REPOPATH=/var/www/html/repomirror
 # (or whatever is set on the remote repo server as the timezone for timestamps of the files in the repo)
 export TZ=UTC
 WGET="/usr/bin/wget -t 0 -T 20 -nv -e robots=off"
-[[ -t 1 ]] && WGET+=" -v"
+[[ -t 1 && "$1" == "-v" ]] && WGET+=" -v"
 
 function mydate() {
 	date --rfc-3339=seconds
+}
+
+function check_md5() {
+	# check files md5 using Release
+	local file="$1"
+	local md5=`md5sum "$REPOPATH/repo/binary/$file" 2>/dev/null | awk '{ printf $1 }'`
+	local exp
+	exp=`grep -A 3 -m 1 "MD5Sum:" $REPOPATH/repo/binary/Release | grep "$file$" | awk '{ printf $1 }'` &&
+		[[ "$exp" == "$md5" ]] && return 0
+	echo "Error: $file - bad MD5 ${md5:--} (expected $exp)"
+	return 1
 }
 
 #echo "$(mydate): PID $$"
@@ -43,70 +54,91 @@ echo "Working under $(pwd)"
 [[ ! -e /var/www/html/$domain ]] &&
 	ln -sf $REPOPATH /var/www/html/$domain
 
-# remove files like RepoVer and other files which are not actual packages
-for file in `ls $REPOPATH/repo/binary/* | grep -v deb`
-do
-	rm -f $file
-done
+need_update=1
 
-# Request re-sync of everything except DEB files with conditional if-modified-since requests from the remote repo server,
-# overwriting local files with ones from the remote server. Using Packages for download DEB files later
-# Because -c and -N do not seem to work too nicely in GNU wget (only larger-than-original new files get synced upon update),
-# just use -N instead of  trying to save bandwidth upon incomplete downloads
+# check RepoVer
+repover=`${WGET} -O - "${repourl}RepoVer"`
+exitcode=$?
+[[ $exitcode -ne 0 ]] && echo "Error: Unable to get RepoVer (exitcode=$exitcode), exiting" && exit 1
+echo "RepoVer: $repover"
 
-echo "$(mydate): Updating repo packages"
-${WGET} -r --no-parent --level=1 --reject=deb -N "$repourl"
+# check for repo update
+if [[ -e $REPOPATH/repo/binary/Release ]]; then
+	echo "$(mydate): Checking repo update"
+	release=`${WGET} -O - "${repourl}Release"`
+	exitcode=$?
+	[[ $exitcode -ne 0 ]] && echo "Error: Unable to get Release file (exitcode=$exitcode), exiting" && exit 2
 
-# Remove index files so directory contents will be generated via nginx
-# this may cause a certain amount of trash-talk from wget complaining about unavailable last-modified timestamps.
-rm -f repomirror/repo/index.html
-rm -f repomirror/repo/binary/index.html
+	if [[ ! -z "$release" && "$release" == "$(< $REPOPATH/repo/binary/Release )" ]]; then
+		echo "Repo is up to date!"
+		need_update=0
+	fi
+fi
+
+# check md5 using Release
+check_md5 Packages || need_update=1
+check_md5 Packages.gz || need_update=1
+
+if [[ $need_update -ne 0 ]]; then
+	# remove files like RepoVer and other files which are not actual packages
+	for file in `ls $REPOPATH/repo/binary/* | grep -v deb`
+	do
+		rm -f $file
+	done
+
+	# Request re-sync of everything except DEB files with conditional if-modified-since requests from the remote repo server,
+	# overwriting local files with ones from the remote server. Using Packages for download DEB files later
+	# Because -c and -N do not seem to work too nicely in GNU wget (only larger-than-original new files get synced upon update),
+	# just use -N instead of  trying to save bandwidth upon incomplete downloads
+
+	echo "$(mydate): Updating repo packages"
+	${WGET} -r --no-parent --level=1 --reject=deb -N "$repourl" || echo "Error: Syncing failed (exitcode=$exitcode)"
+
+	# Remove index files so directory contents will be generated via nginx
+	# this may cause a certain amount of trash-talk from wget complaining about unavailable last-modified timestamps.
+	rm -f repomirror/repo/index.html
+	rm -f repomirror/repo/binary/index.html
+fi
 
 cd $REPOPATH/repo/binary
+
+[[ ! -e Release ]] && echo "Error: No Release file, exiting" && exit 3
+
+updated=`grep -oP "Date: \K.*" Release` && echo "Repo update time: $updated"
+
+[[ ! -e Packages ]] && echo "Error: No Packages listing, exiting" && exit 4
+
+# check md5 again using Release
+if [[ $need_update -ne 0 ]]; then
+	check_md5 Packages
+	[[ $? -ne 0 ]] && echo "Exiting" && exit 5
+fi
+
 # Check for md5 mismatches vs Packages file, if we have one from a successful download.
 # Insane Packages file will cause massive deletion of .deb files, but c'est la vie
-
-#if [ -f Packages ]; then
-#	# do a file with a list of bad downloads
-#	TFN=`mktemp /tmp/pkgdnldXXXXXX`
-#	echo "$(mydate): Checking and removing damaged or misdownloaded files using md5 sums from the fresh Packages file"
-#	# this is ugly and needs some prettying in a more human-readable language
-#	(cat Packages | tr '\n' '|' | sed  's/||/\\/g' | tr '\\' '\n') | perl -ne 'next unless (m/Filename.*.deb/); m/Filename: (.+?)\|.*MD5sum: ([0-9A-Fa-f]+)/; $fn = $1; $md = $2; $emd=`md5sum $fn`; $emd=~m/^([0-9A-Fa-f]+)/; $emd = $1;  if ($md ne $emd){print "$fn\n"; unlink ($fn);};' | tee $TFN
-#	echo "$(mydate): Re-downloading removed files if any...."
-#	for file in `cat $TFN | sed 's/.\///g'`
-#	do
-#		echo "Downloading ${repourl}/$file"
-#		${WGET} ${repourl}/$file
-#	done
-#	#echo "Removing temproray files (${TFN})...."
-#	rm -f $TFN
-#fi
-
-if [[ -e Packages ]]; then
-	echo "$(mydate): Checking and downloading missed/damaged/incomplete files using fresh Packages listing"
-	cnt=0
-	while IFS="|:" read -a arr; do
-		declare -A info=( ["${arr[0]}"]="${arr[1]}" ["${arr[2]}"]="${arr[3]}" ["${arr[4]}"]="${arr[5]}" )
-		(( ++cnt % 100 == 0 )) && [[ -t 1 ]] && echo "Files processed: $cnt"
-		#echo "${info[Filename]} ${info[Size]} ${info[MD5sum]}"
-		file="${info[Filename]/.\/}"
-		[[ -z "$file" ]] && continue;
-		if [[ -e "${info[Filename]}" ]]; then
-			size=$(stat --format=%s "${info[Filename]}" 2>/dev/null) || size=0
-			if [[ ! -z "${info[Size]}" && "${info[Size]}" -gt $size ]]; then
-				echo "$file - incomplete download ($size/${info[Size]}), resuming"
-				${WGET} -c ${repourl}$file
-			fi
-			[[ -z "${info[MD5sum]}" || $(md5sum "${info[Filename]}" | awk '{printf $1}') == "${info[MD5sum]}" ]] && continue
-			echo "$file - bad MD5 sum, deleting"
-			unlink "${info[Filename]}"
+echo "$(mydate): Checking and downloading missed/damaged/incomplete files using fresh Packages listing"
+cnt=0
+while IFS="|:" read -a arr; do
+	declare -A info=( ["${arr[0]}"]="${arr[1]}" ["${arr[2]}"]="${arr[3]}" ["${arr[4]}"]="${arr[5]}" )
+	(( ++cnt % 100 == 0 )) && [[ -t 1 ]] && echo "Files processed: $cnt"
+	#echo "${info[Filename]} ${info[Size]} ${info[MD5sum]}"
+	file="${info[Filename]/.\/}"
+	[[ -z "$file" ]] && continue;
+	if [[ -e "${info[Filename]}" ]]; then
+		size=$(stat --format=%s "${info[Filename]}" 2>/dev/null) || size=0
+		if [[ ! -z "${info[Size]}" && "${info[Size]}" -gt $size ]]; then
+			echo "Error: $file - incomplete download ($size/${info[Size]}), resuming"
+			${WGET} -c ${repourl}$file
 		fi
-		echo "Downloading ${repourl}$file"
-		${WGET} ${repourl}$file
-		# we can check again but repo may be updated during checking
-	done < <( cat -s Packages | grep -E "^$|^Filename|^MD5sum|^Size" | tr '\n' '|' | sed  's/||/\n/g' | tr -d ' ' )
-	echo "Files processed: $cnt"
-fi
+		[[ -z "${info[MD5sum]}" || $(md5sum "${info[Filename]}" | awk '{printf $1}') == "${info[MD5sum]}" ]] && continue
+			echo "Error: $file - bad MD5 sum, deleting"
+			unlink "${info[Filename]}"
+	fi
+	echo "Downloading ${repourl}$file"
+	${WGET} ${repourl}$file
+	# we can check again but repo may be updated during checking
+done < <( cat -s Packages | grep -E "^$|^Filename|^MD5sum|^Size" | tr '\n' '|' | sed  's/||/\n/g' | tr -d ' ' )
+echo "Files processed: $cnt"
 
 echo "$(mydate): Done."
 
