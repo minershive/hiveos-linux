@@ -446,7 +446,7 @@ case $1 in
 		systemctl restart hive-watchdog
 	;;
 	log)
-		journalctl -u hive-watchdog --no-pager $2 $3 $4 $5 $6 $7
+		journalctl -u hive-watchdog --no-pager $2 $3 $4 $5 $6 $7 | tail -n 100
 	;;
 	status)
 		systemctl status hive-watchdog
