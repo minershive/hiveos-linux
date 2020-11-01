@@ -75,8 +75,8 @@ function remove_miners() {
 	. $RIG_CONF
 
 	for mindex in {1..32}; do
-		[[ $mindex == 1 ]] && mindex=
-		eval minerval=\$MINER$mindex
+		[[ $mindex -eq 1 ]] && mindex=
+		local -n minerval="MINER$mindex"
 		if [[ ! -z $minerval ]]; then
 			package_name="hive-miners-$minerval"
 			dpkg -s $package_name > /dev/null 2>&1

@@ -151,7 +151,7 @@ for (( i=0; i < $n; ++i )); do
 	#nvidia-smi -i ${i} -ac 4004,1911
 
 	args=
-	args+=" -a [gpu:$i]/GPUPowerMizerMode=1"
+	args+=" -a [gpu:$i]/GPUPowerMizerMode=${POWERMIZER:-1}"
 
 	fans_count=${FANCNT[$i]}
 	[[ -z $fans_count || $fans_count == "null" ]] && fans_count=1

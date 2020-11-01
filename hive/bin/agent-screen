@@ -13,6 +13,9 @@ LOG="/var/log/hive-agent.log"
 . http_proxy.sh
 
 
+screen -wipe agent >/dev/null
+
+
 function stop_agent() {
 	# We have checked for the agent process, but maybe there is a screen with dead agent
 	screens=`screen -ls agent | grep -Po "\K[0-9]+(?=\.agent)"`
