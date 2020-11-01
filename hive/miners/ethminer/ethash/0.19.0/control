@@ -1,5 +1,5 @@
 Package: hive-miners-ethminer-ethash-0.19.0
-Version: 0.6-03
+Version: 0.6-04
 Section: base
 Priority: optional
 Architecture: all
