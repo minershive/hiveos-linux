@@ -215,8 +215,8 @@ if [[ "$DEBUG" != "1" ]]; then
 	echo -e "> Stopping miner session"
 	miner stop
 
-	echo -e "> Stopping hashrate watchdog"
-	wd stop
+	#echo -e "> Stopping hashrate watchdog"
+	#wd stop
 
 	echo -e "> Stopping autofan"
 	autofan stop

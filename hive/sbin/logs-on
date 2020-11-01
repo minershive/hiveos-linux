@@ -25,7 +25,7 @@ echo "$fstab" | grep -q "$STARTCMNT"
 	exit 0
 
 
-sed "/$STARTCMNT/,/$ENDCMNT/d" <<< "$fstab" > /etc/fstab
+echo "$fstab" | sed "/$STARTCMNT/,/$ENDCMNT/d" > /etc/fstab
 
 
 echo -e "Disk logs are ${GREEN}enabled${NOCOLOR} now. History will stay after reboots.\n${YELLOW}Please reboot.${NOCOLOR}"
