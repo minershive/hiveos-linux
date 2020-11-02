@@ -1,0 +1,11 @@
+{
+    "hardwareConfiguration": {
+        "cpu": {
+            "enabled": false
+                },
+        "nvidia": {
+            "devices": []
+        }
+    },
+    "pools": []
+}
