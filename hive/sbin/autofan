@@ -58,7 +58,7 @@ error_in_temp_readings=0
 #
 critical_temp_exceeded=0
 
-screen -wipe autofan >dev/null
+screen -wipe autofan >/dev/null
 
 ###
 # Log write
