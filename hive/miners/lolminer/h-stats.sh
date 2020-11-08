@@ -54,7 +54,7 @@ else
 	local Rejected=`echo $stats_raw | jq -c -r ".Session.Submitted - .Session.Accepted"`
 	local ver=`echo $stats_raw | jq -c -r ".Software" | awk '{ print $2 }'`
 	
-	if [[ "$ver" > "1.09" && "$algo" == "Ethash" ]]; then
+	if [[ "$ver" > "1.09" && "$algo" == "Ethash" || "$algo" == "Etchash" ]]; then
 		units="mhs"
 		khs=`echo $stats_raw | jq -r '.Session.Performance_Summary' | awk '{ print $1*1000 }'`
 	else
