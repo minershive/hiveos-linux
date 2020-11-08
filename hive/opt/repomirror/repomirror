@@ -170,16 +170,16 @@ function rm_install() {
 
 	if [[ ! -d $REPOPATH ]]; then
 		echo "${CYAN}>Creating $REPOPATH $NOCOLOR"
-		mkdir -p $REPOPATH
+		mkdir -p $REPOPATH/repo
 	fi
 
 	if [[ ! -d $WWWPATH ]]; then
 		echo "${CYAN}> Linking /repo $NOCOLOR"
-		ln -sf $REPOPATH $WWWPATH
+		ln -sf $REPOPATH/repo $WWWPATH
 	fi
 
 	if [[ $USE_NGINX -ne 0 ]]; then
-		systemctl status lighttpd >/dev/null &&
+		systemctl status lighttpd >/dev/null 2>&1 &&
 			echo "${YELLOW}> Disabling LIGHTTPD $NOCOLOR" &&
 			systemctl stop lighttpd 2>/dev/null &&
 			systemctl disable lighttpd 2>/dev/null
@@ -202,7 +202,7 @@ function rm_install() {
 		return
 	fi
 
-	systemctl status nginx >/dev/null &&
+	systemctl status nginx >/dev/null 2>&1 &&
 		echo "${YELLOW}> Disabling NGINX $NOCOLOR" &&
 		systemctl stop nginx 2>/dev/null &&
 		systemctl disable nginx 2>/dev/null

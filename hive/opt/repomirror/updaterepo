@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# default repository url. May be overriden by /hive-config/repo-sync.url
+REPOURL=https://download.hiveos.farm/repo/binary/
+
+# default repository path
 REPOPATH=/var/www/html/repomirror
 
 # for all the programs running from within the script, make sure they run in the "UTC" time zone
@@ -8,18 +12,22 @@ export TZ=UTC
 WGET="/usr/bin/wget -t 0 -T 20 -nv -e robots=off"
 [[ -t 1 && "$1" == "-v" ]] && WGET+=" -v"
 
+
 function mydate() {
 	date --rfc-3339=seconds
 }
 
+
 function check_md5() {
-	# check files md5 using Release
+	# check md5 using InRelease
 	local file="$1"
 	local md5=`md5sum "$REPOPATH/repo/binary/$file" 2>/dev/null | awk '{ printf $1 }'`
 	local exp
-	exp=`grep -A 3 -m 1 "MD5Sum:" $REPOPATH/repo/binary/Release | grep "$file$" | awk '{ printf $1 }'` &&
+	exp=`grep -A 3 -m 1 "MD5Sum:" $REPOPATH/repo/binary/InRelease | grep "$file$" | awk '{ printf $1 }'` &&
 		[[ "$exp" == "$md5" ]] && return 0
-	echo "Error: $file - bad MD5 ${md5:--} (expected $exp)"
+	[[ -z "$md5" ]] &&
+		echo "Error: $file - not exists" ||
+		echo "Error: $file - bad MD5 $md5 (expected $exp)"
 	return 1
 }
 
@@ -34,7 +42,7 @@ done
 	repourl=`cat /hive-config/repo-sync.url | grep -v "^$" | grep -v "^#" | head -n 1`
 
 [[ -z $repourl ]] &&
-	repourl=http://download.hiveos.farm/repo/binary/
+	repourl="$REPOURL"
 
 # should end in a / for successful sync, add trailing slash if missing
 [[ "${repourl}" != */ ]] && repourl="${repourl}/"
@@ -63,28 +71,32 @@ exitcode=$?
 echo "RepoVer: $repover"
 
 # check for repo update
-if [[ -e $REPOPATH/repo/binary/Release ]]; then
+if [[ -e $REPOPATH/repo/binary/InRelease ]]; then
 	echo "$(mydate): Checking repo update"
-	release=`${WGET} -O - "${repourl}Release"`
+	release=`${WGET} -O - "${repourl}InRelease"`
 	exitcode=$?
-	[[ $exitcode -ne 0 ]] && echo "Error: Unable to get Release file (exitcode=$exitcode), exiting" && exit 2
+	[[ $exitcode -ne 0 ]] && echo "Error: Unable to get InRelease file (exitcode=$exitcode), exiting" && exit 2
 
-	if [[ ! -z "$release" && "$release" == "$(< $REPOPATH/repo/binary/Release )" ]]; then
+	if [[ ! -z "$release" && "$release" == "$(< $REPOPATH/repo/binary/InRelease )" ]]; then
 		echo "Repo is up to date!"
 		need_update=0
 	fi
 fi
 
-# check md5 using Release
-check_md5 Packages || need_update=1
-check_md5 Packages.gz || need_update=1
+# check md5 using InRelease
+if [[ $need_update -eq 0 ]]; then
+	check_md5 Packages || need_update=1
+	check_md5 Packages.gz || need_update=1
+fi
 
 if [[ $need_update -ne 0 ]]; then
 	# remove files like RepoVer and other files which are not actual packages
-	for file in `ls $REPOPATH/repo/binary/* | grep -v deb`
-	do
-		rm -f $file
-	done
+	if [[ -e $REPOPATH/repo/binary ]]; then
+		for file in `ls $REPOPATH/repo/binary/* | grep -v deb`
+		do
+			rm -f $file
+		done
+	fi
 
 	# Request re-sync of everything except DEB files with conditional if-modified-since requests from the remote repo server,
 	# overwriting local files with ones from the remote server. Using Packages for download DEB files later
@@ -102,13 +114,13 @@ fi
 
 cd $REPOPATH/repo/binary
 
-[[ ! -e Release ]] && echo "Error: No Release file, exiting" && exit 3
+[[ ! -e InRelease ]] && echo "Error: No InRelease file, exiting" && exit 3
 
-updated=`grep -oP "Date: \K.*" Release` && echo "Repo update time: $updated"
+updated=`grep -oP "Date: \K.*" InRelease` && echo "Repo update time: $updated"
 
 [[ ! -e Packages ]] && echo "Error: No Packages listing, exiting" && exit 4
 
-# check md5 again using Release
+# check md5 again using InRelease
 if [[ $need_update -ne 0 ]]; then
 	check_md5 Packages
 	[[ $? -ne 0 ]] && echo "Exiting" && exit 5
