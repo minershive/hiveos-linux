@@ -217,11 +217,19 @@ function rm_install() {
 		echo "${CYAN}> Linking $LHCONF $NOCOLOR"
 		rm $LHCONF > /dev/null 2>&1
 		ln -sf ${PKGPATH}/$LHCONF $LHCONF
-	else
+	elif [[ -e $LHCONF ]]; then
 		enablelisting='$HTTP["url"] =~ "^/repo($|/)" { server.dir-listing = "enable" }'
-		[[ -e $LHCONF &&  `grep -c -F -- "${enablelisting}" $LHCONF` -eq 0 ]] &&
-			echo -e "\n$enablelisting\n" >> $LHCONF &&
+		if [[ `grep -c -F -- "${enablelisting}" $LHCONF` -eq 0 ]]; then
+			echo -e "\n# Repomirror listing\n${enablelisting}\n" >> $LHCONF
 			echo "${CYAN}> Enabling lighttpd directory listing $NOCOLOR"
+		fi
+		logtosyslog='server.errorlog-use-syslog = "enable"'
+		if [[ `grep -c -F -- "${logtosyslog}" $LHCONF` -eq 0 ]]; then
+			echo -e "\n# Avoid log file creation if Hive logs are disabled\n${logtosyslog}\n" >> $LHCONF
+			echo "${CYAN}> Enabling lighttpd logging to syslog $NOCOLOR"
+		fi
+	else
+		echo "${RED}> $LHCONF not found $NOCOLOR"
 	fi
 
 	systemctl restart lighttpd
