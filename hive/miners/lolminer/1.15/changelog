@@ -1,0 +1,8 @@
+lolMiner v1.15
+* Fixed bug: Miner causing invalid shares on 4G cards on some systems
+* Fixed bug: Miner hangs up when changing epoch when using the ZIL cache feature
+* Fixed bug: Miner sometimes produces invalid shares when a new job with different epoch arrives while the miner is currently creating the DAG file for an earlier job.
+* Fixed bug: Miner not calling the default emergency scripts when a GPU was hung up (it only worked with custom scripts)
+* Improved Ethash efficiency on Nvidia GPUs
+* ZIL cache now can be used by cards with less then 8G when enough memory is available (e.g. 6G cards or when mining e.g. ETP + ZIL)
+* General stability improvements (resolved many potential miner hangs up causes)
