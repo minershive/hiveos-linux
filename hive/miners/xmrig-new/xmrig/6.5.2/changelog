@@ -1,0 +1,4 @@
+XMRig v6.5.2
+* Separate MSR mod for Zen/Zen2 and Zen3
+* Added CPUID info to JSON report
+* Fixed alignment modification in memory pool
