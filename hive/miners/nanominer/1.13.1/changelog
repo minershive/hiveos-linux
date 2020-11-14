@@ -1,0 +1,3 @@
+nanominer v1.13.1
+* Significantly improved performance of octopus (Conflux) algorithm on Nvidia: +96% up to 4.5 MH/s on stock p106, +139% up to 22.7 MH/s on stock 2060.
+* RXT 30xx will be added in next releases
