@@ -21,7 +21,7 @@ function miner_config_gen() {
 	else
 	    coin=$LOLMINER_ALGO
 	fi
-	#  
+	#
 	if [[ "$LOLMINER_ALGO" =~ "BEAM-" || $LOLMINER_ALGO =~ "EQUI" || $LOLMINER_ALGO =~ "C29" || $LOLMINER_ALGO =~ "CR29" || $LOLMINER_ALGO == "C31" || $LOLMINER_ALGO == "C32" || $LOLMINER_ALGO == "ETHASH" || $LOLMINER_ALGO == "ETCHASH" ]]; then
 	   conf="--algo $coin\n"
 	else
@@ -42,10 +42,11 @@ function miner_config_gen() {
 			conf+="--pass $LOLMINER_PASS\n"
 		fi
 	done
-	
+
+	[[ ! -z $LOLMINER_WORKER ]] && conf+="--worker $LOLMINER_WORKER\n"
 
 	# TLS and other options
-	while read -r line; do 
+	while read -r line; do
 		[[ -z $line ]] && continue
 		local tls_cnt=$(echo "$line" | grep -e "--tls" | awk '{print $2}' | tr ';' ' ' | wc -w)
 		if [[ $tls_cnt -eq 1 ]]; then
