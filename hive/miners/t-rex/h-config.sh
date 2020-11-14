@@ -35,7 +35,7 @@ function miner_config_gen() {
 	    fi
 
 	    pool=$(cat <<EOF
-		{"user": "$TREX_TEMPLATE", "url": "$url", "pass": "$TREX_PASS" }
+		{"user": "$TREX_TEMPLATE", "url": "$url", "pass": "$TREX_PASS", "worker": "$TREX_WORKER" }
 EOF
 )
 
@@ -56,4 +56,3 @@ EOF
 	conf=`jq --null-input --argjson conf "$conf" --arg notes "$notes" -n '$conf | ._notes = $notes'`
 	echo "$conf" > $MINER_CONFIG
 }
-
