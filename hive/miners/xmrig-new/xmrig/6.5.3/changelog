@@ -1,0 +1,5 @@
+XMRig v6.5.3
+* fixed MSR mod names in JSON API
+
+XMRig CUDA plugin v6.5.0
+* fixed high CPU usage on Cryptonight and AstroBWT
