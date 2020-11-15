@@ -1,0 +1,4 @@
+miniZ v1.6w4
+* Fixed miniZ Cuda 11 version for RTX 30XX series cards for some algos (Beam, Zel, Aion,144,5).
+* Improved performance for RTX 30XX cards on some algos.
+* Added -cden option to exclude GPus from mining based on their name
