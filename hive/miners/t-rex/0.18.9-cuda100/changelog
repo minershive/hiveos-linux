@@ -1,0 +1,5 @@
+T-Rex 0.18.9
+* increased ethash pool side hashrate by 1-2% by reducing the amount of stale shares the miner drops before sending to the pool
+* set worker name to %hostname% if not specified on ethash, kawpow, progpow
+* bug fix: low pool side hashrate when mining ETH+ZIL due to incorrect difficulty parsing
+* bux fix: miner crashes on low RAM multi-GPU rigs during DAG rebuild on ethash, kawpow, progpow
