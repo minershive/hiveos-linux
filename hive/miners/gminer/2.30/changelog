@@ -1,0 +1,7 @@
+Gminer v2.30
+* major performance improvements for BeamHashIII (up to +2-3% dependent on GPU)
+* support Etchash algorithm for Ethereum classic algorithm after hardfork
+* significantly reduced stale shares percentage on Ethash algorithm, it will improve hashrate on pool side
+* added AMD solvers for Ethash and Etchash
+* reduced memory usage for Cortex 8GB solver (about 50MB)
+
