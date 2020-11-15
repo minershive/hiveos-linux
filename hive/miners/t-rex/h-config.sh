@@ -21,6 +21,17 @@ function miner_config_gen() {
 	[[ -z $TREX_URL ]] && echo -e "${YELLOW}TREX_URL is empty${NOCOLOR}" && return 1
 	[[ -z $TREX_PASS ]] && TREX_PASS="x"
 
+	local worker=
+	if [[ ! -z $TREX_WORKER ]]; then
+		worker=$TREX_WORKER
+	else
+		if [[ $TREX_USER_CONFIG =~ '"worker":' ]]; then
+			while read -r line; do
+				[[ $line =~ '"worker":' ]] && worker=`echo "{$line}" | jq -r '.worker'`
+			done <<< "$TREX_USER_CONFIG"
+		fi
+	fi
+
 	pools='[]'
 	local line=""
 	local url=""
@@ -35,7 +46,7 @@ function miner_config_gen() {
 	    fi
 
 	    pool=$(cat <<EOF
-		{"user": "$TREX_TEMPLATE", "url": "$url", "pass": "$TREX_PASS", "worker": "$TREX_WORKER" }
+		{"user": "$TREX_TEMPLATE", "url": "$url", "pass": "$TREX_PASS", "worker": "$worker" }
 EOF
 )
 
@@ -48,6 +59,7 @@ EOF
 	if [[ ! -z $TREX_USER_CONFIG ]]; then
 		while read -r line; do
 			[[ -z $line ]] && continue
+			[[ $line =~ '"worker":' ]] && continue
 			conf=`jq --null-input --argjson conf "$conf" --argjson line "{$line}" '$conf + $line'`
 		done <<< "$TREX_USER_CONFIG"
 	fi
