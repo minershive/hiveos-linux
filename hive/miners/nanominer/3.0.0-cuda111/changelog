@@ -1,0 +1,5 @@
+nanominer v3.0.0
+* Added support for Nvidia 30xx series of GPUs, use cuda11 version of package for them. Octopus (Conflux) performance is 38 MH/s on stock 3070.
+* Ethash and KawPoW algorithms are now supported too on Nvidia 30xx.
+* 8% performance increase on Nvidia 10xx series GPUs on Octopus algorithm.
+
