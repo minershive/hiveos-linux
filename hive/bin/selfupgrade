@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 . colors
 
+# pci.ids update source, otherwise download from web
+PCIIDS=/hive/etc/pci.ids
+
 [[ -f /hive-config/.DISKLESS_AMD && $(cat /proc/mounts | grep "/ " | awk '{print $1}') == tmpfs ]] && echo -e "${RED}Diskless rig. Selfupgrade restricted${NOCOLOR}" && exit 0
 
 #This will prevent asking interactive questions
@@ -115,19 +118,11 @@ if miner status > /dev/null; then
 		miner stop
 fi
 
-
-PCIIDS=/hive/etc/pci.ids
-if [[ -e $PCIIDS ]]; then
-	[[ $PCIIDS -nt /usr/share/misc/pci.ids ]] &&
-	echo -e "${CYAN}> Updating pci.ids to version `grep -m 1 -oP "Version: \K.*" $PCIIDS`${NOCOLOR}" &&
-	cp -f $PCIIDS /usr/share/misc/pci.ids
-else
-	# update pci.ids if older than 1 month
-	[[ $(( `stat -c %Y /usr/share/misc/pci.ids` + 30*24*3600 )) -lt `date +%s` ]] &&
-		echo -e "${CYAN}> Updating pci.ids${NOCOLOR}" &&
-		update-pciids
+# if local source is not present update pci.ids older than 1 month
+if [[ ! -e $PCIIDS && $(( `stat -c %Y /usr/share/misc/pci.ids` + 30*24*3600 )) -lt `date +%s` ]]; then
+	echo -e "${CYAN}> Updating pci.ids${NOCOLOR}"
+	update-pciids
 fi
-
 
 #Sometimes Ubuntu fails to update repos
 dpkg --configure -a || apt-get install -f -y # try to fix broken packages
@@ -239,6 +234,12 @@ export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all vari
 
 #update Grub
 check_grub
+
+# update pci.ids from local source
+if [[ -e $PCIIDS && $PCIIDS -nt /usr/share/misc/pci.ids ]]; then
+	echo -e "${CYAN}> Updating pci.ids to version `grep -m 1 -oP "Version: \K.*" $PCIIDS`${NOCOLOR}"
+	cp -f $PCIIDS /usr/share/misc/pci.ids
+fi
 
 #echo ------------------------------------------------------
 screen -wipe > /dev/null 2>&1 #Wipe possible dead screen
