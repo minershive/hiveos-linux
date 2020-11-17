@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
 
-
 SWITCH_OUTPUT_TO_MONITOR=1
-
 
 set -o pipefail
 
 #echo "Creating Xorg config"
 
+source /hive/etc/gpu.ids
 
 # disable glamregl extension as it often crashes X server
 [[ -f /usr/lib/xorg/modules/libglamoregl.so ]] &&
 	mv -f /usr/lib/xorg/modules/libglamoregl.so /usr/lib/xorg/modules/libglamoregl.so.disabled
 [[ -f /opt/amdgpu/lib/xorg/modules/libglamoregl.so ]] &&
 	mv -f /opt/amdgpu/lib/xorg/modules/libglamoregl.so /opt/amdgpu/lib/xorg/modules/libglamoregl.so.disabled
-
 
 
 #if [ ! -f $GPU_DETECT_JSON ]; then
@@ -35,17 +33,19 @@ convert_busid() {
 }
 
 
-gpu_detect="`lspci | grep -E "VGA|3D controller|Display controller"`"
+gpu_detect="`lspci | grep -E "$GPU_DETECT_STRING"`"
 
-amd_primary=`echo "$gpu_detect" | head -n 1 | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | wc -l`
-amd_busids=(`echo "$gpu_detect" | grep "Advanced Micro Devices" | grep -v "RS880" | grep -v "Stoney" | cut -d" " -f1`)
+amd_primary=`echo "$gpu_detect" | head -n 1 | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL" | wc -l`
+readarray -t amd_busids < <(echo "$gpu_detect" | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL" | cut -d" " -f1)
 #echo "AMD - ${amd_busids[@]}"
 
-nvidia_primary=`echo "$gpu_detect" | head -n 1 | grep "NVIDIA" | grep -v "nForce" |  wc -l`
-nvidia_busids=(`echo "$gpu_detect" | grep "NVIDIA" | grep -v "nForce" | cut -d" " -f1`)
+nvidia_primary=`echo "$gpu_detect" | head -n 1 | grep "NVIDIA" | grep -vE "$GPU_NVIDIA_INTERNAL" |  wc -l`
+readarray -t nvidia_busids < <(echo "$gpu_detect" | grep "NVIDIA" | grep -vE "$GPU_NVIDIA_INTERNAL" | cut -d" " -f1)
 #echo "NV - ${nvidia_busids[@]}"
 
 internal=`echo "$gpu_detect" | head -n 1 | grep -vE "NVIDIA|AMD"`
+#internal="`echo "$gpu_detect" | head -n 1 | grep -v "NVIDIA"`"
+#[[ "$internal" =~ "Advanced Micro Devices" && ! "$internal" =~ ($GPU_AMD_INTERNAL) ]] && internal=
 #echo "INTERNAL - $internal"
 
 
@@ -91,7 +91,7 @@ fi
 
 # add internal GPU only if it is primary or has connected monitor
 if [[ ! -z $internal && ( $SWITCH_OUTPUT_TO_MONITOR != 1 || "$internal" =~ $connected ) ]]; then
-	busid=`awk '{print $1}' <<< "$internal"`
+	busid=`echo "$internal" | awk '{print $1}'`
 	busid_dec=$(convert_busid $busid)
 
 	internal_driver="vesa" # default
@@ -99,6 +99,7 @@ if [[ ! -z $internal && ( $SWITCH_OUTPUT_TO_MONITOR != 1 || "$internal" =~ $conn
 	[[ $internal =~ "VMware" ]] && internal_driver="vmware" # 00:02.0 VGA compatible controller: VMware SVGA II Adapter
 	[[ $internal =~ "Device 1234:1111" ]] && internal_driver="vesa"
 	[[ $internal =~ "QXL" ]] && internal_driver="vga" #internal_driver="modesetting", with modesetting driver - OC will not work
+	[[ $internal =~ "Advanced Micro Devices" ]] && internal_driver="amdgpu"
 
 	if [[ ! -z $connected && "$internal" =~ $connected ]]; then
 		echo "Adding internal GPU $busid with \"$internal_driver\" driver, as the primary one"
