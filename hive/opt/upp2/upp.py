@@ -1,12 +1,14 @@
+#!/usr/bin/env python3
+
 # To run without install relative imports needs to match the module ones, which
 # is true when in 'src' directory, then: python3 -m upp.upp --help
 
 import click
 import tempfile
-from Registry import Registry
 from upp import decode
 import pkg_resources
 import os.path
+import sys
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 REG_CTRL_CLASS = 'Control\\Class\\{4d36e968-e325-11ce-bfc1-08002be10318}\\0000'
@@ -52,6 +54,12 @@ def _get_pp_data_from_registry(reg_file_path):
                                               delete=False)
     msg = ' Soft PowerPlay data from {}\n  key:value > {}\n'
     try:
+        from Registry import Registry
+    except ImportError as e:
+        print('ERROR: -f/--from-registry option requires python-registry',
+              'package, consider installing it with PIP.')
+        sys.exit(-2)
+    try:
         reg = Registry.Registry(reg_file_path)
         key = reg.open(REG_KEY)
         data_type = key.value(REG_KEY_VAL).value_type_str()
@@ -66,6 +74,7 @@ def _get_pp_data_from_registry(reg_file_path):
 
     return tmp_pp_file.name
 
+
 def _check_file_writeable(filename):
     if os.path.exists(filename):
         if os.path.isfile(filename):
@@ -73,8 +82,10 @@ def _check_file_writeable(filename):
         else:
             return False
     pdir = os.path.dirname(filename)
-    if not pdir: pdir = '.'
+    if not pdir:
+        pdir = '.'
     return os.access(pdir, os.W_OK)
+
 
 def _write_pp_to_reg_file(filename, data, debug=False):
     if _check_file_writeable(filename):
@@ -86,10 +97,12 @@ def _write_pp_to_reg_file(filename, data, debug=False):
         if debug:
             print(reg_pp_data)
         decode._write_pp_tables_file(filename, reg_pp_data.encode('utf-16'))
-        print('Written {} Soft PowerPlay bytes to {}'.format(len(data), filename))
-    else: 
+        print('Written {} Soft PowerPlay bytes to {}'.format(len(data),
+                                                             filename))
+    else:
         print('Can not write to {}'.format(filename))
     return 0
+
 
 @click.group(context_settings=CONTEXT_SETTINGS)
 @click.option('-p', '--pp-file', help='Input/output PP table binary file.',
@@ -148,11 +161,13 @@ def cli(ctx, debug, pp_file, from_registry):
     ctx.obj['PPBINARY'] = pp_file
     ctx.obj['FROMREGISTRY'] = from_registry
 
+
 @click.command(short_help='Show UPP version.')
 def version():
     """Show UPP version."""
     version = pkg_resources.require("upp")[0].version
     click.echo(version)
+
 
 @click.command(short_help='Dumps all PowerPlay parameters to console.')
 @click.option('--raw/--no-raw', '-r/ ', help='Show raw binary data.',
@@ -246,12 +261,13 @@ def get(ctx, variable_path_set):
 
     return 0
 
+
 @click.command(short_help='Set value to PowerPlay parameter(s).')
 @click.argument('variable-path-set', nargs=-1, required=True)
 @click.option('-w', '--write', is_flag=True,
               help='Write changes to PP binary.', default=False)
-@click.option('-t', '--to-registry', help='Output to Windows registry .reg file.',
-              metavar='<filename>')
+@click.option('-t', '--to-registry', metavar='<filename>',
+              help='Output to Windows registry .reg file.')
 @click.pass_context
 def set(ctx, variable_path_set, to_registry, write):
     """Sets value to one or multiple PP parameters
@@ -266,11 +282,11 @@ def set(ctx, variable_path_set, to_registry, write):
     The PP tables will not be changed unless additional
     --write option is set.
 
-    Optionally, if -t/--to-registry output is specified an additional Windows registry
-    format file with a '.reg' extension will be generated, for example:
+    Optionally, if -t/--to-registry output is specified, an additional Windows
+    registry format file with '.reg' extension will be generated, for example:
 
     \b
-        upp set /PowerTuneTable/TDP=75 /SclkDependencyTable/7/Sclk=107000 --to-registry=test 
+        upp set /PowerTuneTable/TDP=75 --to-registry=test
 
     will produce the file test.reg in the current working directory.
     """
@@ -300,7 +316,7 @@ def set(ctx, variable_path_set, to_registry, write):
         decode.set_value(pp_file, pp_bytes, set_list[:-1], set_list[-1],
                          data_dict=data, write=False, debug=debug)
     if write:
-        print("Commiting changes to '{}'.".format(pp_file))
+        #print("Commiting changes to '{}'.".format(pp_file))
         decode._write_pp_tables_file(pp_file, pp_bytes)
     else:
         print("WARNING: Nothing was written to '{}'.".format(pp_file),
@@ -316,6 +332,7 @@ cli.add_command(dump)
 cli.add_command(get)
 cli.add_command(set)
 cli.add_command(version)
+
 
 def main():
     cli(obj={})()

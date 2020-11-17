@@ -686,8 +686,11 @@ def set_value(pp_bin_file, pp_tbl_bytes, var_path, new_value,
         off = current_data['offset']
         d_type = current_data['type']
         d_size = struct.calcsize(d_type)
-        msg = 'Changing {} from {} to {} at 0x{:03x}'
-        print(msg.format(var_pth_str, curr_val, new_value, off))
+        #msg = 'Changing {} from {} to {} at 0x{:03x}'
+        #print(msg.format(var_pth_str, curr_val, new_value, off))
+        if curr_val != new_value:
+            msg = 'Changing {} from {} to {}'
+            print(msg.format(var_pth_str, curr_val, new_value))
     else:
         print('Can\'t decode {}'.format(var_path))
     bytes_value = struct.pack(d_type, new_value)
