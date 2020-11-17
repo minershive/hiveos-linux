@@ -232,7 +232,7 @@ function get {
 	fi
 
 	echo -e "\n${CYAN}> Getting image size${NOCOLOR}"
-	if [[ $nfs -eq 1 || $smb -eq 1 ]]; then
+	if [[ $nfs -eq 1 || $smb -eq 1 || -e "$url" ]]; then
 		archsize=`stat --format=%s "$url" | awk '{print int($1/1000000)}'`
 	else
 		archsize=`curl -s --head "$url" | grep -ioP "content-length:[^0-9]+\K[0-9]+" | awk '{print int($1/1000000)}'`
@@ -562,7 +562,7 @@ function start {
 
 function usage {
 	local code=$1
-	echo -e "${CYAN}Usage: hive-replace [option] <Path or URL to ZIP/XZ file with Hive OS image>${NOCOLOR}"
+	echo -e "${CYAN}Usage: hive-replace [option] <Full Path or URL to ZIP/XZ file with Hive OS image>${NOCOLOR}"
 	echo -e
 	echo -e "Options:"
 	echo -e "${GREEN}  -l|--list|--list=NUM    ${NOCOLOR}List images from Hive server and select for install"
@@ -617,19 +617,24 @@ if [[ "`pstree -As $$`" != *-screen-* ]] && screen -ls replace 2>/dev/null | gre
 fi
 
 
+if [[ $thishive -eq 1 || " $@ " =~ " --safe " ]]; then
+	if [[ "`pstree -As $$`" != *-screen-* ]]; then
+		echo "Starting session"
+		screen -mS replace $0 $@ && exit
+		echo -e "${YELLOW}Session start failed. Running in common way...${NOCOLOR}"
+	else
+		# set exit handler to pause at the end
+		trap exit_handler EXIT
+	fi
+fi
+
+
 listparams=
 
 for param in "$@"; do
 	case "$param" in
 		--safe)
-			if [[ "`pstree -As $$`" != *-screen-* ]]; then
-				echo "Starting session"
-				screen -mS replace $0 $@ && exit
-				echo -e "${YELLOW}Session start failed. Running in common way...${NOCOLOR}"
-			else
-				# set exit handler to pause at the end
-				trap exit_handler EXIT
-			fi
+			# ignore it here
 		;;
 		--force)
 			force=1
