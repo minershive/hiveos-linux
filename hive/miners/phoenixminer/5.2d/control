@@ -1,0 +1,7 @@
+Package: hive-miners-phoenixminer-5.2d
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - PhoenixMiner v5.2d

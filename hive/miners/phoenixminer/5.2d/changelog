@@ -1,0 +1,5 @@
+PhoenixMiner 5.2d
+* added support for -daglim for AMD Fiji, Tonga, and Baffin cards with 4GB VRAM, so you will be able to use them some time beoynd epoch 381
+* assed new kernels for 4GB AMD cards with higher hashrate when -daglim is in effect
+* added -daglim and -rxboost support in Linux. The default -daglim value in Linux is 4064 for older drivers (before 19.50), and 4076 for the newer drivers
+* added support for the latest AMD Linux drivers 20.40-1147286
