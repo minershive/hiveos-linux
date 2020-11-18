@@ -1,5 +1,16 @@
 PhoenixMiner 5.2d
+overall changes for 5.2a-5.2d
+* added new `-daglim` parameter to allow a few more weeks of work for 4 GB AMD GPUs with 4GB VRAM
+* added `-rxboost` parameter to boost the performance of GDDR5  based AMD cards; added memory straps support for AMD Vega cards, use `-straps` command-line option where -strap 1 lower level
+* AMD GPUs with >4GB RAM will now work without issues until DAG epoch 450
+* Nvidia memory timing (straps) option is improved and now is turned off during DAG generation to avoid any possible instability issues
+* option '-dagrestart' is set to 1 whenever '-daglimit' is active for 4GB AMD cards
+* added new kernels for 4GB AMD cards with higher hashrate when -daglim is in effect
+* many other improvements and fixes see ReleaseNotes.txt for full changelog
+
+changes for v5.2d
 * added support for -daglim for AMD Fiji, Tonga, and Baffin cards with 4GB VRAM, so you will be able to use them some time beoynd epoch 381
-* assed new kernels for 4GB AMD cards with higher hashrate when -daglim is in effect
+* added new kernels for 4GB AMD cards with higher hashrate when -daglim is in effect
 * added -daglim and -rxboost support in Linux. The default -daglim value in Linux is 4064 for older drivers (before 19.50), and 4076 for the newer drivers
 * added support for the latest AMD Linux drivers 20.40-1147286
+
