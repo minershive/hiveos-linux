@@ -49,22 +49,6 @@ function fix_sgminer_gm() {
 fix_sgminer_gm
 
 
-#sgminer-gm is deprecated...
-#miners_avail=("claymore" "claymore-z" "claymore-x" "ewbf" "ccminer" "ethminer" "sgminer" "sgminer-gm" "dstm" "bminer" "lolminer" "optiminer" "xmr-stak" "xmrig" "cpuminer-opt" "custom")
-#if ! printf '%s\n' "${miners_avail[@]}" | grep -xq $MINER ; then
-#	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
-#	message error "Unknown miner $MINER"
-#	exit 1
-#fi
-
-#if [[ ! -d /hive/miners/$MINER ]]; then
-#	echo -e "${RED}Unknown miner $MINER${NOCOLOR}"
-#	message error "Unknown miner $MINER"
-#	exit 1
-#fi
-
-
-
 ########################################################################################################################
 
 function kill_hanged() {
