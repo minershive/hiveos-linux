@@ -33,7 +33,6 @@ function miner_config_gen() {
 	for ((i=0; i<$host_cnt; i++)); do
 		#URL
 		local url="${LOLMINER_SERVER[$i]}:${LOLMINER_PORT[$i]}"
-		echo ${LOLMINER_PORT[$i]}
 		conf+="--pool $url\n"
 		# WALLET
 		conf+="--user $LOLMINER_TEMPLATE\n"
