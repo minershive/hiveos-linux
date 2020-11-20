@@ -1,0 +1,4 @@
+NanoMiner v3.1.0
+* performance improvements of Octopus algorithm (Conflux) on Nvidia GPUs, approx.: +4% on 10xx series, +18% on 16xx and 20xx series, +24% on 30xx series
+* added Verushash algorithm for VerusCoin support on CPUs with PCLMUL, AES and AVX hardware instructions supported
+* added initial support for new AMD RX 6800, 6800 XT and 6900 XT GPUs on Ethash and KawPoW algorithms
