@@ -1,8 +1,8 @@
 Package: hive-miners-xmrig-xmrigcc
-Version: 0.6-12
+Version: 0.6-13
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-xmrig-xmrigcc-2.8.3
+Depends: hive-miners-xmrig-xmrigcc-2.8.4
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - XMRig fork CPU miner for CN-family algos

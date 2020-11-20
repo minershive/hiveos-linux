@@ -1,0 +1,5 @@
+XMRigCC 2.8.4
+* added cn variant CXCHE algo (cn/cache_hash)
+* added parameter --force-autoconfig (config: "force-autoconfig": true) to force permanent cpu autoconfig, but it keeps manually disabled algos
+* added support for prior Haven offshore fork (cn-heavy/xhv)
+* added latest msr improvements for ryzen zen 2/3 based cpus when mining randomx algos
