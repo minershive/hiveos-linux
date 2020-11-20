@@ -1,0 +1,6 @@
+T-Rex 0.18.10
+* Add optional --no-strict-ssl parameter to disable certificate validation for SSL connections
+* Change --fork-at parameter syntax to the following:
+    Epoch number: <algo_name>=epoch:<epoch_number> (eg: --fork-at etchash=epoch:390 <-- use this one for upcoming ETC hardfork).
+    Block number: <algo_name>=block:<block_number> (eg: --fork-at x16rv2=block:6526421).
+    Time:  <algo_name>=time:<YYYY-MM-DDTHH:MM:SS>. Time must be set in UTC+0.
