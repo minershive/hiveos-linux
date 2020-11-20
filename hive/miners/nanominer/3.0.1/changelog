@@ -1,0 +1,2 @@
+nanominer v3.0.1
+* added dagSer option to serialize DAG generation on Octopus, Ethash and KawPoW algorithms. This is a workaround for some hardware specific issues, disabled by default
