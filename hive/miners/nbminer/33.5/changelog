@@ -1,0 +1,3 @@
+NBMiner v33.5
+* improved octopus hashrate: +90% on 16 20 30 series Nvidia GPUs, at least +100%  on all other GPUs
+
