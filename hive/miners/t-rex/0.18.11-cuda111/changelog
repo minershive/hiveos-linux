@@ -1,0 +1,4 @@
+T-Rex 0.18.11 (build for CUDA 11.1)
+* bug fixes:
+   - can't pair device with KEY error
+   - display GPU names when NVML library can't be loaded or disabled
