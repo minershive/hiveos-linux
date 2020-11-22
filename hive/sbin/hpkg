@@ -144,10 +144,31 @@ function install_miners_all() {
 	repover-touch
 }
 
+#------------------------------------------------------------------------------------------------------------------
+
+function check_packages() {
+	local exitcode=0
+	for package_name in `dpkg-query -f '${package} ${status}\n' -W | grep " half-" | cut -d" " -f1`; do
+		echo -e "${RED}> $package_name is broken${NOCOLOR}"
+		((exitcode++))
+	done
+	return $exitcode
+}
 
 #------------------------------------------------------------------------------------------------------------------
 
+function fix_packages() {
+	local exitcode
+	dpkg --configure -a
+	exitcode=$?
+	for package_name in `dpkg-query -f '${package} ${status}\n' -W | grep " half-" | cut -d" " -f1`; do
+		echo -e "${YELLOW}> Reinstalling broken package $package_name${NOCOLOR}"
+		apt install -y --reinstall $package_name || exitcode=$?
+	done
+	return $exitcode
+}
 
+#------------------------------------------------------------------------------------------------------------------
 
 
 if [[ $1 == "remove" && $2 == "miners" ]]; then
@@ -157,12 +178,18 @@ elif [[ $1 == "list" ]]; then
 elif [[ $1 == "getlist" ]]; then
 	getlist $2
 elif [[ $1 == "update" ]]; then
-	update || exit $?
+	update
 elif [[ $1 == "install" && $2 == "miners" ]]; then
 	install_miners_all $3
+elif [[ $1 == "check" ]]; then
+	check_packages
+elif [[ $1 == "fix" ]]; then
+	fix_packages
 else
 	echo -e "${CYAN}Hive Package Manager${NOCOLOR}
 ${YELLOW}update${NOCOLOR} - update packages list from repository
+${YELLOW}check${NOCOLOR} - check for broken packages
+${YELLOW}fix${NOCOLOR} - reinstall broken packages
 ${YELLOW}list${NOCOLOR} - list all installed hive packages
 ${YELLOW}list miners${NOCOLOR} - list only miners packages
 ${YELLOW}getlist${NOCOLOR} - list without versions
@@ -173,4 +200,4 @@ ${YELLOW}install miners${NOCOLOR} - install all available miners, useful for pre
 ${YELLOW}install miners [ethminer]${NOCOLOR} - install specific miner"
 fi
 
-exit 0
+exit

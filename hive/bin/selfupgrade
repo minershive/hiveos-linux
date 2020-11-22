@@ -124,8 +124,9 @@ if [[ ! -e $PCIIDS && $(( `stat -c %Y /usr/share/misc/pci.ids` + 30*24*3600 )) -
 	update-pciids
 fi
 
-#Sometimes Ubuntu fails to update repos
-dpkg --configure -a || apt-get install -f -y # try to fix broken packages
+# Sometimes Ubuntu fails to update repos
+#dpkg --configure -a
+hpkg fix
 dexitcode=$? # we do not check it here. only return on exit to show a problem
 
 hpkg update
