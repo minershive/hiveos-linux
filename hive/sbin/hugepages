@@ -2,7 +2,7 @@
 
 . colors
 
-VERS="0.4.2"
+VERS="0.5.0"
 
 HUGES_RX=1168
 HUGES_CN=128
@@ -81,10 +81,20 @@ randomx_ryzen_boost(){
             apt install -y msr-tools || return
         fi
         [[ `lsmod | grep msr` == "" ]] && modprobe msr || return
-        wrmsr -a 0xc0011022 0x510000
-        wrmsr -a 0xc001102b 0x1808cc16
-        wrmsr -a 0xc0011020 0
-        wrmsr -a 0xc0011021 0x40
+        if cat /proc/cpuinfo | grep "cpu family[[:space:]]:[[:space:]]25" > /dev/null;
+        then
+            echo -e "${GREEN}[INFO]${NOCOLOR} Detected Ryzen (Zen3)"
+            wrmsr -a 0xc0011020 0x4480000000000
+            wrmsr -a 0xc0011021 0x1c000200000040
+            wrmsr -a 0xc0011022 0xc000000401500000
+            wrmsr -a 0xc001102b 0x2000cc14
+        else
+            echo -e "${GREEN}[INFO]${NOCOLOR} Detected Ryzen (Zen1/Zen2)"
+            wrmsr -a 0xc0011020 0
+            wrmsr -a 0xc0011021 0x40
+            wrmsr -a 0xc0011022 0x1510000
+            wrmsr -a 0xc001102b 0x2000cc16
+        fi
         echo -e "${GREEN}[INFO]${NOCOLOR} AMD Ryzen RandomX boost applied"
     fi
 }
@@ -114,7 +124,7 @@ huge_cur_print(){
 huge_cpu_print(){
     local AES=`lscpu | grep -c "aes"`
     echo -n -e "Your system has ${YELLOW}$CPU_NUMA${NOCOLOR} NUMA node(s) and ${YELLOW}$CPU_CORE${NOCOLOR} CPUs cores with "
-    [[ $AES == 1 ]] && echo -e "${GREEN}with AES support${NOCOLOR}" || echo -e "${RED}no AES support${NOCOLOR}"
+    [[ $AES == 1 ]] && echo -e "${GREEN}AES support${NOCOLOR}" || echo -e "${RED}no AES support${NOCOLOR}"
 }
 
 huge_max_print(){
