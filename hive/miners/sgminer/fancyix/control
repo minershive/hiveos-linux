@@ -1,8 +1,8 @@
 Package: hive-miners-sgminer-fancyix
-Version: 0.6-20
+Version: 0.6-21
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-sgminer-fancyix-5.6.1.3.b7a
+Depends: hive-miners-sgminer-fancyix-5.6.1.3.b7b
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - SGminer fork from fancyIX
