@@ -1,0 +1,10 @@
+SRBMiner-Multi v0.5.6
+* Added algorithm 'etchash' (Ethereum Classic) , fee 0.65%
+* Added algorithm 'randomhash2' (PascalCoin) for CPU mining, fee 0.85%
+* Added algorithm 'scryptn2' (Verium, Bitcoin Subsidium) for CPU mining, fee 0.85% (run as admin/root for more hashrate)
+* GPU tweaking/boosting now available on both Windows & Linux
+* Extended GPU tweaks support with R9 280/290/380/390 cards
+* Added parameter '--gpu-tweak-unsupported'
+* Added parameter '--gpu-boost'
+* Added parameter '--msr-use-preset'
+* Bug fixes

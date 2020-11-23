@@ -1,0 +1,5 @@
+Parameters:
+
+"cpu_threads"					: how many cpu threads to use for mining
+"cpu_affinity"					: thread affinity bitmask (can be digit, or hex string)
+"cpu_priority"					: miner process priority, 1-5 where 5 is highest

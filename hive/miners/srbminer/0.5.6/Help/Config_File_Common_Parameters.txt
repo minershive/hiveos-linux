@@ -1,0 +1,10 @@
+Parameters:
+
+"algorithm" 					: algorithm name
+"disable_cpu"					: disable cpu mining, true or false
+"disable_gpu"					: disable gpu mining, true or false
+"giveup_limit" 					: number, how many times to try connecting to a pool before switching to next pool from pools.txt. If set to 0 miner will quit and won't retry connecting.
+"timeout" 						: time, when is a connection to a pool treated as timed out
+"retry_time" 					: time, how much to wait before trying to reconnect to a pool
+"reboot_script_gpu_watchdog" 	: filename to a batch file in miner directory, if set it turns off built in miner reset procedure on gpu failure, and instead runs this script
+"main_pool_reconnect" 			: time,(minimum is 3 minutes or 180 sec), how often to try to reconnect back to the main pool. Default is 10 minutes.
