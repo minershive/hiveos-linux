@@ -1,0 +1,22 @@
+lolMiner v1.16a
+* Fixed performance regression on Nvidia cards
+lolMiner v1.16
+* Added support of Ethash and Beam Hash III for RX 6000 generation of GPUs
+* All supported algorithms now show the share difficulty and have best share statistics.
+* New feature: use --rebuild-defect n to trigger a rebuild of DAG if a GPU produced n defect shares on the current one. Default is 3, use 0 to deactivate this feature.
+* New feature: Use --workmulti n to modify the amount of Ethash work a GPU does per batch. Higher values will cause less CPU load but more stale shares, lower values will give less stale shares but higher CPU load. Performance may vary for different values. Default is 128.
+* New feature: if Ethash pool disconnects within 2 seconds from connection attempt (immediate reconnect), then the other stratum mode is tested to login.
+* New feature: AMD Vega and newer cards now display memory temperature in statistics & api (only visible if there is at least one such GPU in the rig).
+* Default ethstratum changed from ETHV1 to ETHPROXY for better pool compatibility.
+* Stratum pool addresses now understand "stratum+tcp://", "stratum+ssl://" and "ssl://" prefixes (turning on or of ssl / tls automatically) for better compatibility with existing configurations.
+* Slightly reduced CPU load when mining Ethash
+* New coloring scheme with more friendly colors. For terminals that do not have rgb colors (e.g. shellinabox) use --basecolor to restrict to a simpler set. Use --nocolor to deactivate coloring completely.
+* Bugs gixes:
+    - Cards may crash when switching from ZIL cache back to normal mining.
+    - Wavy hashrate - especially for rigs with many AMD Navi GPUs.
+    - Watchdog not called when a GPU is stuck & extremely high CPU load on crashed GPU. (1)
+    - Hashrate reporting not working on some pools (e.g. sparkpool)
+    - Miner can crash after trying to reconnect to same pool over 5 minutes.
+    - Miner crashes when mixing TLS and non-TLS pools for fail-over.
+
+(1) Note on watchdog use: When the watchdog script is called the miner will stop working on the other cards. If this is not wished use --disablewatchdog. Please make sure the script can be executed with the current user rights / does password-less operations.
