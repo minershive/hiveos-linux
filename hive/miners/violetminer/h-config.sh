@@ -122,4 +122,5 @@ function miner_config_gen() {
 
   local nv_version=`nvidia-smi --help | head -n 1 | awk '{print $NF}' | sed 's/v//' | cut -d '.' -f 1`
   [[ $nv_version -lt 455 ]] && message warning "If you are experiencing crashes, try to update Nvidia driver by running \"nvidia-driver-update 455\""
+  exit 0
 }
