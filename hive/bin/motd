@@ -4,6 +4,18 @@
 
 echo ""
 
+
+[[ `id -u 2>/dev/null` -eq 0 ]] && NEEDSUDO= || NEEDSUDO="sudo"
+
+
+# check for running hive-replace session
+if $NEEDSUDO pgrep -f hive-replace >/dev/null && $NEEDSUDO timeout 1 screen -ls replace >/dev/null; then
+	echo "${BYELLOW}Hive-replace session is running, resuming${NOCOLOR}"
+	read -t 2 -n 1
+	$NEEDSUDO screen -x -S replace
+fi
+
+
 # old "classic" motd
 if [[ $1 == "old" ]]; then
 	echo -n `uname -sr`
@@ -56,7 +68,8 @@ MEM_VERY_HIGH_TEMP=100
 
 WATCH_REFRESH=2
 
-[[ -f $RIG_CONF ]] && . $RIG_CONF
+[[ -f $RIG_CONF ]] && source $RIG_CONF
+[[ -e /hive/etc/gpu.ids ]] && source /hive/etc/gpu.ids
 
 set -o pipefail
 SEP=" · "
@@ -366,10 +379,10 @@ gpu_info() {
 		local output=
 		[[ ! -z $mem ]] && mem+=" "
 		[[ $show_vbios -eq 1 && ! -z $vbios ]] && vbios="($vbios)" || vbios=
-		if [[ $brand == "nvidia" || ( $name =~ (NVIDIA|GeForce) && ! $name =~ nForce ) ]]; then
+		if [[ $brand == "nvidia" || ( $name =~ (NVIDIA|GeForce) && ! $name =~ (${GPU_NVIDIA_INTERNAL:-nForce}) ) ]]; then
 			output=`printf "%b%2s%b" "$BBLUE" "$gpu_idx" "$NOCOLOR $busid $GREEN$name$NOCOLOR $mem$vbios"`
 			((gpu_idx++))
-		elif [[ $brand == "amd" || ( $name =~ (Radeon|RX) && ! $name =~ (RS880|Stoney) ) ]]; then
+		elif [[ $brand == "amd" || ( $name =~ (Radeon|RX) && ! $name =~ (${GPU_AMD_INTERNAL:-RS880|Stoney}) ) ]]; then
 			output=`printf "%b%2s%b" "$BBLUE" "$gpu_idx" "$NOCOLOR $busid $RED$name$NOCOLOR $mem$vbios"`
 			((gpu_idx++))
 		else
@@ -535,13 +548,11 @@ conf_miners_array() {
 }
 
 
-need_sudo=`id -u 2>/dev/null`
 run_miners_array() {
 	local -n arr=$1
 	arr=()
-	[[ $need_sudo -eq 0 ]] && local sudo= || local sudo="sudo"
 	local windows
-	windows=`timeout 1 ${sudo} screen -S miner -Q windows | tail -n 1` || return 1
+	windows=`timeout 1 $NEEDSUDO screen -S miner -Q windows | tail -n 1` || return 1
 	readarray -t windows < <( echo "${windows//  /$'\n'}" )
 	local win
 	for win in "${windows[@]}"
@@ -552,7 +563,6 @@ run_miners_array() {
 
 
 miners_info() {
-	#local scr=`sudo screen -S miner -Q windows | tail -n 1`
 	#echo "Miners: $WHITE${scr//(L)/ -}$NOCOLOR"
 	[[ -e $WALLET_CONF ]] && . $WALLET_CONF
 	local run_miners

@@ -11,7 +11,7 @@ if [ $0 = "sh" ] || [ $0 = "bash" ]; then
 	exit 1
 fi
 
-
+DIR=`pwd`
 SCRIPT_PATH=`dirname $0`
 SCRIPT_NAME=`basename $0`
 cd $SCRIPT_PATH
@@ -25,7 +25,7 @@ HIVE_URL=http://download.hiveos.farm
 STABLE_URL=$HIVE_URL/latest/
 VEGA_URL=$HIVE_URL/vega/
 BETA_URL=$HIVE_URL/beta/
-URL_MASK="^http.*hiveos-.*\.(zip|xz)$"
+URL_MASK="^(http|ftp|https)://.*hiveos-.*\.(zip|xz)$"
 
 # images archive
 ARCHIVE_URL=$HIVE_URL/history/
@@ -441,21 +441,17 @@ function prepare {
 	cp $myself $TMPDIR > /dev/null 2>&1
 	chmod +x $TMPDIR/$SCRIPT_NAME > /dev/null 2>&1
 
-	mount --bind /proc $TMPDIR/proc
-	mount --bind /sys $TMPDIR/sys
-	mount --bind /dev $TMPDIR/dev
-
-	#create conf for second part
+	# create conf for second part
 	echo "wr=1" > $TMPDIR/replace.conf
 	echo "archname=$archname" >> $TMPDIR/replace.conf
 	echo "root_dev=$DISK_NAME" >> $TMPDIR/replace.conf
 	echo "conf_loop=$conf_loop" >> $TMPDIR/replace.conf
 	echo "conf_part=${DISK_PART::-1}1" >> $TMPDIR/replace.conf
 
-	#chroot to temp root
-	mount --bind /proc $TMPDIR/proc
-	mount --bind /sys $TMPDIR/sys
-	mount --bind /dev $TMPDIR/dev
+	# chroot to temp root
+	mount --rbind /proc $TMPDIR/proc
+	mount --rbind /sys $TMPDIR/sys
+	mount --rbind /dev $TMPDIR/dev
 	sync
 	cd $TMPDIR
 	exec chroot . /bin/bash /$SCRIPT_NAME
@@ -562,7 +558,7 @@ function start {
 
 function usage {
 	local code=$1
-	echo -e "${CYAN}Usage: hive-replace [option] <Full Path or URL to ZIP/XZ file with Hive OS image>${NOCOLOR}"
+	echo -e "${CYAN}Usage: hive-replace [option] <Path or URL to ZIP/XZ file with Hive OS image>${NOCOLOR}"
 	echo -e
 	echo -e "Options:"
 	echo -e "${GREEN}  -l|--list|--list=NUM    ${NOCOLOR}List images from Hive server and select for install"
@@ -657,11 +653,12 @@ for param in "$@"; do
 		--hash=*)
 			farm="${param#*=}"
 		;;
-		http*//*hive*)
+		https://*hive*|http://*hive*|ftp://*hive*)
 			check_packages
 			get_image_from_url "$param" "this" || exit
 		;;
-		*hive*zip)
+		*hive*.xz|*hive*.zip)
+			[[ ! -e "$param" && -e "$DIR/$param" ]] && param="$DIR/$param"
 			url=$( url_decode "$param" )
 		;;
 		-l|--list)
