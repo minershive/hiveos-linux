@@ -1,0 +1,7 @@
+SRBMiner-Multi v0.5.7
+* added algorithm 'curvehash' (Curvehashcoin) for CPU mining, fee 0.85%
+* added support for older AMD cards (tahiti, pitcairn) on most of the algorithms
+* removed 'm7mv2' algorithm
+* removed parameter '--gpu-tweak-unsupported' because it was useless
+* small fixes
+
