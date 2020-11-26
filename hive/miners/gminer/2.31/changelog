@@ -1,0 +1,9 @@
+Gminer v2.31
+* fixed bug due miner sent stale shares on all algorithms (this fix should significantly decrease stale share percentage on all algorithms)
+* implemented unique mechanism that minimize stale shares on Ethash/Etchash algorithm (~+1% accepted shares to total accepted share count)
+* significant performance improvement for Ethash/Etchash algorithm on AMD cards in OC mode
+
+Note:
+Remember GMiner supports Ethash/Etchash algorithms on Nvidia and AMD cards
+Supports ETC hardfork (use --algo etchash for auto-switch)
+
