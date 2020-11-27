@@ -1,0 +1,3 @@
+PhoenixMiner 5.3b
+* added support for the new ETCHash algorithm that will be used by the ETC blockchain from Nov 28, 2020. 
+  If you want to mine ETC, it is recommended to add '-coin etc' to your command-line, or 'COIN: etc' to your epools.txt file.
