@@ -1,0 +1,4 @@
+NanoMiner v3.1.2 CUDA 10.0 build
+* octopus algorithm (Conflux) performance improvements for Nvidia GPUs: +1% performance improvement on Pascal arch (10xx); +10% performance improvement on Turing arch (16xx, 20xx); +1.5% performance improvement on Ampere arch (30xx)
+* Nicehash support was added for Octopus algorithm
+
