@@ -1,0 +1,5 @@
+Gminer v2.33
+* fixed critical bug caused miner restarts when running under watchdog. This bug appears in v2.30 and v2.31
+
+Gminer v2.32
+* fixed "out of memory" error for Ethash on Nvidia rigs
