@@ -1,0 +1,2 @@
+TT-Miner v6.1.0
+* added support ETC hardfork use -coin ETC to the command line. Miner automatically use ETCHASH after the fork
