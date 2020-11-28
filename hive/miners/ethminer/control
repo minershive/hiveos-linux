@@ -1,5 +1,5 @@
 Package: hive-miners-ethminer
-Version: 0.6-32
+Version: 0.6-33
 Section: base
 Priority: optional
 Architecture: all

@@ -40,6 +40,8 @@ else
 	[[ $ETHMINER_FORK == "zilminer" ]]    && algo="zilliqahash"
 	[[ $ETHMINER_FORK == "teominer" ]]    && algo="tethashv1"
 
+        [[ $(cat /run/hive/miners/ethminer/ethminer.conf | grep -E "\-\-etchash|\-\-ecip1099") ]] && algo="etchash"
+
 	local stats_detail=`echo '{"id":0,"jsonrpc":"2.0","method":"miner_getstatdetail"}' | nc -w $API_TIMEOUT localhost $MINER_API_PORT | jq '.result'`
 	if [[ $? -ne 0 || -z $stats_detail || $stats_detail == "null" ]]; then
 		local bus_numbers=[]
