@@ -1,0 +1,2 @@
+NBMiner v34.0
+* improved ethash hashrate on Nvidia 10 series GPUs，3% higher hashrate under same PowerLimit, or same hashrate with 5%-10% lower PowerLimit
