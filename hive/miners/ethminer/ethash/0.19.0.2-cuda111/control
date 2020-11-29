@@ -1,5 +1,5 @@
 Package: hive-miners-ethminer-ethash-0.19.0.2-cuda111
-Version: 0.6-01
+Version: 0.6-02
 Section: base
 Priority: optional
 Architecture: all
