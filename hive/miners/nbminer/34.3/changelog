@@ -1,0 +1,7 @@
+NBMiner v34.3
+* fixed critical error in etchash while swiching epoch, ETC miners should upgrade to this version
+
+NBMiner v34.2
+* reduced stale shares ratio on ethash
+
+
