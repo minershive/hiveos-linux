@@ -1,0 +1,34 @@
+You can mine up to 4 different algorithms at the same time.
+Different combinations are available:
+
+- Mine 4 different algorithms on the same GPU
+- Mine 4 different algorithms on distinct GPU's
+- Mine 4 different algorithms mixed CPU+GPU
+
+If an algorithm can't be mined on a GPU device, it will only be mined on CPU.
+
+There are 4 job handling modes available for you when mining multiple algorithms, and they can be set with parameter '--multi-algorithm-job-mode'
+
+0: no redirect
+1: redirect always to a0
+2: redirect to next available algorithm
+3: work on a1 jobs only when a0 doesn't have anything to work on
+
+Job handling is available both to CPU and GPU mined algorithms.
+It is very adviseable to use parameter '--enable-workers-ramp-up', to avoid a potential system crash when all the workers try to allocate their resources at the same time.
+
+
+What does this do ?
+
+A quick example is the best way to understand :
+
+You set two algorithms to mine, for example algorithm 0 to run on 2 GPU's and algorithm 1 on 4 GPU's.
+
+If for some reason the pool you are mining on algorithm 1 disconnects (and you did not define failover pools), the GPU's that were mining algorithm 1 would now be idling, right?
+Well, SRBMiner can take over jobs from algorithm 0 and work on them with those GPU's that would otherwise be idling, until the pool for algorithm 1 becomes available again!
+
+After connecting back to algorithm 1 pool, the 4 GPU's will return back and continue working on jobs for algorithm 1!
+
+Notice:
+There is a simple rule for all multi algorithm aware parameters : separate algorithm settings with ';' and things within a specific algorithm with '!'
+You can set multi algorithm mining only with cmd parameters, configuration files can set only 1 algorithm.

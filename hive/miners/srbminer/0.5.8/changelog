@@ -1,0 +1,4 @@
+SRBMiner-Multi v0.5.8
+* increased hashrate on 'curvehash' algorithm ~ 10-13%
+* added possibility to dual mine Ethash+Zil, Etchash+Zil
+* fixed some issues
