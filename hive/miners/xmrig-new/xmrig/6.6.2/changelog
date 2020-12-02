@@ -1,0 +1,5 @@
+XMRig v6.6.2
+* optimized JIT compiler
+* fixed RandomX init when switching to other algo and back
+
+
