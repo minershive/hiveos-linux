@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
 
-WAKEALARM_TIMEOUT=30 #default value
-CMD="$1"
+WAKEALARM_TIMEOUT=30 # default value
+WATCHDOGS=("watchdog-opendev" "hl340" "watchdoginua" "watchdog-octofan" "srrv2" "utility.py")
 
-if [[ "$CMD" == "-h" || "$CMD" == "--help" ]]; then
+
+if [[ $1 == "-h" || $1 == "--help" ]]; then
 	. colors
 	echo -e "Reboots or shutdowns the system using sysrq"
 	echo -e "Usage:"
@@ -15,20 +16,27 @@ if [[ "$CMD" == "-h" || "$CMD" == "--help" ]]; then
 	exit 0
 fi
 
-if [[ "$CMD" == "wakealarm" && ! -e /sys/class/rtc/rtc0/wakealarm ]]; then
+if [[ $1 == "wakealarm" && ! -e /sys/class/rtc/rtc0/wakealarm ]]; then
 	message warn "wakealarm is not supported by this system"
 	exit 1
 fi
 
-if [[ -z "$CMD" && -e "$RIG_CONF" && -e /sys/class/rtc/rtc0/wakealarm ]]; then
-	POWERCYCLE=
-	source $RIG_CONF
-	[[ "$POWERCYCLE" == "1" ]] && CMD="wakealarm"
-fi
 
-#Do not try to stop miner here. Sometimes it hangs and prevents rig from rebooting
-#screen -S agent -X quit
+POWERCYCLE=
+# include POWERCYCLE only if it is supported
+[[ -z $1 && -e $RIG_CONF && -e /sys/class/rtc/rtc0/wakealarm ]] && source $RIG_CONF
+
+
+# Do not try to stop miner here. Sometimes it hangs and prevents rig from rebooting
 #miner stop
+
+
+# safely stop install to prevent database corruption
+need_wait=0
+killall -s INT apt 2>/dev/null && ((need_wait++))
+killall -s INT apt-get 2>/dev/null && ((need_wait++))
+killall -s INT dpkg 2>/dev/null && ((need_wait++))
+[[ $need_wait -gt 0 ]] && apt-wait 120
 
 #unRaw      (take control of keyboard back from X),
 # tErminate (send SIGTERM to all processes),
@@ -39,44 +47,46 @@ fi
 #‘o’ – Shutdown the system immediately.
 #‘t’ – Output a list of current tasks and their information to the console.
 
-#Enables sysrq
-echo 1 > /proc/sys/kernel/sysrq
-#sync
-echo s > /proc/sysrq-trigger
 
-#mount -o remount,ro /hive-config
-#umount /hive-config
-echo u > /proc/sysrq-trigger
-
-if [[ "$CMD" == "wd" ]]; then
-	echo "Trying reset with watchdog"
-	/hive/opt/opendev/watchdog-opendev reset
-	/hive/opt/qinheng/hl340 reset
-	sleep 1
-	echo "Rebooting"
-	echo b > /proc/sysrq-trigger
-elif [[ "$CMD" == "shutdown" ]]; then
-	#stop coolbox wathdog, to shutdown rig
-	if [[ `lsusb -v -d 10c4:ea60 | grep iSerial | awk '{print $3}'` == 'COOLBOX_AUTOFAN' ]]; then
-		echo `/hive/opt/coolbox/coolbox --shutdown`
-	fi
-	echo "Shutting down"
-	echo o > /proc/sysrq-trigger
-elif [[ "$CMD" == "wakealarm" ]]; then
-	[[ ! -z "$2" ]] && WAKEALARM_TIMEOUT="$2"
-	echo "Shutting down, setting wakealarm to $WAKEALARM_TIMEOUT seconds"
-	echo 0 > /sys/class/rtc/rtc0/wakealarm
-	echo +$WAKEALARM_TIMEOUT > /sys/class/rtc/rtc0/wakealarm
-	echo o > /proc/sysrq-trigger
-else
-	echo "Rebooting"
-	echo b > /proc/sysrq-trigger
+echo "> Mounting filesystems read-only"
+need_remount=0
+sync
+umount -f /hive-config && mount -n -o ro /hive-config || ((need_remount++))
+mount -f -o remount,ro / || ((need_remount++))
+if [[ $need_remount -gt 0 ]]; then
+	echo "> Remounting failed, using SysRq"
+	echo 1 > /proc/sys/kernel/sysrq # enable
+	echo s > /proc/sysrq-trigger # sync
+	echo u > /proc/sysrq-trigger # umount
 fi
 
-# just in case sysrq does not work
-watchdogs=("watchdog-opendev" "hl340" "watchdoginua" "watchdog-octofan" "srrv2" "WatchDogUtility/src/utility.py")
-for wd in "${watchdogs[@]}"; do
-	pkill -9 -f $wd #&& echo "$wd stopped"
-done
+sleep 1
 
-reboot -f
+# stop hw watchdogs pings
+killall -s 9 ${WATCHDOGS[@]} 2>/dev/null
+
+if [[ $1 == "shutdown" || $1 == "wakealarm" || $POWERCYCLE -ne 0 ]]; then
+	if [[ $1 != "shutdown" ]]; then
+		[[ ! -z $2 ]] && WAKEALARM_TIMEOUT=$2
+		echo "> Setting wakealarm to $WAKEALARM_TIMEOUT seconds"
+		echo 0 > /sys/class/rtc/rtc0/wakealarm
+		echo +$WAKEALARM_TIMEOUT > /sys/class/rtc/rtc0/wakealarm
+	fi
+	echo "> Shutting down"
+	sleep 1
+	if [[ $2 == "fast" ]]; then
+		echo 1 > /proc/sys/kernel/sysrq # enable
+		echo o > /proc/sysrq-trigger # poweroff
+	fi
+	poweroff # -f
+else
+	if [[ $1 == "wd" ]]; then
+		echo "> Pushing watchdog reset"
+		/hive/opt/opendev/watchdog-opendev reset
+		/hive/opt/qinheng/hl340 reset
+		sleep 1
+	fi
+	echo "> Rebooting"
+	#echo b > /proc/sysrq-trigger # reboot
+	reboot -f
+fi
