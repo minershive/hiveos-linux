@@ -52,7 +52,9 @@ fi
 check_avrdude() {
   if [[ `dpkg -s avrdude 2>/dev/null | grep -c "ok installed"` -eq 0 ]]; then
     [[ -f "/etc/avrdude.conf" ]] && rm -f "/etc/avrdude.conf"
-    apt-get install -y avrdude
+    [[ -f "/etc/avrdude.conf" ]] && rm -f "/etc/avrdude.conf"
+    apt-get install -y avrdude > /dev/null
+    [[ $? -eq 0 ]] && echo2 "${GREEN}Avrdude installed sucsessfully${NOCOLOR}" || echo2 "${RED}Error on installing avrdude${NOCOLOR}"
 #    cp /hive/opt/octofan/avrdude.conf   /etc/avrdude.conf
   fi
 }
@@ -108,7 +110,7 @@ send_request(){
   sleep 0.5
 
 # for i in {1..20}; do
-#    if [[ `tail -1 $CLI_OUTPUT` =~ "}" ]]; then 
+#    if [[ `tail -1 $CLI_OUTPUT` =~ "}" ]]; then
 #      tail -50 $CLI_OUTPUT > ${CLI_OUTPUT}_50
 #
 #      if [[ -f ${CLI_OUTPUT}_50 ]]; then
@@ -148,7 +150,7 @@ get_stats(){
 
   [[ $WD_RESET_INTERVAL -lt $MIN_WD_RESET_INTERVAL ]] && WD_RESET_INTERVAL=$MIN_WD_RESET_INTERVAL
 
-  [[ $AUTO_FAN -eq 0 ]] && FAN_MODE=1 || FAN_MODE=2
+  [[ $AUTO_ENABLED -eq 0 ]] && FAN_MODE=1 || FAN_MODE=2
 
   temp_array=
 
@@ -223,7 +225,7 @@ diagnostic(){
   for i in {1..10}; do
     local answer=`send_request '{"diagnostic"}'`
     echo $answer | jq '.reboot_errors' >> /dev/null 2>&1
-    if [[ $? -eq 0 ]] && [[ $answer =~ "reboot_errors" ]]; then 
+    if [[ $? -eq 0 ]] && [[ $answer =~ "reboot_errors" ]]; then
       break
     else
       answer=
@@ -354,7 +356,7 @@ firmware_update(){
     echo2 "Executing: ${YELLOW}avrdude -p ${mcu_version} -c arduino -P /dev/ttyUSB0 -b 9600 -U flash:w:/hive/opt/coolbox/$FW_FILENAME.hex:a${NOCOLOR}"
     t_error_txt=`avrdude -p ${mcu_version} -c arduino -P /dev/ttyUSB0 -b 9600 -U flash:w:/hive/opt/coolbox/$FW_FILENAME.hex:a 2>&1`
     if [[ $? -ne 0 ]]; then
-      exit_code=5
+      #exit_code=5
       echo2 "$(date +"%Y-%m-%d %T") ${RED}Error on flashing firmware${NOCOLOR}: $t_error_txt"
     fi
 
