@@ -73,10 +73,12 @@ for param in $@; do
 			# force HiveOS lists download
 			rm -f /var/lib/apt/lists/*hiveos*
 			# remove apt/dpkg lock files
-			echo -e "${YELLOW}> Removing apt/dpkg lock files${NOCOLOR}"
+			echo -e "${YELLOW}> Removing apt/dpkg lock files and updates${NOCOLOR}"
 			rm -f /var/lib/dpkg/lock*
 			rm -f /var/lib/apt/lists/lock*
 			rm -f /var/cache/apt/archives/lock*
+			# remove partial updates
+			rm -rf /var/lib/dpkg/updates/*
 		;;
 
 		http*) #Set user repository
