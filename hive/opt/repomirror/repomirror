@@ -156,8 +156,9 @@ function rm_disable() {
 }
 
 
-function rm_remove() {
+function rm_uninstall() {
 	check_upgrade || return
+	[[ -d $REPOPATH ]] && echo "${YELLOW}> Delete ${WHITE}${REPOPATH}${YELLOW} to free storage space $NOCOLOR"
 	rm_disable || return
 	echo "${CYAN}> Uninstalling $HTTPD $NOCOLOR"
 	apt remove -y $HTTPD
@@ -167,6 +168,8 @@ function rm_remove() {
 
 function rm_install() {
 	check_upgrade || return
+
+	disk-expand --silent
 
 	if [[ ! -d $REPOPATH ]]; then
 		echo "${CYAN}>Creating $REPOPATH $NOCOLOR"
@@ -239,6 +242,41 @@ function rm_install() {
 }
 
 
+function rm_remove() {
+	if [[ ! -e ${REPOPATH}/repo/binary/Packages ]]; then
+		echo "${RED}> Packages listing not found $NOCOLOR"
+		return 1
+	fi
+
+	declare -A PACKAGES
+	while read package; do
+		PACKAGES["${package##*/}"]="$package"
+	done < <(grep -oP "^Filename: \K.*" ${REPOPATH}/repo/binary/Packages)
+	if [[ ${#PACKAGES[@]} -lt 1000 ]]; then
+		echo "${YELLOW}> Packages listing is too short $NOCOLOR"
+		return 2
+	fi
+	readarray -t EXISTING < <(ls ${REPOPATH}/repo/binary/*.deb)
+
+	echo "${CYAN}> Checking and removing excess packages (local: ${#EXISTING[@]} / remote: ${#PACKAGES[@]})$NOCOLOR"
+	cnt=0
+	space=0
+	for package in "${EXISTING[@]}"; do
+		name="${package##*/}"
+		[[ ! -z "${PACKAGES["$name"]}" ]] && continue
+		size=`stat -c %s "$package"`
+		echo "  Removing $name ($size)"
+		rm "$package" || continue
+		space=$((space + size))
+		((cnt++))
+	done
+
+	space=`echo "$space" | awk '{printf "%.3f", $1/1000000}'`
+	[[ $cnt -ne 0 ]] && echo "${GREEN}> Packages removed: $cnt ($space MB)$NOCOLOR"
+	return 0
+}
+
+
 set_httpd
 
 case "$1" in
@@ -248,7 +286,7 @@ case "$1" in
 		;;
 
 	-u|--uninstall|uninstall)
-		rm_remove
+		rm_uninstall
 		exit
 		;;
 
@@ -277,6 +315,11 @@ case "$1" in
 		exit
 		;;
 
+	-r|--remove|remove)
+		rm_remove
+		exit
+		;;
+
 	--upgrade)
 		do_upgrade || exit
 		rm_install
@@ -291,6 +334,7 @@ case "$1" in
   repomirror  -d | --disable	disable httpd and repo syncing
   repomirror  -c | --check	check configuration and httpd
   repomirror  -s | --sync	sync repo manually
+  repomirror  -r | --remove	remove absolete unreferenced packages
   repomirror  -u | --uninstall	uninstall httpd and disable repo syncing
   repomirror  -l | --log	display repo syncing log
 "
