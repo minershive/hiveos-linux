@@ -26,10 +26,18 @@ if it's ok set this URL in farm settings.
 Use `/hive/opt/repomirror/repomirror -h` for other options
 
 repomirror  -i | --install    install httpd and enable repo syncing
+
 repomirror  -e | --enable     enable httpd and repo syncing
+
 repomirror  -d | --disable    disable httpd and repo syncing
+
 repomirror  -c | --check      check configuration and httpd
+
 repomirror  -s | --sync       sync repo manually
+
 repomirror  -r | --remove     remove absolete unreferenced packages
+
 repomirror  -u | --uninstall  uninstall httpd and disable repo syncing
+
 repomirror  -l | --log        display repo syncing log
+
