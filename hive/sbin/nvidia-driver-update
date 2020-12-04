@@ -30,6 +30,8 @@ CUDA_VER=(
 
 # in descending order!!!
 KERNEL_SUPPORT=(
+	5.9 "455.45"
+	5.8 "450.57"
 	5.6 "450 440.82 390.138"
 	5.4 "450 440.31 430.64 418.113 390.132"
 	5.0 "418 410.104 390.116 340.108"
@@ -143,20 +145,19 @@ function get_versions() { # returns $versions
 }
 
 
-function get_latest() { # returns $latest_version
+function get_stable() { # returns $stable_version
+	echo -en "${WHITE}> Stable version - ${NOCOLOR}"
 	if [[ "$extrepo" == 1 ]]; then
-		echo -en "${WHITE}> The latest Release version - ${NOCOLOR}"
 		local list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY ${DRVNVIDIAURL}latest.txt`
 	else
-		echo -en "${WHITE}> The latest Stable version - ${NOCOLOR}"
 		local list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY ${URL}VERSIONS.txt`
 	fi
 	[[ -z "$list" ]] && echo -e "${RED}Failed${NOCOLOR}" && return 1
-	latest_version=`echo "$list" | grep -oP "$DRVREGEXP" | tail -n 1`
-	[[ -z "$latest_version" ]] && echo -e "${RED}Error${NOCOLOR}" && return 2
-	get_cuda_version "$latest_version" &&
-		echo -e "${WHITE}${latest_version} ${PURPLE}(CUDA $cuda_version)${NOCOLOR}" ||
-		echo -e "${WHITE}${latest_version}${NOCOLOR}"
+	stable_version=`echo "$list" | grep -oP "$DRVREGEXP" | tail -n 1`
+	[[ -z "$stable_version" ]] && echo -e "${RED}Error${NOCOLOR}" && return 2
+	get_cuda_version "$stable_version" &&
+		echo -e "${WHITE}${stable_version} ${PURPLE}(CUDA $cuda_version)${NOCOLOR}" ||
+		echo -e "${WHITE}${stable_version}${NOCOLOR}"
 	return 0
 }
 
@@ -173,6 +174,22 @@ function get_current() { # @silent, returns $current_version
 			echo -e "${GREEN}> Installed version - ${BGREEN}$current_version ${PURPLE}(CUDA $cuda_version)${NOCOLOR}" ||
 			echo -e "${GREEN}> Installed version - $current_version${NOCOLOR}"
 	fi
+	return 0
+}
+
+
+function get_latest() { # returns $latest_version
+	get_versions || return
+	get_current 1
+	latest_version="${versions[-1]}"
+	if [[ "${latest_version%%.*}" -lt "${current_version%%.*}" ]]; then
+		echo "${RED}> This version ${WHITE}${latest_version}${RED} is lower than installed ${BGREEN}${current_version}${NOCOLOR}"
+		return 2
+	fi
+	echo -en "${WHITE}> Latest version - ${NOCOLOR}"
+	get_cuda_version "$latest_version" &&
+		echo -e "${WHITE}${latest_version} ${PURPLE}(CUDA $cuda_version)${NOCOLOR}" ||
+		echo -e "${WHITE}${latest_version}${NOCOLOR}"
 	return 0
 }
 
@@ -251,7 +268,7 @@ function list_packages() {
 		echo ""
 	fi
 
-	get_latest
+	get_stable
 	get_current
 
 	local files
@@ -294,11 +311,11 @@ function get_url() { # @version or @url, returns $url and $url_tesla
 		get_latest || return $?
 		url="${URL}${DRVPATTERN}${latest_version}.run"
 	# 440.95.01 format
-	elif [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+	elif [[ "$1" =~ ^[0-9]{3}\.[0-9]{2,3}\.[0-9]{2}$ ]]; then
 		url="${DRVNVIDIAURL}$1/${DRVPATTERN}$1.run"
 		url_tesla="https://uk.download.nvidia.com/tesla/$1/${DRVPATTERN}$1.run"
 	# 123.45 format
-	elif [[ "$1" =~ ^[0-9]+\.[0-9]+$ ]]; then
+	elif [[ "$1" =~ ^[0-9]{3}\.[0-9]{2,3}$ ]]; then
 #		local last=
 #		get_versions
 #		if [[ $? -eq 0 ]]; then
@@ -314,7 +331,7 @@ function get_url() { # @version or @url, returns $url and $url_tesla
 			url="${DRVNVIDIAURL}$1/${DRVPATTERN}$1.run"
 #		fi
 	# 123 format
-	elif [[ "$1" =~ ^[0-9]+$ ]]; then
+	elif [[ "$1" =~ ^[0-9]{3}$ ]]; then
 		get_versions || return $?
 		local last=
 		for drv in "${versions[@]}"
@@ -522,12 +539,26 @@ function install_driver() { # @url or @file, @force_install
 }
 
 
+function select_package() {
+	while true;
+	do
+		read -p "${BYELLOW}> Enter the version to install: ${NOCOLOR}" REPLY
+		[[ "$REPLY" == "" || "$REPLY" == "0" ]] && return 1
+		[[ "$REPLY" =~ ^([0-9]{3}|[0-9]{3}\.[0-9]{2,3}|[0-9]{3}\.[0-9]{2,3}\.[0-9]{2})$ ]] && break
+		echo -e "${RED}Invalid selection$NOCOLOR"
+	done
+	driver="$REPLY"
+	return 0
+}
+
+
 function show_help() {
 	echo "Usage:
-  nvidia-driver-update  		download and install recommended driver version
+  nvidia-driver-update  		download and install latest driver version
   nvidia-driver-update  URL		download and install driver from URL (http/https/ftp)
   nvidia-driver-update  123		download and install latest driver from series 123.*
   nvidia-driver-update  123.45.06	download and install driver version 123.45.06
+  nvidia-driver-update  -s | --stable	download and install STABLE driver version
   nvidia-driver-update  -f | --force	force install to bypass some DKMS build errors and etc
   nvidia-driver-update  -l | --list	list available driver versions (compatible with current kernel)
   nvidia-driver-update  -e | --ext	use external drivers repository
@@ -573,6 +604,7 @@ for param in $@; do
 
 		-l|--list)
 			list_packages
+			[[ -t 0 ]] && select_package && break
 			exit
 		;;
 
@@ -584,6 +616,11 @@ for param in $@; do
 		-r|--remove)
 			remove_packages
 			exit
+		;;
+
+		-s|--stable)
+			get_stable || exit
+			driver="$stable_version"
 		;;
 
 		*)
