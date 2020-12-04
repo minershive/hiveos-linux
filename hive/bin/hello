@@ -76,8 +76,7 @@ boot_time=$(( `date +%s` - `awk '{printf "%d", $1}' /proc/uptime` ))
 if [[ ! -e $GPU_DETECT_JSON ]]; then #this is needed only when upgrading version. later we can remove this
 	gpu-detect listjson > $GPU_DETECT_JSON
 fi
-gpus_json=$(<$GPU_DETECT_JSON)
-#gpus_json=`echo "${gpus[@]}" | jq -R . | jq -s -c .`
+gpus_json=`jq . $GPU_DETECT_JSON 2>/dev/null` || gpus_json="[]"
 gpu_count_amd=`gpu-detect AMD`
 gpu_count_nvidia=`gpu-detect NVIDIA`
 ips=`hostname -I | sed 's/ /\n/g'`
