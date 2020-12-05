@@ -1,0 +1,3 @@
+NanoMiner v3.1.3
+* ethash improvements on Nvidia GPUs: +1.7% on Turing 16xx, 20xx and +0.5% on Ampere 30xx
+* octopus improvements on Nvidia GPUs: +4% on Turing 16xx, 20xx and +2% on Ampere 30xx
