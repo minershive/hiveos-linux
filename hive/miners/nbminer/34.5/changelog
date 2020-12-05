@@ -1,0 +1,7 @@
+NBMiner v34.5
+* improved ethash hashrate 1% on certain Nvidia GPUs
+* minor octopus improvement on certain 20 & 30 series Nvidia GPUs
+* improved memory tweak efficiency  and compatibility on Geforce Pascal GPUs
+* fixed kawpow/progpow crash on certain AMD & Nvidia rigs
+
+
