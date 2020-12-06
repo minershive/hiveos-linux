@@ -3,7 +3,7 @@
 
 WAKEALARM_TIMEOUT=30 # default value
 WATCHDOGS=("watchdog-opendev" "hl340" "watchdoginua" "watchdog-octofan" "srrv2" "utility.py")
-
+#APT_WAIT=120 # wait time for apt/dpkg to finish
 
 if [[ $1 == "-h" || $1 == "--help" ]]; then
 	. colors
@@ -24,7 +24,7 @@ fi
 
 POWERCYCLE=
 # include POWERCYCLE only if it is supported
-[[ -z $1 && -e $RIG_CONF && -e /sys/class/rtc/rtc0/wakealarm ]] && source $RIG_CONF
+[[ -z $1 && -e "$RIG_CONF" && -e /sys/class/rtc/rtc0/wakealarm ]] && source $RIG_CONF
 
 
 # Do not try to stop miner here. Sometimes it hangs and prevents rig from rebooting
@@ -32,11 +32,19 @@ POWERCYCLE=
 
 
 # safely stop install to prevent database corruption
-need_wait=0
-killall -s INT apt 2>/dev/null && ((need_wait++))
-killall -s INT apt-get 2>/dev/null && ((need_wait++))
-killall -s INT dpkg 2>/dev/null && ((need_wait++))
-[[ $need_wait -gt 0 ]] && apt-wait 120
+if [[ "$APT_WAIT" -gt 0 ]]; then
+	need_wait=0
+	killall -s INT apt 2>/dev/null && ((need_wait++))
+	killall -s INT apt-get 2>/dev/null && ((need_wait++))
+	killall -s INT dpkg 2>/dev/null && ((need_wait++))
+	[[ $need_wait -gt 0 ]] && apt-wait $APT_WAIT
+fi
+killall apt apt-get dpkg 2>/dev/null
+
+
+# wait a bit if sreboot is already running
+pgrep sreboot >/dev/null && sleep 3
+
 
 #unRaw      (take control of keyboard back from X),
 # tErminate (send SIGTERM to all processes),
