@@ -3,8 +3,6 @@
 #[ -t 1 ] &&
 . colors
 
-#. /hive/etc/amd.ids
-
 date
 
 cardno=0
@@ -31,12 +29,17 @@ done
 busids_dirs=`printf '%s\n' "${busids_dirs[@]}" | sort` #sorting by bus id
 #echo -e "$busids_dirs"
 
+if [[ ! -f $GPU_DETECT_JSON ]]; then
+	gpu_detect_json=`gpu-detect listjson`
+else
+	gpu_detect_json=$(< $GPU_DETECT_JSON)
+fi
 
 # get gpu info from gpu-detect
 declare -A GPUINFO
 while IFS=";" read busid name vbios; do
 	GPUINFO["${busid:--}"]="$name $NOCOLOR$vbios"
-done < <( cat $GPU_DETECT_JSON 2>/dev/null | jq -r -c '.[] | (.busid+";"+.name+";"+.vbios)' 2>/dev/null )
+done < <( echo "$gpu_detect_json" | jq -r -c '.[] | (.busid+";"+.name+";"+.vbios)' 2>/dev/null )
 
 
 i=-1

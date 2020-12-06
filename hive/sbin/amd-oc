@@ -1,229 +1,183 @@
 #!/usr/bin/env bash
 
 #[ -t 1 ] &&
-. colors
+source colors
 
 date
 echo ""
 
-[[ -f $RIG_CONF ]] && . $RIG_CONF
+[[ -f $RIG_CONF ]] && source $RIG_CONF
 
 [[ $MAINTENANCE == 2 ]] &&
 	echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
 	exit 1
 
-DEFAULT_CORE_STATE=5
-
-#GPU_NAVI="1002:7310|1002:7312|1002:7318|1002:7319|1002:731A|1002:731B|1002:731F"
-#GPU_VEGA10="1002:6860|1002:6861|1002:6862|1002:6863|1002:6864|1002:6867|1002:6868|1002:6869|1002:686a|1002:686b|1002:686c|1002:686d|1002:686e|1002:686f|1002:687f"
-. /hive/etc/amd.ids
-
-
-n=`gpu-detect AMD`
-if [[ $n == 0 ]]; then
-	echo "No AMD cards detected, exiting"
-	exit
-fi
-echo "Detected $n AMD cards"
-
-if [ ! -f $AMD_OC_CONF ]; then
+if [[ ! -f $AMD_OC_CONF ]]; then
 	echo -e "ERROR: $AMD_OC_CONF does not exist"
 	exit
 fi
 
-source $AMD_OC_CONF
+source /hive/etc/gpu.ids
+
+# use target temp for HW autofan if AMD is disabled in autofan settings
+AMD_TARGET_TEMP=
+[[ -f $AUTOFAN_CONF ]] && AMD_TARGET_TEMP=$( source $AUTOFAN_CONF && [[ $ENABLED == 1 && $NO_AMD == 1 ]] && echo "$TARGET_TEMP" )
 
 
-#pad arrays
-[[ ! -z $CORE_CLOCK ]] &&
-CORE_CLOCK=($CORE_CLOCK) &&
-for (( i=${#CORE_CLOCK[@]}; i < $n; ++i )); do
-	CORE_CLOCK[$i]=${CORE_CLOCK[$i-1]}
-done
-
-#[[ ! -z $CORE_VDDC_INDEX ]] &&
-#CORE_VDDC_INDEX=($CORE_VDDC_INDEX) &&
-#for (( i=${#CORE_VDDC_INDEX[@]}; i < $n; ++i )); do
-#    CORE_VDDC_INDEX[$i]=${CORE_VDDC_INDEX[$i-1]}
-#done
-
-[[ ! -z $CORE_VDDC ]] &&
-CORE_VDDC=($CORE_VDDC) &&
-for (( i=${#CORE_VDDC[@]}; i < $n; ++i )); do
-	CORE_VDDC[$i]=${CORE_VDDC[$i-1]}
-done
-
-#[[ - z $CORE_STATE ]] && CORE_STATE="5" #default is 5
-[[ ! -z $CORE_STATE ]] &&
-CORE_STATE=($CORE_STATE) &&
-for (( i=${#CORE_STATE[@]}; i < $n; ++i )); do
-	CORE_STATE[$i]=${CORE_STATE[$i-1]}
-done
-
-[[ ! -z $MEM_CLOCK ]] &&
-MEM_CLOCK=($MEM_CLOCK) &&
-for (( i=${#MEM_CLOCK[@]}; i < $n; ++i )); do
-	MEM_CLOCK[$i]=${MEM_CLOCK[$i-1]}
-done
-
-[[ ! -z $MEM_STATE ]] &&
-MEM_STATE=($MEM_STATE) &&
-for (( i=${#MEM_STATE[@]}; i < $n; ++i )); do
-	MEM_STATE[$i]=${MEM_STATE[$i-1]}
-done
-
-[[ ! -z $MVDD ]] &&
-MVDD=($MVDD) &&
-for (( i=${#MVDD[@]}; i < $n; ++i )); do
-	MVDD[$i]=${MVDD[$i-1]}
-done
-
-[[ ! -z $VDDCI ]] &&
-VDDCI=($VDDCI) &&
-for (( i=${#VDDCI[@]}; i < $n; ++i )); do
-	VDDCI[$i]=${VDDCI[$i-1]}
-done
-
-[[ ! -z $REF ]] &&
-REF=($REF) &&
-for (( i=${#REF[@]}; i < $n; ++i )); do
-	REF[$i]=${REF[$i-1]}
-done
-
-[[ ! -z $FAN ]] &&
-FAN=($FAN) &&
-for (( i=${#FAN[@]}; i < $n; ++i )); do
-	FAN[$i]=${FAN[$i-1]}
-done
-
-[[ ! -z $PL ]] &&
-PL=($PL) &&
-for (( i=${#PL[@]}; i < $n; ++i )); do
-	PL[$i]=${PL[$i-1]}
-done
-
-
-echo "CORE_CLOCK = ${CORE_CLOCK[*]}"
-echo "CORE_STATE = ${CORE_STATE[*]}"
-echo "CORE_VDDC  = ${CORE_VDDC[*]}"
-echo "MEM_CLOCK  = ${MEM_CLOCK[*]}"
-echo "MEM_STATE  = ${MEM_STATE[*]}"
-echo "MVDD       = ${MVDD[*]}"
-echo "VDDCI      = ${VDDCI[*]}"
-echo "PL         = ${PL[*]}"
-echo "FAN        = ${FAN[*]}"
-echo "REF        = ${REF[*]}"
-
-#exit
-
-
-dirs=`ls -d1 /sys/class/drm/card*/device/pp_table | sort --version-sort` #natural sort for 10+ cards
-if [[ -z $dirs ]]; then
-	echo -e "${RED}No AMD GPUs found as /sys/class/drm/card*/device/pp_table${NOCOLOR}"
-	exit 1
+if [[ ! -f $GPU_DETECT_JSON ]]; then
+	gpu_detect_json=`gpu-detect listjson`
+else
+	gpu_detect_json=$(< $GPU_DETECT_JSON)
 fi
 
-[[ -f $GPU_DETECT_JSON ]] &&
-	gpu_names=`cat $GPU_DETECT_JSON | jq -r -c '.[] | select(.brand == "amd") | (.busid+"\""+.name+" "+.mem+"\"")'`
+gpu_names=`echo "$gpu_detect_json" | jq -r -c '.[] | select(.brand == "amd") | (.busid+"\""+.name+" "+.mem+"\"")'`
 
-#cardno and busid can be unsorted, like card1=>03:00, card2=>05:00
-busids_dirs=()
-for dir in $dirs; do
-	#alternative way: cat /sys/class/drm/card1/device/uevent | grep PCI_SLOT_NAME
-	#/sys/devices/pci0000:00/0000:00:1c.6/0000:05:00.0/pp_table
-	#/sys/devices/pci0000:00/0000:00:1c.1/0000:03:00.0/0000:04:07.0/0000:08:00.0/pp_table
-	#busid=`realpath "$dir" | awk -F/ '{print $(NF-1)}'`
+#readarray -t AMD_BUSIDS < <(lspci | grep -E "$GPU_DETECT_STRING" | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL" | cut -d" " -f1)
+readarray -t AMD_BUSIDS  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "amd") | .value.busid' )
 
-	basedir=${dir%/*} #cut off /pp_table
-	busid=`cat $basedir/uevent | grep PCI_SLOT_NAME | awk -F= '{print $2}'`
-	busids_dirs+=("$busid;$dir")
+# this is needed for amdmemorytweak to work correct when internal AMD gpu is present
+readarray -t AMD_ALL_BUSIDS < <(lspci | grep -E "$GPU_DETECT_STRING" | grep "Advanced Micro Devices" | cut -d" " -f1)
+
+
+n=${#AMD_BUSIDS[@]}
+if [[ $n == 0 ]]; then
+	echo "No AMD cards detected, exiting"
+	exit
+fi
+
+echo "Detected $n AMD cards"
+
+
+print_array() {
+	local desc=$1
+	local arr=($2)
+	local align=10
+	local pad=5
+	printf "%-${align}s :" "$desc"
+	for item in "${arr[@]}"
+	do
+		printf "%${pad}s" "$item"
+	done
+	printf "\n"
+}
+
+
+# MAP OC to MB BUS ID
+[[ -e "$BUSID_FILE" ]] && source $BUSID_FILE
+# prefer AMD especially for mixed rigs
+[[ ! -z "$BUSID_AMD" ]] && BUSID_MB="$BUSID_AMD"
+if [[ ! -z "$BUSID_MB" ]]; then
+	# add one more item to the end for not defined busid GPU
+	BUSID_MB=($BUSID_MB "@")
+	declare -A GPU_MAPPING
+	for((idx=0; idx<${#BUSID_MB[@]}; idx++))
+	do
+		GPU_MAPPING["${BUSID_MB[$idx]}"]=$idx     #"
+	done
+	n=${#BUSID_MB[@]}
+fi
+
+
+source $AMD_OC_CONF
+
+PARAMS=(CORE_CLOCK CORE_VDDC CORE_STATE MEM_CLOCK MEM_STATE MVDD VDDCI SOCCLK SOCVDDMAX REF FAN PL)
+
+# pad arrays
+for param in "${PARAMS[@]}"; do
+	[[ -z ${!param} ]] && continue
+	arr=(${!param})
+	for (( i=${#arr[@]}; i<$n; i++ )); do
+		read "$param[$i]" < <( echo "${arr[-1]}" ) # use last element of initial array
+	done
 done
 
-busids_dirs=`printf '%s\n' "${busids_dirs[@]}" | sort` #sorting by bus id
+echo ""
 
-list=`lspci | grep -E "VGA|3D controller|Display controller" | grep "Advanced Micro Devices" | grep -v -e "RS880" -e "Stoney" -e "Wani" -e "Picasso" | awk '{print $1}'`
+# Remap OC according to bus id
+if [[ ! -z $BUSID_MB ]]; then
+	# map params to temp array
+	for param in "${PARAMS[@]}"; do
+		arr="${param}[*]"
+		declare -a "_$param"="( ${!arr} )"
+		unset "${param}"
+	done
+
+	for (( i=0; i < ${#AMD_BUSIDS[@]}; i++ )); do
+		busid=${AMD_BUSIDS[$i]/:00\.0}
+		[[ ! -z $busid ]] && idx=${GPU_MAPPING[$busid]} || idx=
+		[[ -z $idx ]] && idx=${GPU_MAPPING["@"]}
+		#[[ $i -ne $idx ]] && echo "Mapping GPU $i settings to index $idx"
+		# remap params
+		for param in "${PARAMS[@]}"; do
+			val="_$param[$idx]"
+			read "$param[$i]" < <( echo "${!val}" )
+		done
+	done
+	print_array "MB BUS ID" "${BUSID_MB[*]}"
+else
+	for param in "${PARAMS[@]}"; do
+		arr="${param}[*]"
+		declare -a "$param"="( ${!arr} )"
+	done
+fi
+
+print_array "GPU BUS ID" "${AMD_BUSIDS[*]/:00\.0}"
+for param in "${PARAMS[@]}"; do
+	arr="${param}[*]"
+	print_array "$param" "${!arr}"
+done
+
+echo "AGGRESSIVE = $AGGRESSIVE"
+
 
 i=-1
 card_idx=-1
 
-#for dir in $dirs; do
-for bdir in $busids_dirs; do
-	dir=`echo $bdir | awk -F\; '{print $2}'`
-
+for busid in "${AMD_ALL_BUSIDS[@]}"; do
 	echo ""
-
-	#echo $dir
-	#[[ $dir =~ /sys/class/drm/card([0-9]+)/device/pp_table ]]
-	[[ $dir =~ \/card([0-9a-z]+)\/ ]]
-	cardno=${BASH_REMATCH[1]}
-
-
-	[[ -z $cardno ]] && echo -e "${RED}ERROR: can not match card no in $dir${NOCOLOR}" && continue
-
-	#busid=`realpath /sys/class/drm/card$cardno/device | awk -F/ '{print $NF}'`
-	busid=`echo $bdir | awk -F\; '{print $1}'`
-	busid=${busid#0000:} #trim prefix
-
 	(( card_idx++ ))
-
-	# do not use internal gpus
-	[[ ! "$list" =~ $busid ]] && continue
-
+	# skip internal gpu
+	[[ ! "${AMD_BUSIDS[@]}" =~ $busid ]] && echo -e "${YELLOW}Skipping internal AMD GPU $busid${NOCOLOR}" && continue
 	(( i++ ))
-	
-	#03:00.0"Radeon RX 570 8192 MB"
+
+	[[ `echo /sys/bus/pci/devices/0000:$busid/drm/card*/` =~ \/card([0-9]+)\/ ]]
+	cardno=${BASH_REMATCH[1]}
+	[[ -z $cardno ]] && echo -e "${RED}ERROR: can not match card id for GPU $busid${NOCOLOR}" && continue
+	[[ ! -f /sys/class/drm/card$cardno/device/pp_table ]] && echo -e "${RED}ERROR: no pp_table for GPU $busid${NOCOLOR}" && continue
+
+	# 03:00.0"Radeon RX 570 8192 MB"
 	[[ $gpu_names =~ $busid\"([^\"]+) ]] &&
 		name="${RED}${BASH_REMATCH[1]}${NOCOLOR} #$cardno" ||
 		name=/sys/class/drm/card$cardno
+
+	#echo "#$i  idx$card_idx  card$cardno  $busid"
 
 	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${PURPLE}$busid${NOCOLOR} $name ${YELLOW}=== `date +"%T"`${NOCOLOR}"
 	savedpp=/tmp/pp_tables/card$cardno/pp_table
 
 	[[ ! -e $savedpp ]] && echo -e "ERROR: $savedpp not found, try to reboot" && continue
 
-	##Start introducing VEGA
 	VEGAS_COUNT=$( lspci -vnns $busid | grep VGA -A 2 | grep AMD -A 2 | grep Vega -A 2 | grep -v "Vega 8" | wc -l )
 	NAVI_COUNT=$( lspci -vnns $busid | grep -Ei "$GPU_NAVI" | wc -l )
 	IS_VEGA10=$( lspci -vnns $busid | grep -Ei "$GPU_VEGA10" | wc -l )
-	
+	IS_VEGA20=$( lspci -vnns $busid | grep -Ei "$GPU_VEGA20" | wc -l )
+
 	if [[ $VEGAS_COUNT -ne 0 || $NAVI_COUNT -ne 0 ]]; then
 		if [[ $IS_VEGA10 -gt 0 && $AGGRESSIVE == 1 ]]; then
-			. /hive/sbin/amd-oc.vega.aggressive.sh
+			source /hive/sbin/amd-oc.vega.aggressive.sh
 		else
-			. /hive/sbin/amd-oc.vega.sh
+			source /hive/sbin/amd-oc.vega.sh
 		fi
 	else
-		# set auto performance level to reset manual DPM if no state will be set
-		[[ -z $coreState && ${CORE_CLOCK[$i]} -le 400 && ${CORE_VDDC[$i]} -le 0 ]] &&
-			echo "Setting DPM to auto mode" &&
-			echo "auto" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
-
-		if [[ $AGGRESSIVE == 1 ]]; then
-			. /hive/sbin/amd-oc.aggressive.sh
-		else
-			. /hive/sbin/amd-oc.classic.sh
-		fi
-
-		if [[ ! -z $coreState || ! -z $memoryState ]]; then
-			echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
-
-			[[ ! -z $coreState ]] &&
-				echo "Setting DPM core state to $coreState" &&
-				echo $coreState > /sys/class/drm/card$cardno/device/pp_dpm_sclk
-
-			# setting memory state kills idle mode, so set it only if needed -
-			# if state is set without clock or in aggressive with DPM 1 and core clock set
-			[[ ! -z $memoryState ]] &&
-				[[ $AGGRESSIVE != 1 || $coreState -le 1 || ${CORE_CLOCK[$i]} -le 400 ||
-				( $memoryState != $maxMemstate && ${MEM_CLOCK[$i]} -le 400 ) ]] &&
-					echo "Setting DPM memory state to $memoryState" &&
-					echo $memoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
-		fi
+		source /hive/sbin/amd-oc.polaris.sh
 	fi
+
 done
+
+echo ""
 
 sync
 #just in case, silly flushing reasons
-sleep 0.2
+#sleep 0.2
 
 exit 0
