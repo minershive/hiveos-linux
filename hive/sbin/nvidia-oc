@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
+
 #[ -t 1 ] &&
 . colors
 
+set -o pipefail
 
 date
 echo ""
@@ -9,7 +11,7 @@ echo ""
 [[ -f $RIG_CONF ]] && . $RIG_CONF
 
 [[ $MAINTENANCE == 2 ]] &&
-	echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
+	echo "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
 	exit 1
 
 #Preventing nvidia-smi from running if necessary
@@ -18,8 +20,7 @@ NV_OFF=0
 [[ $NV_OFF == 1 ]] && exit 0
 
 
-systemctl status hivex > /dev/null
-[[ $? -ne 0 ]] && echo -e "${YELLOW}WARNING: X Server is not running! Some settings will not be applied!${NOCOLOR}"
+systemctl status hivex > /dev/null || echo "${YELLOW}WARNING: X Server is not running! Some settings will not be applied!${NOCOLOR}"
 
 export DISPLAY=":0"
 NVS_TIMEOUT=10
@@ -41,178 +42,267 @@ fi
 
 echo "Detected $n NVIDIA cards"
 
-if [ ! -f $GPU_DETECT_JSON ]; then
+if [[ ! -f $GPU_DETECT_JSON ]]; then
 	gpu_detect_json=`gpu-detect listjson`
 else
-	gpu_detect_json=`cat $GPU_DETECT_JSON`
+	gpu_detect_json=$(< $GPU_DETECT_JSON)
 fi
 
-n=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ] | length'`
 
-[[ $n -eq 0 ]] && echo -e "No cards available for OC! \nPlease check BIOS settings, risers, connectors and PSU. \nTry to update Nvidia drivers." && exit 1
+readarray -t NAME   < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.name' )
+readarray -t RAM    < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.mem' )
+readarray -t BUSID  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.busid' )
+readarray -t PLMAX  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_max' )
+readarray -t PLMIN  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_min' )
+readarray -t PLDEF  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_def' )
+readarray -t FANCNT < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.fan_cnt' )
+
+
+n=${#BUSID[@]}
+if [[ $n -eq 0 ]]; then
+	echo -e "No cards available for OC!\nPlease check BIOS settings, risers, connectors and PSU.\nTry to update Nvidia drivers."
+	exit 1
+fi
+
 
 if [[ ! -z $RUNNING_DELAY && $RUNNING_DELAY -gt 0 ]]; then
 	[[ ! -z $MAX_RUNNING_DELAY && $RUNNING_DELAY -gt $MAX_RUNNING_DELAY ]] &&
-		echo -e "${YELLOW}Limiting delay to ${MAX_RUNNING_DELAY} seconds${NOCOLOR}" &&
+		echo "${YELLOW}Limiting delay to ${MAX_RUNNING_DELAY} seconds${NOCOLOR}" &&
 		RUNNING_DELAY=$MAX_RUNNING_DELAY
-	echo -e "${CYAN}Sleeping $RUNNING_DELAY seconds...${NOCOLOR}"
+	echo "${CYAN}Sleeping $RUNNING_DELAY seconds...${NOCOLOR}"
 	sleep $RUNNING_DELAY
 fi
 
-[[ -z $FAN || $FAN == "" ]] && FAN=0
 
-[[ -z $PLIMIT || $PLIMIT == "" ]] && PLIMIT=0
+pgrep --full nvidia-persistenced > /dev/null || nvidia-persistenced --persistence-mode
 
 
-# kill Pill if running 
+# kill Pill if running.
 pkill -f '/hive/opt/ohgodapill/run.sh'
 pkill -f '/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2'
 [[ "$OHGODAPILL_ENABLED" -eq 1 && "$OHGODAPILL_START_TIMEOUT" -lt 0 ]] && PILLFIX=1 || PILLFIX=0
 
 
-#pad arrays
-[[ ! -z $CLOCK ]] && CLOCK=($CLOCK) || CLOCK=(0)
-for (( i=${#CLOCK[@]}; i < $n; ++i )); do
-	CLOCK[$i]=${CLOCK[$i-1]}
-done
+print_array() {
+	local desc=$1
+	local arr=($2)
+	local align=10
+	local pad=5
+	printf "%-${align}s :" "$desc"
+	for item in "${arr[@]}"
+	do
+		printf "%${pad}s" "$item"
+	done
+	printf "\n"
+}
 
-[[ ! -z $MEM ]] && MEM=($MEM) || MEM=(0)
-for (( i=${#MEM[@]}; i < $n; ++i )); do
-	MEM[$i]=${MEM[$i-1]}
-done
 
-[[ ! -z $FAN ]] && FAN=($FAN) || FAN=(0)
-for (( i=${#FAN[@]}; i < $n; ++i )); do
-	FAN[$i]=${FAN[$i-1]}
-done
+# MAP OC to MB BUS ID
+[[ -e "$BUSID_FILE" ]] && source $BUSID_FILE
+# prefer NVIDIA especially for mixed rigs
+[[ ! -z "$BUSID_NVIDIA" ]] && BUSID_MB="$BUSID_NVIDIA"
+if [[ ! -z "$BUSID_MB" ]]; then
+	# add one more item to the end for not defined busid GPU
+	BUSID_MB=($BUSID_MB "@")
+	declare -A GPU_MAPPING
+	for((idx=0; idx<${#BUSID_MB[@]}; idx++))
+	do
+		GPU_MAPPING["${BUSID_MB[$idx]}"]=$idx     #"
+	done
+	n=${#BUSID_MB[@]}
+fi
 
-[[ ! -z $PLIMIT ]] && PLIMIT=($PLIMIT) || PLIMIT=(0)
-for (( i=${#PLIMIT[@]}; i < $n; ++i )); do
-	PLIMIT[$i]=${PLIMIT[$i-1]}
-done
 
-declare -a FANCNT=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.fan_cnt'`)
+PARAMS=(CLOCK MEM PLIMIT FAN)
+
+# pad arrays
+for param in "${PARAMS[@]}"; do
+	[[ -z ${!param} ]] && continue
+	arr=(${!param})
+	for (( i=${#arr[@]}; i<$n; i++ )); do
+		read "$param[$i]" < <( echo "${arr[-1]}" ) # use last element of initial array
+	done
+done
 
 echo ""
 
-echo "CORE   = ${CLOCK[*]}"
-echo "MEM    = ${MEM[*]}"
-echo "PLIMIT = ${PLIMIT[*]}"
-echo "FAN    = ${FAN[*]}"
-echo "FANCNT = ${FANCNT[*]}"
+# Remap OC according to bus id
+if [[ ! -z $BUSID_MB ]]; then
+	# map params to temp array
+	for param in "${PARAMS[@]}"; do
+		arr="${param}[*]"
+		declare -a "_$param"="( ${!arr} )"
+		unset "${param}"
+	done
 
-echo ""
+	for (( i=0; i < ${#BUSID[@]}; i++ )); do
+		busid=${BUSID[$i]/:00\.0}
+		[[ ! -z $busid ]] && idx=${GPU_MAPPING[$busid]} || idx=
+		[[ -z $idx ]] && idx=${GPU_MAPPING["@"]}
+		#[[ $i -ne $idx ]] && echo "Mapping GPU $i settings to index $idx"
+		# remap params
+		for param in "${PARAMS[@]}"; do
+			val="_$param[$idx]"
+			read "$param[$i]" < <( echo "${!val}" )
+		done
+	done
+	print_array "MB BUS ID" "${BUSID_MB[*]}"
+else
+	for param in "${PARAMS[@]}"; do
+		arr="${param}[*]"
+		declare -a "$param"="( ${!arr} )"
+	done
+fi
 
-pgrep --full nvidia-persistenced > /dev/null || nvidia-persistenced --persistence-mode
+print_array "GPU BUS ID" "${BUSID[*]/:00\.0}"
+for param in "${PARAMS[@]}"; do
+	arr="${param}[*]"
+	print_array "$param" "${!arr}"
+done
 
 
-_IFS=$IFS && IFS=$'\n'
-declare -a NAME=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.name'`)
-declare -a RAM=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.mem'`)
-declare -a BUSID=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.busid'`)
-declare -a PLMAX=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_max'`)
-declare -a PLMIN=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_min'`)
-declare -a PLDEF=(`echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_def'`)
-IFS=$_IFS
+[[ "${FANCNT[*]}" =~ [2-9] ]] &&
+	print_array "FANCNT" "${FANCNT[*]//null/1}"
+
+
+AUTOFAN_ENABLED=$( [[ `pgrep -cf "/hive/sbin/autofan run"` -gt 0 && -f $AUTOFAN_CONF ]] && source $AUTOFAN_CONF && echo "$ENABLED" )
+
+
+nvparams=
+nvquery=`timeout -s9 $NVS_TIMEOUT nvidia-settings -q GPUMemoryTransferRateOffset -q GPUGraphicsClockOffset -q GPUTargetFanSpeed \
+             -q GPULogoBrightness -q GPUPowerMizerMode -q GPUPerfModes | grep -vE "values|target" | tr '\n' ' ' 2>&1`
+nvcode=$?
+if [[ $nvcode -eq 0 ]]; then
+	nvparams="${nvquery//Attribute/$'\n'}"
+elif [[ $nvcode -ge 124 ]]; then
+	echo "NVS query error: nvidia-settings failed by timeout"
+else
+	echo "NVS query error: $perfquery"
+fi
+
 
 fan_idx=0
 exitcode=0
 
-for (( i=0; i < $n; ++i )); do
 
-	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${BUSID[$i]} ${GREEN}${NAME[$i]} ${RAM[$i]}${NOCOLOR}, PL: ${PLMIN[$i]}, ${PLDEF[$i]}, ${PLMAX[$i]} ${YELLOW}=== `date +"%T"`${NOCOLOR}"
+for (( i=0; i < ${#BUSID[@]}; ++i )); do
+	args=""
 
-	pldef=${PLDEF[$i]%%[!0-9]*}
-	if [[ ! -z $PLIMIT && ${PLIMIT[$i]} -gt 0 ]]; then
+	echo ""
+	echo "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${BUSID[$i]} ${GREEN}${NAME[$i]} ${RAM[$i]}${NOCOLOR}, PL: ${PLMIN[$i]}, ${PLDEF[$i]}, ${PLMAX[$i]} ${YELLOW}=== `date +"%T"`${NOCOLOR}"
+
+	#pldef=${PLDEF[$i]%%[!0-9]*}
+	#if [[ ! -z $PLIMIT && ${PLIMIT[$i]} -gt 0 ]]; then
 		# check limits
 		#if [[ $pldef -gt 0 ]]; then
 		#	plmax=${PLMAX[$i]%%[!0-9]*}
 		#	plmin=${PLMIN[$i]%%[!0-9]*}
-		#	[[ $plmax -gt $pldef && ${PLIMIT[$i]} -gt $plmax ]] && PLIMIT[$i]=${PLMAX[$i]%%[!0-9\.]*} && echo -e "${RED}Power limit was set to MAX value${NOCOLOR}"
-		#	[[ $plmin -lt $pldef && ${PLIMIT[$i]} -lt $plmin ]] && PLIMIT[$i]=${PLMIN[$i]%%[!0-9\.]*} && echo -e "${RED}Power limit was set to MIN value${NOCOLOR}"
+		#	[[ $plmax -gt $pldef && ${PLIMIT[$i]} -gt $plmax ]] && PLIMIT[$i]=${PLMAX[$i]%%[!0-9\.]*} && echo "${RED}Power limit was set to MAX value${NOCOLOR}"
+		#	[[ $plmin -lt $pldef && ${PLIMIT[$i]} -lt $plmin ]] && PLIMIT[$i]=${PLMIN[$i]%%[!0-9\.]*} && echo "${RED}Power limit was set to MIN value${NOCOLOR}"
 		#fi
-		nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl ${PLIMIT[$i]}`
-		nvcode=$?
-
-	else
+	#	nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl ${PLIMIT[$i]}`
+	#	nvcode=$?
+	#else
 		#if [[ $plcur != $pldef ]]; then
-			echo "Restoring default power limit ${pldef}"
-			nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl $pldef`
-			nvcode=$?
+	#		echo "Restoring default power limit ${pldef}"
+	#		nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl $pldef`
+	#		nvcode=$?
 		#fi
-	fi
+	#fi
+	#[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
+	#nvresult=`echo "$nvresult" | grep -vE "^$|All done\."`
+	#[[ ! -z $nvresult ]] && echo "${color}$nvresult${NOCOLOR}"
+	#[[ $nvcode -ge 124 ]] && echo "${RED}nvidia-smi failed by timeout$NOCOLOR"
+	#[[ $nvcode -ne 0 ]] && exitcode=$nvcode
+
+
+	pldef="${PLDEF[$i]%%[!0-9]*}"
+	[[ -z "${PLIMIT[$i]}" ]] && PLIMIT[$i]=0
+	nvresult=`timeout -s9 $NVSMI_TIMEOUT nvtool -q --nodev -i $i --setpl ${PLIMIT[$i]}`
+	nvcode=$?
 	[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
-	nvresult=`grep -v "^$" <<< "$nvresult"`
-	[[ ! -z $nvresult ]] && echo -e "${color}$nvresult${NOCOLOR}"
-	[[ $nvcode -ge 124 ]] && echo -e "${RED}nvidia-smi failed by timeout$NOCOLOR"
+	[[ ! -z "$nvresult" ]] && echo "${color}$nvresult${NOCOLOR}"
+	[[ $nvcode -ge 124 ]] && echo "${RED}nvtool failed by timeout$NOCOLOR"
 	[[ $nvcode -ne 0 ]] && exitcode=$nvcode
-	
-	#not working
-	#nvidia-smi -i ${i} -ac 4004,1911
 
-	args=
-	args+=" -a [gpu:$i]/GPUPowerMizerMode=${POWERMIZER:-1}"
 
-	fans_count=${FANCNT[$i]}
+	x=`echo "$nvparams" | grep -oP "'GPUPerfModes'.*\[gpu\:$i\].* perf=\K[0-9]+"`
+	if [[ -z $x ]]; then
+		x=3 # default
+		if   [[ ${NAME[$i]} =~ "RTX" ]]; then x=4
+		elif [[ ${NAME[$i]} =~ "P106-090" || ${NAME[$i]} =~ "P104-100" || ${NAME[$i]} =~ "P102-100" ]]; then x=1
+		elif [[ ${NAME[$i]} =~ "1660 Ti"  || ${NAME[$i]} =~ "1660 SUPER" || ${NAME[$i]} =~ "1650 SUPER" ]]; then x=4
+		elif [[ ${NAME[$i]} =~ "P106-100" || ${NAME[$i]} =~ "1050" || ${NAME[$i]} =~ "1650" || ${NAME[$i]} =~ "1660" ]]; then x=2
+		fi
+		echo "  Max Perf mode: $x"
+	else
+		echo "  Max Perf mode: $x (auto)"
+	fi
+
+
+	[[ `echo "$nvparams" | grep -oP "'GPUPowerMizerMode'.*\[gpu\:$i\]\): \K[0-9]+"` != "${POWERMIZER:-1}" ]] &&
+		args+=" -a [gpu:$i]/GPUPowerMizerMode=${POWERMIZER:-1}"
+
+
+	fans_count="${FANCNT[$i]}"
 	[[ -z $fans_count || $fans_count == "null" ]] && fans_count=1
 
-	if [[ -z $FAN || ${FAN[$i]} == 0 ]]; then
-		args+=" -a [gpu:$i]/GPUFanControlState=0"
+	[[ -z "${FAN[$i]}" ]] && FAN[$i]=0
+	if [[ `echo "$nvparams" | grep -oP "'GPUTargetFanSpeed'.*\[gpu\:$i\]\): \K[0-9]+"` == "${FAN[$i]}" ]]; then
+		echo "'GPUTargetFanSpeed' was already set to ${FAN[$i]}"
 	else
-		args+=" -a [gpu:$i]/GPUFanControlState=1"
-		for (( z = $fan_idx; z < $(( $fan_idx+$fans_count )); z++ )); do
-			args+=" -a [fan:$z]/GPUTargetFanSpeed=${FAN[$i]}"
-		done
-	fi
-
-	fan_idx=$(( $fan_idx+$fans_count ))
-
-	#echo "i=$i x=$x"
-	#GTX 1050 wanted i=2, allothers want i=3
-	x=3
-	if [[ ${NAME[$i]} =~ "1050" ]]; then x=2
-	elif [[ ${NAME[$i]} =~ "P106-100" ]]; then x=2
-	elif [[ ${NAME[$i]} =~ "P106-090" ]]; then x=1
-	elif [[ ${NAME[$i]} =~ "P104-100" ]]; then x=1
-	elif [[ ${NAME[$i]} =~ "P102-100" ]]; then x=1
-	elif [[ ${NAME[$i]} =~ "1660 Ti" || ${NAME[$i]} =~ "1660 SUPER" || ${NAME[$i]} =~ "1650 SUPER" ]]; then x=4
-	elif [[ ${NAME[$i]} =~ "RTX" ]]; then x=4
-	elif [[ ${NAME[$i]} =~ "1650" ]]; then x=2
-	elif [[ ${NAME[$i]} =~ "1660" ]]; then x=2
-	fi
-
-	[[ ! -z $CLOCK ]] &&
-		args+=" -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]}"
-	
-	if [[ ! -z $MEM ]]; then
-		if [[ $PILLFIX -eq 1 && "${NAME[$i]}" =~ 1080 ]]; then
-			args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=0"
+		if [[ ${FAN[$i]} == 0 ]]; then
+			[[ "$AUTOFAN_ENABLED" != 1 ]] &&
+				args+=" -a [gpu:$i]/GPUFanControlState=0"
 		else
-			args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]}"
+			args+=" -a [gpu:$i]/GPUFanControlState=1"
+			for (( z = $fan_idx; z < $(( $fan_idx+$fans_count )); z++ )); do
+				args+=" -a [fan:$z]/GPUTargetFanSpeed=${FAN[$i]}"
+			done
 		fi
 	fi
+	fan_idx=$(( $fan_idx+$fans_count ))
 
-	[[ ! -z $LOGO_BRIGHTNESS ]] &&
+
+	[[ -z "${CLOCK[$i]}" ]] && CLOCK[$i]=0
+	if [[ `echo "$nvparams" | grep -oP "'GPUGraphicsClockOffset'.*\[gpu\:$i\]\): \K[0-9]+"` == "${CLOCK[$i]}" ]]; then
+		echo "  'GPUGraphicsClockOffset' was already set to ${CLOCK[$i]}"
+	else
+		args+=" -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]}"
+	fi
+
+
+	[[ -z "${MEM[$i]}" ]] && MEM[$i]=0
+	if [[ `echo "$nvparams" | grep -oP "'GPUMemoryTransferRateOffset'.*\[gpu\:$i\]\): \K[0-9]+"` == "${MEM[$i]}" ]]; then
+		echo "  'GPUMemoryTransferRateOffset' was already set to ${MEM[$i]}"
+	else
+		args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]}"
+	fi
+
+
+	brightness=`echo "$nvparams" | grep -oP "'GPULogoBrightness'.*\[gpu\:$i\]\): \K[0-9]+"`
+	[[ ! -z "$brightness" && ! -z "$LOGO_BRIGHTNESS" && "$brightness" != "$LOGO_BRIGHTNESS" ]] &&
 		args+=" -a [gpu:$i]/GPULogoBrightness=$LOGO_BRIGHTNESS"
+
 
 	if [[ ! -z $args ]]; then
 		echo -en "${RED}"
-		nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args`
+		nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args 2>&1`
 		nvcode=$?
 		#[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
 		[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
-		nvresult=`grep -v "^$" <<< "$nvresult"`
-		echo -e "${NOCOLOR}$nvresult"
+		nvresult=`echo "$nvresult" | grep -v "^$"`
+		echo "${NOCOLOR}$nvresult"
 		[[ $nvcode -ne 0 ]] && exitcode=$nvcode
 	fi
-	
+
 done
 
 
 # start Pill if needed
 if [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
 	echo
-	echo -e "${YELLOW}===${NOCOLOR} Starting OhGodAnETHlargementPill ${YELLOW}=== `date +"%T"`${NOCOLOR}"
+	echo "${YELLOW}===${NOCOLOR} Starting OhGodAnETHlargementPill ${YELLOW}=== `date +"%T"`${NOCOLOR}"
 	sleep 1
 
 	if [[ "$PILLFIX" -eq 1 ]]; then
@@ -230,12 +320,12 @@ if [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
 				args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[3]=-1000"
 		done
 		if [[ ! -z $args ]]; then
-			echo -e "${RED}"
+			echo "${RED}"
 			nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args`
 			nvcode=$?
 			[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
 			nvresult=`grep -v "^$" <<< "$nvresult"`
-			echo -e "${NOCOLOR}$nvresult"
+			echo "${NOCOLOR}$nvresult"
 			[[ $nvcode -ne 0 ]] && exitcode=$nvcode
 			sleep 1
 		fi
@@ -247,12 +337,12 @@ if [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
 				args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[3]=${MEM[$i]}"
 		done
 		if [[ ! -z $args ]]; then
-			echo -e "${RED}"
+			echo "${RED}"
 			nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args`
 			nvcode=$?
 			[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
 			nvresult=`grep -v "^$" <<< "$nvresult"`
-			echo -e "${NOCOLOR}$nvresult"
+			echo "${NOCOLOR}$nvresult"
 			[[ $nvcode -ne 0 ]] && exitcode=$nvcode
 			sleep 1
 		fi
@@ -263,23 +353,6 @@ if [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
 	nohup /hive/opt/ohgodapill/run.sh $OHGODAPILL_ARGS > /dev/null 2>&1 &
 fi
 
-
-#
-#if [ -z $CPUFREQ ]; then
-#    :
-#    #echo "WARNING: CPUFREQ not set"
-#else
-#    :
-#    #dont see any improvement with this
-#    #cpufreq-set -c 0 -g performance
-#    #cpufreq-set -c 1 -g performance
-#    #cpufreq-set -c 0 -f 2800Mhz
-#    #cpufreq-set -c 1 -f 2800Mhz
-#    #echo "performance" >/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-#    #echo "performance" >/sys/devices/system/cpu/cpu1/cpufreq/scaling_governor
-#    #echo $CPUFREQ > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
-#    #echo $CPUFREQ > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
-#fi
-
+echo ""
 
 exit $exitcode
