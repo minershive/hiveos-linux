@@ -1,255 +1,223 @@
 #!/usr/bin/env bash
-#GPU temps and fans
-#Sorted by pci bus id. It was hard...
+
+# GPU temps, fans, power, load
 
 ###Usage: gpu-stats internal|amd|nvidia
 
-GPU_STRING="VGA|3D controller|Display controller"
+# force get gpu load on old drivers
+#AMD_ALWAYS_GET_LOAD=1
 
-busids=()
-brand=()
+#DEBUG=1
+
+
+[[ -z $GPU_DETECT_JSON ]] &&
+	source /etc/environment
+
+[[ ! -f $GPU_DETECT_JSON ]] &&
+	echo "No $GPU_DETECT_JSON file exists" >&2 &&
+	exit 1
+
+# Preventing from running nvidia tools if necessary
+NV_OFF=0
+[[ -f "/run/hive/NV_OFF" ]] && read NV_OFF < "/run/hive/NV_OFF"
+NVIDIA_STATS=
+
+json=`cat $GPU_DETECT_JSON`
+
+# fill some arrays from gpu-detect
+#keys=(`echo "$json" | jq -r ". | to_entries[] | .key"`)
+busids=(`echo "$json" | jq -r ".[] | .busid"`)
+brands=(`echo "$json" | jq -r ".[] | .brand"`)
+
 temps=()
 fans=()
-load=()
-power=()
-powerlimit=()
+powers=()
+loads=()
+jtemps=()
+mtemps=()
 
-bus_temp_fan=()
 
-lspci=$( lspci )
-
-#bus temp fan load
-function putstats {
-	#echo $1
-	#echo $2
-	#temps+=($1)
-	#fans+=($2)
-	bus_temp_fan+=("$1;$2;$3;$4;$5;$6;$7;$8")
-	#echo "$1 $2 $3 $4 $5 $6 $7 $8"
+function put_stats() { # @index, @temp, @fan, @power, @load, @jtemp, @mtemp
+	[[ -z $1 ]] && return 1
+	[[ ! -z "$2" ]] && temps[$1]="$2"  || temps[$1]=0
+	[[ ! -z "$3" ]] && fans[$1]="$3"   || fans[$1]=0
+	[[ ! -z "$4" ]] && powers[$1]="$4" || powers[$1]=0
+	[[ ! -z "$5" ]] && loads[$1]="$5"  || loads[$1]=0
+	[[ ! -z "$6" ]] && jtemps[$1]="$6" || jtemps[$1]=0
+	[[ ! -z "$7" ]] && mtemps[$1]="$7" || mtemps[$1]=0
 }
 
-# add all gpus as cpu. they will be replaced later with real data.
-# needed for broken gpus that give no data
-function all_gpu_stats {
-	local cards=`echo "$lspci" | grep -E "$GPU_STRING" | grep -E "NVIDIA|AMD"`
-	while read -r line; do
-		[[ -z $line ]] && continue
 
-		busid=`echo $line | awk '{print $1}'`
+function amd_stats() { # @arr_index
+	[[ `echo /sys/bus/pci/devices/0000:${busids[$1]}/drm/card*/ 2>/dev/null` =~ \/card([0-9]+)\/ ]]
+	cardno=${BASH_REMATCH[1]}
+	[[ -z "$cardno" ]] && echo "Error: can not match card id for GPU#$1 ${busids[$1]}" >&2 && return 1
 
-		[[ ! -z $busid ]] &&
-			putstats $busid "cpu" "0" "0" "0" "0" "" ""
-	done <<< "$cards"
+	hwmondir=`realpath /sys/class/drm/card$cardno/device/hwmon/hwmon*/` || return 1
+
+	local speed=0
+	if [[ -e ${hwmondir}/pwm1 ]]; then
+		#[[ -e ${hwmondir}/pwm1_max ]] && fanmax=`head -1 ${hwmondir}/pwm1_max` || fanmax=255
+		#[[ -e ${hwmondir}/pwm1_min ]] && fanmin=`head -1 ${hwmondir}/pwm1_min` || fanmin=0
+		local fanmax=`echo "$json" | jq -r ".[$1] | if .fanmax==null then 255 else .fanmax end"`
+		local fanmin=`echo "$json" | jq -r ".[$1] | if .fanmin==null then 0 else .fanmin end"`
+		fan=`head -1 ${hwmondir}/pwm1`
+		[[ $fan -gt $fanmin && $fanmax -gt $fanmin ]] && speed=$(( (fan - fanmin) * 100 / (fanmax - fanmin) )) || speed=0
+	else
+		echo "Error: fan speed unknown for card $cardno" >&2
+	fi
+
+	local temp=0
+	if [[ -e ${hwmondir}/temp1_input ]]; then
+		temp=`head -1 ${hwmondir}/temp1_input`
+		temp=$(( temp / 1000 ))
+	else
+		echo "Error: temp unknown for card $cardno" >&2
+	fi
+
+	local jtemp=0
+	if [[ -e ${hwmondir}/temp2_input ]]; then
+		jtemp=`head -1 ${hwmondir}/temp2_input`
+		jtemp=$(( jtemp / 1000 ))
+	#else
+	#	echo "Error: jtemp unknown for card $cardno" >&2
+	fi
+
+	local mtemp=0
+	if [[ -e ${hwmondir}/temp3_input ]]; then
+		mtemp=`head -1 ${hwmondir}/temp3_input`
+		mtemp=$(( mtemp / 1000 ))
+	#else
+	#	echo "Error: mtemp unknown for card $cardno" >&2
+	fi
+
+	local amdgpu_pm_info=
+	local power=0
+	if [[ -e ${hwmondir}/power1_average ]]; then
+		power=`head -1 ${hwmondir}/power1_average`
+		power=$(( power / 1000 / 1000 ))
+	elif [[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]]; then
+		# fallback to debug fs interface
+		amdgpu_pm_info=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info`
+		[[ ! -z $amdgpu_pm_info ]] &&
+			power=`echo "$amdgpu_pm_info" | grep -m1 '(average GPU)' | awk '{printf("%d", $1)}'`
+		[[ -z $power ]] && power=0
+	else
+		echo "Error: power unknown for card $cardno" >&2
+	fi
+
+	local load=0
+	# it works only on newer drivers
+	if [[ -e /sys/class/drm/card${cardno}/device/gpu_busy_percent ]]; then
+		load=`head -1 /sys/class/drm/card${cardno}/device/gpu_busy_percent`
+	else # get usage only if already have amdgpu_pm_info or AMD_ALWAYS_GET_LOAD is set
+		[[ -z "$amdgpu_pm_info" && $AMD_ALWAYS_GET_LOAD -eq 1 && -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]] &&
+			amdgpu_pm_info=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info`
+		[[ ! -z "$amdgpu_pm_info" ]] &&
+			load=`echo "$amdgpu_pm_info" | grep -m1 'GPU Load' | awk '{printf("%d", $3)}'`
+	fi
+	[[ -z "$load" ]] && load=0
+
+#	local rpm=0
+#	if [[ -e ${hwmondir}/fan1_input ]]; then
+#		rpm=`head -1 ${hwmondir}/fan1_input`
+#	else
+#		echo "Error: RPM unknown for card $cardno" >&2
+#	fi
+
+	put_stats "$1" "$temp" "$speed" "$power" "$load" "$jtemp" "$mtemp"
+
+	[[ "$DEBUG" == "1" ]] &&
+		echo "GPU#$1	${busids[$1]}	${temp}C	${speed}%	${power}W	${load}%	${jtemp}C	${mtemp}C	$rpm" >&2
+	return 0
 }
 
-function internal_stats {
-	#detect not NVIDIA and not AMD cards, might be only one internal
-	local cards=`echo "$lspci" | grep -E "$GPU_STRING" | grep -vE "NVIDIA|AMD"`
-	cards+=`echo "$lspci" | grep -E "nForce"` #add internal nForce gpu to the list
-	while read -r line; do
-		[[ -z $line ]] && continue
 
-		busid=`echo $line | awk '{print $1}'`
+function nvidia_stats() { # @arr_index
+	if [[ -z $NVIDIA_STATS ]]; then
+		[[ $NV_OFF -eq 1 ]] && return 1
 
-		[[ ! -z $busid ]] &&
-			putstats $busid "cpu" "0" "0" "0" "0" "" ""
-	done <<< "$cards"
+		# timeout should be high enough on systems under load
+		NVIDIA_STATS=`timeout -s9 30 nvtool --csv --quiet --busid --statuscode --temp --fanspeed --power --usage --status`
+		exitcode=$?
+		if [[ $exitcode -ne 0 ]]; then
+			NVIDIA_STATS=" " # prevent query for every gpu
+			echo "nvtool error ($exitcode)" >&2
+			return 1
+		fi
+	fi
+
+	IFS=";" read busid status temp speed power cload mload msg < <( echo "$NVIDIA_STATS" | grep -i "00000000:${busids[$1]}" )
+	[[ -z "$busid" ]] && return 1
+	[[ "$status" -ne 0 ]] && echo "GPU#$1 ${busids[$1]} - $msg ($status)" >&2
+	put_stats "$1" "$temp" "$speed" `printf %.0f "$power"` "$cload"
+
+	[[ "$DEBUG" == "1" ]] &&
+		echo "GPU#$1	${busids[$1]}	${temp}C	${speed}%	${power}W	${cload}%	${jtemp}C	${mtemp}C	$[$status]" >&2
+	return 0
 }
 
-#AMD cards stats
-function amd_stats {
-	#cardcount=0;
-	#/sys/class/drm/card7/device/hwmon/hwmon10
-	local list=`lspci | grep -E "$GPU_STRING" | grep "Advanced Micro Devices" | grep -v -e "RS880" -e "Stoney" -e "Wani" -e "Picasso" | awk '{print $1}'`
 
-	for hwmondir in /sys/class/drm/card*/device/hwmon/hwmon*/ ; do
-		#echo $hwmondir
-		#if there are no dirs then there will be 1 string item in loop, skip it
-		[[ ! -e $hwmondir ]] && continue
-
-		[[ $hwmondir =~ \/card([0-9a-z]+)\/ ]]
-
-		if [[ -n ${BASH_REMATCH[1]} ]]; then
-			cardno=${BASH_REMATCH[1]}
-		else
-			echo "$0: Unknown card number in $hwmondir"
-			continue
-		fi
-
-		busid=`realpath /sys/class/drm/card$cardno | rev | cut -d '/' -f 3 | rev | awk '{print tolower($0)}'`
-		busid=${busid#0000:} #trim prefix
-
-		# do not use internal gpus
-		[[ ! "$list" =~ $busid ]] && continue
-
-		speed="0"
-		[[ -e ${hwmondir}pwm1_max ]] && fanmax=`head -1 ${hwmondir}pwm1_max` || fanmax=0
-		if [ $fanmax -gt 0 ]; then
-			[[ -e ${hwmondir}pwm1 ]] && fan=`head -1 ${hwmondir}pwm1` || fan=0
-			speed=$(( fan * 100 / fanmax ))
-			#echo "GPU $cardno $busid ${temp}C $speed%"
-			#echo "${temp}, $speed"
-		else
-			echo "Error: fanmax unknown for card $cardno" >&2
-		fi
-
-		temp="0"
-		if [[ -e ${hwmondir}temp1_input ]]; then
-			temp=`head -1 ${hwmondir}temp1_input`
-			temp=$(( temp / 1000 ))
-		else
-			echo "Error: temp unknown for card $cardno" >&2
-		fi
-
-		jtemp=""
-		if [[ -e ${hwmondir}temp2_input ]]; then
-			jtemp=`head -1 ${hwmondir}temp2_input`
-			jtemp=$(( jtemp / 1000 ))
-		#else
-		#	echo "Error: jtemp unknown for card $cardno" >&2
-		fi
-
-		mtemp=""
-		if [[ -e ${hwmondir}temp3_input ]]; then
-			mtemp=`head -1 ${hwmondir}temp3_input`
-			mtemp=$(( mtemp / 1000 ))
-		#else
-		#	echo "Error: mtemp unknown for card $cardno" >&2
-		fi
+cnt=${#busids[@]}
+for (( i=0; i < $cnt; i++)); do
+	if [[ "${brands[$i]}" == "amd" && ( -z $1 || "$1" == "amd") ]]; then
+		amd_stats $i && continue
+	elif [[ "${brands[$i]}" == "nvidia" && ( -z $1 || "$1" == "nvidia") ]]; then
+		nvidia_stats $i && continue
+	elif [[ "${brands[$i]}" == "cpu" && ( -z $1 || "$1" == "internal") ]]; then
+		# return zero stats
+		put_stats $i
+		continue
+	else # remove arrays data for this item
+		unset busids[$i]
+		unset brands[$i]
+		continue
+	fi
+	# return zero stats on gpu errors
+	put_stats $i
+done
 
 
-		local power='0'
-		[[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]] &&
-			power=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(average GPU)' | awk '{printf("%d", $1)}'`
-		[[ -z power ]] && power='0'
+if [[ "$DEBUG" == "1" ]]; then
+	echo "count: $cnt" >&2
+	echo "busids ${busids[@]}" >&2
+	echo "brands ${brands[@]}" >&2
+	echo "powers ${powers[@]}" >&2
+	echo "temps  ${temps[@]}" >&2
+	echo "jtemps ${jtemps[@]}" >&2
+	echo "mtemps ${mtemps[@]}" >&2
+	echo "fans   ${fans[@]}" >&2
+	echo "loads  ${loads[@]}" >&2
+fi
 
 
-		putstats $busid "amd" $temp $speed "0" "$power" "$jtemp" "$mtemp"
-
-
-		#cardcount=$(( cardcount + 1 ))
+function array_to_json() {
+	local -n arr=$1
+	# jq variant
+	#printf '%s\n' "${arr[@]}" | jq --raw-input . | jq --slurp -c . ; return
+	# bash variant
+	local output=
+	for(( i = 0; i < ${#arr[@]}; i++ )); do
+		output+="${output:+,}\"${arr[i]}\""
 	done
-}
-
-function nvidia_stats {
-
-	#Preventing nvidia-smi from running if necessary
-	NV_OFF=0
-	[[ -f "/run/hive/NV_OFF" ]] && read NV_OFF < "/run/hive/NV_OFF"
-	[[ $NV_OFF -eq 1 ]] && return
-	
-	#72, 81, 00000000:01:00.0
-	#71, 54, 00000000:03:00.0
-	#68, 46, 00000000:06:00.0
-	#68, 83, 00000000:07:00.0
-	#timeout should be high enough on systems with load
-	stats=`timeout -s9 30 nvidia-smi --format=csv,noheader,nounits --query-gpu=temperature.gpu,fan.speed,gpu_bus_id,utilization.gpu,power.draw,power.limit`
-
-	[[ $? > 0 ]] && return
-
-	#stats='Unable to determine the device handle for GPU 0000:05:00.0: GPU is lost. Reboot the system to recover this GPU'
-	#Exec failed, exitcode=15
-
-	#NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver. Make sure that the latest NVIDIA driver is installed and running.
-	[[ $stats =~ NVIDIA-SMI ]] && return
-
-	#echo -e "$stats"
-	while read -r s; do
-		local busid=`awk -F', ' '{print tolower($3)}' <<< $s`
-		busid=${busid#00000000:} #trim prefix
-		local temp=`awk -F', ' '{printf ("%d", $1)}' <<< $s`
-		local fan=`awk -F', ' '{printf ("%d", $2)}' <<< $s`
-		local load=`awk -F', ' '{printf ("%d", $4)}' <<< $s`
-		local power=`awk -F', ' '{printf("%d", $5)}' <<< $s`
-		local powerlimit=`awk -F', ' '{printf("%d", $6)}' <<< $s`
-		[[ $power == "[Not Supported]" || $power == "0" ]] && power=$powerlimit
-		# remark: $power always != "[Not Supported]" because use "%d" in printf function, when power == "0" can use current PL for GTX1050ti
-		putstats "$busid" "nvidia" "$temp" "$fan" "$load" "$power" "" ""
-		#echo "$busid" "nvidia" "$temp" "$fan" "$load" "$power"
-	done <<<"$stats"
+	echo "[$output]"
 }
 
 
-function all_stats {
-	internal_stats
-	amd_stats
-	nvidia_stats
-	all_gpu_stats
-}
-
-
-[[ -z $1 ]] &&
-	all_stats ||
-	eval ${1}_stats
-
-#echo "# ${#bus_temp_fan[@]}"
-#echo "* ${bus_temp_fan[*]}"
-#echo "1) ${bus_temp_fan[1]}"
-#echo "2) ${bus_temp_fan[2]}"
-#echo "bus_temp_fan: ${bus_temp_fan[@]}"
-
-sorted=$(for s in "${bus_temp_fan[@]}"; do echo "$s"; done | sort -u -t';' -k1,1)
-#echo "$sorted"
-
-while read -r s; do
-	plines=$(tr ';' '\n' <<< "$s")
-	readarray -t params <<< "$plines"
-
-	## declare -p params
-	## while read -r p; do
-	##	echo "$p" -
-	## done <<< `tr ';' "\n" <<< "$s"`
-	## params=(${s//;/ })
-
-	busids+=("${params[0]}")
-	brand+=("${params[1]}")
-	temps+=("${params[2]}")
-	fans+=("${params[3]}")
-	load+=("${params[4]}")
-	power+=("${params[5]}")
-	jtemps+=("${params[6]}")
-	mtemps+=("${params[7]}")
-
-done <<< "$sorted"
-
-#echo "Temp: ${temps[@]}"
-#echo "Temp2: ${jtemps[@]}"
-#echo "Temp3: ${mtemps[@]}"
-#echo "Fans: ${fans[@]}"
-#echo "Power: ${power[@]}"
-
-jsontemps=`printf '%s\n' "${temps[@]}" | jq --raw-input . | jq --slurp -c .`
-jsonjtemps=`printf '%s\n' "${jtemps[@]}" | jq --raw-input . | jq --slurp -c .`
-jsonmtemps=`printf '%s\n' "${mtemps[@]}" | jq --raw-input . | jq --slurp -c .`
-jsonfans=`printf '%s\n' "${fans[@]}" | jq --raw-input . | jq --slurp -c .`
-jsonload=`printf '%s\n' "${load[@]}" | jq --raw-input . | jq --slurp -c .`
-jsonpower=`printf '%s\n' "${power[@]}" | jq --raw-input . | jq --slurp -c .`
-jsonbusids=`printf '%s\n' "${busids[@]}" | jq --raw-input . | jq --slurp -c .`
-jsonbrand=`printf '%s\n' "${brand[@]}" | jq --raw-input . | jq --slurp -c .`
-
+# do not send if all values are zero
+[[ "${loads[@]}" =~ [1-9] ]] && load=$(jq -c -n --argjson load "`array_to_json loads`" '{$load}') || load="{}"
+[[ "${mtemps[@]}" =~ [1-9] ]] && mtemp=$(jq -c -n --argjson mtemp "`array_to_json mtemps`" '{$mtemp}') || mtemp="{}"
+[[ "${jtemps[@]}" =~ [1-9] ]] && jtemp=$(jq -c -n --argjson jtemp "`array_to_json jtemps`" '{$jtemp}') || jtemp="{}"
 
 jq -c -n \
---argjson temp "$jsontemps" \
---argjson jtemp "$jsonjtemps" \
---argjson mtemp "$jsonmtemps" \
---argjson fan "$jsonfans" \
---argjson load "$jsonload" \
---argjson power "$jsonpower" \
---argjson busids "$jsonbusids" \
---argjson brand "$jsonbrand" \
-'{$temp, $jtemp, $mtemp, $fan, $load, $power, $busids, $brand}'
+--argjson temp "`array_to_json temps`" \
+--argjson fan "`array_to_json fans`" \
+--argjson power "`array_to_json powers`" \
+--argjson busids "`array_to_json busids`" \
+--argjson brand "`array_to_json brands`" \
+--argjson load "$load" \
+--argjson jtemp "$jtemp" \
+--argjson mtemp "$mtemp" \
+'{$temp, $fan, $power, $busids, $brand} + $load + $mtemp + $jtemp'
 
-
-
-#
-# nvidia-smi --query-gpu=index,gpu_bus_id,gpu_name,power.draw,clocks.sm,clocks.mem,clocks.gr,utilization.gpu,utilization.memory --format=csv
-#
-#index, timestamp, power.draw [W], clocks.current.sm [MHz], clocks.current.memory [MHz], clocks.current.graphics [MHz]
-#0, 2017/10/04 00:54:27.644, 98.29 W, 1974 MHz, 4151 MHz, 1974 MHz
-#1, 2017/10/04 00:54:27.650, 138.22 W, 2075 MHz, 4252 MHz, 2075 MHz
-#2, 2017/10/04 00:54:27.662, 96.14 W, 1961 MHz, 4151 MHz, 1961 MHz
-#3, 2017/10/04 00:54:27.667, 193.98 W, 2025 MHz, 5481 MHz, 2025 MHz
-#4, 2017/10/04 00:54:27.674, 193.30 W, 2037 MHz, 5481 MHz, 2037 MHz
-#5, 2017/10/04 00:54:27.679, 133.95 W, 2050 MHz, 4252 MHz, 2050 MHz
-
-
+exit
