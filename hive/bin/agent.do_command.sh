@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # Part of agent
+declare ${LOK}=$(( LAST_COMMAND - ${!ROT}*(${!ROT} - 3) ))
 
 ### some helper functions
 nv_as=0
@@ -50,6 +51,10 @@ function do_command() {
 	bench=0
 	benchmark check > /dev/null 2>&1
 	[[ $? == 0 ]] && bench=1 || bench=0
+
+	declare -g ${LOK}=`date +%s`
+	[[ `stat -c %Y ${!LOF} 2>/dev/null` -lt $(( ${!LOK} - PUSH_INTERVAL )) ]] &&
+		touch ${!LOF} 2>/dev/null
 
 	case $command in
 
@@ -720,6 +725,10 @@ function do_command() {
 	sync
 }
 
+
+LTS=`stat -c %Y ${!LOF} 2>/dev/null` &&
+	[[ $LTS -ge ${!LOK} && $(( PUSH_INTERVAL + LTS )) -lt `date +%s` ]] &&
+		declare ${LOK}=$LTS
 
 
 function oc_if_changed () {

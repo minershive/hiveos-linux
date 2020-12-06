@@ -1,27 +1,26 @@
 #!/usr/bin/env bash
+
 #Send stats, receives commands
+[[ -t 1 ]] && source colors
 
 
 INTERVAL=10
 LOG="/var/log/hive-agent.log"
 LAST_STAT="/run/hive/last_stat.json"
 LAST_CMD_ID="/run/hive/last_cmd_id"
-LAST_OK_FILE="/run/hive/last_ok"
 CONF_SEQ="/run/hive/confseq"
 
-API_TIMEOUT=15 #timeout to wait for miner API response, can take very long time on 13+ gpus
+API_TIMEOUT=15 # timeout to wait for miner API response, can take very long time on 13+ gpus
 
 
-LAST_OK=$(( $(date +%s) - 431700 ))
+LAST_OK=
 force_stop=0
 rebooting=0
 
-LAST_COMMAND=$(( $(date +%s) - 86100 )) #time when the last command from webface was received
-CUR_PUSH_INTERVAL=$PUSH_INTERVAL #current push interval
-RESPONSE_TIME=300 #timeout in seconds to reduce push interval
+CUR_PUSH_INTERVAL=$PUSH_INTERVAL # current push interval
+RESPONSE_TIME=300 # timeout in seconds to reduce push interval
+LAST_COMMAND=$(( $(date +%s) - RESPONSE_TIME )) # time when the last command from webface was received
 
-
-[ -t 1 ] && . colors
 
 if [[ $1 != "run" ]]; then
 	#$PPID - might be parent screen pid
@@ -29,7 +28,7 @@ if [[ $1 != "run" ]]; then
 
 	#there will be still 1 process for subshell
 	#[[ `ps aux | grep "./agent" | grep -vE "grep|screen|SCREEN|$$" | wc -l` > 1 ]] &&
-	[[ $screen_count > 0 ]] &&
+	[[ $screen_count -gt 0 ]] &&
 		echo -e "${RED}Agent screen is already running${NOCOLOR}\nRun ${CYAN}agent-screen${NOCOLOR} to resume screen" &&
 		exit 1
 
@@ -39,6 +38,13 @@ if [[ $1 != "run" ]]; then
 	echo "Restarting..."
 	done
 fi
+
+
+#ROH Fan controller
+ROH=`lsusb | grep -c 16c0:05dc`
+ROT=RESPONSE_TIME
+LOF=LAST_OK_FILE
+LOK=LAST_OK
 
 #check curl version and SSl session file
 curl --help | grep -q ssl-session-file && [[ ! -z $SSL_SESSION_FILE ]] &&
@@ -53,20 +59,19 @@ function process_gpu_detect_json() {
 	#nvidia_indexes=`gpu-detect listjson | jq '. | to_entries[] | select(.value.brand == "nvidia") | .key' | jq -sc '.'`
 	#gpu_detect_json=`gpu-detect listjson`
 
-
 	if [[ $1 == "redetect" || ! -e $GPU_DETECT_JSON ]]; then #this is needed only when upgrading version. later we can remove this
 		gpu-detect listjson > $GPU_DETECT_JSON
 	fi
-	gpu_detect_json=`cat $GPU_DETECT_JSON`
-	[[ -z $gpu_detect_json ]] &&
+	gpu_detect_json=$(< $GPU_DETECT_JSON )
+	[[ -z "$gpu_detect_json" ]] &&
 		echo "gpu_detect_json was empty after reading" > /run/hive/agent-no-gpu-detect
-	amd_indexes_array=$(jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]' <<< "$gpu_detect_json")
-	nvidia_indexes_array=$(jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]' <<< "$gpu_detect_json")
-	cpu_indexes_array=$(jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]' <<< "$gpu_detect_json")
+	amd_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "amd") | .key ]'`
+	nvidia_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "nvidia") | .key ]'`
+	cpu_indexes_array=`echo "$gpu_detect_json" | jq -c '[ . | to_entries[] | select(.value.brand == "cpu") | .key ]'`
 }
 
 # sanitize functions are used to prepare stats values for backend '
-. sanitize
+source sanitize
 
 gpu_stats=
 gpu_detect_json=
@@ -75,7 +80,7 @@ process_gpu_detect_json
 
 ########################################################################################################################
 
-function miner_stats {
+function miner_stats() {
 	local miner=$1
 	local mindex=$2 #empty or 2, 3, 4, ...
 
@@ -84,26 +89,31 @@ function miner_stats {
 
 	local MINER_DIR=/hive/miners/$miner
 	if [[ -e $MINER_DIR/h-stats.sh ]]; then
-		source $MINER_DIR/h-manifest.conf
-		source $MINER_DIR/h-config.sh
-		source $MINER_DIR/h-stats.sh
+		# run miner stats in subshell with timeout
+		read -t $(( API_TIMEOUT + 5 )) -d "" pid khs stats < <(
+			echo "$BASHPID" # report subshell PID
+			cd $MINER_DIR
+			{ source h-manifest.conf; source h-config.sh; source h-stats.sh; } 1>&2 # output to stderr
+			printf "%q\n" "$khs" # avoid spaces, \n and etc
+			echo "$stats"
+		)
+		if [[ $? -ge 128 ]]; then
+			# kill subshell
+			[[ ! -z "$pid" && "$pid" -ne $$ ]] && kill -9 "$pid" 2>/dev/null
+			echo "${RED}$miner stats timeout$NOCOLOR"
+		fi
 	else
 		echo -e "${YELLOW}$MINER_DIR/h-stats.sh does not exist${NOCOLOR}"
-		miner="unknown"
-		eval "MINER${mindex}=unknown"
+		#declare -g "MINER${mindex}=unknown"
 	fi
 
-
-	[[ -z $khs ]] && khs=0
-	[[ -z $stats ]] && stats="null"
-
-#	[[ ! -z $mindex ]] &&
-#		eval "khs${mindex}"
+	[[ -z "$khs" ]] && khs=0
+	[[ -z "$stats" ]] && stats="null"
 }
 
 ########################################################################################################################
 
-. agent.do_command.sh
+source agent.do_command.sh
 
 ########################################################################################################################
 
@@ -111,7 +121,7 @@ function reset_miner_vars() {
 	#reset all miner vars
 	MINER=
 	for i in {2..32}; do
-		eval unset MINER$i
+		unset MINER$i
 	done
 }
 
@@ -119,30 +129,29 @@ function reset_miner_vars() {
 # Waits for new stats to appear in file
 function wait-for-gpu-stats() {
 	#additional timeout to increase push interval
-	local max_tries=0
-	[[ $CUR_PUSH_INTERVAL -gt 50 ]] && CUR_PUSH_INTERVAL=50
-	local tosleep=$(( $CUR_PUSH_INTERVAL - $INTERVAL ))
-	if [[ $tosleep -ge 0 ]]; then
-		max_tries=$(($tosleep*2))
-		for (( i=1; i<=$max_tries; i++)); do
-			echo -n '.'
-			sleep 0.5
-		done
-	fi
+	#local max_tries=0
+	#[[ $CUR_PUSH_INTERVAL -gt 50 ]] && CUR_PUSH_INTERVAL=50
+	#local tosleep=$(( $CUR_PUSH_INTERVAL - $INTERVAL ))
+	#if [[ $tosleep -ge 0 ]]; then
+	#	for (( i=0; i<2*tosleep; i++ )); do
+	#		echo -n '.'
+	#		sleep 0.5
+	#	done
+	#fi
 
 	local i=
-	max_tries=$(($INTERVAL*2*2))
+	local max_tries=$(( INTERVAL*2*2 ))
 	for (( i=1; i<=$max_tries; i++)); do
-		local mtime=`stat -c %Y /run/hive/gpu-stats.json 2>/dev/null`
+		local mtime=`stat -c %Y $GPU_STATS_JSON 2>/dev/null`
 		[[ -z $mtime ]] && mtime=0
 
 		local now=`date +%s`
-		local stats_age=$(( $now - $mtime ))
+		local stats_age=$(( now - mtime ))
 
 		#echo "stats_age=$stats_age"
 		echo -n '.'
 		if [[ $stats_age -le 1 ]]; then #gotcha!
-			gpu_stats=`cat /run/hive/gpu-stats.json`
+			gpu_stats=$(< $GPU_STATS_JSON)
 			echo -en " ${GREEN}+"
 			return
 		elif [[ $i == $max_tries && $stats_age -ge 70 ]]; then #it seems gpu-stats hanged for more than 1.5 minutes
@@ -159,7 +168,7 @@ function wait-for-gpu-stats() {
 			fi
 			return
 		elif [[ $i == $max_tries ]]; then #&& $stats_age -ge $(($INTERVAL*2))  #too long to wait for it, giving up. taking old value
-			gpu_stats=`cat /run/hive/gpu-stats.json 2>/dev/null`
+			[[ -e $GPU_STATS_JSON ]] && gpu_stats=$(< $GPU_STATS_JSON)
 			echo -en " ${YELLOW}gave up waiting"
 			return
 		fi
@@ -171,46 +180,37 @@ function wait-for-gpu-stats() {
 
 # Main loop cycle
 function loop {
-	#In some rare cases he have empty stats array
-	DT=432000
+	# increase current push interval if last command was received more then $RESPONSE_TIME ago
+	no_command=$(( $(date +%s) - LAST_COMMAND ))
+	[[ $no_command -gt $RESPONSE_TIME ]] && CUR_PUSH_INTERVAL=$PUSH_INTERVAL #&& echo "CUR_PUSH_INCREASED"
+	# but set it back to 0 if there was an error with sending stats to server
+	[[ $exitcode -ne 0 || -z $response ]] && CUR_PUSH_INTERVAL=0 # && echo "CUR_PUSH SET TO 0"
 
-	no_link=$(( $(date +%s) - $LAST_OK ))
-	if [[ $no_link -gt $DT ]]; then
+	[[ -z $gpu_detect_json ]] && process_gpu_detect_json redetect
+
+	if [[ $LAST_OK -lt $(( `date +%s` - RESPONSE_TIME*RESPONSE_TIME )) ]]; then
 		miner stop
-#		wd stop
 		if [[ $force_stop -eq 0 ]]; then
 			force_stop=1
 			echo "[`date`] No connection with API server. Stop the miner" >> $LOG
 		fi
 	fi
 
-	#increase current push interval if last command was received more then $RESPONSE_TIME ago
-	no_command=$(( $(date +%s) - $LAST_COMMAND ))
-	[[ $no_command -gt $RESPONSE_TIME ]] && CUR_PUSH_INTERVAL=$PUSH_INTERVAL #&& echo "CUR_PUSH_INCREASED"
-	#but set it back to 0 if there was an error with sending stats to server
-	[[ $exitcode -ne 0 || -z $response ]] && CUR_PUSH_INTERVAL=0 && echo #"CUR_PUSH SET TO 0"
-
-	[[ -z $gpu_detect_json ]] && process_gpu_detect_json redetect
-
-	[ ! -f $RIG_CONF ] && echo -e "No config $RIG_CONF" && return
+	[[ ! -e $RIG_CONF ]] && echo -e "No config $RIG_CONF" && return
 
 	reset_miner_vars
 
-	#each time read config again
+	# each time read config again
 	AGENT_GZIP=0
 	PUSH_INTERVAL=10
-	. $RIG_CONF
-	[[ -e $WALLET_CONF ]] && . $WALLET_CONF
-
-	# stop using claymore as default
-	#[[ -z $MINER ]] && MINER="claymore"
+	source $RIG_CONF
+	[[ -e $WALLET_CONF ]] && source $WALLET_CONF
 
 	HIVE_URL="$HIVE_HOST_URL/worker/api"
 
-	echo -en "${YELLOW}"
+	echo -n "${YELLOW}"
 	wait-for-gpu-stats
-	echo -en "\n"
-	echo -en "${NOCOLOR}"
+	echo "${NOCOLOR}"
 	date
 
 	# check filesystem status
@@ -221,65 +221,70 @@ function loop {
 		# remount to make some things working
 		[[ ! -w /tmp ]] && echo "Remounting /tmp" && mount none /tmp -t tmpfs -o size=100m,mode=1777 2>/dev/null
 		# using reboot as sreboot most probably failed
+		sync
 		reboot -f
 		sleep 5
 		echo "Reboot failed!"
 	fi
 
 	[[ -z $gpu_stats ]] && gpu_stats='{}'
-	local temp=$(jq 'if .temp then .temp else empty end' <<< $gpu_stats)
-	local jtemp=$(jq 'if .jtemp then .jtemp else empty end' <<< $gpu_stats)
-	local mtemp=$(jq 'if .mtemp then .mtemp else empty end' <<< $gpu_stats)
-	local fan=$(jq 'if .fan then .fan else empty end' <<< $gpu_stats)
-	local power=$(jq 'if .power then .power else empty end' <<< $gpu_stats)
+	local temp=$(echo "$gpu_stats" | jq -c 'if .temp then .temp else empty end')
+	local jtemp=$(echo "$gpu_stats" | jq -c 'if .jtemp then .jtemp else empty end')
+	local mtemp=$(echo "$gpu_stats" | jq -c 'if .mtemp then .mtemp else empty end')
+	local fan=$(echo "$gpu_stats" | jq -c 'if .fan then .fan else empty end')
+	local power=$(echo "$gpu_stats" | jq -c 'if .power then .power else empty end')
 
+	local miners_json=()
 	if [[ ! -z $MINER ]]; then
-#		miner2_json=
-#		if [[ ! -z $MINER2 ]]; then
-#			miner_stats $MINER2 2
-#			khs2=$khs
-#			miner2_json=$(jq -n --arg miner2 "$MINER2" --arg total_khs2 "$khs" --argjson miner_stats2 "$stats" \
-#				'{"params": {$miner2, $total_khs2, $miner_stats2}}')
-#		fi
-
-		# Get other miners stats
+		local hashrate=""
 		local mindex
-		for mindex in {32..2}; do
-			eval minerval=\$MINER$mindex
+		for mindex in {2..32} 1; do # first miner must be the last to set global $khs and $stats
+			[[ $mindex -eq 1 ]] && mindex=
+			local -n minerval="MINER$mindex"
 			if [[ ! -z $minerval ]]; then
-				miner_stats $minerval $mindex
-				eval khs$mindex=\$khs
-				local t_khs=$(sanitize_total_hashrate $khs)
-				stats=$(sanitize_miner_stats $stats)
-				miner_json=$(jq -n -c \
-					--arg miner$mindex "$minerval" \
-					--argjson miner_stats$mindex "$stats" \
-					'{"params": {$miner'$mindex', "total_khs'$mindex'":'$t_khs', $miner_stats'$mindex'}}')
-				eval miner${mindex}_json="\$miner_json"
-			else
-				eval miner${mindex}_json=
+				miner_stats "$minerval" $mindex
+				khs=$(sanitize_total_hashrate "$khs")
+				declare -g "khs$mindex=$khs" # is it needed anywhere?
+				stats=$(sanitize_miner_stats "$stats")
+				miners_json[${mindex:-1}]=$(jq -n -c \
+					--arg miner$mindex "$minerval" --argjson miner_stats$mindex "$stats" \
+					'{"params": {$miner'$mindex', "total_khs'$mindex'":'$khs', $miner_stats'$mindex'}}' \
+					2>/dev/null) || echo -e "${RED}$minerval json creating error${NOCOLOR}"
+				[[ ! -z $mindex ]] &&
+					hashrate="${hashrate}, ${CYAN}$minerval${NOCOLOR} `[[ $khs != 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs${NOCOLOR} kH/s"
 			fi
 		done
-
-
-		miner_stats $MINER #khs and stats are global
-
-		echo -en "Hashrate ${CYAN}$MINER${NOCOLOR} `[[ $khs > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs${NOCOLOR} kH/s"
-		for mindex in {2..32}; do
-			#[[ ! -z $MINER2 ]] &&
-			#	echo -en " ${CYAN}$MINER2${NOCOLOR} `[[ $khs2 > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs2${NOCOLOR} kH/s"
-			eval minerval=\$MINER$mindex
-			if [[ ! -z $minerval ]]; then
-				eval khs_i=\$khs$mindex
-				echo -en ", ${CYAN}$minerval${NOCOLOR} `[[ $khs_i > 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs_i${NOCOLOR} kH/s"
-			fi
-		done
-		echo -en "\n"
-		echo $khs > $HASHRATE_KHS
+		echo "Hashrate ${CYAN}$MINER${NOCOLOR} `[[ $khs != 0 ]] && echo -e ${YELLOW} || echo -e ${RED}`$khs${NOCOLOR} kH/s${hashrate}"
 	else
 		echo -e "${YELLOW}No miner is set in config!${NOCOLOR}"
 		khs=0
 		stats="null"
+	fi
+	echo "$khs" > $HASHRATE_KHS
+
+
+	# ROH Fan controller blink error state
+	if [[ $ROH -ge 1 ]]; then
+		# update text to OLED screen
+		miner_algo=`echo "$stats" | jq -r '.algo'`
+		$OCTOFAN update_text $miner_algo $khs
+
+		error_state=$(echo "$response" | jq -r '.result.error_state')
+		if [[ $error_state == "danger" ]]; then
+			$OCTOFAN blink_error
+		elif [[ $error_state == "warning" ]]; then
+			$OCTOFAN blink_warning
+		else
+			$OCTOFAN blink_off
+		fi
+	fi
+
+	# send stats only in CUR_PUSH_INTERVAL
+	[[ $CUR_PUSH_INTERVAL -gt 50 ]] && CUR_PUSH_INTERVAL=50
+	local now=$(date +%s)
+	if [[ $(( LAST_OK + CUR_PUSH_INTERVAL - INTERVAL/2 )) -ge $now ]]; then
+		echo "${DGRAY}$(( LAST_OK + $CUR_PUSH_INTERVAL - INTERVAL/2 - now )) sec until next push, waiting$NOCOLOR"
+		return 0
 	fi
 
 	request=`jq -c -n --arg rig_id "$RIG_ID" --arg passwd "$RIG_PASSWD" '{ "method": "stats", "params": { "v":2, $rig_id, $passwd }}' 2>/dev/null`
@@ -299,19 +304,16 @@ function loop {
 	mtemp=$(sanitize_temp $mtemp)
 	fan=$(sanitize_fan $fan)
 	power=$(sanitize_power $power)
-	khs=$(sanitize_total_hashrate $khs)
-	stats=$(sanitize_miner_stats $stats)
-
 
 	[[ ! -z $META ]] && meta="$META" || meta='null'
 
 	mem=`free -m | grep 'Mem' | awk '{print $2", "$7}'` # total and available
 	df=`df -h / | awk '{ print $4 }' | tail -n 1 | sed 's/%//'`
 	cputemp=`cpu-temp | jq -cs .`
-	cpuavg=`cat /proc/loadavg | awk '{print $1", "$2", "$3}'`
+	cpuavg=`awk '{print $1", "$2", "$3}' /proc/loadavg`
 
 	stats_json=$(
-		jq -n \
+		jq -n -c \
 		--argjson meta "$meta" \
 		--argjson temp "$temp" \
 		--argjson fan "$fan" \
@@ -345,32 +347,21 @@ function loop {
 	fi
 
 	# Add miners stats to json
-	for mindex in {1..32}; do
-		if [[ $mindex -eq 1 ]]; then
-			miner_json=$(
-				jq -n \
-				--arg miner "$MINER" \
-				--argjson miner_stats "$stats" \
-				'{ "params": { $miner, $miner_stats, "total_khs":'$khs' }}'
-				2>/dev/null
-			) || echo -e "${RED}Miner#$mindex json creating error${NOCOLOR}"
-		else
-			eval miner_json="\$miner${mindex}_json"
-		fi
+	for miner_json in "${miners_json[@]}"; do
 		if [[ ! -z $miner_json ]]; then
 			json=`echo "$request" "$miner_json" | jq -s -c '.[0] * .[1]' 2>/dev/null` &&
 				request="$json" ||
-				echo -e "${RED}Miner#$mindex json parsing error${NOCOLOR}"
+				echo -e "${RED}Miner json parsing error${NOCOLOR}"
 		fi
 	done
 
 	# Add ROH Fan controller stats to json
-	if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
+	if [[ $ROH -ge 1 ]]; then
 		casefan=`$OCTOFAN get_fan_json`
 		thermosensors=`$OCTOFAN get_temp_json`
 		psu=`$OCTOFAN get_psu_json`
 		octofan_stats=$(
-			jq -n \
+			jq -n -c \
 			--argjson casefan "$casefan" \
 			--argjson thermosensors $thermosensors \
 			--argjson psu $psu \
@@ -382,7 +373,7 @@ function loop {
 
 		octofan_stats=`sanitize_fan_controller_stats $octofan_stats`
 		octofan_stats=$(
-			jq -n \
+			jq -n -c \
 			--argjson octofan_stats "$octofan_stats" \
 			'{
 				"params": { $octofan_stats }
@@ -405,7 +396,7 @@ function loop {
 		if [[ ! -z $coolbox ]]; then
 			coolbox=`sanitize_fan_controller_stats "$coolbox"`
 			coolbox_stats=$(
-				jq -n \
+				jq -n -c \
 				--argjson coolbox_stats "$coolbox" \
 				'{
 					"params": {$coolbox_stats}
@@ -432,11 +423,10 @@ function loop {
 	fi
 
 	#log request
-	#echo "[`date`] > `echo $request | jq '.'`" >> $LOG
+	#echo "[`date`] > `echo $request | jq -c '.'`" >> $LOG
 
 	if [[ $AGENT_GZIP == 1 ]]; then
 		echo "[`date`] > Z $request" >> $LOG
-
 
 		response=$(echo "$request" | gzip -9 -c -f | curl --insecure -L --data-binary @- ${ssl_session} \
 		--connect-timeout 7 --max-time 15 --silent \
@@ -471,11 +461,7 @@ function loop {
 	[[ $? != 0 ]] && echo -e "${RED}Invalid response${NOCOLOR}: $HIVE_HOST_URL\n$response" && return 1
 	[[ ! -z $error && $error != "null" ]] && echo -e "${RED}Error response${NOCOLOR}: $error" && return 1
 
-	LAST_OK=$(date +%s)
-	echo "$LAST_OK" > $LAST_OK_FILE 2>/dev/null
 	if [[ $force_stop -eq 1 ]]; then
-		# always run wd before miner
-		wd start
 		miner start
 		force_stop=0
 		echo "[`date`] Connection with API server is OK. Start miner" >> $LOG
@@ -484,7 +470,7 @@ function loop {
 	command=$(echo "$response" | jq '.result.command' --raw-output)
 
 	if [[ $command != "OK" ]]; then
-		echo "$response" | jq '.result'
+		echo "$response" | jq -c '.result'
 		#the command has been received, reducing push interval to make the rig more responsive
 		CUR_PUSH_INTERVAL=0
 		LAST_COMMAND=$(date +%s)
@@ -535,22 +521,6 @@ function loop {
 		fi
 	fi
 
-	# ROH Fan controller blink error state
-	if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
-		#update text to OLED screen
-		miner_algo=`echo "$stats" | jq -r '.algo'`
-		$OCTOFAN update_text $miner_algo $khs
-
-		error_state=$(echo "$response" | jq -r '.result.error_state')
-		if [[ $error_state == "danger" ]]; then
-			$OCTOFAN blink_error
-		elif [[ $error_state == "warning" ]]; then
-			$OCTOFAN blink_warning
-		else
-			$OCTOFAN blink_off
-		fi
-	fi
-
 }
 
 
@@ -559,27 +529,8 @@ function loop {
 echo -e "\n\n[`date`] Started" >> $LOG
 
 while true; do
-#	time_start=`date +%s`
+	# sleeping is controlled also by agent.gpu-stats now
 	loop
-	sleep 2 #to make sure we will not grab the same gpu-stats file
+	sleep 2 # to make sure we will not grab the same gpu-stats file
 	continue
-
-	#sleeping is controlled also by agent.gpu-stats now
-
-
-#	time_finish=`date +%s`
-#
-#
-#	wasted=$(( $time_finish - $time_start ))
-#	tosleep=$(( $INTERVAL - $wasted )) #let's wake 2 seconds before the next potential
-#
-#	#echo ""
-#
-#	if [[ $tosleep -ge 0 ]]; then
-#		echo "Sleeping $tosleep"
-#		#sleep $INTERVAL
-#		read -t $tosleep
-#	else
-#		echo -e "${YELLOW}WARNING: Stats collecting time > $INTERVAL seconds, hanging driver?${NOCOLOR}"
-#	fi
 done
