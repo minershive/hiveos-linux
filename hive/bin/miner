@@ -6,7 +6,7 @@ STOP_TIMEOUT=15
 export MINER_STOP=/run/hive/MINER_STOP
 
 MINER_LOGS_BASE_DIR=/var/log/miner
-RUNNING_FLAG="/run/hive/MINER_RUN"
+
 
 function usage() {
 	bname=`basename $0`
@@ -29,25 +29,6 @@ fi
 
 [[ -e $WALLET_CONF ]] && . $WALLET_CONF
 
-# stop using claymore as default
-#[[ -z $MINER ]] && MINER="claymore" && echo -e "${YELLOW}No miner set in config, will use default ${CYAN}\"claymore\"${NOCOLOR}"
-
-
-#HARDCODE FIX
-function fix_sgminer_gm() {
-	local mindex=
-	local minerval=
-	for mindex in {1..32}; do
-		[[ $mindex == 1 ]] && mindex=
-		eval minerval=\$MINER$mindex
-		if [[ ! -z $minerval ]]; then
-			[[ $minerval == "sgminer-gm" ]] &&
-				eval MINER$mindex="sgminer"
-		fi
-	done
-}
-fix_sgminer_gm
-
 
 ########################################################################################################################
 
@@ -68,7 +49,6 @@ function kill_hanged() {
 
 
 function start() {
-
 	kill_hanged
 
 	session_count=`screen -ls miner | grep -c ".miner"`
@@ -79,6 +59,7 @@ function start() {
 	fi
 
 	[[ -e $RUNNING_FLAG ]] && rm $RUNNING_FLAG
+	[[ -e $MINER_STOP ]] && rm $MINER_STOP
 	[[ -f /run/hive/cur_miner ]] && rm /run/hive/cur_miner
 
 	#[[ ! -z $MAINTENANCE && $MAINTENANCE -gt 0 ]] &&
@@ -96,46 +77,38 @@ function start() {
 	#	echo -en " and ${CYAN}$MINER2${NOCOLOR}"
 	local mindex
 	for mindex in {2..32}; do
-		eval minerval=\$MINER$mindex
+		local -n minerval="MINER$mindex"
 		[[ ! -z $minerval ]] &&
 			echo -en ", ${CYAN}$minerval${NOCOLOR}"
 	done
-	echo -en "\n"
+	echo ""
 
 	#screen -dm -S miner bash -c "${MINER}; bash"
-	#hack to preselect window 1
-	#yes, empty bash or it will hang from time to time if start with screen miner instantly
+	# hack to preselect window 1
+	# yes, empty bash or it will hang from time to time if start with screen miner instantly
 	screen -dm -c /hive/etc/screenrc.miner bash
+
 	for i in {1..25}; do
-		sleep 0.2 #it needs some time? it happens that you'll have "No screen session found" without sleep
-		session_count=`screen -ls miner | grep miner | wc -l`
-		[[ $session_count > 0 ]] && break #echo -e "Found screen miner in $i iterations" &&
+		sleep 0.25 # it needs some time? it happens that you'll have "No screen session found" without sleep
+		[[ `screen -ls miner | grep -c ".miner"` -gt 0 ]] && break
 		[[ $i == 25 ]] && echo -e "${RED}screen miner not found in 25 iterations, check logs and maybe flash drive speed${NOCOLOR}"
 	done
 
-	#[[ ! -z $MINER2 ]] &&
-	#	screen -S miner -X screen 2 $MINER2
-	for mindex in {32..2}; do
-		eval minerval=\$MINER$mindex
+	for mindex in {32..1}; do
+		[[ $mindex -eq 1 ]] && local -n minerval="MINER" || local -n minerval="MINER$mindex"
 		if [[ ! -z $minerval ]]; then
 			screen -S miner -X screen $mindex miner-run $minerval $mindex
-			sleep 0.2
-			screen -S miner -X title $minerval #set nice title
-			echo $minerval >> /run/hive/cur_miner ##add miner-name to the list of working miners
-			sleep 1 #to allow to grab dpkg lock
+			sleep 0.5
+			screen -S miner -X title $minerval # set nice title
+			echo $minerval >> /run/hive/cur_miner # add miner-name to the list of working miners
+			sleep 0.5 # to allow to grab dpkg lock
 		fi
 	done
-
-	screen -S miner -X screen 1 miner-run $MINER 1
-	sleep 0.2
-	screen -S miner -X title $MINER #set nice title
-	echo $MINER >> /run/hive/cur_miner ##add miner-name to the list of working miners
 
 	# do not start watchdog here
 	#touch $RUNNING_FLAG
 
 	# close bash window #0
-	sleep 0.2
 	screen -S miner -p bash -X stuff 'exit\n'
 
 	return 0
@@ -197,7 +170,7 @@ function stop() {
 		rm /run/hive/cur_miner
 	fi
 
-	#remove khs so no confusing for watchdog
+	# remove khs so no confusing for watchdog
 	#[[ -e /run/hive/khs ]] && rm /run/hive/khs
 	#wd gets mtime of file, no problem
 	return 0
@@ -248,7 +221,7 @@ function log_tail {
 	local TAIL_LINE=80
 
 	local suffix=1
-	[[ ! -z $1 ]] && #second miner
+	[[ ! -z $1 ]] && # second miner
 		suffix=$1
 
 	tail -n $TAIL_LINE /run/hive/miner.$suffix
@@ -273,8 +246,8 @@ function log_tail {
 
 	#-----------------------------------------------------------
 	log_basename=`miner_log_basename $MINER`
-	if [[ $? > 0 ]]; then
-		echo $log_basename #show error message
+	if [[ $? -ne 0 ]]; then
+		echo $log_basename # show error message
 		return
 	fi
 
@@ -285,7 +258,7 @@ function log_tail {
 		return
 	fi
 
-	if [[ `ls -l $logname | awk '{print $5}'` -le 1 ]]; then #can be 1, empty line
+	if [[ `ls -l $logname | awk '{print $5}'` -le 1 ]]; then # can be 1, empty line
 		echo "Log $logname is empty"
 		return
 	fi
@@ -293,7 +266,7 @@ function log_tail {
 
 	echo "$logname last $TAIL_LINE lines:"
 	echo ""
-	tail -n $TAIL_LINE $logname | sed "s,$(printf '\033')\\[[0-9;]*[a-zA-Z],,g" #sed removes colors
+	tail -n $TAIL_LINE $logname | sed "s,$(printf '\033')\\[[0-9;]*[a-zA-Z],,g" # sed removes colors
 }
 
 
@@ -303,7 +276,8 @@ function miner_echo_config_file() {
 	echo ""
 }
 
-#Shows miner config
+
+# Shows miner config
 function config() {
 	MINER_DIR=/hive/miners/$MINER
 
@@ -363,7 +337,7 @@ function logs_rotate {
 }
 
 
-#truncates current log, run by cron
+# truncates current log, run by cron
 function log_truncate {
 	MAX_LOG_SIZE=$(( 20 * 1024 * 1024 )) # 20 MB
 
@@ -391,15 +365,14 @@ function log_truncate {
 
 # Sets MINER to MINER2 if requested
 function check_second_miner {
-	local mindex=$1 #empty or 2, 3, 4, ...
-	[[ -z $1 || $1 -eq 1 ]] && return #not a second miner request
-
-	eval minerval=\$MINER$mindex
+	local mindex=$1 # empty or 2, 3, 4, ...
+	[[ -z $mindex || $mindex -eq 1 ]] && return # not a second miner request
+	local -n minerval="MINER$mindex"
 	[[ -z $minerval ]] &&
 		echo "Miner #$mindex is not configured" &&
 		exit 1
 
-	MINER=$minerval #substitute MINER var with second miner
+	MINER=$minerval # substitute MINER var with second miner
 }
 
 
@@ -417,7 +390,7 @@ function bench_check (){
 function status {
 	kill_hanged
 	for i in {1..3}; do
-		query=`timeout 1 screen -S miner -Q windows 2>/dev/null`
+		readarray -t query < <( timeout 1 screen -S miner -Q windows 2>/dev/null )
 		exitcode=$?
 		[[ $exitcode -lt 124 ]] && break
 		sleep 0.2
@@ -426,13 +399,12 @@ function status {
 
 	[[ $exitcode -ge 124 ]] && echo -e "${RED}Miners screen query error${NOCOLOR}" && return 3
 	if [[ $exitcode -ne 0 ]]; then
-		grep -q miner <<< "$query" && echo -e "${RED}Miners screen is in inconsistent state${NOCOLOR}" && return 2
+		[[ "${query[@]}" =~ miner ]] && echo -e "${RED}Miners screen is in inconsistent state${NOCOLOR}" && return 2
 		echo -e "${YELLOW}No miners are running${NOCOLOR}" && return 1
 	fi
 
-	windows=`tail -n 1 <<< "$query"`
 	echo "Running miners in screen:"
-	readarray -t screens <<< "${windows//  /$'\n'}"
+	readarray -t screens < <( echo "${query[-1]//  /$'\n'}" )
 	for scr in "${screens[@]}"
 	do
 		[[ $scr =~ ^([0-9]+)([^[:space:]]+)?[[:space:]]+(.*)$ ]] && echo -e "[${BASH_REMATCH[1]}] ${CYAN}${BASH_REMATCH[3]}${NOCOLOR}" || echo $scr
@@ -466,32 +438,30 @@ case $1 in
 		#echo -e "Restarting ${CYAN}$MINER${NOCOLOR}"
 		echo -e "${YELLOW}Restarting miner${NOCOLOR}" #can be different on miner change
 		stop
-		#need some time to finish it seems
+		# need some time to finish it seems
 		sleep 1
 		start
 	;;
-	config) #miner config 2
+	config) # miner config 2
 		check_second_miner $2
 		config
 	;;
-	log) #miner log 2 //can be 2 for other miner, log from miner.1 or miner.2!!!
+	log) # miner log 2 //can be 2 for other miner, log from miner.1 or miner.2!!!
 		check_second_miner $2
 		log_tail $2
 	;;
-	logrotate) #miner logrotate claymore
+	logrotate) # miner logrotate claymore
 		logs_rotate $2
 	;;
-	logtruncate) #miner logtruncate 2
+	logtruncate) # miner logtruncate 2
 		check_second_miner $2
 		log_truncate $MINER
 	;;
-	logtruncateall) #miner logtruncate 2
-		log_truncate $MINER
-		for mindex in {2..32}; do
-			eval minerval=\$MINER$mindex
-			if [[ ! -z $minerval ]]; then
-				log_truncate $minerval
-			fi
+	logtruncateall) # miner logtruncate 2
+		for mindex in {1..32}; do
+			check_second_miner $mindex
+			[[ ! -z $MINER ]] && break
+    		log_truncate $MINER
 		done
 	;;
 #	logdirscreate)
@@ -507,7 +477,6 @@ case $1 in
 	;;
 	*)
 		kill_hanged
-		screen -x -S miner
-		[[ $? != 0 ]] && usage
+		screen -x -S miner || usage
 	;;
 esac

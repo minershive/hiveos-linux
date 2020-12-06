@@ -4,23 +4,24 @@
 
 export DEBIAN_FRONTEND=noninteractive
 export LD_LIBRARY_PATH=/hive/lib
-RUNNING_FLAG="/run/hive/MINER_RUN"
 
 
-[[ ! -e $RIG_CONF ]] && echo -e "${RED}No rig config $RIG_CONF${NOCOLOR}" && exit 1
-[[ ! -e $WALLET_CONF ]] && echo -e "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && exit 1
+# miner minimal work time in seconds for log rotation
+MINER_LOG_MIN_TIME=30
 
-. $RIG_CONF
-. $WALLET_CONF
 
+
+[[ ! -e $RIG_CONF ]] && echo "${RED}No rig config $RIG_CONF${NOCOLOR}" && exit 1
+[[ ! -e $WALLET_CONF ]] && echo "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && exit 1
+
+source $RIG_CONF
+source $WALLET_CONF
 
 
 # Check arguments and miner
-MINER_NAME=$1
-[[ -z $MINER_NAME ]] && "${RED}Give some miner name${NOCOLOR}" && exit 1
-
-# HARDCODE FIX
-[[ $MINER_NAME == "sgminer-gm" ]] && MINER_NAME="sgminer"
+MINER_NAME="$1"
+MINER_CMD="$2"
+[[ -z $MINER_NAME ]] && echo "${RED}Give some miner name${NOCOLOR}" && exit 1
 
 
 # Check base miner package ==========================================================================
@@ -32,15 +33,17 @@ function hive-package-install-do () {
 	return ${PIPESTATUS[0]}
 }
 
+
 function hive-package-install () {
 	local package_name=$1
 	dpkg -s $package_name > /dev/null 2>&1
 	if [[ $? -ne 0 ]]; then
-		echo -e "${YELLOW}Installing $package_name${NOCOLOR}"
+		echo "${YELLOW}Installing $package_name${NOCOLOR}"
 		# stop watchdog while installing packages
-		local wd=$(wd status | grep -c running)
-		[[ $wd -ne 0 ]] && wd stop
-		dpkg --configure -a
+		#local wd=$(wd status | grep -c running)
+		#[[ $wd -ne 0 ]] && wd stop
+		#dpkg --configure -a
+		hpkg fix
 		hpkg update
 		hive-package-install-do $package_name
 		if [[ $? -ne 0 ]]; then
@@ -48,50 +51,22 @@ function hive-package-install () {
 			sleep 1
 			hive-package-install-do $package_name
 			if [[ $? -ne 0 ]]; then
-				#repover-touch #don't touch as we did not update all packages
+				# repover-touch #don't touch as we did not update all packages
 				cat /tmp/package-install.log | message error "Error installing $package_name" payload
 				# restore anyway
-				[[ $wd -ne 0 ]] && wd start
+				#[[ $wd -ne 0 ]] && wd start
 				return 1
 			fi
 		fi
 		apt-get clean
 		# restore after install
-		[[ $wd -ne 0 ]] && wd start
+		#[[ $wd -ne 0 ]] && wd start
 	fi
 	return 0
 }
 
 
-package_name="hive-miners-$MINER_NAME"
-hive-package-install $package_name || exit $?
-
-
-
-# Further actions ==========================================================================
-
-MINER_DIR=/hive/miners/$MINER_NAME
-[[ ! -e $MINER_DIR ]] && echo -e "${RED}$MINER_DIR does not exist, check miner installation${NOCOLOR}" && exit 1
-
-
-LIBCURL3_COMPAT=
-
-[[ ! -e $MINER_DIR/h-manifest.conf ]] && echo -e "${RED}No $MINER_DIR/h-manifest.conf${NOCOLOR}" && exit 1
-source $MINER_DIR/h-manifest.conf
-
-#Ubuntu 18.04 compat
-[[ $LIBCURL3_COMPAT == 1 && -e /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3.0.0 ]] &&
-	export LD_PRELOAD=libcurl-compat.so.3.0.0
-
-
-
-#ps aux | grep -v grep | grep -v $$ | grep -q "/hive/bin/miner-run $MINER_NAME" &&
-#	echo -e "${RED}$MINER_NAME miner is already running${NOCOLOR}" &&
-#	exit 1
-
-
-
-# Checks in taget of symlink exists
+# Checks in target of symlink exists
 function mkfile_from_symlink() {
 	[[ -z $1 ]] && return 1
 	[[ ! -L $1 ]] && return 1 #not a symlink
@@ -102,6 +77,7 @@ function mkfile_from_symlink() {
 	touch $f #&& echo "Touching $f"
 	chown -R user "$d"
 }
+
 
 function rmfile_from_symlink() {
 	[[ -z $1 ]] && return 0 #does not exist
@@ -115,18 +91,10 @@ function rmfile_from_symlink() {
 }
 
 
-# Generate config ==========================================================================
+function setup_miner() {
+	cd $MINER_DIR
 
-if [[ ! -e $MINER_DIR/h-config.sh ]]; then
-	echo -e "${RED}No h-config.sh found for $MINER_NAME${NOCOLOR}" && exit 1
-else
-	# Define default fallback value
-	[[ -z $MINER_LOG_BASENAME ]] && MINER_LOG_BASENAME=/var/log/miner/$MINER_NAME/$MINER_NAME
-
-#	unset -f miner_config_gen
-#	unset -f miner_fork
-#	unset -f miner_ver
-#	unset -f miner_config_echo
+	source $MINER_DIR/h-manifest.conf
 	source $MINER_DIR/h-config.sh
 
 	# exports needed by envsubst
@@ -137,51 +105,50 @@ else
 	export MINER_API_PORT
 	export MINER_LOG_BASENAME
 
-
-	echo -e "Miner:   ${CYAN}$MINER_NAME${NOCOLOR}"
-	[[ ! -z $MINER_FORK ]] && echo -e "Fork:    ${YELLOW}$MINER_FORK${NOCOLOR}"
-	[[ ! -z $MINER_VER ]] && echo -e "Version: ${YELLOW}$MINER_VER${NOCOLOR}"
+	echo "Miner:   ${CYAN}$MINER_NAME${NOCOLOR}"
+	[[ ! -z $MINER_FORK ]] && echo "Fork:    ${YELLOW}$MINER_FORK${NOCOLOR}"
+	[[ ! -z $MINER_VER ]] && echo "Version: ${YELLOW}$MINER_VER${NOCOLOR}"
 	echo
-
 
 	# Check actual miner's package
 	if [[ ! -z $MINER_FORK ]]; then #install package of fork
 		package_name+="-"${MINER_FORK//_/-}
-		hive-package-install $package_name || exit $?
+		hive-package-install $package_name || return $?
 	fi
 	if [[ ! -z $MINER_VER ]]; then #check version package
 		package_name+="-"${MINER_VER//_/-}
-		hive-package-install $package_name || exit $?
+		hive-package-install $package_name || return $?
 	fi
 
-	[[ $2 == "install" ]] && exit 0
+	# used in benchmark. exiting before config generation
+	[[ "$MINER_CMD" == "install" ]] && return 0
 
 	# Generate config files after package is installed
 	miner_config_gen
-fi
+}
 
-# Run miner ==========================================================================
-[[ ! -z $MINER_STOP && -f $MINER_STOP ]] && rm $MINER_STOP > /dev/null 2>&1
 
-# start watchdog here for primary miner
-[[ "$MINER_NAME" == "$MINER" ]] && touch $RUNNING_FLAG
+function run_miner() {
+	LIBCURL3_COMPAT=
 
-# miner minimal work time in seconds for log rotation
-miner_min_time=30
-miner_start_ts=0
+	cd $MINER_DIR
 
-cd $MINER_DIR
-while true; do
-	[[ ! -e $MINER_DIR/h-run.sh ]] &&
-		echo -e "${RED}$MINER_DIR/h-run.sh is not implemented${NOCOLOR}" &&
-		sleep 3 &&
-		continue
+	source $MINER_DIR/h-manifest.conf
+	source $MINER_DIR/h-config.sh
 
-	# do not rotate logs if miner restarts quickly to keep old logs
-	[[ $(date +%s) -ge $(( miner_start_ts + miner_min_time )) ]] &&
-		miner logrotate $MINER_NAME || echo "Skipping miner log rotation due to execution time < ${miner_min_time}sec"
+	# exports needed by envsubst
+	declare -fF miner_fork > /dev/null && #if function exists
+		export MINER_FORK=`miner_fork` ||
+		export MINER_FORK=
+	export MINER_VER=`miner_ver`
+	export MINER_API_PORT
+	export MINER_LOG_BASENAME
 
-	#Drop TIME_WAIT sockets
+	# Ubuntu 18.04 compat
+	[[ $LIBCURL3_COMPAT == 1 && -e /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3.0.0 ]] &&
+		export LD_PRELOAD=libcurl-compat.so.3.0.0
+
+	# Drop TIME_WAIT sockets
 	if [[ ! -z $MINER_API_PORT && $(lsmod | grep droptcpsock) ]]; then
 		echo ""
 		while true; do
@@ -193,20 +160,58 @@ while true; do
 		done
 	fi
 
+	# start miner
+	source $MINER_DIR/h-run.sh
+}
+
+
+# install miner root package
+package_name="hive-miners-$MINER_NAME"
+hive-package-install $package_name || exit $?
+
+# check control files
+MINER_DIR=/hive/miners/$MINER_NAME
+[[ ! -e $MINER_DIR ]] && echo "${RED}$MINER_DIR does not exist, check miner installation${NOCOLOR}" && exit 1
+[[ ! -e $MINER_DIR/h-manifest.conf ]] && echo "${RED}No $MINER_DIR/h-manifest.conf${NOCOLOR}" && exit 1
+[[ ! -e $MINER_DIR/h-config.sh ]] && echo "${RED}No h-config.sh found for $MINER_NAME${NOCOLOR}" && exit 1
+[[ ! -e $MINER_DIR/h-run.sh ]] && echo "${RED}$MINER_DIR/h-run.sh is not implemented${NOCOLOR}" && exit 1
+
+# define default fallback value
+[[ -z $MINER_LOG_BASENAME ]] && MINER_LOG_BASENAME=/var/log/miner/$MINER_NAME/$MINER_NAME
+
+# install miner and generate config, in subshell
+( setup_miner ) || exit $?
+
+# used in benchmark to install miners packages
+[[ "$MINER_CMD" == "install" ]] && exit 0
+
+# start watchdog here for primary miner
+[[ "$MINER_NAME" == "$MINER" ]] && touch $RUNNING_FLAG
+
+miner_start_ts=0
+
+while true; do
+	# do not rotate logs if miner restarts quickly to keep old logs
+	[[ $(date +%s) -ge $(( miner_start_ts + MINER_LOG_MIN_TIME )) ]] &&
+		miner logrotate $MINER_NAME || echo "${DGRAY}Skipping miner log rotation due to execution time < ${MINER_LOG_MIN_TIME}sec${NOCOLOR}"
+
 	miner_start_ts=$(date +%s)
 
 	# prevent Ctrl+C from killing screen. only killing miner for first time
 	trap 'echo ""' SIGINT
 
-	source $MINER_DIR/h-run.sh
+	# run miner, in subshell
+	( run_miner )
+	exitcode=$?
+
 	# exit loop if miner stop exists
 	[[ ! -z $MINER_STOP && -f $MINER_STOP ]] && break
 
 	# allow Ctrl+C again
 	trap - SIGINT
 
-	echo ""
-	echo -e "${YELLOW}$MINER_NAME exited, waiting to cooldown a bit${NOCOLOR}"
-	echo ""
+	echo -e "\n${BYELLOW}$MINER_NAME${YELLOW} exited (exitcode=$exitcode), waiting to cooldown a bit${NOCOLOR}\n"
 	sleep 3
 done
+
+exit $exitcode
