@@ -51,112 +51,102 @@ HASHRATE_MAX=999999999
 HASHRATE_FALLBACK_MIN=0
 HASHRATE_FALLBACK_MAX=0
 
+
 function sanitize_value() {
-  local v=`echo $1 | awk '{printf "%.8f", $1}'`
+  local v=`echo "$1" | awk '{printf "%.8f", $1}'`
   if (( $(echo "$v < $2" | bc -l) )); then
-    v=$4
+    echo "$4"
   elif (( $(echo "$v > $3" |bc -l) ));then
-    v=$5
-  fi
-  echo $v
-}
-
-sanitize_hash_value() {
-  local v=`echo $1 | awk '{ printf "%.8f", $1 }'`
-  if (( $(echo "$v > 0.001" | bc -l) )); then
-    if (( $(echo "$v < 10000" | bc -l) )); then
-      v=`echo $v | awk '{ printf "%.4f", $1 }'`
-    else
-      v=`echo $v | awk '{ printf "%.0f", $1 }'`
-    fi
-  fi
-
-  if (( $(echo "$v * $2 < $3" | bc -l) )); then
-    echo "$5 * $2" | bc
-  elif (( $(echo "$v * $2 > $4" | bc -l) )); then
-    echo "$6 * $2" | bc
+    echo "$5"
   else
     echo $v
   fi
 }
 
+sanitize_hash_value() {
+  local v=`echo "$1" | awk '{ printf "%.8f", $1 }'`
+  if (( $(echo "$v * $2 < $3" | bc -l) )); then
+    echo "$5 * $2" | bc
+  elif (( $(echo "$v * $2 > $4" | bc -l) )); then
+    echo "$6 * $2" | bc
+  else
+    if (( $(echo "$v > 0.001" | bc -l) )); then
+      if (( $(echo "$v < 10000" | bc -l) )); then
+        echo $v | awk '{ printf "%.4f", $1 }'
+      else
+        echo $v | awk '{ printf "%.0f", $1 }'
+      fi
+    elif (( $(echo "$v == 0" | bc -l) )); then
+      echo 0
+    fi
+  fi
+}
+
 function sanitize_temp() {
-  local t_json="$@"
   local s_values=
-  local a_values= #`echo $t_json | jq -r .[]`
-  readarray -t a_values < <(echo "$t_json" | jq -r .[])
+  local a_values
+  local i_value
+  readarray -t a_values < <( echo "$@" | jq -rc '.[ ]' )
   for i_value in "${a_values[@]}"; do
-    [[ ! -z "$s_values" ]] && s_values+=","
-    [[ -z "$i_value" || "$i_value" == "null" ]] && s_values+="null" ||
-        s_values+=`sanitize_value "$i_value" $TEMP_MIN $TEMP_MAX $TEMP_FALLBACK_MIN $TEMP_FALLBACK_MAX`
+    [[ -z "$i_value" || "$i_value" == "null" ]] &&
+      s_values+=${s_values:+,}"null" ||
+      s_values+=${s_values:+,}`sanitize_value "$i_value" $TEMP_MIN $TEMP_MAX $TEMP_FALLBACK_MIN $TEMP_FALLBACK_MAX`
   done
   echo "[$s_values]"
 }
 
 function sanitize_fan() {
-  local t_json=$@
+  local i_value
   local s_values=
-  local a_values=`echo $t_json | jq -r .[]`
-  for i_value in $a_values; do
-    [[ ! -z "$s_values" ]] && s_values+=","
-    s_values+=`sanitize_value $i_value $FAN_MIN $FAN_MAX $FAN_FALLBACK_MIN $FAN_FALLBACK_MAX`
+  for i_value in `echo "$@" | jq -rc '.[ ]'`; do
+    s_values+=${s_values:+,}`sanitize_value "$i_value" $FAN_MIN $FAN_MAX $FAN_FALLBACK_MIN $FAN_FALLBACK_MAX`
   done
   echo "[$s_values]"
 }
 
 function sanitize_power() {
-  local t_json=$@
+  local i_value
   local s_values=
-  local a_values=`echo $t_json | jq -r .[]`
-  for i_value in $a_values; do
-    [[ ! -z "$s_values" ]] && s_values+=","
-    s_values+=`sanitize_value $i_value $POWER_MIN $POWER_MAX $POWER_FALLBACK_MIN $POWER_FALLBACK_MAX`
+  for i_value in `echo "$@" | jq -rc '.[ ]'`; do
+    s_values+=${s_values:+,}`sanitize_value "$i_value" $POWER_MIN $POWER_MAX $POWER_FALLBACK_MIN $POWER_FALLBACK_MAX`
   done
   echo "[$s_values]"
 }
 
 function sanitize_octofan_temp() {
-  local t_json=$@
+  local i_value
   local s_values=
-  local a_values=`echo $t_json | jq -r .[]`
-  for i_value in $a_values; do
-    [[ ! -z "$s_values" ]] && s_values+=","
-    s_values+=`sanitize_value $(echo $i_value | awk '{ printf "%.1f", $1 }') $OCTOFAN_TEMP_MIN $OCTOFAN_TEMP_MAX $OCTOFAN_TEMP_FALLBACK_MIN $OCTOFAN_TEMP_FALLBACK_MAX`
+  for i_value in `echo "$@" | jq -rc '.[ ]'`; do
+    s_values+=${s_values:+,}`sanitize_value $(echo "$i_value" | awk '{ printf "%.1f", $1 }') $OCTOFAN_TEMP_MIN $OCTOFAN_TEMP_MAX $OCTOFAN_TEMP_FALLBACK_MIN $OCTOFAN_TEMP_FALLBACK_MAX`
   done
   echo "[$s_values]"
 }
 
 function sanitize_octofan_voltage_ac() {
-  local i_value=`sanitize_value $1 $OCTOFAN_VOLTAGE_AC_MIN $OCTOFAN_VOLTAGE_AC_MAX $OCTOFAN_VOLTAGE_AC_FALLBACK_MIN $OCTOFAN_VOLTAGE_AC_FALLBACK_MAX`
-  echo $i_value
+  sanitize_value "$1" $OCTOFAN_VOLTAGE_AC_MIN $OCTOFAN_VOLTAGE_AC_MAX $OCTOFAN_VOLTAGE_AC_FALLBACK_MIN $OCTOFAN_VOLTAGE_AC_FALLBACK_MAX
 }
 
 function sanitize_octofan_amperage_ac() {
-  local i_value=`sanitize_value $1 $OCTOFAN_AMPERAGE_AC_MIN $OCTOFAN_AMPERAGE_AC_MAX $OCTOFAN_AMPERAGE_AC_FALLBACK_MIN $OCTOFAN_AMPERAGE_AC_FALLBACK_MAX`
-  echo $i_value
+  sanitize_value "$1" $OCTOFAN_AMPERAGE_AC_MIN $OCTOFAN_AMPERAGE_AC_MAX $OCTOFAN_AMPERAGE_AC_FALLBACK_MIN $OCTOFAN_AMPERAGE_AC_FALLBACK_MAX
 }
 
 function sanitize_octofan_power_ac() {
-  local i_value=`sanitize_value $1 $OCTOFAN_POWER_AC_MIN $OCTOFAN_POWER_AC_MAX $OCTOFAN_POWER_AC_FALLBACK_MIN $OCTOFAN_POWER_AC_FALLBACK_MAX`
-  echo $i_value
+  sanitize_value "$1" $OCTOFAN_POWER_AC_MIN $OCTOFAN_POWER_AC_MAX $OCTOFAN_POWER_AC_FALLBACK_MIN $OCTOFAN_POWER_AC_FALLBACK_MAX
 }
 
 function sanitize_octofan_voltage_dc() {
-  local i_value=`sanitize_value $1 $OCTOFAN_VOLTAGE_DC_MIN $OCTOFAN_VOLTAGE_DC_MAX $OCTOFAN_VOLTAGE_DC_FALLBACK_MIN $OCTOFAN_VOLTAGE_DC_FALLBACK_MAX`
-  echo $i_value
+  sanitize_value "$1" $OCTOFAN_VOLTAGE_DC_MIN $OCTOFAN_VOLTAGE_DC_MAX $OCTOFAN_VOLTAGE_DC_FALLBACK_MIN $OCTOFAN_VOLTAGE_DC_FALLBACK_MAX
 }
 
 function sanitize_octofan_amperage_dc() {
-  local i_value=`sanitize_value $1 $OCTOFAN_AMPERAGE_DC_MIN $OCTOFAN_AMPERAGE_DC_MAX $OCTOFAN_AMPERAGE_DC_FALLBACK_MIN $OCTOFAN_AMPERAGE_DC_FALLBACK_MAX`
-  echo $i_value
+  sanitize_value "$1" $OCTOFAN_AMPERAGE_DC_MIN $OCTOFAN_AMPERAGE_DC_MAX $OCTOFAN_AMPERAGE_DC_FALLBACK_MIN $OCTOFAN_AMPERAGE_DC_FALLBACK_MAX
 }
 
 function sanitize_octofan_power_dc() {
-  local i_value=`sanitize_value $1 $OCTOFAN_POWER_DC_MIN $OCTOFAN_POWER_DC_MAX $OCTOFAN_POWER_DC_FALLBACK_MIN $OCTOFAN_POWER_DC_FALLBACK_MAX`
-  echo $i_value
+  sanitize_value "$1" $OCTOFAN_POWER_DC_MIN $OCTOFAN_POWER_DC_MAX $OCTOFAN_POWER_DC_FALLBACK_MIN $OCTOFAN_POWER_DC_FALLBACK_MAX
 }
 
-get_hs_multiplier(){
+get_hs_multiplier() {
   case $1 in
     "hs" )
       echo 0.001
@@ -173,163 +163,86 @@ get_hs_multiplier(){
 }
 
 function sanitize_hashrate() {
-  local hs_multiplier=`get_hs_multiplier $2`
-  local t_json=$1
   local s_values=
-  local a_values=`echo $t_json | jq -r .[]`
-  for i_value in $a_values; do
-    [[ ! -z "$s_values" ]] && s_values+=","
-    s_values+=`sanitize_hash_value $i_value $hs_multiplier $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX`
+  local hs_multiplier=`get_hs_multiplier "$2"`
+  for i_value in `echo "$1" | jq -rc '.[ ]'`; do
+    s_values+=${s_values:+,}`sanitize_hash_value "$i_value" $hs_multiplier $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX`
   done
   echo "[$s_values]"
 }
 
 function sanitize_total_hashrate() {
-  sanitize_hash_value $1 1 $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX
+  sanitize_hash_value "$1" 1 $HASHRATE_MIN $HASHRATE_MAX $HASHRATE_FALLBACK_MIN $HASHRATE_FALLBACK_MAX
 }
 
 function sanitize_ar() {
-  local t_json=$@
+  local i_value
   local s_values=
-  local a_values=`echo $t_json | jq -r .[]`
   local i=0
-  for i_value in $a_values; do
-    [[ ! -z "$s_values" ]] && s_values+=","
-    [[ i -ne 3 ]] && s_values+=$i_value || s_values+="\"$i_value\""
-    let i++
+  for i_value in `echo "$@" | jq -rc '.[ ]'`; do
+    [[ i -ne 3 ]] && s_values+=${s_values:+,}"$i_value" || s_values+=${s_values:+,}"\"$i_value\""
+    ((i++))
   done
   echo "[$s_values]"
 }
 
+# globals: $stats, $value
+# json_value ".jq_selector" "add_stats_value_name" "sanitize_func"
+function json_value() {
+  value=`echo "$stats" | jq -rc "$1"`
+  #echo "$1: $value" >&2
+  if [[ $? -eq 0 && ! -z "$value" && "$value" != '[]' && "$value" != 'null' ]]; then
+    [[ ! -z "$3" ]] && value=`$3 "$value"`
+    [[ ! -z "$2" ]] && stats=`echo "$stats {\"$2\": $value}" | jq -sc '.[0] * .[1]'`
+    return 0
+  fi
+  value=
+  return 1
+}
+
 function sanitize_miner_stats() {
-  local stats=$@
-  local i=0
-  local n=''
-  local value=
+  local stats="$@"
+  local value
 
-  for (( i = 1; i <= 32; i++ )); do
-    [[ $i -eq 1 ]] && n='' || n=$i
+  json_value ".hs_units" &&
+    hs_units="$value" ||
+    hs_units="khs"
 
-    eval 'local value=`echo $stats | jq -r .hs_units$n`'
-    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-      hs_units=$value
-    else
-      hs_units="khs"
-    fi
+  json_value ".hs" "hs" "sanitize_hashrate" "$hs_units"
+  json_value ".total_khs" "total_khs" "sanitize_total_hashrate"
+  json_value ".temp" "temp" "sanitize_temp"
+  json_value ".fan" "fan" "sanitize_fan"
+  json_value ".uptime" "uptime"
+  json_value ".ar" "ar" "sanitize_ar"
 
-    eval 'local value=`echo $stats | jq .hs$n`'
-    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-      value=`sanitize_hashrate "$value" $hs_units`
-      value='"hs'$n'":'$value
-      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
-    else
-      break
-    fi
-
-    eval 'local value=`echo $stats | jq -r .total_khs$n`'
-    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-      value=`sanitize_total_hashrate $value`
-      value='"total_khs'$n'":'$value
-      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
-    fi
-
-    eval 'local value=`echo $stats | jq .temp$n`'
-    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-      value=`sanitize_temp $value`
-      value='"temp'$n'":'$value
-      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
-    fi
-
-    eval 'local value=`echo $stats | jq .fan$n`'
-    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-      value=`sanitize_fan $value`
-      value='"fan'$n'":'$value
-      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
-    fi
-
-    eval 'local value=`echo $stats | jq -r .uptime$n`'
-    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-      value='"uptime'$n'":'$value
-      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
-    fi
-
-    eval 'local value=`echo $stats | jq .ar$n`'
-    if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-      value=`sanitize_ar $value`
-      value='"ar'$n'":'$value
-      stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
-    fi
-
-  done
-
-  echo $stats
+  echo "$stats"
 }
 
 function sanitize_fan_controller_stats() {
-  local stats=$@
-  local value=
+  local stats="$@"
+  local value
 
-  local value=`echo $stats | jq .thermosensors`
-  if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-    value=`sanitize_temp $value`
-    value='"thermosensors":'$value
-    stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
+  json_value ".psu"
+  if [[ $? -eq 0 ]]; then
+    # process subarray
+    stats="$value"
+    value=
+
+    json_value ".voltage_ac" "voltage_ac" "sanitize_octofan_voltage_ac"
+    json_value ".amperage_ac" "amperage_ac" "sanitize_octofan_amperage_ac"
+    json_value ".power_ac" "power_ac" "sanitize_octofan_power_ac"
+    json_value ".voltage_dc" "voltage_dc" "sanitize_octofan_voltage_dc"
+    json_value ".amperage_dc" "amperage_dc" "sanitize_octofan_amperage_dc"
+    json_value ".power_dc" "power_dc" "sanitize_octofan_power_dc"
+
+    # merge to main array
+    stats=`echo "$@ {\"psu\": $stats}" | jq -sc '.[0] * .[1]'`
   fi
 
-  local value=`echo $stats | jq .casefan`
-  if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-    value=`sanitize_fan $value`
-    value='"casefan":'$value
-    stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
-  fi
+  json_value ".thermosensors" "thermosensors" "sanitize_temp"
+  json_value ".casefan" "casefan" "sanitize_fan"
 
-  local value=`echo $stats | jq .psu`
-  if [[ ! -z $value && $value != '[]' && $value != 'null' ]]; then
-    local voltage_ac=`echo $value | jq -r .voltage_ac`
-    if [[ ! -z $voltage_ac && $voltage_ac != '[]' && $voltage_ac != 'null' ]]; then
-      voltage_ac='"voltage_ac":'`sanitize_octofan_voltage_ac $voltage_ac`', '
-    else
-      voltage_ac=
-    fi
-    local amperage_ac=`echo $value | jq -r .amperage_ac`
-    if [[ ! -z $amperage_ac && $amperage_ac != '[]' && $amperage_ac != 'null' ]]; then
-      amperage_ac='"amperage_ac":'`sanitize_octofan_amperage_ac $amperage_ac`', '
-    else
-      amperage_ac=
-    fi
-    local power_ac=`echo $value | jq -r .power_ac`
-    if [[ ! -z $power_ac && $power_ac != '[]' && $power_ac != 'null' ]]; then
-      power_ac=`sanitize_octofan_power_ac $power_ac`
-      power_ac='"power_ac": '$power_ac', '
-    else
-      power_ac=
-    fi
-    local voltage_dc=`echo $value | jq -r .voltage_dc`
-    if [[ ! -z $voltage_dc && $voltage_dc != '[]' && $voltage_dc != 'null' ]]; then
-      voltage_dc='"voltage_dc":'`sanitize_octofan_voltage_dc $voltage_dc`', '
-    else
-      voltage_dc=
-    fi
-    local amperage_dc=`echo $value | jq -r .amperage_dc`
-    if [[ ! -z $amperage_dc && $amperage_dc != '[]' && $amperage_dc != 'null' ]]; then
-      amperage_dc='"amperage_dc":'`sanitize_octofan_amperage_dc $amperage_dc`', '
-    else
-      amperage_dc=
-    fi
-    local power_dc=`echo $value | jq -r .power_dc`
-    if [[ ! -z $power_dc && $power_dc != '[]' && $power_dc != 'null' ]]; then
-      power_dc='"power_dc":'`sanitize_octofan_power_dc $power_dc`', '
-    else
-      power_dc=
-    fi
-
-    value=${voltage_ac}${amperage_ac}${power_ac}${voltage_dc}${amperage_dc}${power_dc}
-    value=${value%", "}
-    value=`echo '"psu": { '$value' }'`
-    stats=`jq -s '.[0] * .[1]' <<< "$stats {$value}"`
-  fi
-
-  echo $stats
+  echo "$stats"
 }
 
 #sanitize_total_hashrate $1
