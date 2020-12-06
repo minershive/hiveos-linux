@@ -1,81 +1,70 @@
 #!/usr/bin/env bash
 
+[[ "$1" != "--nocolor" ]] && . colors
 
-. colors
+date
 
+function nvidiainfo() {
+	local nvdata
+	readarray -t nvdata < <(nvtool -q --csv --device --busid --name --vbios --temp --fanspeed --fancount --power --curpl \
+							--defpl --minmaxpl --clocks --usage --meminfo --memtype --curgen --curwidth --sn --uuid --state --statuscode --status)
+	[[ ${#nvdata[@]} -eq 0 ]] && echo -e "${RED}No Nvidia GPUs found or driver not loaded$NOCOLOR" && exit 1
 
-list=`nvidia-smi --query-gpu=index,name,vbios_version,serial,gpu_bus_id,clocks.sm,clocks.mem,clocks.gr,pcie.link.gen.current,temperature.gpu,utilization.gpu,utilization.memory,memory.total,memory.free,memory.used,power.draw,fan.speed,pstate,power.min_limit,power.default_limit,power.max_limit,power.limit,pcie.link.width.current,uuid --format=csv,noheader 2>/dev/null` # > $NVIDIASMI_FILE
-[[ $? -ne 0 ]] && echo -e "${RED}No Nvidia GPUs found or nvidia-smi error$NOCOLOR" && exit 1
+	local nvsinfo
+	# Attribute 'GPUTargetFanSpeed' (RIG:0[fan:0]): 56.
+	# Attribute 'GPUCurrentFanSpeedRPM' (RIG:0[fan:0]): 1625.
+	nvsinfo=`export DISPLAY=:0; nvidia-settings -q GPUTargetFanSpeed -q GPUCurrentFanSpeedRPM 2>/dev/null | grep Attribute`
 
-export DISPLAY=:0
-nvsinfo=`nvidia-settings -q GPUTargetFanSpeed -q GPUCurrentFanSpeedRPM 2>/dev/null | grep Attribute` || nvsinfo=
-#echo "$nvsinfo"
-if [[ ! -z $nvsinfo ]]; then
-	fanscount=(`nvtool --busid --fancount --csv --quiet 2>/dev/null`) # 00000000:01:00.0,1
-	declare -A FANIDX=()
-	declare -A FANCNT=()
-	fan_index=0
-	for fan in "${fanscount[@]}"; do
-		[[ ! $fan =~ 00000000:([0-9A-Fa-f:\.]+),([0-9]+) ]] && continue
-		FANCNT[${BASH_REMATCH[1]}]=${BASH_REMATCH[2]}
-		FANIDX[${BASH_REMATCH[1]}]=$fan_index
-		fan_index=$(( fan_index + ${BASH_REMATCH[2]} ))
-		#echo "${BASH_REMATCH[1]}, ${FANCNT[${BASH_REMATCH[1]}]}, ${FANIDX[${BASH_REMATCH[1]}]}"
+	local fanidx=0
+	declare -A FANS=()
+
+	for gpuinfo in "${nvdata[@]}"; do
+
+		IFS=";" read index busid name bios temp fan fancnt pwr plcur pldef plmin plmax gclk mclk gpuutil memutil memtotal memused memfree\
+					memtype pcie linkw sn uuid pstate status msg etc < <( echo "$gpuinfo" )
+		[[ -z "$busid" ]] && continue
+		busid="${busid#00000000:}" # trim prefix
+
+		echo ""
+
+		if [[ $status -ne 0 ]]; then
+			echo "${YELLOW}===${NOCOLOR} GPU ${CYAN}${index}${NOCOLOR}, ${PURPLE}${busid} ${GREEN}${name}$NOCOLOR - ${RED}$msg ($status) ${YELLOW}===${NOCOLOR}"
+			# let's try to get fans count from gpu-detect
+			if [[ $fanidx -ge 0 && ${#FANS[@]} -eq 0 ]]; then
+				while IFS=";" read gpu_busid gpu_fans; do
+					[[ -z "$gpu_fans" || "$gpu_fans" == "null" ]] && FANS["$gpu_busid"]=1 || FANS["$gpu_busid"]="$gpu_fans"
+				done < <( cat $GPU_DETECT_JSON 2>/dev/null | jq -r -c '.[] | (.busid+";"+.fan_cnt)' 2>/dev/null )
+			fi
+			fancnt=${FANS["$busid"]}
+			[[ $fancnt -gt 0 ]] && fanidx=$((fanidx+fancnt)) || fanidx=-1 # disable fan/rpm info as it can be inaccurate
+			continue
+		fi
+
+		local faninfo=
+		if [[ "$fancnt" -gt 0 && $fanidx -ge 0 ]]; then
+			for((i=fanidx ; i<fanidx+fancnt; i++ )); do
+				readarray -t fanarr < <(echo "$nvsinfo" | grep -oP "\[fan:$i\][^0-9]+\K[0-9]+")
+				[[ ${#fanarr[@]} -ne 2 ]] && continue
+					faninfo+=", Fan $WHITE${fanarr[0]} %$NOCOLOR, RPM $WHITE${fanarr[1]}$NOCOLOR"
+			done
+			fanidx=$((fanidx+fancnt))
+		fi
+		[[ -z "$faninfo" ]] && faninfo=", Fan $WHITE${fan:--} %$NOCOLOR"
+		[[ ! -z "$pstate" ]] && pstate="P${pstate}"
+		[[ ! -z "$linkw" ]] && linkw="${linkw}x"
+
+		echo "${YELLOW}===${NOCOLOR} GPU ${CYAN}${index}${NOCOLOR}, ${PURPLE}${busid} ${GREEN}${name} ${WHITE}$memtotal MB ${YELLOW}===${NOCOLOR}"
+		#echo "Adapter: $index, ${GREEN}$name${NOCOLOR}"
+		echo "  Bios $WHITE${bios:--}$NOCOLOR, PCIE Link Gen $WHITE${pcie:--}$NOCOLOR, PCIE Link Width $WHITE${linkw:--}$NOCOLOR"
+		echo "  S/N ${serial:--}, UUID ${uuid:--}"
+		echo "  Power Limit:  Min $WHITE${plmin:--} W$NOCOLOR, Default $WHITE${pldef:--} W$NOCOLOR, Max $WHITE${plmax:--} W$NOCOLOR, Current $WHITE${plcur:--} W$NOCOLOR"
+		echo "  Frequency:  GFXCore $WHITE${gclk:--} MHz$NOCOLOR, MEMCore $WHITE${mclk:--} MHz$NOCOLOR"
+		echo "  Memory:  Total $WHITE${memtotal:--} MB$NOCOLOR, Used $WHITE${memused:--} MB$NOCOLOR, Free $WHITE${memfree:--} MB$NOCOLOR, $WHITE${memtype:--}$NOCOLOR"
+		echo "  Utilization:  GPU $WHITE${gpuutil:--} %$NOCOLOR, MEM $WHITE${memutil:--} %$NOCOLOR"
+		echo "  PSTATE ${WHITE}${pstate:--}$NOCOLOR, PWR $WHITE${pwr:--} W$NOCOLOR, Temp $WHITE${temp:--} °C$NOCOLOR$faninfo"
+
 	done
-fi
+}
 
-while read -r s; do
-	index=`awk -F', ' '{print $1}' <<< $s`
-	name=`awk -F', ' '{print $2}' <<< $s`
-	bios=`awk -F', ' '{print $3}' <<< $s`
-	serial=`awk -F', ' '{print $4}' <<< $s`
-	busid=`awk -F', ' '{print $5}'  <<< $s`
-	smclk=`awk -F', ' '{print $6}' <<< $s`
-	mclk=`awk -F', ' '{print $7}' <<< $s`
-	gclk=`awk -F', ' '{print $8}' <<< $s`
-	pcie=`awk -F', ' '{print $9}' <<< $s`
-	temp=`awk -F', ' '{print $10}' <<< $s`
-	gpu_util=`awk -F', ' '{print $11}' <<< $s`
-	memutil=`awk -F', ' '{print $12}' <<< $s`
-	memtotal=`awk -F', ' '{print $13}' <<< $s`
-	memfree=`awk -F', ' '{print $14}' <<< $s`
-	memused=`awk -F', ' '{print $15}' <<< $s`
-	pwr=`awk -F', ' '{print $16}' <<< $s`
-	fan=`awk -F', ' '{print $17}' <<< $s`
-	pstate=`awk -F', ' '{print $18}' <<< $s`
-	plmin=`awk -F', ' '{print $19}' <<< $s`
-	pldef=`awk -F', ' '{print $20}' <<< $s`
-	plmax=`awk -F', ' '{print $21}' <<< $s`
-	plcur=`awk -F', ' '{print $22}' <<< $s`
-	linkwidth=`awk -F', ' '{print $23}' <<< $s`
-	uuid=`awk -F', ' '{print $24}' <<< $s`
-
-	busid=${busid#00000000:} #trim prefix
-
-	# Multi fan and RPM
-	faninfo=
-	if [[ ! -z ${FANIDX[$busid]} ]]; then
-		for(( i=${FANIDX[$busid]}; i<$(( ${FANIDX[$busid]} + ${FANCNT[$busid]} )) ; i++ )); do
-			# Attribute 'GPUTargetFanSpeed' (RIG:0[fan:0]): 56.
-			# Attribute 'GPUCurrentFanSpeedRPM' (RIG:0[fan:0]): 1625.
-			arr=(`grep -oP "\[fan:$i\][^0-9]+\K[0-9]+" <<< "$nvsinfo"`)
-			[[ ${#arr[@]} -ne 2 ]] && continue
-			faninfo+=", Fan $WHITE${arr[0]} %$NOCOLOR, RPM $WHITE${arr[1]}$NOCOLOR"
-		done
-	fi
-	[[ -z $faninfo ]] && faninfo=", Fan $WHITE$fan$NOCOLOR"
-
-	##Start out
-		echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$index${NOCOLOR}, ${PURPLE}$busid ${GREEN}$name ${YELLOW}===${NOCOLOR}"
-		#echo -e "Adapter: $index, ${GREEN}$name${NOCOLOR}"
-		echo -e "  Bios $WHITE$bios$NOCOLOR, PCIE Link Gen $WHITE$pcie$NOCOLOR, PCIE Link Width $WHITE${linkwidth}x$NOCOLOR"
-		echo -e "  S/N $serial, UUID $uuid"
-		echo -e "  Power Limit:  Min $WHITE$plmin$NOCOLOR, Default $WHITE$pldef$NOCOLOR, Max $WHITE$plmax$NOCOLOR, Current $WHITE$plcur$NOCOLOR"
-		echo -e "  Frequency:  GFXCore $WHITE$gclk$NOCOLOR, SMCore $WHITE$smclk$NOCOLOR, MEMCore $WHITE$mclk$NOCOLOR"
-		echo -e "  Memory:  Total $WHITE$memtotal$NOCOLOR, Used $WHITE$memused$NOCOLOR, Free $WHITE$memfree$NOCOLOR"
-		echo -e "  Utilization:  GPU $WHITE$gpu_util$NOCOLOR, MEM $WHITE$memutil$NOCOLOR"
-		echo -e "  PSTATE $WHITE$pstate$NOCOLOR, PWR $WHITE$pwr$NOCOLOR, Temp $WHITE$temp °C$NOCOLOR$faninfo"
-		echo -e ""
-	##End out
-done <<<"$list"
+nvidiainfo
 
