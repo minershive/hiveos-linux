@@ -27,10 +27,14 @@ COOLBOX_AVAILABLE_FILE=/run/hive/coolbox_available
 GPU_DETECT_JSON=/run/hive/gpu-detect.json
 GPU_STATS_JSON=/run/hive/gpu-stats.json
 
+LAST_OK_FILE=/home/user/.cache/last
 HASHRATE_KHS=/run/hive/khs
+RUNNING_FLAG=/run/hive/MINER_RUN
 
 VNC_PASSWD=/hive-config/vnc-password.txt
 
 REF_ID=/hive-config/ref_id.txt
 
 SSL_SESSION_FILE=/tmp/ssl-session-file.pem
+
+BUSID_FILE=/hive-config/busid.conf

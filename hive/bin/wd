@@ -16,8 +16,6 @@ OK_MESSAGE_REDUCE=$(( 1 * 60 / WD_SLEEP )) #e.g. only every 6th message will be 
 KHS_OLD=120 # seconds that considered old hashrate
 
 LAST_STAT="/run/hive/last_stat.json"
-LAST_OK_FILE="/run/hive/last_ok"
-RUNNING_FLAG="/run/hive/MINER_RUN"
 
 
 ok_count=0
