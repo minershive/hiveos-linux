@@ -66,8 +66,8 @@ function polaris_oc() {
 	# core set is not specified, let's use some default or it will not work in some cases
 	[[ -z $coreState && $AGGRESSIVE != 1 ]] &&
 		if [[ ${CORE_VDDC[$i]} -le $MIN_VOLT || ${CORE_CLOCK[$i]} -le $MIN_CLOCK ]]; then
-			echo "${YELLOW}Empty core state, falling back to $DEFAULT_CORE_STATE $NOCOLOR" &&
 			coreState=$DEFAULT_CORE_STATE
+			echo "${YELLOW}Empty core state, falling back to $coreState $NOCOLOR"
 		fi
 
 	if [[ ! -z $MEM_STATE ]]; then
@@ -91,9 +91,12 @@ function polaris_oc() {
 		memoryState="$maxMemoryState"
 
 	# in aggressive mode if memory voltage not specified using core voltage for back compatibility
-	[[ -z ${MVDD[$i]} && ${CORE_VDDC[$i]} -gt $MIN_VOLT && $AGGRESSIVE == 1 ]] &&
-		echo "${YELLOW}Empty memory voltage state, using core voltage ${CORE_VDDC[$i]} $NOCOLOR" &&
+	[[ $AGGRESSIVE == 1 && ${MVDD[$i]} -le $MIN_VOLT && ${CORE_VDDC[$i]} -gt $MIN_VOLT ]] &&
+		echo "${YELLOW}Empty memory voltage, using core voltage ${CORE_VDDC[$i]} $NOCOLOR" &&
 		MVDD[$i]="${CORE_VDDC[$i]}"
+
+	[[ ${MVDD[$i]} -gt $MIN_VOLT && ${MVDD[$i]} -gt ${CORE_VDDC[$i]} ]] &&
+		echo "${RED}ERROR: Memory voltage can't be more than core voltage $NOCOLOR"
 
 	# set target temp for HW autofan
 	[[ $AMD_TARGET_TEMP -gt 0 ]] &&
