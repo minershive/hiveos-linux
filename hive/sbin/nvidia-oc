@@ -25,6 +25,7 @@ systemctl status hivex > /dev/null || echo "${YELLOW}WARNING: X Server is not ru
 export DISPLAY=":0"
 NVS_TIMEOUT=10
 NVSMI_TIMEOUT=10
+PILLMEM=-1000
 
 # check it in first place
 if [ ! -f $NVIDIA_OC_CONF ]; then
@@ -273,10 +274,11 @@ for (( i=0; i < ${#BUSID[@]}; ++i )); do
 
 
 	[[ -z "${MEM[$i]}" ]] && MEM[$i]=0
-	if [[ `echo "$nvparams" | grep -oP "'GPUMemoryTransferRateOffset'.*\[gpu\:$i\]\): \K[0-9]+"` == "${MEM[$i]}" ]]; then
-		echo "  'GPUMemoryTransferRateOffset' was already set to ${MEM[$i]}"
+	[[ $PILLFIX -eq 1 && "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne $PILLMEM ]] && MEMCLOCK=0 || MEMCLOCK="${MEM[$i]}"
+	if [[ `echo "$nvparams" | grep -oP "'GPUMemoryTransferRateOffset'.*\[gpu\:$i\]\): \K[0-9]+"` == "$MEMCLOCK" ]]; then
+		echo "  'GPUMemoryTransferRateOffset' was already set to $MEMCLOCK"
 	else
-		args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=${MEM[$i]}"
+		args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=$MEMCLOCK"
 	fi
 
 
@@ -316,8 +318,8 @@ if [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
 		# phase 1
 		args=
 		for (( i=0; i < $n; ++i )); do
-			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 ]] &&
-				args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[3]=-1000"
+			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 && ${MEM[$i]} -ne $PILLMEM ]] &&
+				args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[3]=$PILLMEM"
 		done
 		if [[ ! -z $args ]]; then
 			echo "${RED}"
@@ -333,7 +335,7 @@ if [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
 		# phase 2
 		args=
 		for (( i=0; i < $n; ++i )); do
-			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 ]] &&
+			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 && ${MEM[$i]} -ne $PILLMEM ]] &&
 				args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[3]=${MEM[$i]}"
 		done
 		if [[ ! -z $args ]]; then
