@@ -31,6 +31,10 @@ POWERCYCLE=
 #miner stop
 
 
+# wait a bit if sreboot is already running
+pgrep sreboot >/dev/null && sleep 3
+
+
 # safely stop install to prevent database corruption
 if [[ "$APT_WAIT" -gt 0 ]]; then
 	need_wait=0
@@ -40,10 +44,6 @@ if [[ "$APT_WAIT" -gt 0 ]]; then
 	[[ $need_wait -gt 0 ]] && apt-wait $APT_WAIT
 fi
 killall apt apt-get dpkg 2>/dev/null
-
-
-# wait a bit if sreboot is already running
-pgrep sreboot >/dev/null && sleep 3
 
 
 #unRaw      (take control of keyboard back from X),
@@ -95,6 +95,8 @@ else
 		sleep 1
 	fi
 	echo "> Rebooting"
-	#echo b > /proc/sysrq-trigger # reboot
-	reboot -f
+	echo 1 > /proc/sys/kernel/sysrq # enable
+	echo b > /proc/sysrq-trigger # reboot
+	sleep 1
+	reboot -f # does not work well on high LA
 fi
