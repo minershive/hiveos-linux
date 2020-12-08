@@ -129,7 +129,7 @@ if [[ "$1" == "list" || "$1" == "listjson" ]]; then
 
 			if [[ -z $NVIDIA_DATA && $NV_OFF -eq 0 ]]; then
 				# 0;Success;00000000:05:00.0;P104-100;86.04.7A.00.19;8121;4125;3996;180.0;90.0;217.0;1;Micron GDDR5X;
-				NVIDIA_DATA="`nvtool --quiet --csv --statuscode --status --busid --name --vbios --meminfo --defpl --minmaxpl --fancount --memtype 2>&1`"
+				NVIDIA_DATA="`nvtool --quiet --csv --statuscode --status --busid --name --vbios --meminfo --defpl --minmaxpl --fancount --memtype --statuscode 2>&1`"
 				exitcode=$?
 				# suppress permission error at early boot
 				{ echo "$NVIDIA_DATA" > $NVIDIASMI_FILE_V2; } 2>/dev/null
@@ -152,7 +152,7 @@ if [[ "$1" == "list" || "$1" == "listjson" ]]; then
 				fi
 			fi
 
-			IFS=";" read status statusmsg gpubusid gpuname vbios mem usedmem freemem plim_def plim_min plim_max fan_cnt memvendor < <( echo "$NVIDIA_DATA" | grep -i "00000000:$busid" )
+			IFS=";" read status statusmsg gpubusid gpuname vbios mem usedmem freemem plim_def plim_min plim_max fan_cnt memvendor others < <( echo "$NVIDIA_DATA" | grep -i "00000000:$busid" )
 			if [[ ! -z "$gpuname" ]]; then
 				name="$gpuname"
 				[[ ! -z "$mem" ]] && mem="$mem MB"
