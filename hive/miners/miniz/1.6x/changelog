@@ -1,0 +1,5 @@
+miniZ v1.6x
+* Equihash 210/9 (Aion) major improvements: up to 8% depending on GPU
+* improved hashrate on Equihash 144/5 for the RTX 30XX GPUs
+* fixed issues with --pers on MiningRigRentals
+* combined CUDA 8/10/11 versions into one (same) executable
