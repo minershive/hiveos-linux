@@ -10,14 +10,17 @@ else
 	local gpu_worked=`echo $stat_raw | jq '.gpus[].gpu_id'`
 	local gpu_busid=(`cat /var/run/hive/gpu-detect.json | jq -r '.[] | select(.brand=="nvidia") | .busid' | cut -d ':' -f 1`)
 	local busids=''
+	local gpuerr='' # rejected and invalid shares per GPU
 	local idx=0
 	for i in $gpu_worked; do
 		gpu=${gpu_busid[$i]}
 		busids[idx]=$((16#$gpu))
+		gpuerr[idx]=$(jq --arg gpu "$idx" '.stat_by_gpu[$gpu|tonumber].rejected_count' <<< $stat_raw)
 		idx=$((idx+1))
 	done
-	stats=$(jq --argjson gpus `echo ${busids[@]} | jq -cs '.'` \
-	'{ hs: [.gpus[].hashrate], hs_units: "hs", temp: [.gpus[].temperature], fan: [.gpus[].fan_speed], uptime: .uptime, ar: [.accepted_count, .rejected_count], bus_numbers: $gpus, algo: .algorithm, ver: .version }' <<< $stat_raw)
+	stats=$(jq --argjson gpus `echo ${busids[@]}  | jq -cs '.'` \
+	           --arg gpuerr `echo ${gpuerr[*]} | tr ' ' ';'` \
+	'{ hs: [.gpus[].hashrate], hs_units: "hs", temp: [.gpus[].temperature], fan: [.gpus[].fan_speed], uptime: .uptime, ar: [.accepted_count, .rejected_count, 0, $gpuerr], bus_numbers: $gpus, algo: .algorithm, ver: .version }' <<< $stat_raw)
 
 	# total hashrate in khs
 	khs=$(jq ".hashrate/1000" <<< $stat_raw)
