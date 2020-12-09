@@ -7,6 +7,9 @@ RETRY_TIME=60
 
 arg_retry=0
 arg_check=0
+
+# redetect gpu
+arg_redetect=0
 # send boot flag with hello message
 arg_boot=0
 # will need to restart miner after
@@ -16,6 +19,7 @@ arg_boot=0
 for var in "$@"; do
 #	[[ $var == "restartminer" ]] && arg_restartminer=1 && continue
 	[[ $var == "boot" ]] && arg_boot=1 && continue
+	[[ $var == "redetect" ]] && arg_redetect=1 && continue
 	# used internally
 	[[ $var == "retry" ]] && arg_retry=1 && continue
 	[[ $var == "check" ]] && arg_check=1 && continue
@@ -27,7 +31,7 @@ if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be e
 fi
 
 HELLO_OK="/tmp/.hive-hello-ok"
-[ -f $HELLO_OK ] && rm $HELLO_OK
+[[ -f $HELLO_OK ]] && rm $HELLO_OK
 
 VPN_INSTALLED="/tmp/.openvpn-installed"
 mkdir -p "/hive-config"
@@ -73,7 +77,8 @@ function hello_quit {
 #boot_time=`TZ='UTC' uptime -s`
 boot_time=$(( `date +%s` - `awk '{printf "%d", $1}' /proc/uptime` ))
 
-if [[ ! -e $GPU_DETECT_JSON ]]; then #this is needed only when upgrading version. later we can remove this
+if [[ ! -e $GPU_DETECT_JSON || $arg_redetect == 1 ]]; then #this is needed only when upgrading version. later we can remove this
+	echo "${CYAN}> Detecting GPU${NOCOLOR}"
 	gpu-detect listjson > $GPU_DETECT_JSON
 fi
 gpus_json=`jq . $GPU_DETECT_JSON 2>/dev/null` || gpus_json="[]"
@@ -137,13 +142,13 @@ version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 #[[ -e $inrelease_filename ]] &&
 #	packages_hash=$(cat $inrelease_filename | grep -m1 -A3 '^SHA1:' | grep 'Packages$' | awk '{print $1}')
 [[ -e /hive-config/RepoVer ]] &&
-	repover=`cat /hive-config/RepoVer` ||
+	repover=$(< /hive-config/RepoVer) ||
 	repover=0
 version="$version@$repover"
 
 #read and trim ref_id
 ref_id=
-[[ -e $REF_ID ]] && ref_id=`cat $REF_ID`
+[[ -e $REF_ID ]] && ref_id=$(< $REF_ID)
 [[ "$ref_id" =~ ^[[:space:]]*([^[:space:]].*[^[:space:]])[[:space:]]*$ ]] && ref_id=${BASH_REMATCH[1]}
 
 request=$(
@@ -233,9 +238,11 @@ elif [[ ! -z $SET_WORKER_NAME ]]; then
 	request=`echo "$request" | jq --arg worker_name "$SET_WORKER_NAME" '. * {"params": {$worker_name}}'`
 fi
 
+echo "${CYAN}> Sending hello"
 echo "$request" | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'
 
-response=$(echo $request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=hello" -H "Content-Type: application/json")
+response=`echo "$request" | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST \
+			"${HIVE_URL}?id_rig=$RIG_ID&method=hello" -H "Content-Type: application/json"`
 exitcode=$?
 if [[ $exitcode -ne 0 ]]; then
 	echo -e "${RED}Error connecting to Hive server${NOCOLOR} $HIVE_HOST_URL"
@@ -247,30 +254,33 @@ if [[ $exitcode -ne 0 ]]; then
 	exit $exitcode
 fi
 
-#output and check json
+# output and check json
 echo "$response" | jq '.'
+exitcode=$?
+if [[ $exitcode -ne 0 ]]; then
+	echo -e "${RED}Error parsing JSON response:${NOCOLOR} $response"
+	exit $exitcode # error json parsing
+fi
 
-[ $? -ne 0 ] && echo -e "${RED}Error parsing JSON response:${NOCOLOR} $response" && exit $? #error json parsing
-
-error=$(echo $response | jq '.error' --raw-output)
-if [[ ! -z $error && $error != "null" ]]; then
+error=`echo "$response" | jq '.error' --raw-output`
+if [[ ! -z "$error" && "$error" != "null" ]]; then
 	echo -e "${RED}ERROR:${NOCOLOR} `echo $response | jq '.error.message' -r`"
 	hello_quit
 	exit 1
 fi
 
 # Save config and check it ================================================================
-config=$(echo $response | jq '.result.config' --raw-output)
+config=`echo "$response" | jq '.result.config' --raw-output`
 if [[ -z "$config" || "$config" == "null" ]]; then
 	echo "Response body: $response"
 	echo -e "${RED}ERROR:${NOCOLOR} no config field in response"
-	hello_quit
+	#hello_quit
 	exit 1
 fi
 
 # write config sequence
 confseq=`echo "$response" | jq '.result.confseq' --raw-output`
-[[ ! -z $confseq && $confseq != "null" ]] && echo "$confseq" > /run/hive/confseq
+[[ ! -z "$confseq" && "$confseq" != "null" ]] && echo "$confseq" > /run/hive/confseq
 
 # stop screen session if not running from it
 [[ $arg_check == 0 ]] && hello_quit
@@ -294,56 +304,56 @@ hostname-check
 	locale-setup "$SYSTEM_LANG"
 
 # Wallet config ================================================================
-[[ -e $WALLET_CONF ]] && old_wallet=$(<$WALLET_CONF) || old_wallet=
-wallet=$(echo $response | jq '.result.wallet' --raw-output)
-if [[ ! -z $wallet && $wallet != "null" ]]; then
-	echo "Saving Wallet config"
+[[ -e $WALLET_CONF ]] && old_wallet=$(< $WALLET_CONF) || old_wallet=
+wallet=`echo "$response" | jq '.result.wallet' --raw-output`
+if [[ ! -z "$wallet" && "$wallet" != "null" ]]; then
+	echo "${CYAN}> Saving Wallet config"
 	echo "$wallet" > $WALLET_CONF
 fi
 
 # Nvidia config ================================================================
 nvidia-driver-update -c
-[[ -e $NVIDIA_OC_CONF ]] && old_nv_oc=$(<$NVIDIA_OC_CONF) || old_nv_oc=
-nvidia_oc=$(echo $response | jq '.result.nvidia_oc' --raw-output)
-if [[ ! -z $nvidia_oc && $nvidia_oc != "null" ]]; then
-	echo "Saving NVIDIA OC config"
+[[ -e $NVIDIA_OC_CONF ]] && old_nv_oc=$(< $NVIDIA_OC_CONF) || old_nv_oc=
+nvidia_oc=`echo "$response" | jq '.result.nvidia_oc' --raw-output`
+if [[ ! -z "$nvidia_oc" && "$nvidia_oc" != "null" ]]; then
+	echo "${CYAN}> Saving NVIDIA OC config${NOCOLOR}"
 	echo "$nvidia_oc" > $NVIDIA_OC_CONF
 else
 	[[ -f $NVIDIA_OC_CONF ]] && rm $NVIDIA_OC_CONF
 fi
 
 # AMD config ================================================================
-[[ -e $AMD_OC_CONF ]] && old_amd_oc=$(<$AMD_OC_CONF) || old_amd_oc=
-amd_oc=$(echo $response | jq '.result.amd_oc' --raw-output)
-if [[ ! -z $amd_oc && $amd_oc != "null" ]]; then
-	echo "Saving AMD OC config"
+[[ -e $AMD_OC_CONF ]] && old_amd_oc=$(< $AMD_OC_CONF) || old_amd_oc=
+amd_oc=`echo "$response" | jq '.result.amd_oc' --raw-output`
+if [[ ! -z "$amd_oc" && "$amd_oc" != "null" ]]; then
+	echo "${CYAN}> Saving AMD OC config${NOCOLOR}"
 	echo "$amd_oc" > $AMD_OC_CONF
 else
 	[[ -f $AMD_OC_CONF ]] && rm $AMD_OC_CONF
 fi
 
 # Autofan config ================================================================
-autofan=$(echo $response | jq '.result.autofan' --raw-output)
-if [[ ! -z $autofan && $autofan != "null" ]]; then
-	echo "Saving Autofan config"
+autofan=`echo "$response" | jq '.result.autofan' --raw-output`
+if [[ ! -z "$autofan" && "$autofan" != "null" ]]; then
+	echo "${CYAN}> Saving Autofan config${NOCOLOR}"
 	echo "$autofan" > $AUTOFAN_CONF
 fi
 
 # Octofan config ================================================================
-octofan=$(echo $response | jq '.result.octofan' --raw-output)
-if [[ ! -z $octofan && $octofan != "null" ]]; then
+octofan=`echo "$response" | jq '.result.octofan' --raw-output`
+if [[ ! -z "$octofan" && "$octofan" != "null" ]]; then
 	if [[ -z $OCTOFAN_CONF ]]; then #reread env variables as after upgrade this can be empty
 		source /etc/environment
 		export `grep -vE '^$|^#' /etc/environment | cut -d= -f1` #export all variables from file
 	fi
-	echo "Saving Octofan config"
+	echo "${CYAN}> Saving Octofan config${NOCOLOR}"
 	echo "$octofan" > $OCTOFAN_CONF
 	$OCTOFAN save_text_to_EEPROM
 fi
 
 # Coolbox Autofan config========================================================
-coolbox=$(echo $response | jq '.result.coolbox' --raw-output)
-if [[ ! -z $coolbox && $coolbox != "null" ]]; then
+coolbox=`echo "$response" | jq '.result.coolbox' --raw-output`
+if [[ ! -z "$coolbox" && "$coolbox" != "null" ]]; then
 	# Coolbox remove check
 	coolbox_serial=
 	for (( i = 0; i < 3; i++ )); do #three times
@@ -365,32 +375,32 @@ if [[ ! -z $coolbox && $coolbox != "null" ]]; then
 		)
 		echo "$coolbox_request" | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'
 
-		coolbox_response=$(echo $coolbox_request | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent \
-			-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=coolbox" -H "Content-Type: application/json")
+		coolbox_response=`echo "$coolbox_request" | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent \
+			-XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=coolbox" -H "Content-Type: application/json"`
 		[[ $exitcode -eq 0 ]] && echo "Coolbox Autofan successfully removed: $coolbox_response"
 	else #coolbox found saving it's config
 		if [[ -z $COOLBOX_CONF ]]; then #reread env variables as after upgrade this can be empty
 			source /etc/environment
 			export `grep -vE '^$|^#' /etc/environment | cut -d= -f1` #export all variables from file
 		fi
-		echo "Saving Coolbox Autofan config"
+		echo "${CYAN}> Saving Coolbox Autofan config${NOCOLOR}"
 		echo "$coolbox" > $COOLBOX_CONF
 	fi
 fi
 
 # Repository URLs ==============================================================
 HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
-repository_list=$(echo $response | jq '.result.repository_list' --raw-output)
-[[ -z $repository_list || $repository_list == "null" ]] &&
-	repository_list=$(cat /hive/etc/hiverepo.list)
-#remove old symlink
+repository_list=`echo "$response" | jq '.result.repository_list' --raw-output`
+[[ -z "$repository_list" || "$repository_list" == "null" ]] &&
+	repository_list=$(< /hive/etc/hiverepo.list)
+# remove old symlink
 [[ -L $HIVEREPO_LIST ]] && rm $HIVEREPO_LIST
 
 existing_repository_list=
-[[ -e $HIVEREPO_LIST ]] && existing_repository_list=$(cat $HIVEREPO_LIST)
+[[ -e $HIVEREPO_LIST ]] && existing_repository_list=$(< $HIVEREPO_LIST)
 
-if [[ $existing_repository_list != $repository_list ]]; then
-	echo "Saving repository URLs"
+if [[ "$existing_repository_list" != "$repository_list" ]]; then
+	echo "${CYAN}> Saving repository URLs${NOCOLOR}"
 	echo "$repository_list" > $HIVEREPO_LIST
 fi
 
@@ -399,17 +409,21 @@ fi
 
 # Post actions =================================================================
 if [[ $arg_boot == 0 ]]; then
-	[[ -e $AMD_OC_CONF ]] && amd_oc=$(<$AMD_OC_CONF) || amd_oc=
+	[[ -e $AMD_OC_CONF ]] && amd_oc=$(< $AMD_OC_CONF) || amd_oc=
 	[[ "$old_amd_oc" != "$amd_oc" ]] && amd-oc-safe
 
-	[[ -e $NVIDIA_OC_CONF ]] && nv_oc=$(<$NVIDIA_OC_CONF) || nv_oc=
+	[[ -e $NVIDIA_OC_CONF ]] && nv_oc=$(< $NVIDIA_OC_CONF) || nv_oc=
 	[[ "$old_nv_oc" != "$nv_oc" ]] && nvidia-oc-log
 
-	[[ -e $WALLET_CONF ]] && wallet=$(<$WALLET_CONF) || wallet=
-	[[ "$old_wallet" != "$wallet" ]] && miner restart || miner start
+	[[ -e $WALLET_CONF ]] && wallet=$(< $WALLET_CONF) || wallet=
+	if [[ "$old_wallet" != "$wallet" ]]; then
+		miner restart
+	else
+		miner status >/dev/null || miner start
+	fi
 fi
 
-echo "Touching $HELLO_OK"
+#echo "${CYAN}> Touching $HELLO_OK${NOCOLOR}"
 touch $HELLO_OK
 
 #Flush buffers if any files changed
