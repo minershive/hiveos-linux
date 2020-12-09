@@ -17,7 +17,7 @@ else
 	NV_OFF=1 # disable if nvidia driver is not loaded
 fi
 
-NVIDIASMI_FILE_V2=${NVIDIASMI_FILE}_v2
+#NVIDIASMI_FILE_V2=${NVIDIASMI_FILE}_v2
 NVIDIA_DATA=
 
 
@@ -124,15 +124,16 @@ if [[ "$1" == "list" || "$1" == "listjson" ]]; then
 			fi
 
 		elif [[ $gputype == "NVIDIA" ]]; then
-			[[ -z $NVIDIA_DATA && -f $NVIDIASMI_FILE_V2 ]] &&
-				NVIDIA_DATA=`cat $NVIDIASMI_FILE_V2 2>/dev/null`
+			#[[ -z $NVIDIA_DATA && -f $NVIDIASMI_FILE_V2 ]] &&
+			#	NVIDIA_DATA=`cat $NVIDIASMI_FILE_V2 2>/dev/null`
 
-			if [[ -z $NVIDIA_DATA && $NV_OFF -eq 0 ]]; then
+			if [[ -z "$NVIDIA_DATA" && $NV_OFF -eq 0 ]]; then
 				# 0;Success;00000000:05:00.0;P104-100;86.04.7A.00.19;8121;4125;3996;180.0;90.0;217.0;1;Micron GDDR5X;
-				NVIDIA_DATA="`nvtool --quiet --csv --statuscode --status --busid --name --vbios --meminfo --defpl --minmaxpl --fancount --memtype --statuscode 2>&1`"
+				NVIDIA_DATA=`nvtool --quiet --csv --statuscode --status --busid --name --vbios --meminfo \
+									--defpl --minmaxpl --fancount --memtype --statuscode 2>&1`
 				exitcode=$?
 				# suppress permission error at early boot
-				{ echo "$NVIDIA_DATA" > $NVIDIASMI_FILE_V2; } 2>/dev/null
+				#{ echo "$NVIDIA_DATA" > $NVIDIASMI_FILE_V2; } 2>/dev/null
 				if [[ $exitcode -ne 0 ]]; then
 					echo "nvtool error ($exitcode)" >&2
 					echo "$NVIDIA_DATA" | message error "nvtool error ($exitcode)" payload > /dev/null
