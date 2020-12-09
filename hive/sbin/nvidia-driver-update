@@ -534,7 +534,7 @@ function install_driver() { # @url or @file, @force_install
 
 	# send new driver version
 	cuda_sync
-	hello > /dev/null 2>&1
+	hello redetect > /dev/null 2>&1
 	return 0
 }
 
