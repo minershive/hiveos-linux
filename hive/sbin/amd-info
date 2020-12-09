@@ -103,10 +103,12 @@ for bdir in $busids_dirs; do
 	pwr='n/a'
 	[[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]] &&
 		pwr=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(average GPU)' | awk '{print $1}'`
-    atitool -i=$i -vctfstatus -gpustatus |grep -E 'PCIE Link speed|PCIE Link width' |  sed -e 's/ //g' \
-		-e 's/PCIELinkspeed/PCIE Link speed/' -e 's/PCIELinkwidth/PCIE Link width/' -e 's/^/  /' -e 's/=/:/g' -e 's/:/ : /g' | \
-		sed  ':a; /$/N; s/\n/,/; ta'
 
+	if [[ -e /sys/class/drm/card$cardno/device/current_link_speed ]]; then
+		speed=`cat /sys/class/drm/card$cardno/device/current_link_speed`
+		width=`cat /sys/class/drm/card$cardno/device/current_link_width`
+		echo  "  PCIE Link speed : $speed, PCIE Link width : x$width"
+	fi
 
 	meminfo=
 	if [[ -e /sys/kernel/debug/dri/$cardno/amdgpu_vram_mm ]]; then
@@ -117,8 +119,8 @@ for bdir in $busids_dirs; do
 			echo "  Memory $meminfo"
 	fi
 	
-	atitool -i=$i -vctfstatus -gpustatus |grep -E '  MVDDC  |   VDDCR_HBM  |  VDDCR_SOC  ' | sed  -e 's/ //g' \
-		-e 's/^/  /' -e 's/=/:/g' -e 's/:/ : /g' | sed  ':a; /$/N; s/\n/,/; ta'
+	atitool -i=$i -vctfstatus |grep -E '  MVDDC  |   VDDCR_HBM  |  VDDCR_SOC  ' | sed  -e 's/ //g' \
+		-e 's/^/  /' -e 's/:/ : /g' | sed  ':a; /$/N; s/\n/,/; ta'
 
 	echo -n "  ${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${corev}mV"
 	echo -n " ${PURPLE}MDPM${NOCOLOR} $mem_dpm ${PURPLE}MEM${NOCOLOR} $mem_mhz $memv"
