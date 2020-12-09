@@ -79,7 +79,7 @@ selfupgrade
 apt install --reinstall hive
 stop-everything
 hpkg remove miners noinstall
-hpkg install miners claymore #preinstall
+hpkg install miners phoenixminer #preinstall
 apt clean
 apt purge
 
