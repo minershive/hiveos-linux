@@ -15,7 +15,7 @@ else
 	for i in $gpu_worked; do
 		gpu=${gpu_busid[$i]}
 		busids[idx]=$((16#$gpu))
-		gpuerr[idx]=$(jq --arg gpu "$idx" '.stat_by_gpu[$gpu|tonumber].rejected_count' <<< $stat_raw)
+		gpuerr[idx]=$(jq --arg gpu "$i" '.stat_by_gpu[$gpu|tonumber].rejected_count' <<< $stat_raw)
 		idx=$((idx+1))
 	done
 	stats=$(jq --argjson gpus `echo ${busids[@]}  | jq -cs '.'` \
