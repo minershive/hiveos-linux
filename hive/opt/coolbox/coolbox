@@ -359,6 +359,7 @@ firmware_update(){
       #exit_code=5
       echo2 "$(date +"%Y-%m-%d %T") ${RED}Error on flashing firmware${NOCOLOR}: $t_error_txt"
     fi
+    sleep 2
 
     rm -f ${MAINTENANCE_SEM_NAME}
 
