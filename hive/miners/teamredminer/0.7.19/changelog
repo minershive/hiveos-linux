@@ -1,0 +1,10 @@
+TeamRedMiner v0.7.19
+* General: added adjustable ratio support for quota and load_balance pool strategies (see --pool_ratio).
+* General: rewrote the miner init procedure to be more stable in general.
+* General: fixed issue where output blocking could cause mining work to stop.
+* General: reduced main binary size.
+* Ethash: reintroduced single DAG buffer support for recent drivers allowing large single allocations (see --eth_dag_buf).
+* Ethash: added high score list of the 15 highest value shares found since start (see --high_score).
+* Ethash: small improvements in keeping the gpu busy over epoch switches.
+* Ethash: fixed bug that would cause deadlocks in rare occasions.
+* Ethash: bugfix: dag cache wasn't enabled for 4GB gpus.
