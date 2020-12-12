@@ -390,7 +390,7 @@ function bench_check (){
 function status {
 	kill_hanged
 	for i in {1..3}; do
-		readarray -t query < <( timeout 1 screen -S miner -Q windows 2>/dev/null )
+		query=`timeout 1 screen -S miner -Q windows 2>/dev/null`
 		exitcode=$?
 		[[ $exitcode -lt 124 ]] && break
 		sleep 0.2
@@ -404,7 +404,7 @@ function status {
 	fi
 
 	echo "Running miners in screen:"
-	readarray -t screens < <( echo "${query[-1]//  /$'\n'}" )
+	readarray -t screens < <( tmp=`echo "$query" | tail -1`; echo "${tmp//  /$'\n'}" )
 	for scr in "${screens[@]}"
 	do
 		[[ $scr =~ ^([0-9]+)([^[:space:]]+)?[[:space:]]+(.*)$ ]] && echo -e "[${BASH_REMATCH[1]}] ${CYAN}${BASH_REMATCH[3]}${NOCOLOR}" || echo $scr
