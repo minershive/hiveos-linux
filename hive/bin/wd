@@ -9,7 +9,10 @@ if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be e
 fi
 
 # set minimum LA for watchdog to 2 * cores/threads + 1
-WD_MIN_LA=$(( $(nproc --all) * 2 + 1 ))
+#WD_MIN_LA=$(( $(nproc --all) * 2 + 1 ))
+WD_MIN_LA=$(( $(nproc --all) + 5 ))
+WD_DEF_LA=$(( $(nproc --all) + 25 ))
+
 
 WD_SLEEP=10 # seconds to sleep over iteration
 OK_MESSAGE_REDUCE=$(( 1 * 60 / WD_SLEEP )) #e.g. only every 6th message will be displayed to reduce log
@@ -173,7 +176,7 @@ function set_lastgood() {
 
 
 function check_la() {
-	local max_la=$WD_MAX_LA
+	local max_la=${WD_MAX_LA:-$WD_DEF_LA}
 	[[ $max_la -lt $WD_MIN_LA ]] && max_la=$WD_MIN_LA
 	local max_la2x=$(( max_la * 2 ))
 	read la1 la5 la15 procs < /proc/loadavg
@@ -183,7 +186,7 @@ function check_la() {
 		echo "${RED}LA is more than ${max_la}.0: $la5, rebooting ${NOCOLOR}"
 		local top=`COLUMNS=110 top -bHn 1 | head -n 20`
 		echo "$top" | message error "LA > $max_la, rebooting" payload >/dev/null
-		sreboot
+		sreboot fast
 	# reboot if LA (1 min) >= maxLA * 2
 	elif [[ ${la1%.*} -ge $max_la2x ]]; then
 		local top=`COLUMNS=110 top -bHn 1 | head -n 20`
@@ -191,7 +194,7 @@ function check_la() {
 		if [[ $high_la_count -ge 2 ]]; then
 			echo "${RED}LA(1m) $la1 > ${max_la2x}.0, rebooting ${NOCOLOR}"
 			echo "$top" | message error "LA > $max_la2x, rebooting" payload >/dev/null
-			sreboot
+			sreboot fast
 		else
 			echo "${RED}LA(1m): $la1 > ${max_la2x}.0, waiting ${NOCOLOR}"
 			[[ $high_la_count -eq 0 ]] && echo "$top" | message warning "LA > $max_la2x" payload >/dev/null
@@ -281,8 +284,9 @@ function loop() {
 
 	# check every 2nd interval, ie 20 sec
 	if [[ $(( check_count % 2 )) == 0 ]]; then
-		[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] && check_la
-		[[ "$WD_CHECK_GPU" == 1 ]] && check_gpu
+		[[ ${WD_MAX_LA:-$WD_DEF_LA} -ge 1 ]] && check_la
+		# do not check in maintenance mode
+		[[ "$WD_CHECK_GPU" == 1 && $MAINTENANCE -eq 0 ]] && check_gpu
 		# do not check power if watchdog is disabled
 		[[ $disable -eq 0 && "$WD_POWER_ENABLED" == 1 ]] && check_power
 	fi
@@ -418,8 +422,8 @@ function run() {
 		echo "CHECK GPU OFFLINE: Enabled"
 	[[ "$WD_POWER_ENABLED" == 1 ]] &&
 		echo "CHECK GPU POWER:   ${WD_POWER_MIN:-0}..${WD_POWER_MAX:-9999} W" #${WD_POWER_ACTION:-reboot}
-	[[ ! -z $WD_MAX_LA && $WD_MAX_LA -ge 1 ]] &&
-		echo "MAX LOAD AVERAGE:  $WD_MAX_LA.0 (min $WD_MIN_LA.0)"
+	[[ ${WD_MAX_LA:-$WD_DEF_LA} -ge 1 ]] &&
+		echo "MAX LOAD AVERAGE:  $WD_MAX_LA.0 (min $WD_MIN_LA.0, def $WD_DEF_LA.0)"
 
 	while true; do
 		loop
