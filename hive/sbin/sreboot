@@ -5,6 +5,7 @@ WAKEALARM_TIMEOUT=30 # default value
 WATCHDOGS=("watchdog-opendev" "hl340" "watchdoginua" "watchdog-octofan" "srrv2" "utility.py")
 #APT_WAIT=120 # wait time for apt/dpkg to finish
 
+
 if [[ $1 == "-h" || $1 == "--help" ]]; then
 	. colors
 	echo -e "Reboots or shutdowns the system using sysrq"
@@ -27,23 +28,39 @@ POWERCYCLE=
 [[ -z $1 && -e "$RIG_CONF" && -e /sys/class/rtc/rtc0/wakealarm ]] && source $RIG_CONF
 
 
-# Do not try to stop miner here. Sometimes it hangs and prevents rig from rebooting
-#miner stop
-
-
-# wait a bit if sreboot is already running
-pgrep sreboot >/dev/null && sleep 3
-
-
-# safely stop install to prevent database corruption
-if [[ "$APT_WAIT" -gt 0 ]]; then
-	need_wait=0
-	killall -s INT apt 2>/dev/null && ((need_wait++))
-	killall -s INT apt-get 2>/dev/null && ((need_wait++))
-	killall -s INT dpkg 2>/dev/null && ((need_wait++))
-	[[ $need_wait -gt 0 ]] && apt-wait $APT_WAIT
+fastmode=1
+if [[ $1 != "fast" ]]; then
+	read la1 la5 la15 procs < /proc/loadavg
+	[[ ${la1%.*} -lt 15 ]] && fastmode=0
 fi
-killall apt apt-get dpkg 2>/dev/null
+
+
+if [[ $fastmode -eq 0 ]]; then
+	# wait a bit if sreboot is already running
+	if pgrep sreboot >/dev/null; then 
+		echo "> Reboot is already requested"
+		sleep 3
+	else
+		echo "> Preparing for reboot"
+	fi
+
+	# safely stop install to prevent database corruption
+	if [[ "$APT_WAIT" -gt 0 ]]; then
+		need_wait=0
+		killall -s INT apt 2>/dev/null && ((need_wait++))
+		killall -s INT apt-get 2>/dev/null && ((need_wait++))
+		killall -s INT dpkg 2>/dev/null && ((need_wait++))
+		[[ $need_wait -gt 0 ]] && apt-wait $APT_WAIT
+	fi
+	killall apt apt-get dpkg 2>/dev/null
+
+	sync
+	umount -f /hive-config && mount -n -o ro /hive-config
+	#mount -f -o remount,ro /
+
+   	# stop hw watchdogs pings
+	killall -s 9 ${WATCHDOGS[@]} 2>/dev/null
+fi
 
 
 #unRaw      (take control of keyboard back from X),
@@ -56,22 +73,11 @@ killall apt apt-get dpkg 2>/dev/null
 #‘t’ – Output a list of current tasks and their information to the console.
 
 
-echo "> Mounting filesystems read-only"
-need_remount=0
+echo 1 > /proc/sys/kernel/sysrq # enable
+echo s > /proc/sysrq-trigger # sync
 sync
-umount -f /hive-config && mount -n -o ro /hive-config || ((need_remount++))
-mount -f -o remount,ro / || ((need_remount++))
-if [[ $need_remount -gt 0 ]]; then
-	echo "> Remounting failed, using SysRq"
-	echo 1 > /proc/sys/kernel/sysrq # enable
-	echo s > /proc/sysrq-trigger # sync
-	echo u > /proc/sysrq-trigger # umount
-fi
+echo u > /proc/sysrq-trigger # umount
 
-sleep 1
-
-# stop hw watchdogs pings
-killall -s 9 ${WATCHDOGS[@]} 2>/dev/null
 
 if [[ $1 == "shutdown" || $1 == "wakealarm" || $POWERCYCLE -ne 0 ]]; then
 	if [[ $1 != "shutdown" ]]; then
@@ -83,7 +89,7 @@ if [[ $1 == "shutdown" || $1 == "wakealarm" || $POWERCYCLE -ne 0 ]]; then
 	echo "> Shutting down"
 	sleep 1
 	if [[ $2 == "fast" ]]; then
-		echo 1 > /proc/sys/kernel/sysrq # enable
+		#echo 1 > /proc/sys/kernel/sysrq # enable
 		echo o > /proc/sysrq-trigger # poweroff
 	fi
 	poweroff # -f
@@ -95,8 +101,8 @@ else
 		sleep 1
 	fi
 	echo "> Rebooting"
-	echo 1 > /proc/sys/kernel/sysrq # enable
-	echo b > /proc/sysrq-trigger # reboot
 	sleep 1
+	#echo 1 > /proc/sys/kernel/sysrq # enable
+	echo b > /proc/sysrq-trigger # reboot
 	reboot -f # does not work well on high LA
 fi
