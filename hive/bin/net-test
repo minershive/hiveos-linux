@@ -3,8 +3,12 @@
 
 [[ -e $RIG_CONF ]] && . $RIG_CONF
 
+ORIG_HIVE_HOST_URL="$HIVE_HOST_URL"
+[[ -e "$API_HOST_FILE" ]] && source $API_HOST_FILE # fallback api host
+
 # hosts on ports 80 and 443
-API_HOSTS=("api.hiveos.farm" "api-cf.hiveos.farm" "helsinki.hiveos.farm" "msk.hiveos.farm" "ca1.hiveos.farm" "paris.hiveos.farm" "amster.hiveos.farm")
+#API_HOSTS=("api.hiveos.farm" "helsinki.hiveos.farm" "msk.hiveos.farm" "paris.hiveos.farm" "amster.hiveos.farm" "ca1.hiveos.farm" "ap.hiveos.farm" "api2msk.hiveos.farm")
+API_HOSTS=( ${API_HOSTS[@]} )
 # urls for other ports
 API_URLS=("https://api.hiveos.farm:8443" "http://helsinki.hiveos.farm:8000")
 # just to check connection

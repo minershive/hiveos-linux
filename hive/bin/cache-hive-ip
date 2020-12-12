@@ -16,10 +16,10 @@ DEF_USE_DOH="cloudflare google alidns-doh"
 dns_srv=("8.8.8.8" "1.1.1.1" "114.114.114.114")
 
 # other servers to cache
-add_srv=("download.hiveos.farm" "shell.hiveos.farm")
+add_srv=("download.hiveos.farm" ${API_HOSTS[@]})
 
 # backup api servers
-bak_srv=("api-cf.hiveos.farm" "api.hiveos.farm")
+#bak_srv=("api.hiveos.farm" "api-cf.hiveos.farm")
 
 # DNSCrypt resolver IP
 dc_ip="127.0.2.1"
@@ -202,10 +202,11 @@ function add_host {
 
 
 function update_hosts {
-	[ ! -e $RIG_CONF ] && echo "> No $RIG_CONF" && return 1
+	[[ ! -e $RIG_CONF ]] && echo "> No $RIG_CONF" && return 1
 	USE_DOH=
 	DOH_ENABLED=
 	source $RIG_CONF
+	[[ -e "$API_HOST_FILE" ]] && source $API_HOST_FILE # fallback api host
 	[[ -z "$HIVE_HOST_URL" ]] && echo "> HIVE_HOST_URL is empty" && return 2
 	local HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
 	[[ -z "$HOST" ]] && echo "> Unable to parse host name: $HIVE_HOST_URL" && return 3
@@ -258,6 +259,9 @@ function update_hosts {
 	[[ ! " $USE_DOH " =~ ' dnscrypt ' && $DC_ENABLED -eq 1 ]] && USE_DOH="dnscrypt $USE_DOH"
 
 	read -a doh_srv < <( echo "$USE_DOH" )
+
+	# add Hive shell host
+	[[ ! -z "$HSSH_SRV" ]] && add_host "$HSSH_SRV"
 
 	# add Hive API host and exit on error
 	add_host "$HOST" || return $?

@@ -12,6 +12,7 @@ fi
 [ ! -f $RIG_CONF ] && echo -e "No config $RIG_CONF" && exit 1
 . $RIG_CONF
 
+[[ -e "$API_HOST_FILE" ]] && source $API_HOST_FILE # fallback api host
 HIVE_URL="$HIVE_HOST_URL/worker/api"
 LOG="/var/log/hive-agent.log"
 

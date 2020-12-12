@@ -11,7 +11,14 @@ LAST_CMD_ID="/run/hive/last_cmd_id"
 CONF_SEQ="/run/hive/confseq"
 
 API_TIMEOUT=15 # timeout to wait for miner API response, can take very long time on 13+ gpus
+API_SWITCH_BACK=3600 # sec
+API_ERRORS=3 # before switching to fallback hosts
 
+API_DEFAULT_URL=()
+API_HOSTS_ARR=()
+api_index=-1
+api_error=0
+api_last_switch=0
 
 LAST_OK=
 force_stop=0
@@ -178,13 +185,24 @@ function wait-for-gpu-stats() {
 }
 
 
+function parse_host_url() {
+	local -n arr=$1
+	local host="$2"
+	[[ ! "$host" =~ (https?://)?([^:]+)(:?[0-9]+)? ]] && arr=() && return 1
+	arr[0]="${BASH_REMATCH[0]}" # full url
+	arr[1]="${BASH_REMATCH[1]}" # proto
+	arr[2]="${BASH_REMATCH[2]}" # host
+	arr[3]="${BASH_REMATCH[3]}" # port
+}
+
+
 # Main loop cycle
 function loop {
 	# increase current push interval if last command was received more then $RESPONSE_TIME ago
 	no_command=$(( $(date +%s) - LAST_COMMAND ))
 	[[ $no_command -gt $RESPONSE_TIME ]] && CUR_PUSH_INTERVAL=$PUSH_INTERVAL #&& echo "CUR_PUSH_INCREASED"
 	# but set it back to 0 if there was an error with sending stats to server
-	[[ $exitcode -ne 0 || -z $response ]] && CUR_PUSH_INTERVAL=0 # && echo "CUR_PUSH SET TO 0"
+	[[ $exitcode -ne 0 || -z "$response" ]] && CUR_PUSH_INTERVAL=0
 
 	[[ -z $gpu_detect_json ]] && process_gpu_detect_json redetect
 
@@ -205,6 +223,43 @@ function loop {
 	PUSH_INTERVAL=10
 	source $RIG_CONF
 	[[ -e $WALLET_CONF ]] && source $WALLET_CONF
+
+	# API hosts fallback
+	[[ $exitcode -eq 0 ]] && api_error=0 || ((api_error++))
+	if [[ "${API_HOSTS[@]}" != "${API_HOSTS_ARR[@]}" || "$HIVE_HOST_URL" != "$API_DEFAULT_URL" ]]; then
+		API_HOSTS_ARR=( ${API_HOSTS[@]} )
+		echo "${DGRAY}Reloading API hosts (${#API_HOSTS_ARR[@]}), using $HIVE_HOST_URL${NOCOLOR}"
+		if parse_host_url API_DEFAULT_URL "$HIVE_HOST_URL"; then
+			[[ -e "$API_HOST_FILE" ]] && rm $API_HOST_FILE
+			api_last_switch=0
+			api_index=-1
+			api_error=0
+		else
+			echo "${RED}Default API host parsing error ($HIVE_HOST_URL)${NOCOLOR}"
+		fi
+	elif [[ $api_error -ge $API_ERRORS && ${#API_HOSTS_ARR[@]} -gt 1 ]]; then
+		# skip first host if it is equal to default
+		[[ $api_index -eq -1 && " ${API_HOSTS_ARR[0]} " =~ " ${API_DEFAULT_URL[2]} " ]] && api_index=0
+		api_index=$(( (api_index + 1) % ${#API_HOSTS_ARR[@]} ))
+		if parse_host_url NEW_URL "${API_HOSTS_ARR[$api_index]}"; then
+			HIVE_HOST_URL="${API_DEFAULT_URL[1]}${NEW_URL[2]}" # use proto from default URL
+			echo "${DGRAY}Switching API to $HIVE_HOST_URL [$api_index]${NOCOLOR}"
+			echo "HIVE_HOST_URL=\"$HIVE_HOST_URL\"" > $API_HOST_FILE
+		else
+			echo "${RED}API host parse error (${API_HOSTS_ARR[$api_index]}) [$api_index]${NOCOLOR}"
+		fi
+		api_last_switch=$(date +%s)
+	elif [[ -e "$API_HOST_FILE" ]]; then
+		if [[ $(( api_last_switch + API_SWITCH_BACK )) -lt $(date +%s) ]]; then
+			echo "${DGRAY}Switching back to $API_DEFAULT_URL after ${API_SWITCH_BACK} sec${NOCOLOR}"
+			rm $API_HOST_FILE
+			api_last_switch=0
+			api_index=-1
+			api_error=0
+		else
+			source $API_HOST_FILE
+		fi
+	fi
 
 	HIVE_URL="$HIVE_HOST_URL/worker/api"
 
@@ -447,9 +502,10 @@ function loop {
 	fi
 
 	exitcode=$?
-	if [[ $exitcode -ne 0 || -z $response ]]; then
-		echo -e "${RED}Error sending stats${NOCOLOR} $HIVE_HOST_URL" && human-curl-error $exitcode
+	if [[ $exitcode -ne 0 || -z "$response" ]]; then
+		echo -e "${RED}Error sending stats to $HIVE_HOST_URL${NOCOLOR}" && human-curl-error $exitcode
 		echo "[`date`] < ERROR SENDING STATS TO $HIVE_HOST_URL (curl code=$exitcode) \"$response\"" >> $LOG
+		[[ -z "$response" ]] && exitcode=100
 		return $exitcode
 	fi
 
@@ -458,8 +514,16 @@ function loop {
 	echo "[`date`] < $response" >> $LOG #full response even invalid
 
 	error=$(echo "$response" | jq '.error' --raw-output)
-	[[ $? != 0 ]] && echo -e "${RED}Invalid response${NOCOLOR}: $HIVE_HOST_URL\n$response" && return 1
-	[[ ! -z $error && $error != "null" ]] && echo -e "${RED}Error response${NOCOLOR}: $error" && return 1
+	if [[ $? != 0 ]]; then
+		echo -e "${RED}Invalid response${NOCOLOR}: $HIVE_HOST_URL\n$response"
+		exitcode=101
+		return $exitcode
+	fi
+	if [[ ! -z "$error" && "$error" != "null" ]]; then
+		echo -e "${RED}Error response${NOCOLOR}: $error"
+		exitcode=102
+		return $exitcode
+	fi
 
 	if [[ $force_stop -eq 1 ]]; then
 		miner start
@@ -469,7 +533,7 @@ function loop {
 
 	command=$(echo "$response" | jq '.result.command' --raw-output)
 
-	if [[ $command != "OK" ]]; then
+	if [[ "$command" != "OK" ]]; then
 		echo "$response" | jq -c '.result'
 		#the command has been received, reducing push interval to make the rig more responsive
 		CUR_PUSH_INTERVAL=0
@@ -479,11 +543,11 @@ function loop {
 		rm $LAST_CMD_ID 2>/dev/null
 	fi
 
-	if [[ $command != "batch" ]]; then
+	if [[ "$command" != "batch" ]]; then
 		body=`echo "$response" | jq -c '.result'`
 		#Optional command identifier
 		cmd_id=`echo "$body" | jq -r '.id'`
-		[[ $cmd_id == "null" ]] && cmd_id=
+		[[ "$cmd_id" == "null" ]] && cmd_id=
 		# save last id
 		[[ $cmd_id -gt 0 ]] && echo $cmd_id > $LAST_CMD_ID
 		do_command
@@ -496,9 +560,9 @@ function loop {
 			body=`echo "$response" | jq -c ".result.commands[$i]"`
 			#Optional command identifier
 			cmd_id=`echo "$body" | jq -r '.id'`
-			[[ $cmd_id == "null" ]] && cmd_id=
+			[[ "$cmd_id" == "null" ]] && cmd_id=
 			# save last id for each command
-			[[ $cmd_id -gt 0 ]] && echo $cmd_id > $LAST_CMD_ID
+			[[ $cmd_id -gt 0 ]] && echo "$cmd_id" > $LAST_CMD_ID
 			command=
 			do_command
 			newseq=`echo "$body" | jq -r '.confseq'`
@@ -506,8 +570,8 @@ function loop {
 		done
 	fi
 
-	if [[ ! -z $confseq && $confseq != "null" && -w /run ]]; then
-		if [[ $command != "OK" ]]; then
+	if [[ ! -z "$confseq" && "$confseq" != "null" && -w /run ]]; then
+		if [[ "$command" != "OK" ]]; then
 			echo "$confseq" > $CONF_SEQ 2>/dev/null
 		elif [[ -e $CONF_SEQ ]]; then
 			curseq="$(<$CONF_SEQ)"
@@ -521,6 +585,7 @@ function loop {
 		fi
 	fi
 
+	return $exitcode # 0
 }
 
 
@@ -532,5 +597,4 @@ while true; do
 	# sleeping is controlled also by agent.gpu-stats now
 	loop
 	sleep 2 # to make sure we will not grab the same gpu-stats file
-	continue
 done

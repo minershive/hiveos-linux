@@ -38,3 +38,6 @@ REF_ID=/hive-config/ref_id.txt
 SSL_SESSION_FILE=/tmp/ssl-session-file.pem
 
 BUSID_FILE=/hive-config/busid.conf
+
+API_HOST_FILE=/run/hive/api_host
+API_HOSTS="api.hiveos.farm helsinki.hiveos.farm msk.hiveos.farm paris.hiveos.farm amster.hiveos.farm ca1.hiveos.farm ap.hiveos.farm api2msk.hiveos.farm"
