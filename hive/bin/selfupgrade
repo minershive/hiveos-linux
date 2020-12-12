@@ -4,32 +4,25 @@
 # pci.ids update source, otherwise download from web
 PCIIDS=/hive/etc/pci.ids
 
-[[ -f /hive-config/.DISKLESS_AMD && $(cat /proc/mounts | grep "/ " | awk '{print $1}') == tmpfs ]] && echo -e "${RED}Diskless rig. Selfupgrade restricted${NOCOLOR}" && exit 0
+[[ -f /hive-config/.DISKLESS_AMD && $(cat /proc/mounts | grep "/ " | awk '{print $1}') == tmpfs ]] && echo "${RED}Diskless rig. Selfupgrade restricted${NOCOLOR}" && exit 0
 
 #This will prevent asking interactive questions
 export DEBIAN_FRONTEND=noninteractive
 #If needed maybe there is even stronger option @see https://askubuntu.com/questions/146921/how-do-i-apt-get-y-dist-upgrade-without-a-grub-config-prompt
 #sudo DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
 
-help_context="USAGE
-\tselfupgrade [--force] [repository URL] [version]
-DESCRIPTION
-\tTool for upgrading HiveOS from repository.
-OPTIONS
-\t-h, --help\t\tshow current help
-\t-f, --force\t\tforce upgrade; it can help in situations when selfupgrade says Hive is up to date but actually it isn't
-\trepository URL\t\tset repository to get updates from; should start with http like http://download.hiveos.farm/repo/binary or http://127.0.0.1/repo/binary
-\tversion\t\t\tspecify version to upgrade or downgrade; should use the following format x.y-zz, like 0.6-65
-EXAMPLE
-\tselfupgrade 0.6-65 http://192.168.0.1/repo/binary -f
-\t\t\t\tforce upgrade/downgrade to version 0.6-65 from repository http://192.168.0.1/repo/binary"
-
-
-current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
-[[ -e /hive-config/RepoVer ]] &&
-	repover=`cat /hive-config/RepoVer` ||
-	repover=0
-echo -e "Current version: ${YELLOW}$current_version@$repover${NOCOLOR}"
+help_context="${CYAN}Usage: selfupgrade [option] [repository URL] [version]${NOCOLOR}
+Options:
+${GREEN}  -h|--help       ${NOCOLOR}to show current help
+${GREEN}  -f|--force      ${NOCOLOR}to force upgrade by cleaning apt lists, caches and locks
+                  it can help in situations when selfupgrade says Hive is up to date but actually it isn't
+${GREEN}  -g|--grub       ${NOCOLOR}to update only grub config
+${GREEN}  repository URL  ${NOCOLOR}to get updates from; should start with http like http://download.hiveos.farm/repo/binary
+${GREEN}  version         ${NOCOLOR}to upgrade or downgrade; should be used the following format x.y-zz, like 0.6-65
+Examples:
+${GREEN}  selfupgrade 0.6-65 http://192.168.0.1/repo/binary -f ${NOCOLOR}
+                  force upgrade/downgrade to version 0.6-65 from repository http://192.168.0.1/repo/binary
+"
 
 #screen -wipe > /dev/null 2>&1
 
@@ -38,27 +31,52 @@ existing_repository_list=
 repository_list=
 
 
-#Check config grub and create symlink
-function check_grub {
-	if [[ -f /hive/etc/grub ]]; then
-		if [[ $(readlink /etc/default/grub) != "/hive/etc/grub" ]]; then
-			rm /etc/default/grub > /dev/null 2>&1
-			ln -s /hive/etc/grub /etc/default/grub > /dev/null 2>&1
-		fi
-		if [[ -f /hive/etc/grub.custom ]]; then
-			source /etc/default/grub
-			old_cmdline=$GRUB_CMDLINE_LINUX_DEFAULT
-			add_cmdline=$(grep -Ev '^#' /hive/etc/grub.custom | grep -Ev '^$' | xargs | sed -e 's/\. /.\n/g')
-		else
-			[[ -f /hive/etc/grub.custom.template ]] && cp /hive/etc/grub.custom.template /hive/etc/grub.custom
-		fi
-		if [[ ! -z $add_cmdline ]]; then
-			echo -e "${YELLOW}> Add custom boot parameters to kernel. System restart is required to get the effect${NOCOLOR}"
-			new_cmdline="$old_cmdline $add_cmdline"
-			sed -ure "s/^GRUB_CMDLINE_LINUX_DEFAULT.+?/GRUB_CMDLINE_LINUX_DEFAULT=\"${new_cmdline}\"/g" -i /hive/etc/grub
-		fi
-		update-grub > /dev/null 2>&1
+function update_grub {
+	source /etc/default/grub
+	new_params=()
+	readarray -t params < <( grep -oP '^\K[^#\"\\]+' /hive/etc/grub.custom | tr [:space:] '\n' | grep -v '^$' )
+	for param in "${params[@]}"; do
+		[[ ! " $GRUB_CMDLINE_LINUX_DEFAULT " =~ " $param " ]] && new_params+=("$param")
+	done
+	if [[ "${#new_params[@]}" -gt 0 ]]; then
+		echo "${YELLOW}> Using additional kernel boot parameters for grub${NOCOLOR}"
+		echo "${new_params[@]}"
+		new_cmdline="$GRUB_CMDLINE_LINUX_DEFAULT ${new_params[@]}"
+		sed -ure "s/^GRUB_CMDLINE_LINUX_DEFAULT.+?/GRUB_CMDLINE_LINUX_DEFAULT=\"${new_cmdline}\"/g" -i /etc/default/grub
+		return 0
 	fi
+	return 1
+}
+
+
+# Check config grub and create symlink
+function check_grub {
+	[[ ! -f /hive/etc/grub ]] && return 1
+	[[ -e /etc/default/grub ]] && grub="$(< /etc/default/grub)" || grub=
+
+	#if [[ $(readlink /etc/default/grub) != "/hive/etc/grub" ]]; then
+	#	rm /etc/default/grub #>/dev/null 2>&1
+	#	ln -s /hive/etc/grub /etc/default/grub #>/dev/null 2>&1
+	#fi
+
+	# update grub config to default if needed
+	if ! diff /hive/etc/grub /etc/default/grub >/dev/null; then
+		cp -f /hive/etc/grub /etc/default/grub
+	fi
+
+	[[ ! -f /hive/etc/grub.custom && -f /hive/etc/grub.custom.template ]] &&
+		cp /hive/etc/grub.custom.template /hive/etc/grub.custom
+
+	if [[ -f /hive/etc/grub.custom ]]; then
+		( update_grub ) # in subshell
+	fi
+
+	[[ "$grub" == "$(< /etc/default/grub)" ]] && return 0
+	echo "${CYAN}> Updating grub${NOCOLOR}"
+	update-grub
+	exitcode=$?
+	echo "${YELLOW}System restart is required to get the effect${NOCOLOR}"
+	return $exitcode
 }
 
 
@@ -69,16 +87,21 @@ for param in $@; do
 			exit 0
 		;;
 		--force|-f) # it can help in situations when selfupgrade says Hive is up to date but this is not true
-			echo -e "${YELLOW}> Cleaning Hive apt lists${NOCOLOR}"
+			echo "${CYAN}> Cleaning Hive apt lists${NOCOLOR}"
 			# force HiveOS lists download
 			rm -f /var/lib/apt/lists/*hiveos*
 			# remove apt/dpkg lock files
-			echo -e "${YELLOW}> Removing apt/dpkg lock files and updates${NOCOLOR}"
+			echo "${CYAN}> Removing apt/dpkg lock files and updates${NOCOLOR}"
 			rm -f /var/lib/dpkg/lock*
 			rm -f /var/lib/apt/lists/lock*
 			rm -f /var/cache/apt/archives/lock*
 			# remove partial updates
 			rm -rf /var/lib/dpkg/updates/*
+		;;
+
+		--grub|-g)
+			check_grub
+			exit
 		;;
 
 		http*) #Set user repository
@@ -92,14 +115,22 @@ for param in $@; do
 			VERSION=$param
 			if [[ ! -z $VERSION ]]; then
 				[[ ! $VERSION =~ ^[0-9]+\.[0-9]+-[0-9]+$ ]] &&
-					echo -e "${YELLOW}Invalid version format \"$VERSION\"${NOCOLOR}" &&
-					echo -e "Please use the following format x.y-zz, like 0.6-65" &&
+					echo "${YELLOW}Invalid version format \"$VERSION\"${NOCOLOR}" &&
+					echo "Please use the following format x.y-zz, like 0.6-65" &&
 					exit 1
-				echo -e "${YELLOW}> Upgrading to version ${WHITE}$VERSION${NOCOLOR}"
+				echo "${CYAN}> Upgrading to version ${YELLOW}$VERSION${NOCOLOR}"
 			fi
 		;;
 	esac
 done
+
+
+current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
+[[ -e /hive-config/RepoVer ]] &&
+	repover=`cat /hive-config/RepoVer` ||
+	repover=0
+echo "${CYAN}> Current version: ${WHITE}$current_version@$repover${NOCOLOR}"
+
 
 if [[ ! -z $repository_list && $existing_repository_list != $repository_list ]]; then
 	echo "Saving repository URLs"
@@ -114,15 +145,20 @@ fi
 
 # check available memory and stop miners in advance
 if miner status > /dev/null; then
+	miners=1
 	mem=`free -b | grep "Mem" | awk '{print int($7/1024/1024)}'` || mem=0
-	[[ $mem -lt 250 ]] &&
-		echo -e "${YELLOW}> Low memory available - $mem MB. Stopping miners${NOCOLOR}" &&
+	if [[ $mem -lt 250 ]]; then
+		echo "${YELLOW}> Low memory available - $mem MB. Stopping miners${NOCOLOR}"
 		miner stop
+		miners=2
+	fi
+else
+	miners=0
 fi
 
 # if local source is not present update pci.ids older than 1 month
 if [[ ! -e $PCIIDS && $(( `stat -c %Y /usr/share/misc/pci.ids` + 30*24*3600 )) -lt `date +%s` ]]; then
-	echo -e "${CYAN}> Updating pci.ids${NOCOLOR}"
+	echo "${CYAN}> Updating pci.ids${NOCOLOR}"
 	update-pciids
 fi
 
@@ -148,9 +184,9 @@ if [[ $exitcode -eq 0 ]]; then
 			fi
 			if [[ $repover != $oldrepover ]]; then
 				hello
-				echo -e "${GREEN}Upgrade to ${YELLOW}$current_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
+				echo "${GREEN}Upgrade to ${WHITE}$current_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
 			else
-				echo -e "${GREEN}Hive is up to date already${NOCOLOR}"
+				echo "${GREEN}Hive is up to date already${NOCOLOR}"
 			fi
 			exit $dexitcode
 		fi
@@ -158,10 +194,8 @@ if [[ $exitcode -eq 0 ]]; then
 
 	# Stop wd, miners, autofan, autoswitch to prevent reboots during upgrade
 	as=$(screen -ls | grep -c autoswitch)
-	[[ $as -ne 0 ]] && echo -e "${YELLOW}> Stopping autoswitch${NOCOLOR}" && autoswitch stop > /dev/null 2>&1
-	echo -e "${YELLOW}> Stopping autofan, watchdog, miners${NOCOLOR}"
-	miner stop
-	#wd stop
+	[[ $as -ne 0 ]] && echo "${CYAN}> Stopping autoswitch${NOCOLOR}" && autoswitch stop > /dev/null 2>&1
+	[[ $miners -eq 1 ]] && echo "${CYAN}> Stopping miners${NOCOLOR}" && miner stop
 	autofan stop > /dev/null
 
 	echo ------------------------------------------------------
@@ -182,7 +216,7 @@ if [[ $exitcode -eq 0 ]]; then
 		#Update root miners packages, maybe some versions will be uninstalled
 		packages=$(hpkg getlist miners | grep -v '[0-9]')
 		if [[ ! -z $packages ]]; then
-			echo -e "${YELLOW}> Checking miners packages${NOCOLOR}"
+			echo "${CYAN}> Checking miners packages${NOCOLOR}"
 			apt-get install -y -f --only-upgrade $packages
 			aexitcode=$?
 			[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
@@ -191,7 +225,7 @@ if [[ $exitcode -eq 0 ]]; then
 		#Update version miners packages
 		packages=$(hpkg getlist miners | grep '[0-9]')
 		if [[ ! -z $packages ]]; then
-			echo -e "${YELLOW}> Checking miners version packages${NOCOLOR}"
+			echo "${CYAN}> Checking miners version packages${NOCOLOR}"
 			apt-get install -y -f --only-upgrade $packages
 			aexitcode=$?
 			[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
@@ -212,14 +246,13 @@ fi
 
 if [[ $exitcode -ne 0 ]];then
 	if [[ ! -z $as ]]; then
-		# Start autofan, wd, miners, autoswitch if we stopped them
-		echo -e "${YELLOW}> Starting autofan, watchdog, miners${NOCOLOR}"
-		autofan restart > /dev/null
+		# Restore stopped services
 		wd restart
-		miner start
-		[[ $as -ne 0 ]] && echo -e "${YELLOW}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+		autofan restart > /dev/null
+		[[ $miners -ne 0 ]] && echo "${CYAN}> Starting miners${NOCOLOR}" && miner start
+		[[ $as -ne 0 ]] && echo "${YELLOW}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 	fi
-	echo -e "${RED}Upgrade failed${NOCOLOR}"
+	echo "${RED}Upgrade failed${NOCOLOR}"
 	exit $exitcode
 fi
 
@@ -240,7 +273,7 @@ check_grub
 
 # update pci.ids from local source
 if [[ -e $PCIIDS && $PCIIDS -nt /usr/share/misc/pci.ids ]]; then
-	echo -e "${CYAN}> Updating pci.ids to version `grep -m 1 -oP "Version: \K.*" $PCIIDS`${NOCOLOR}"
+	echo "${CYAN}> Updating pci.ids to version `grep -m 1 -oP "Version: \K.*" $PCIIDS`${NOCOLOR}"
 	cp -f $PCIIDS /usr/share/misc/pci.ids
 fi
 
@@ -248,23 +281,21 @@ fi
 screen -wipe > /dev/null 2>&1 #Wipe possible dead screen
 
 # so reboot can be avoided in case it was updated
-echo -e "${CYAN}> Running gpu-detect${NOCOLOR}"
+echo "${CYAN}> Running gpu-detect${NOCOLOR}"
 gpu-detect listjson > $GPU_DETECT_JSON
 
 #Moved from postinst again as hello need to see new version
-echo -e "${YELLOW}> Saying hello to server again${NOCOLOR}"
-hello
+echo "${CYAN}> Saying hello to server again${NOCOLOR}"
+hello="$(unbuffer hello)" || echo "$hello"
 
 #Restart agent
-echo -e "${YELLOW}> Restarting agent${NOCOLOR}"
+echo "${CYAN}> Restarting agent, watchdog, autofan${NOCOLOR}"
 agent-screen restart
-
-# Start autofan, wd, miners, autoswitch
-echo -e "${YELLOW}> Starting autofan, watchdog, miners${NOCOLOR}"
-autofan restart > /dev/null
 wd restart
-miner start
-[[ $as -ne 0 ]] && echo -e "${YELLOW}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+autofan restart > /dev/null
+
+[[ $mn -ne 0 ]] && echo "${CYAN}> Starting miners${NOCOLOR}" && miner start
+[[ $as -ne 0 ]] && echo "${CYAN}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 
 # Restarting ROH Fan controller
 if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
@@ -277,7 +308,7 @@ current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
 	repover=`cat /hive-config/RepoVer` ||
 	repover=0
 
-echo -e "${GREEN}Upgrade to ${YELLOW}$current_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
-[[ ! -z $VERSION ]] && echo -e "${WHITE}Reboot is highly recommended after downgrade.${NOCOLOR}"
+echo "${GREEN}Upgrade to ${WHITE}$current_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
+[[ ! -z $VERSION ]] && echo "${YELLOW}Reboot is highly recommended after downgrade.${NOCOLOR}"
 
 exit $dexitcode

@@ -42,8 +42,10 @@ function remove_miners() {
 	[[ -z $packages ]] && echo "Nothing to uninstall" && exit 0
 
 
-	echo -e "${CYAN}> Stopping miner${NOCOLOR}"
-	miner stop
+	if miner status >/dev/null; then
+		echo -e "${CYAN}> Stopping miners${NOCOLOR}"
+		miner stop
+	fi
 
 	echo
 	echo -e "${CYAN}> Uninstalling packages${NOCOLOR}"
