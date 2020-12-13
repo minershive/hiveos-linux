@@ -1,0 +1,3 @@
+WildRig-Multi v0.28.2
+* x11k algo will use the same algo for devfee, this should improve miner stability on some cards
+* option `--print-devices` now will print busID
