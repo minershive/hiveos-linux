@@ -116,10 +116,11 @@ for bdir in $busids_dirs; do
 		#total: 2097152, used 978872 free 1118280
 		[[ ! -z "$vram" ]] &&
 			meminfo=`echo "$vram" | awk '{printf "%s %.2f MB, %s: %.2f MB, %s: %.2f MB", $1, $2/256, $3, $4/256, $5, $6/256}'` &&
-			echo "  Memory $meminfo"
+			mem_type=$(gpu-detect listjson | jq -s '.[]|to_entries[]|select(.value.brand == "amd")|.value.mem_type' | jq -csr --arg i $cardno '.[$i|tonumber]') &&
+			echo "  Memory $meminfo  Type: $mem_type"
 	fi
 	
-	atitool -i=$i -vctfstatus |grep -E '  MVDDC  |   VDDCR_HBM  |  VDDCR_SOC  ' | sed  -e 's/ //g' \
+	atitool -i=$i -vctfstatus -debug=0 | grep -E '  MVDDC  |   VDDCR_HBM  |  VDDCR_SOC  ' | sed  -e 's/ //g' \
 		-e 's/^/  /' -e 's/:/ : /g' | sed  ':a; /$/N; s/\n/,/; ta'
 
 	echo -n "  ${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${corev}mV"
