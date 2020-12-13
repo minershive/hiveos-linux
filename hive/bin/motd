@@ -2,11 +2,93 @@
 #ln -s /hive/bin/motd /etc/update-motd.d/00-my-motd
 . colors
 
+set -o pipefail
+
+[[ -f $RIG_CONF ]] && source $RIG_CONF
+[[ -e /hive/etc/gpu.ids ]] && source /hive/etc/gpu.ids
+
+
+# 1/4 of 4GB
+LOW_RAM=1000
+# 1/8 of 4GB
+VERY_LOW_RAM=500
+
+LOW_DISK=2000
+VERY_LOW_DISK=1000
+
+CORE_HIGH_TEMP=70
+CORE_VERY_HIGH_TEMP=80
+
+MEM_HIGH_TEMP=90
+MEM_VERY_HIGH_TEMP=100
+
+WATCH_REFRESH=2
+
+SEP=" · "
+
 echo ""
 
 
-[[ `id -u 2>/dev/null` -eq 0 ]] && NEEDSUDO= || NEEDSUDO="sudo"
+pretty_uptime() {
+	local t=`awk '{print int($1)}' /proc/uptime`
+	local d=$((t/60/60/24))
+	local h=$((t/60/60%24))
+	local m=$((t/60%60))
+	local s=$((t%60))
+	local u=
+	if [[ $d -gt 0 ]]; then
+		[[ $d -eq 1 ]] && u+="$d day " || u+="$d days "
+	fi
+	if [[ $h -gt 0 ]]; then
+		[[ $h -eq 1 ]] && u+="$h hour " || u+="$h hours "
+	fi
+	if [[ $m -gt 0 ]]; then
+		[[ $m -eq 1 ]] && u+="$m minute " || u+="$m minutes "
+	fi
+	if [[ $d -eq 0 && $h -eq 0 ]]; then
+		[[ $s -eq 1 ]] && u+="$s second" || u+="$s seconds"
+	fi
+	echo $u
+}
 
+
+cpus=`nproc --all`
+
+sys_la() {
+	read lavg[0] lavg[1] lavg[2] procs < /proc/loadavg
+	local color=
+	echo -n "${SEP}LA"
+	for la in "${lavg[@]}"; do
+		if [[ ${la%.*} -le $cpus ]]; then
+			color=$WHITE
+		elif [[ ${la%.*} -gt $(( cpus*2 )) ]]; then
+			color=$BRED
+		else
+			color=$BYELLOW
+		fi
+		echo -n " $color$la$NOCOLOR"
+	done
+}
+
+
+function sysinfo_high_la() {
+	read la[0] la[1] la[2] procs < /proc/loadavg
+	[[ ${la[0]%.*} -le $(( cpus + 10 )) ]] && return 0
+	read host_name sys_name < <( uname -rn )
+	echo -n "${BCYAN}$host_name$NOCOLOR${SEP}${BPURPLE}$sys_name$NOCOLOR${SEP}ID ${RIG_ID:-n/a}$NOCOLOR"
+	sys_la
+	echo "${SEP}up $(pretty_uptime)"
+	echo -e "\n${BYELLOW}Warning: High LA detected!$NOCOLOR (use ${WHITE}motd help${NOCOLOR} to override)\n"
+	return 1
+}
+
+
+# check for high LA
+if [[ -z "$1" ]]; then
+	sysinfo_high_la || exit 0
+fi
+
+[[ `id -u 2>/dev/null` -eq 0 ]] && NEEDSUDO= || NEEDSUDO="sudo"
 
 # check for running hive-replace session
 if $NEEDSUDO pgrep -f hive-replace >/dev/null && $NEEDSUDO timeout 1 screen -ls replace >/dev/null; then
@@ -17,7 +99,7 @@ fi
 
 
 # old "classic" motd
-if [[ $1 == "old" ]]; then
+if [[ "$1" == "old" ]]; then
 	echo -n `uname -sr`
 	echo  "   ${YELLOW}H `dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`${NOCOLOR}"
 
@@ -51,60 +133,13 @@ if [[ $1 == "old" ]]; then
 fi
 
 
-# 1/4 of 4GB
-LOW_RAM=1000
-# 1/8 of 4GB
-VERY_LOW_RAM=500
-
-LOW_DISK=2000
-VERY_LOW_DISK=1000
-
-CORE_HIGH_TEMP=70
-CORE_VERY_HIGH_TEMP=80
-
-MEM_HIGH_TEMP=90
-MEM_VERY_HIGH_TEMP=100
-
-
-WATCH_REFRESH=2
-
-[[ -f $RIG_CONF ]] && source $RIG_CONF
-[[ -e /hive/etc/gpu.ids ]] && source /hive/etc/gpu.ids
-
-set -o pipefail
-SEP=" · "
-cols=`tput cols`
-
-
-pretty_uptime() {
-	local t=`awk '{print int($1)}' /proc/uptime`
-	local d=$((t/60/60/24))
-	local h=$((t/60/60%24))
-	local m=$((t/60%60))
-	local s=$((t%60))
-	local u=
-	if [[ $d -gt 0 ]]; then
-		[[ $d -eq 1 ]] && u+="$d day " || u+="$d days "
-	fi
-	if [[ $h -gt 0 ]]; then
-		[[ $h -eq 1 ]] && u+="$h hour " || u+="$h hours "
-	fi
-	if [[ $m -gt 0 ]]; then
-		[[ $m -eq 1 ]] && u+="$m minute " || u+="$m minutes "
-	fi
-	if [[ $d -eq 0 && $h -eq 0 ]]; then
-		[[ $s -eq 1 ]] && u+="$s second" || u+="$s seconds"
-	fi
-	echo $u
-}
-
-
 amd_version=`dpkg -s amdgpu-pro 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`
 [[ -z $amd_version ]] && amd_version=`dpkg -s amdgpu 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`
 [[ -z $amd_version ]] && amd_version=`dpkg -s opencl-amdgpu-pro-icd 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`
 gpu_count_amd=`gpu-detect AMD`
 gpu_count_nvidia=`gpu-detect NVIDIA`
 sys_name=`uname -r`
+cols=`tput cols`
 
 sys_info1() {
 	echo -n "${BPURPLE}$sys_name$NOCOLOR"
@@ -132,24 +167,6 @@ sys_info1() {
 }
 
 
-sys_la() {
-	local lavg=(`awk '{printf $1" "$2" "$3}' /proc/loadavg`)
-	local color=
-	echo -n "${SEP}LA"
-	for la in "${lavg[@]}"; do
-		if [[ ${la%.*} -le $cpus ]]; then
-			color=$WHITE
-		elif [[ ${la%.*} -gt $(( cpus*2 )) ]]; then
-			color=$BRED
-		else
-			color=$BYELLOW
-		fi
-		echo -n " $color$la$NOCOLOR"
-	done
-}
-
-
-cpus=`nproc --all`
 sys_info2() {
 	echo -n "$BCYAN$(hostname)$NOCOLOR"
 	echo -n "${SEP}ID ${RIG_ID:-n/a}$NOCOLOR"
@@ -873,9 +890,9 @@ function motd_watch() {
 }
 
 
-if [[ $1 == "watch" ]]; then
+if [[ "$1" == "watch" ]]; then
 	# prevent running from scripts
-	[ ! -t 1 ] && echo "Watch must be run from terminal!" && exit 1
+	[[ ! -t 1 ]] && echo "Watch must be run from terminal!" && exit 1
 	motd_watch
 	exit
 fi
@@ -893,8 +910,7 @@ echo
 
 # show help only on boot and console session start
 # this does not work correct in teleconsole
-cmd=`timeout -s9 3 ps --no-headers $PPID 2>/dev/null`
-if [[ $cmd =~ (-bash|motd) ]]; then
+if [[ "$1" =~ ^(help|--help|-h)$ || `timeout -s9 3 ps --no-headers $PPID 2>/dev/null` =~ (-bash|motd) ]]; then
 	# do not wrap help in motd
 	tput rmam
 	unbuffer helpme | tr -d '\r' | awk '{print $0" "}'
