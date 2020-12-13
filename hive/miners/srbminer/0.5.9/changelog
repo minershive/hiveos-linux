@@ -1,0 +1,4 @@
+SRBMiner-Multi v0.5.9
+* fixed a bug on 'randomx' algorithm that could cause miner to create invalid shares for some jobs
+* removed algorithms: 'cryptonight_bbc',  'cryptonight_catalans'
+* bug fixes

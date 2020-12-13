@@ -1,8 +1,8 @@
 Package: hive-miners-srbminer
-Version: 0.6-28
+Version: 0.6-29
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-srbminer-0.5.8
+Depends: hive-miners-srbminer-0.5.9
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - SRBMiner-Multi CPU & AMD GPU miner

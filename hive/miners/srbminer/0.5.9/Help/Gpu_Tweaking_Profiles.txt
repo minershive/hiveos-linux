@@ -1,0 +1,32 @@
+Available only on Win64
+
+Supported:
+[VEGA56/64/FE/VII] & [RX 550/560, RX 470/480/570/580/590]
+
+If you have VEGA56/64/FE/VII cards i recommend using the 'tweak_profile' parameter because it can increase your hashrate on some algorithms!
+For RX series cards, the 'tweak_profile' option can bring some extra hash for your modded GPU.
+It can be used on stock bios GPU's too, but the performance will be far from the performance of a modded bios.
+
+Please read these VERY IMPORTANT things:
+
+1. Miner must run with administrator/root privileges
+2. Be patient, it takes some time to find optimal settings for your gpu/rig. Always test 1 card at a time.
+3. If you start getting invalid shares or compute errors, that means the profile is too much for that gpu, so lower it. Or decrease your memory frequency.
+
+Tweak levels :
+
+0 - no change, uses your original settings
+1 - light tweak
+2
+3
+4
+10 - max tweak
+
+
+Not every gpu can handle the same profile, so you need to find the right one for every gpu you have.
+Every profile has also weaker (low) settings. To use the low profile, add L after the profile number.
+
+If using gpu setup in cmd it would look like this for example: --gpu-tweak-profile 5L
+If using config file, you must surround the value with quotation marks if you want to use the L profile. Example : "5L"
+
+The simplest mode to apply a tweak profile is by using + or - on your keyboard while the miner is running.
