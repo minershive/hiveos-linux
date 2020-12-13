@@ -67,6 +67,14 @@ function amd_stats() { # @arr_index
 		echo "Error: fan speed unknown for card $cardno" >&2
 	fi
 
+	local rpm=0
+	if [[ $speed -eq 100 && -e ${hwmondir}/fan1_input ]]; then
+		rpm=`head -1 ${hwmondir}/fan1_input`
+		[[ $rpm -eq 65535 ]] && speed=0 # driver bug
+	else
+		echo "Error: RPM unknown for card $cardno" >&2
+	fi
+
 	local temp=0
 	if [[ -e ${hwmondir}/temp1_input ]]; then
 		temp=`head -1 ${hwmondir}/temp1_input`
@@ -117,13 +125,6 @@ function amd_stats() { # @arr_index
 			load=`echo "$amdgpu_pm_info" | grep -m1 'GPU Load' | awk '{printf("%d", $3)}'`
 	fi
 	[[ -z "$load" ]] && load=0
-
-#	local rpm=0
-#	if [[ -e ${hwmondir}/fan1_input ]]; then
-#		rpm=`head -1 ${hwmondir}/fan1_input`
-#	else
-#		echo "Error: RPM unknown for card $cardno" >&2
-#	fi
 
 	put_stats "$1" "$temp" "$speed" "$power" "$load" "$jtemp" "$mtemp"
 
