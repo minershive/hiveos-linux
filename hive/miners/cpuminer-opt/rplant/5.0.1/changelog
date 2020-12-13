@@ -1,0 +1,7 @@
+CPUminer-Opt by rplant v5.0.1
+* added automatic selection of the nearest working stratum for https://pool.rplant.xyz
+* automatically switch to the next one when a stratum error occurs
+* improved smt handling for yescrypt/yespower
+* fixed latency display
+* fixed HT on yespower
+* many other improvements and bug fixes
