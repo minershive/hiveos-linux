@@ -1,0 +1,6 @@
+T-Rex 0.19.3
+* improved octopus performance 1-2% on some configurations
+* reduced the amount of invalid shares on ethash and octopus
+* added `--no-hashrate-report` parameter to disable hashrate reporting to the mining pool
+* added `--keep-gpu-busy parameter` to continue mining even in case of connection loss: useful if pausing GPUs causes instability
+* added `--api-read-only` parameter to forbid applying config changes via API and web-monitoring page

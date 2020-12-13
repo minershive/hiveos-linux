@@ -1,0 +1,2 @@
+T-Rex 0.19.4
+* option `--keep-gpu-busy` not working under some conditions
