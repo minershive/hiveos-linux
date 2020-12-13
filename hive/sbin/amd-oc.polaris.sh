@@ -20,17 +20,18 @@ function polaris_oc() {
 	local MIN_VOLT=100
 
 	local PPT=/tmp/pp_table$cardno
-	local CARDPPT=/sys/class/drm/card$cardno/device/pp_table
-
-	# using saved Power Play table
-	cp $savedpp $PPT
+	local CARDPATH=/sys/class/drm/card$cardno/device
+	local CARDPPT=$CARDPATH/pp_table
 
 	local args=""
 	local coreState=
 	local memoryState=
 	local idx
 
-	readarray -t data < <( /hive/opt/upp2/upp.py -p $PPT get \
+	[[ $(stat -c %s $savedpp) -lt 100 ]] && return 1
+
+	readarray -t data < <( /hive/opt/upp2/upp.py -p $savedpp get \
+		sHeader/TableFormatRevision \
 		MclkDependencyTable/NumEntries \
 		SclkDependencyTable/NumEntries \
 		MaxODEngineClock \
@@ -38,15 +39,18 @@ function polaris_oc() {
 		PowerTuneTable/TDP \
 		PowerTuneTable/TDC \
 		PowerTuneTable/MaximumPowerDeliveryLimit \
-	)
+		2>/dev/null)
 
-	maxMemoryState=$(( data[0] - 1 ))
-	maxCoreState=$(( data[1] - 1 ))
-	maxCoreClock=$(( data[2]/100 ))
-	maxMemoryClock=$(( data[3]/100 ))
-	TDP=${data[4]}
-	TDC=${data[5]}
-	maxPower=${data[6]}
+	# check pp_table version 7.1
+	[[ "${data[0]}" != 7 ]] && return 2
+
+	maxMemoryState=$(( data[1] - 1 ))
+	maxCoreState=$(( data[2] - 1 ))
+	maxCoreClock=$(( data[3]/100 ))
+	maxMemoryClock=$(( data[4]/100 ))
+	TDP=${data[5]}
+	TDC=${data[6]}
+	maxPower=${data[7]}
 
 	echo "Max core: ${maxCoreClock}MHz, Max mem: ${maxMemoryClock}MHz, Max mem state: $maxMemoryState, Max core state: $maxCoreState"
 	echo "TDP: ${TDP}W, TDC: ${TDC}A, Max power: ${maxPower}W"
@@ -63,9 +67,9 @@ function polaris_oc() {
 		fi
 	fi
 
-	# core set is not specified, let's use some default or it will not work in some cases
+	# core state is not specified, let's use some default or it will not work in some cases
 	[[ -z $coreState && $AGGRESSIVE != 1 ]] &&
-		if [[ ${CORE_VDDC[$i]} -le $MIN_VOLT || ${CORE_CLOCK[$i]} -le $MIN_CLOCK ]]; then
+		if [[ ${CORE_VDDC[$i]} -gt $MIN_VOLT || ${CORE_CLOCK[$i]} -gt $MIN_CLOCK ]]; then
 			coreState=$DEFAULT_CORE_STATE
 			echo "${YELLOW}Empty core state, falling back to $coreState $NOCOLOR"
 		fi
@@ -140,8 +144,11 @@ function polaris_oc() {
 	# set auto performance level to reset manual DPM if no state will be set
 	[[ -z $coreState && -z $memoryState ]] &&
 		echo "Setting DPM to auto mode" &&
-		echo "auto" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
+		echo "auto" > $CARDPATH/power_dpm_force_performance_level
 
+
+	# using saved Power Play table
+	cp $savedpp $PPT
 
 	# apply all changes to PPT and check if they differ from already applied
 	local output=""
@@ -163,11 +170,11 @@ function polaris_oc() {
 
 
 	if [[ ! -z $coreState || ! -z $memoryState ]]; then
-		echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
+		echo "manual" > $CARDPATH/power_dpm_force_performance_level
 
 		[[ ! -z $coreState ]] &&
 			echo "Setting DPM core state to $coreState" &&
-			echo $coreState > /sys/class/drm/card$cardno/device/pp_dpm_sclk
+			echo $coreState > $CARDPATH/pp_dpm_sclk
 
 		# setting memory state kills idle mode, so set it only if needed
 		# if state is set without clock or in aggressive with DPM 1 and core clock set
@@ -175,27 +182,116 @@ function polaris_oc() {
 			[[ $AGGRESSIVE != 1 || $coreState -le 1 || ${CORE_CLOCK[$i]} -le $MIN_CLOCK ||
 				( $memoryState != $maxMemstate && ${MEM_CLOCK[$i]} -le $MIN_CLOCK ) ]] &&
 					echo "Setting DPM memory state to $memoryState" &&
-					echo $memoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
+					echo $memoryState > $CARDPATH/pp_dpm_mclk
 	fi
 
+	return 0
+}
 
+
+function legacy_oc() {
+
+	local MIN_CLOCK=400
+	local MIN_VOLT=100
+
+	local CARDPATH=/sys/class/drm/card$cardno/device
+
+	local coreState=
+	local memoryState=
+	local states
+
+	echo "${BYELLOW}Legacy mode: voltage and clocks can be changed only via bios $NOCOLOR"
+
+	[[ -e ${CARDPATH}/pp_dpm_sclk ]] && states=`cat ${CARDPATH}/pp_dpm_sclk | wc -l` || states=8
+	maxCoreState=$(( states - 1 ))
+
+	[[ -e ${CARDPATH}/pp_dpm_mclk ]] && states=`cat ${CARDPATH}/pp_dpm_mclk | wc -l` || states=2
+	maxMemoryState=$(( states - 1 ))
+
+	echo "Max memory state: $maxMemoryState, Max core state: $maxCoreState"
+
+	if [[ ! -z $CORE_STATE ]]; then
+		if [[ ${CORE_STATE[$i]} -ge 0 && ${CORE_STATE[$i]} -le $maxCoreState ]]; then
+			[[ ${CORE_STATE[$i]} != 0 ]] && # skip zero state, means auto
+				coreState=${CORE_STATE[$i]}
+		else
+			echo "${RED}ERROR: Invalid core state ${CORE_STATE[$i]} specified $NOCOLOR"
+		fi
+	fi
+
+	if [[ ! -z $MEM_STATE ]]; then
+		if [[ ${MEM_STATE[$i]} -ge 0 && ${MEM_STATE[$i]} -le $maxMemoryState ]]; then
+			[[ ${MEM_STATE[$i]} != 0 ]] && # skip zero state, means auto
+				memoryState="${MEM_STATE[$i]}"
+		else
+			echo "${RED}ERROR: Invalid memory state ${MEM_STATE[$i]} specified $NOCOLOR"
+		fi
+	fi
+
+	# set core state for compatibility
+	if [[ -z $coreState ]]; then
+		# using max state in agressive
+		if [[ $AGGRESSIVE == 1 ]]; then
+			coreState=$maxCoreState
+			echo "${YELLOW}Empty core state, setting to max state $coreState $NOCOLOR"
+		elif [[ ${CORE_VDDC[$i]} -gt $MIN_VOLT || ${CORE_CLOCK[$i]} -gt $MIN_CLOCK ]]; then
+			coreState=$DEFAULT_CORE_STATE
+			echo "${YELLOW}Empty core state, falling back to $coreState $NOCOLOR"
+		fi
+	fi
+
+	# set memory state if mem clock is set for compatibility
+	[[ -z $memoryState && ${MEM_CLOCK[$i]} -gt $MIN_CLOCK ]] &&
+		echo "${YELLOW}Empty memory state, setting to max state $maxMemoryState $NOCOLOR" &&
+		memoryState=$maxMemoryState
+
+
+	# set auto performance level to reset manual DPM if no state will be set
+	if [[ -z $coreState && -z $memoryState ]]; then
+		echo "Setting DPM to auto mode"
+		echo "auto" > $CARDPATH/power_dpm_force_performance_level
+	else
+		echo "manual" > $CARDPATH/power_dpm_force_performance_level
+
+		[[ ! -z $coreState ]] &&
+			echo "Setting DPM core state to $coreState" &&
+			echo $coreState > $CARDPATH/pp_dpm_sclk
+
+		# setting memory state kills idle mode, so set it only if needed
+		# if state is set without clock or in aggressive with DPM 1 and core clock set
+		[[ ! -z $memoryState ]] &&
+			[[ $AGGRESSIVE != 1 || $coreState -le 1 || ${CORE_CLOCK[$i]} -le $MIN_CLOCK ||
+				( $memoryState != $maxMemstate && ${MEM_CLOCK[$i]} -le $MIN_CLOCK ) ]] &&
+					echo "Setting DPM memory state to $memoryState" &&
+					echo $memoryState > $CARDPATH/pp_dpm_mclk
+	fi
+
+	return 0
+}
+
+
+function set_fan() {
 	# set fan speed
 	local hwmondir=`realpath /sys/class/drm/card$cardno/device/hwmon/hwmon*/`
 	if [[ ! -z ${hwmondir} ]]; then
-		[[ -e ${hwmondir}/pwm1_enable ]] && echo 1 > ${hwmondir}/pwm1_enable
 		if [[ ${FAN[$i]} -gt 0 && -e ${hwmondir}/pwm1 ]]; then
+			[[ -e ${hwmondir}/pwm1_enable ]] && echo 1 > ${hwmondir}/pwm1_enable
 			[[ -e ${hwmondir}/pwm1_max ]] && fanmax=`head -1 ${hwmondir}/pwm1_max` || fanmax=255
 			[[ -e ${hwmondir}/pwm1_min ]] && fanmin=`head -1 ${hwmondir}/pwm1_min` || fanmin=0
 			echo $(( FAN[i]*(fanmax - fanmin)/100 + fanmin )) > ${hwmondir}/pwm1
+		else
+			# set to auto mode
+			[[ -e ${hwmondir}/pwm1_enable ]] && echo 2 > ${hwmondir}/pwm1_enable
 		fi
 	else
 		echo "Error: unable to get HWMON dir to set fan"
 	fi
-
-
-	# finally set REF
-	[[ ${REF[$i]} -gt 0 ]] && amdmemtweak --gpu "$card_idx" --REF "${REF[$i]}"
 }
 
 
-polaris_oc
+polaris_oc || legacy_oc
+
+set_fan
+
+# finally set REF
+[[ ${REF[$i]} -gt 0 ]] && amdmemtweak --gpu "$card_idx" --REF "${REF[$i]}"
