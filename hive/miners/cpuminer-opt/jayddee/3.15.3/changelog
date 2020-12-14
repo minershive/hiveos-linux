@@ -1,0 +1,6 @@
+CPUminer-Opt-JayDDee v3.15.3
+* yescrypt algos now use yespower v0.5, a little faster
+* new implementation of sha256 using SHA CPU extension
+* replaced OpenSSL with SPH for sha256 & sha512
+* AVX512 optimization for sha256t & sha256q
+* faster sha256t, sha256q, x21s, x22i & x25x on CPUs with SHA without AVX512
