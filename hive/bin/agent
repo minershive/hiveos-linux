@@ -3,6 +3,8 @@
 #Send stats, receives commands
 [[ -t 1 ]] && source colors
 
+[[ -z "$API_HOST_FILE" ]] && source /etc/environment
+
 
 INTERVAL=10
 LOG="/var/log/hive-agent.log"
@@ -15,6 +17,7 @@ API_SWITCH_BACK=3600 # sec
 API_ERRORS=3 # before switching to fallback hosts
 
 API_DEFAULT_URL=()
+API_NEW_URL=()
 API_HOSTS_ARR=()
 api_index=-1
 api_error=0
@@ -186,9 +189,10 @@ function wait-for-gpu-stats() {
 
 
 function parse_host_url() {
-	local -n arr=$1
-	local host="$2"
-	[[ ! "$host" =~ (https?://)?([^:]+)(:?[0-9]+)? ]] && arr=() && return 1
+	local host="$1"
+	[[ ! "$host" =~ ^(https?://)?([^:]+)(:[0-9]+)?$ ]] && arr=() && return 1
+	[[ -z "$2" ]] && return 0
+	local -n arr="$2"
 	arr[0]="${BASH_REMATCH[0]}" # full url
 	arr[1]="${BASH_REMATCH[1]}" # proto
 	arr[2]="${BASH_REMATCH[2]}" # host
@@ -228,8 +232,11 @@ function loop {
 	[[ $exitcode -eq 0 ]] && api_error=0 || ((api_error++))
 	if [[ "${API_HOSTS[@]}" != "${API_HOSTS_ARR[@]}" || "$HIVE_HOST_URL" != "$API_DEFAULT_URL" ]]; then
 		API_HOSTS_ARR=( ${API_HOSTS[@]} )
-		echo "${DGRAY}Reloading API hosts (${#API_HOSTS_ARR[@]}), using $HIVE_HOST_URL${NOCOLOR}"
-		if parse_host_url API_DEFAULT_URL "$HIVE_HOST_URL"; then
+		echo "${DGRAY}Reloading API hosts (${#API_HOSTS_ARR[@]}), using ${HIVE_HOST_URL:-none}${NOCOLOR}"
+		for host in "${API_HOSTS_ARR[@]}"; do
+			echo "${DGRAY} # $host${NOCOLOR}"
+		done
+		if parse_host_url "$HIVE_HOST_URL" API_DEFAULT_URL; then
 			[[ -e "$API_HOST_FILE" ]] && rm $API_HOST_FILE
 			api_last_switch=0
 			api_index=-1
@@ -241,8 +248,9 @@ function loop {
 		# skip first host if it is equal to default
 		[[ $api_index -eq -1 && " ${API_HOSTS_ARR[0]} " =~ " ${API_DEFAULT_URL[2]} " ]] && api_index=0
 		api_index=$(( (api_index + 1) % ${#API_HOSTS_ARR[@]} ))
-		if parse_host_url NEW_URL "${API_HOSTS_ARR[$api_index]}"; then
-			HIVE_HOST_URL="${API_DEFAULT_URL[1]}${NEW_URL[2]}" # use proto from default URL
+		if parse_host_url "${API_HOSTS_ARR[$api_index]}" API_NEW_URL &&
+			parse_host_url "${API_DEFAULT_URL[1]}${API_NEW_URL[2]}"; then
+			HIVE_HOST_URL="${API_DEFAULT_URL[1]}${API_NEW_URL[2]}" # use proto from default URL
 			echo "${DGRAY}Switching API to $HIVE_HOST_URL [$api_index]${NOCOLOR}"
 			echo "HIVE_HOST_URL=\"$HIVE_HOST_URL\"" > $API_HOST_FILE
 		else
@@ -474,7 +482,13 @@ function loop {
 
 	if [[ -z $RIG_ID ]]; then
 		echo -e "${YELLOW}No RIG_ID, skipping sending stats${NOCOLOR}"
-		return
+		return 0
+	fi
+
+	if [[ -z "$HIVE_HOST_URL" ]]; then
+		echo -e "${RED}No host, skipping sending stats${NOCOLOR}"
+		exitcode=99
+		return $exitcode
 	fi
 
 	#log request

@@ -4,6 +4,7 @@
 [[ -e $RIG_CONF ]] && . $RIG_CONF
 
 ORIG_HIVE_HOST_URL="$HIVE_HOST_URL"
+[[ -z "$API_HOST_FILE" ]] && source /etc/environment
 [[ -e "$API_HOST_FILE" ]] && source $API_HOST_FILE # fallback api host
 
 # hosts on ports 80 and 443

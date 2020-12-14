@@ -206,7 +206,8 @@ function update_hosts {
 	USE_DOH=
 	DOH_ENABLED=
 	source $RIG_CONF
-	[[ -e "$API_HOST_FILE" ]] && source $API_HOST_FILE # fallback api host
+	[[ -z "$API_HOST_FILE" ]] && source /etc/environment
+	[[ -z "$HIVE_HOST_URL" && -e "$API_HOST_FILE" ]] && source $API_HOST_FILE # fallback api host
 	[[ -z "$HIVE_HOST_URL" ]] && echo "> HIVE_HOST_URL is empty" && return 2
 	local HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
 	[[ -z "$HOST" ]] && echo "> Unable to parse host name: $HIVE_HOST_URL" && return 3
