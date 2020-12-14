@@ -17,7 +17,6 @@ API_SWITCH_BACK=3600 # sec
 API_ERRORS=3 # before switching to fallback hosts
 
 API_DEFAULT_URL=()
-API_NEW_URL=()
 API_HOSTS_ARR=()
 api_index=-1
 api_error=0
@@ -190,7 +189,7 @@ function wait-for-gpu-stats() {
 
 function parse_host_url() {
 	local host="$1"
-	[[ ! "$host" =~ ^(https?://)?([^:]+)(:[0-9]+)?$ ]] && arr=() && return 1
+	[[ ! "$host" =~ ^(https?://)?([^:]+)(:[0-9]+)?$ ]] && return 1
 	[[ -z "$2" ]] && return 0
 	local -n arr="$2"
 	arr[0]="${BASH_REMATCH[0]}" # full url
@@ -242,12 +241,14 @@ function loop {
 			api_index=-1
 			api_error=0
 		else
+			API_DEFAULT_URL=()
 			echo "${RED}Default API host parsing error ($HIVE_HOST_URL)${NOCOLOR}"
 		fi
 	elif [[ $api_error -ge $API_ERRORS && ${#API_HOSTS_ARR[@]} -gt 1 ]]; then
 		# skip first host if it is equal to default
 		[[ $api_index -eq -1 && " ${API_HOSTS_ARR[0]} " =~ " ${API_DEFAULT_URL[2]} " ]] && api_index=0
 		api_index=$(( (api_index + 1) % ${#API_HOSTS_ARR[@]} ))
+		API_NEW_URL=()
 		if parse_host_url "${API_HOSTS_ARR[$api_index]}" API_NEW_URL &&
 			parse_host_url "${API_DEFAULT_URL[1]}${API_NEW_URL[2]}"; then
 			HIVE_HOST_URL="${API_DEFAULT_URL[1]}${API_NEW_URL[2]}" # use proto from default URL
