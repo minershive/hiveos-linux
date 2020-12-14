@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #Checks if config exists, ask for rig if no config found
 
-[ -t 1 ] && . colors
+[[ -t 1 ]] && . colors
 
 if [[ -e /hive-config/branding-logo.txt ]]; then
 	BRANDING_LOGO=$(cat /hive-config/branding-logo.txt; echo .) #echo . to preserve new lines
@@ -25,21 +25,44 @@ HELLO_OK="/tmp/.hive-hello-ok"
 mkdir -p "/hive-config"
 
 
-
 [[ $1 == "-f" ]] && echo "Forcing reconfig"
 
-HIVE_HOST_URL=$2
+HIVE_HOST_URL="$2"
 
-if [[ -z $HIVE_HOST_URL ]]; then
+if [[ -z "$HIVE_HOST_URL" ]]; then
 	#Get preconfigured api host
 	[[ -e /hive-config/rig-config-example.txt ]] &&
 		eval `cat /hive-config/rig-config-example.txt | dos2unix | grep '^HIVE_HOST_URL='`
-	[[ -z $HIVE_HOST_URL ]] && HIVE_HOST_URL='http://api.hiveos.farm'
+	[[ -z "$HIVE_HOST_URL" ]] && HIVE_HOST_URL='http://api.hiveos.farm'
 fi
 
 
+if [[ ! -z "$3" ]]; then
 
-if [[ ! -e $RIG_CONF || $1 == "-f" ]]; then
+	[[ ! "$2" =~ ^(http|https)://[0-9a-z\.-]+(:[0-9]{2,5})?$ ]] &&
+		echo "${RED}Error: Invalid URL specified${NOCOLOR}" && exit 2
+
+	[[ "${#3}" != 40 ]] &&
+		echo "${RED}Error: Invalid FARM HASH specified${NOCOLOR}" && exit 3
+
+	[[ -e $RIG_CONF ]] && source $RIG_CONF
+	[[ ! -z "$WORKER_NAME" ]] && WORKER="WORKER_NAME=\"$WORKER_NAME\"" || WORKER=
+
+	# backup rig.conf
+	echo "${CYAN}> Saving current config to \"${RIG_CONF}.bak\"${NOCOLOR}"
+	mv -f $RIG_CONF ${RIG_CONF}.bak
+
+	echo "${CYAN}> Writing new config to \"$RIG_CONF\"${NOCOLOR}"
+	echo -e "HIVE_HOST_URL=\"$2\"\nFARM_HASH=\"$3\"\n$WORKER\n" > $RIG_CONF
+
+	# try to connect
+	hello && echo "${BGREEN}Login OK. Happy mining!${NOCOLOR}" && exit 0
+
+	echo "${YELLOW}> Restoring previuos config${NOCOLOR}"
+	mv -f ${RIG_CONF}.bak ${RIG_CONF}
+	exit 1
+
+elif [[ ! -e $RIG_CONF || $1 == "-f" ]]; then
 	selfupgrade
 	disk-expand -s
 	msg=$(cat <<EOF
@@ -77,10 +100,6 @@ fi
 
 
 
-
-
-
-
 url=
 id=
 passwd=
@@ -108,6 +127,7 @@ read_id () {
 		echo "Invalid input"
 	done
 }
+
 
 read_passwd () {
 	while true; do
@@ -181,6 +201,4 @@ FILEEOF
 	echo -en "Try again? ${YELLOW}(Y/n)${NOCOLOR} "
 	ask_yn "y" || break
 done
-
-
 
