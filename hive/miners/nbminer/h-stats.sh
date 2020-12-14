@@ -88,9 +88,10 @@
                     --arg total_khs "$khs" \
                     --argjson bus_numbers "$bus_numbers" \
                     --argjson fan "$a_fans" --argjson temp "$a_temp" \
+                    --arg inv_per_gpu "$(echo "$stats_raw" | jq -c '[ .miner.devices[].invalid_shares ]' | tr -d '[' | tr -d ']' | sed "s/,/;/g")" \
                     '{$total_khs, hs: [.miner.devices[].hashrate_raw], $hs_units,
                     $temp, $fan, $uptime, $algo,
-                    ar: [.stratum.accepted_shares, .stratum.rejected_shares],
+                    ar: [.stratum.accepted_shares, .stratum.rejected_shares, .stratum.invalid_shares, $inv_per_gpu ],
                     $bus_numbers, ver: .version}' <<< "$stats_raw")
     fi
   fi

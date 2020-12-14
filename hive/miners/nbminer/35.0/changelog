@@ -1,0 +1,5 @@
+NBMiner v35.0
+* added statistics for invalid shares on ethash, in cmd log, API and web monitor
+* added statistics for Health information of AMD GPU
+* more detailed error information of OpenCL API
+* reduced CPU usage
