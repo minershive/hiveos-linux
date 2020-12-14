@@ -34,7 +34,7 @@ else
   stats=$(jq  --argjson temp "$a_temp" \
               --argjson fan  "$a_fans"  \
               --argjson bus_numbers "$bus_numbers" \
-              '{hs: [.hashrate.threads[][0]], hs_units: "hs", $temp, $fan, uptime: .uptime, ar: [.results.shares_good, .results.shares_total - .results.shares_good], $bus_numbers, algo: .algo}' <<< $stats_raw)
+              '{hs: [.hashrate.threads[][0]], hs_units: "hs", $temp, $fan, uptime: .uptime, ar: [.results.shares_good, .results.shares_total - .results.shares_good], $bus_numbers, algo: .algo, ver: .version}' <<< $stats_raw)
 fi
 
 #echo $khs
