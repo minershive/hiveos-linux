@@ -1,8 +1,8 @@
 Package: hive-miners-phoenixminer
-Version: 0.6-40
+Version: 0.6-41
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-phoenixminer-5.3b
+Depends: hive-miners-phoenixminer-5.4b
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - PhoenixMiner

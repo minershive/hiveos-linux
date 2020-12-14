@@ -1,0 +1,5 @@
+PhoenixMiner 5.4b
+* new kernels for AMD Vega and Navi GPUs that are slightly faster when the DAG buffer is approaching 
+  or passing 4GB in size (the current ETH DAG is close to 4GB). To use these new kernels, you need to use drivers 20.10+ or later.
+* re-running auto-tune as needed when switching to a different DAG buffer type (e.g. when switching from ETH to ETC, or back)
+* other small fixes and improvements
