@@ -12,10 +12,15 @@ else
 	local busids=''
 	local gpuerr='' # rejected and invalid shares per GPU
 	local idx=0
+	local rej_per_gpu=$(cat /var/run/hive/miners/t-rex/config.json | jq '.report_rejected_per_gpu')
 	for i in $gpu_worked; do
 		gpu=${gpu_busid[$i]}
 		busids[idx]=$((16#$gpu))
-		gpuerr[idx]=$(jq --arg gpu "$i" '.stat_by_gpu[$gpu|tonumber].rejected_count' <<< $stat_raw)
+		if [[ $rej_per_gpu == "true" ]]; then
+		   gpuerr[idx]=$(jq --arg gpu "$i" '.stat_by_gpu[$gpu|tonumber].rejected_count' <<< $stat_raw)
+		else
+		   gpuerr[idx]=0
+		fi
 		idx=$((idx+1))
 	done
 	stats=$(jq --argjson gpus `echo ${busids[@]}  | jq -cs '.'` \
