@@ -6,7 +6,7 @@
 import click
 import tempfile
 from upp import decode
-import pkg_resources
+#import pkg_resources
 import os.path
 import sys
 
