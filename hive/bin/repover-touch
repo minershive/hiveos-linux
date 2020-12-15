@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
+
 # Saves repository version
+HIVEREPOVER=/hive-config/RepoVer
+
 
 repourl=`cat /etc/apt/sources.list.d/hiverepo.list | grep -m1 '^deb http' | awk '{print $2}'`
 response=`curl --insecure -L --connect-timeout 7 --max-time 15 --silent --include "$repourl/RepoVer"`
@@ -9,8 +12,9 @@ if (echo "$response" | grep -q '^HTTP/1.1 200 OK'); then
 	repover=$(echo "$response" | tail -n 1)
 fi
 
-if [[ ! -z $repover ]]; then
-	echo "$repover" > /hive-config/RepoVer
+if [[ ! -z "$repover" ]]; then
+	[[ -e $HIVEREPOVER && "$repover" == $(< $HIVEREPOVER) ]] && exit 0
+	echo "$repover" > $HIVEREPOVER
 	exit 0
 fi
 

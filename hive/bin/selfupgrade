@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 . colors
 
+HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
+
 # pci.ids update source, otherwise download from web
 PCIIDS=/hive/etc/pci.ids
 
@@ -11,24 +13,45 @@ export DEBIAN_FRONTEND=noninteractive
 #If needed maybe there is even stronger option @see https://askubuntu.com/questions/146921/how-do-i-apt-get-y-dist-upgrade-without-a-grub-config-prompt
 #sudo DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade
 
-help_context="${CYAN}Usage: selfupgrade [option] [repository URL] [version]${NOCOLOR}
+function print_help {
+	demourl="http://192.168.0.1/repo/binary"
+	repourl=`get_default_repo` || repourl="$demourl"
+	echo "${CYAN}Usage: selfupgrade [option] [repository URL] [version]${NOCOLOR}
 Options:
 ${GREEN}  -h|--help       ${NOCOLOR}to show current help
 ${GREEN}  -f|--force      ${NOCOLOR}to force upgrade by cleaning apt lists, caches and locks
-                  it can help in situations when selfupgrade says Hive is up to date but actually it isn't
+                  it can help in situations when selfupgrade says 'System is up to date' but actually it isn't
 ${GREEN}  -g|--grub       ${NOCOLOR}to update only grub config
-${GREEN}  repository URL  ${NOCOLOR}to get updates from; should start with http like http://download.hiveos.farm/repo/binary
+${GREEN}  repository URL  ${NOCOLOR}to get updates from; should start with http like ${repourl}
 ${GREEN}  version         ${NOCOLOR}to upgrade or downgrade; should be used the following format x.y-zz, like 0.6-65
 Examples:
-${GREEN}  selfupgrade 0.6-65 http://192.168.0.1/repo/binary -f ${NOCOLOR}
-                  force upgrade/downgrade to version 0.6-65 from repository http://192.168.0.1/repo/binary
+${GREEN}  selfupgrade 0.6-65 ${demourl} -f ${NOCOLOR}
+                  force upgrade/downgrade to version 0.6-65 from repository ${demourl}
 "
+}
 
 #screen -wipe > /dev/null 2>&1
 
-VERSION=
 existing_repository_list=
-repository_list=
+function set_repo {
+	local repository_list="deb $1 /"
+	[[ -e $HIVEREPO_LIST ]] && existing_repository_list="$(< $HIVEREPO_LIST)"
+	echo "${CYAN}> Using repository ${WHITE}$param${NOCOLOR}"
+	echo "$repository_list" > $HIVEREPO_LIST
+}
+
+function get_default_repo {
+	grep -m1 -oP "deb \K[^\s]+" /hive/etc/hiverepo.list
+}
+
+function restore_repo {
+	if [[ ! -z "$existing_repository_list" && "$existing_repository_list" != "$(< $HIVEREPO_LIST)" ]]; then
+		#echo "${CYAN}> Restoring old repository URLs${NOCOLOR}"
+		echo "$existing_repository_list" > $HIVEREPO_LIST
+	fi
+}
+# restore repo on any error
+trap "restore_repo" EXIT
 
 
 function update_grub {
@@ -80,14 +103,40 @@ function check_grub {
 }
 
 
-for param in $@; do
-	case $param in
+function stop_services {
+	[[ $asw -ne 0 ]] && echo "${CYAN}> Stopping autoswitch${NOCOLOR}" && autoswitch stop > /dev/null 2>&1
+	[[ $miners -ne 0 ]] && echo "${CYAN}> Stopping miners${NOCOLOR}" && miner stop
+	autofan stop > /dev/null
+}
+
+
+function restore_services {
+	echo "${CYAN}> Restarting autofan and watchdog${NOCOLOR}"
+	wd restart
+	autofan restart > /dev/null
+
+	# in maintenance mode start miner if it was running
+	if [[ $MAINTENANCE -eq 0 || ( $MAINTENANCE -eq 1 && $miners -eq 1 ) ]]; then
+		echo "${CYAN}> Starting miners${NOCOLOR}"
+		miner start
+		if [[ $asw -ne 0 ]]; then
+			echo "${CYAN}> Starting autoswitch${NOCOLOR}"
+			nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+		fi
+	fi
+}
+
+
+VERSION=
+
+for param in "$@"; do
+	case "$param" in
 		--help|-h)
-			echo -e "$help_context"
+			print_help
 			exit 0
 		;;
 		--force|-f) # it can help in situations when selfupgrade says Hive is up to date but this is not true
-			echo "${CYAN}> Cleaning Hive apt lists${NOCOLOR}"
+			echo "${CYAN}> Cleaning apt lists${NOCOLOR}"
 			# force HiveOS lists download
 			rm -f /var/lib/apt/lists/*hiveos*
 			# remove apt/dpkg lock files
@@ -105,16 +154,13 @@ for param in $@; do
 		;;
 
 		http*) #Set user repository
-			HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
-			repository_list="deb $param /"
-
-			[[ -e $HIVEREPO_LIST ]] && existing_repository_list=$(cat $HIVEREPO_LIST)
+			set_repo "$param"
 		;;
 
 		*) # version
-			VERSION=$param
-			if [[ ! -z $VERSION ]]; then
-				[[ ! $VERSION =~ ^[0-9]+\.[0-9]+-[0-9]+$ ]] &&
+			VERSION="$param"
+			if [[ ! -z "$VERSION" ]]; then
+				[[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+-[0-9]+$ ]] &&
 					echo "${YELLOW}Invalid version format \"$VERSION\"${NOCOLOR}" &&
 					echo "Please use the following format x.y-zz, like 0.6-65" &&
 					exit 1
@@ -125,35 +171,28 @@ for param in $@; do
 done
 
 
+# get current version
 current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
-[[ -e /hive-config/RepoVer ]] &&
-	repover=`cat /hive-config/RepoVer` ||
-	repover=0
+[[ -e /hive-config/RepoVer ]] && repover=$(< /hive-config/RepoVer) || repover=0
 echo "${CYAN}> Current version: ${WHITE}$current_version@$repover${NOCOLOR}"
 
-
-if [[ ! -z $repository_list && $existing_repository_list != $repository_list ]]; then
-	echo "Saving repository URLs"
-	echo "$repository_list" > $HIVEREPO_LIST
-fi
-
-#remove stupid rep file for smaller updates
+# remove stupid rep file for smaller updates
 [[ -f /etc/apt/sources.list.d/amdgpu-pro.list ]] && rm /etc/apt/sources.list.d/amdgpu-pro.list
 
-#remove avrdude conf file to exclude overwrite request
+# remove avrdude conf file to exclude overwrite request
 [[ -f /etc/avrdude.conf ]] && rm /etc/avrdude.conf
 
+# save miner and autoswitch status
+asw=$(screen -ls | grep -c autoswitch)
+miner status > /dev/null && miners=1 || miners=0
+
 # check available memory and stop miners in advance
-if miner status > /dev/null; then
-	miners=1
+if [[ $miners -eq 1 ]]; then
 	mem=`free -b | grep "Mem" | awk '{print int($7/1024/1024)}'` || mem=0
 	if [[ $mem -lt 250 ]]; then
 		echo "${YELLOW}> Low memory available - $mem MB. Stopping miners${NOCOLOR}"
-		miner stop
-		miners=2
+		stop_services
 	fi
-else
-	miners=0
 fi
 
 # if local source is not present update pci.ids older than 1 month
@@ -171,49 +210,41 @@ hpkg update
 exitcode=$?
 
 if [[ $exitcode -eq 0 ]]; then
-	if [[ -z $VERSION ]]; then #no target version
-		updateavail=`apt list --upgradable 2>&1 | grep '^hive' | wc -l`
+	if [[ -z "$VERSION" ]]; then # no target version
+		updateavail=`apt list --upgradable 2>&1 | grep -c '^hive'`
+		repover-touch
 		if [[ $updateavail == 0 ]]; then
-			[[ -e /hive-config/RepoVer ]] && oldrepover=`cat /hive-config/RepoVer` || oldrepover=0
-			repover-touch
-			[[ -e /hive-config/RepoVer ]] && repover=`cat /hive-config/RepoVer` || repover=0
-			#Restore old repository
-			if [[ ! -z $existing_repository_list && $existing_repository_list != `cat $HIVEREPO_LIST` ]]; then
-				echo "Restoring old repository URLs"
-				echo "$existing_repository_list" > $HIVEREPO_LIST
-			fi
-			if [[ $repover != $oldrepover ]]; then
+			[[ -e /hive-config/RepoVer ]] && newrepover=$(< /hive-config/RepoVer) || newrepover=0
+			if [[ "$repover" != "$newrepover" ]]; then
 				hello
-				echo "${GREEN}Upgrade to ${WHITE}$current_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
+				echo "${GREEN}Upgrade to ${WHITE}${current_version}@${newrepover}${GREEN} complete. Have a happy mining.${NOCOLOR}"
 			else
-				echo "${GREEN}Hive is up to date already${NOCOLOR}"
+				echo "${GREEN}System is up to date already${NOCOLOR}"
 			fi
+			restore_repo # Restore repository
 			exit $dexitcode
 		fi
 	fi
 
-	# Stop wd, miners, autofan, autoswitch to prevent reboots during upgrade
-	as=$(screen -ls | grep -c autoswitch)
-	[[ $as -ne 0 ]] && echo "${CYAN}> Stopping autoswitch${NOCOLOR}" && autoswitch stop > /dev/null 2>&1
-	[[ $miners -eq 1 ]] && echo "${CYAN}> Stopping miners${NOCOLOR}" && miner stop
-	autofan stop > /dev/null
+	# Stop miners, autofan, autoswitch to prevent reboots during upgrade
+	stop_services
 
 	echo ------------------------------------------------------
 
-	if [[ -z $VERSION ]]; then #normal upgrade to the latest available
+	if [[ -z "$VERSION" ]]; then # normal upgrade to the latest available
 		exitcode=0
 
 		hive_extra_packages=""
-		#check if hive-lib-dotnet is installed and if yes then add to checked packages
+		# check if hive-lib-dotnet is installed and if yes then add to checked packages
 		dpkg -s hive-lib-dotnet > /dev/null 2>&1 &&
 			hive_extra_packages="hive-lib-dotnet $hive_extra_packages"
 
-		#Here should be listed all non-miner packages so that versions check will work
+		# Here should be listed all non-miner packages so that versions check will work
 		apt-get install -y -f --only-upgrade hive hive-lib hive-opt hive-opt-algomap $hive_extra_packages
 		aexitcode=$?
 		[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 
-		#Update root miners packages, maybe some versions will be uninstalled
+		# Update root miners packages, maybe some versions will be uninstalled
 		packages=$(hpkg getlist miners | grep -v '[0-9]')
 		if [[ ! -z $packages ]]; then
 			echo "${CYAN}> Checking miners packages${NOCOLOR}"
@@ -222,7 +253,7 @@ if [[ $exitcode -eq 0 ]]; then
 			[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 		fi
 
-		#Update version miners packages
+		# Update version miners packages
 		packages=$(hpkg getlist miners | grep '[0-9]')
 		if [[ ! -z $packages ]]; then
 			echo "${CYAN}> Checking miners version packages${NOCOLOR}"
@@ -238,37 +269,27 @@ fi
 
 echo ------------------------------------------------------
 
-#Restore old repository
-if [[ ! -z $existing_repository_list && $existing_repository_list != `cat $HIVEREPO_LIST` ]]; then
-	echo "Restoring old repository URLs"
-	echo "$existing_repository_list" > $HIVEREPO_LIST
-fi
+restore_repo # Restore repository
 
-if [[ $exitcode -ne 0 ]];then
-	if [[ ! -z $as ]]; then
-		# Restore stopped services
-		wd restart
-		autofan restart > /dev/null
-		[[ $miners -ne 0 ]] && echo "${CYAN}> Starting miners${NOCOLOR}" && miner start
-		[[ $as -ne 0 ]] && echo "${YELLOW}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
-	fi
+if [[ $exitcode -ne 0 ]]; then
+	restore_services
 	echo "${RED}Upgrade failed${NOCOLOR}"
 	exit $exitcode
 fi
 
-#Save RepoVer
+# Save RepoVer
 repover-touch
 
 apt-get -y autoremove
 
-#clean cached packages to save space
+# clean cached packages to save space
 apt-get clean
 
-#Reread env variables
+# Reread env variables
 source /etc/environment
 export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
 
-#update Grub
+# update Grub
 check_grub
 
 # update pci.ids from local source
@@ -278,24 +299,23 @@ if [[ -e $PCIIDS && $PCIIDS -nt /usr/share/misc/pci.ids ]]; then
 fi
 
 #echo ------------------------------------------------------
-screen -wipe > /dev/null 2>&1 #Wipe possible dead screen
+screen -wipe > /dev/null 2>&1 # Wipe possible dead screen
 
 # so reboot can be avoided in case it was updated
 echo "${CYAN}> Running gpu-detect${NOCOLOR}"
 gpu-detect listjson > $GPU_DETECT_JSON
 
-#Moved from postinst again as hello need to see new version
-echo "${CYAN}> Saying hello to server again${NOCOLOR}"
-hello="$(unbuffer hello)" || echo "$hello"
+# Moved from postinst again as hello need to see new version
+#echo "${CYAN}> Saying hello to server again${NOCOLOR}"
+#hello="$(unbuffer hello)" || echo "$hello"
+hello
 
-#Restart agent
-echo "${CYAN}> Restarting agent, watchdog, autofan${NOCOLOR}"
+# Restart agent
+echo "${CYAN}> Restarting agent${NOCOLOR}"
 agent-screen restart
-wd restart
-autofan restart > /dev/null
 
-[[ $mn -ne 0 ]] && echo "${CYAN}> Starting miners${NOCOLOR}" && miner start
-[[ $as -ne 0 ]] && echo "${CYAN}> Starting autoswitch${NOCOLOR}" && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
+# Restore other services
+restore_services
 
 # Restarting ROH Fan controller
 if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
@@ -303,12 +323,14 @@ if [[ `lsusb | grep -c 16c0:05dc` -ge 1 ]]; then
 	$OCTOFAN dontattach
 fi
 
-current_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
-[[ -e /hive-config/RepoVer ]] &&
-	repover=`cat /hive-config/RepoVer` ||
-	repover=0
+new_version=`dpkg -s hive | grep '^Version: ' | sed 's/Version: //'`
+[[ -e /hive-config/RepoVer ]] && repover=$(< /hive-config/RepoVer) || repover=0
 
-echo "${GREEN}Upgrade to ${WHITE}$current_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
-[[ ! -z $VERSION ]] && echo "${YELLOW}Reboot is highly recommended after downgrade.${NOCOLOR}"
+if [[ -z "$VERSION" || "$VERSION" == "$current_version" ]]; then
+	echo "${GREEN}Upgrade to ${WHITE}$new_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
+else
+	echo "${GREEN}Downgrade to ${WHITE}$new_version@$repover${GREEN} complete. Have a happy mining.${NOCOLOR}"
+	echo "${YELLOW}Reboot is highly recommended after downgrade.${NOCOLOR}"
+fi
 
 exit $dexitcode
