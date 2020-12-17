@@ -1,4 +1,0 @@
-Gminer v2.34
-* added DAG check after generation for Ethash and ProgPoW/KAWPOW algorithms, this feature help to detect overclock issues
-* decreased stale share percentage on ProgPoW/KAWPOW algorithms
-* improved AMD support
