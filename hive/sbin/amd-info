@@ -105,9 +105,12 @@ for bdir in $busids_dirs; do
 		pwr=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(average GPU)' | awk '{print $1}'`
 
 	if [[ -e /sys/class/drm/card$cardno/device/current_link_speed ]]; then
-		speed=`cat /sys/class/drm/card$cardno/device/current_link_speed`
-		width=`cat /sys/class/drm/card$cardno/device/current_link_width`
-		echo  "  PCIE Link speed : $speed, PCIE Link width : x$width"
+       pciestatus=$(atitool -i=$i -pciestatus -debug=0)
+       pciespeed=$(echo "$pciestatus" | grep "Link Speed" | sed "s/.*\= //")
+       pciewidth=$(echo "$pciestatus" | grep "Link Width" | sed "s/.*\= //")
+#		pciespeed=`cat /sys/class/drm/card$cardno/device/current_link_speed`
+#		pciewidth=`cat /sys/class/drm/card$cardno/device/current_link_width`
+		echo  "  PCIE Link speed: $pciespeed, PCIE Link width: $pciewidth"
 	fi
 
 	meminfo=
@@ -116,7 +119,7 @@ for bdir in $busids_dirs; do
 		#total: 2097152, used 978872 free 1118280
 		[[ ! -z "$vram" ]] &&
 			meminfo=`echo "$vram" | awk '{printf "%s %.2f MB, %s: %.2f MB, %s: %.2f MB", $1, $2/256, $3, $4/256, $5, $6/256}'` &&
-			mem_type=$(gpu-detect listjson | jq -s '.[]|to_entries[]|select(.value.brand == "amd")|.value.mem_type' | jq -csr --arg i $cardno '.[$i|tonumber]') &&
+			mem_type=$(gpu-detect listjson | jq -s '.[]|to_entries[]|select(.value.brand == "amd")|.value.mem_type' | jq -csr --arg i $i '.[$i|tonumber]') &&
 			echo "  Memory $meminfo  Type: $mem_type"
 	fi
 	
