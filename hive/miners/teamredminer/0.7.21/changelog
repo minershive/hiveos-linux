@@ -1,0 +1,2 @@
+TeamRedMiner v0.7.21
+* Ethash: improved probability for high (4078-4080MB) ethash 4GB capped allocation running stable over time that could fix crash after 5-10 mins when running at 4078-4080MB
