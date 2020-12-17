@@ -1,0 +1,21 @@
+lolMiner v1.17
+
+Changes over v1.16a
+* significantly reduced Ethash power draw on Navi GPUs, Slightly improved performance of 6800 (XT) / 6900
+* added Cuckoo-29, Cuckaroo-30 CTX, Cuckatoo-31 (MWC) and Cuckatoo-32 (Grin) for RX 6800 family of GPUs
+* reduced number of stale shares on Cortex algorithm. This will result in a minimally lower displayed hash rate, but higher pool side hash.
+* added a basic temperature protection mechanism. See notes below for usage.
+* added parameter --singlethread to work with Ethash and Equihash algorithm. This will disable the 2nd mining thread and slightly reduce performance of the involved cards. Use this option to reduce stumbles when a card does graphic output in parallel. Use --singlethread (equivalent to --singlethread -1) to enable single thread mode for all GPUs, use --singlethread to set the mode for one single card.
+* added reading of junction temperature on AMD GPUs.
+* API is now bound to the local host, causing less issues with firewalls.
+
+Fixed bugs:
+* Ethash Ethproxy stratum mode some times loosing worker name.
+* BeamHash III not starting up in Linux on RX 5000 & RX 6000 series card on amdgpu-pro 20.45 driver.
+* Ethash & Beam not starting up on Radeon R9 380
+* Ethash not starting up on some 6G Nvidia cards
+* Ethash mining frequently trying to start up a card if there was an error during mining.
+* "DEVICES" parameter not working when configuring the miner from json file.
+
+Known issues:
+* ETC mining is currently not working for Nvidia GTX cards with 3G of memory.
