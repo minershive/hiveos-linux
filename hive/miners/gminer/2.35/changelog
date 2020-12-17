@@ -1,0 +1,9 @@
+Gminer v2.35
+* improved compatibility with somevEthash pools
+* added DAG check after generation for Ethash and ProgPoW/KAWPOW algorithms, this feature helps to detect overclock issues
+* improved AMD support that could fix "No device found" error on some system configurations
+* improved support of newest Nvidia drivers related to "NVML initialization failed" error
+* decreased stale share percentage on ProgPoW/KAWPOW algorithms
+* significantly performance improvements for KAWPOW/ProgPoW algorithms on mining edition GPUs
+* miner doesn't stop when DAG generation failed on some GPU and such GPU will be marked RED in statistics
+* removed algorithms: Eaglesong, Handshake, Kadena, BeamHashI, BeamHashII, Grimm, Cuckaroo29, Cuckaroom29, Equihash 96/5 that also helped significantly reduce binary size
