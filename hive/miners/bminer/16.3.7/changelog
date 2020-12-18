@@ -1,0 +1,3 @@
+Bminer v16.3.7
+* added support NVIDIA 30 series GPUs
+* fixed crash in NVIDIA Etherum miner
