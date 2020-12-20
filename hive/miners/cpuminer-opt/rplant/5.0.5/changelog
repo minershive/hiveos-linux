@@ -1,0 +1,3 @@
+CPUminer-Opt by rplant v5.0.5
+* fixing a critical bug with "job not found" shares. on sugarchain, the update is mandatory, on other coins it is desirable
+
