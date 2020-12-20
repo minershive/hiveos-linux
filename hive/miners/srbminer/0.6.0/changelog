@@ -1,0 +1,6 @@
+SRBMiner-Multi v0.6.0
+* small performance increase on 'cryptonight_gpu', 'curvehash' algorithms
+* slow start (ramp up) of GPU's on miner start is now on by default
+* added parameter '--disable-workers-ramp-up'
+* added parameter '--gpu-extra-config', see miner manual for details
+* removed 'tellor', 'rainforestv2' algorithms

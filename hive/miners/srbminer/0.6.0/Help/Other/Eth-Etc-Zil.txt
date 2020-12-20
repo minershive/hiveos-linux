@@ -1,0 +1,33 @@
+ETH+ZIL or ETC+ZIL can be mined in 2 ways:
+
+1.	Mining with GPU's that DON'T have enough VRAM to fit both DAG's
+
+	Using this way, every time when the switch from ETH-ETC to ZIL (or vice versa) happens, GPU will recreate DAG of the currently mined coin.
+
+	SRBMiner-MULTI.exe --disable-cpu --algorithm ethash --pool eu.ezil.me:5555 --wallet ethereum-wallet.zilliqa-wallet --worker your-worker-name --gpu-boost 5
+
+
+
+2. Mining with GPU's that HAVE enough VRAM to fit both DAG's
+
+	This way you can have both DAG's in your VRAM so no need to recreate them every time the switch from ETH-ETC to ZIL (or vice versa) happens.
+	Both DAG's are created once when the first job is received, and after that they stay in VRAM.
+	
+	Also using this way you can mine ETH-ETC on ANY pool (not just on the pool where you do the 'dual' mining with ZIL), for example mine Ethereum on Herominers and Zilliqa on ezil.me.
+	
+	SRBMiner-MULTI.exe --disable-cpu --multi-algorithm-job-mode 3 --a0-is-zil --algorithm ethash;ethash --pool eu.ezil.me:5555;ethereum.herominers.com:10200 --wallet ethereum-wallet.zilliqa-wallet;ethereum-wallet --worker ezil-worker;herominers-worker --gpu-boost 5;0
+	
+	What is important to note here is the --wallet part:
+	--wallet ethereum-wallet.zilliqa-wallet;ethereum-wallet
+	
+	Even if Ethereum won't be mined on ezil.me, it expects your wallet to be in format : ethereum-wallet.zilliqa-wallet
+	
+	
+	If you want to mine both Ethereum and Zilliqa on ezil.me, but have both DAG's in VRAM, this trick should do it:
+	
+	SRBMiner-MULTI.exe --disable-cpu --multi-algorithm-job-mode 3 --a0-is-zil --algorithm ethash;ethash --pool eu.ezil.me:5555;eu.ezil.me:5555 --wallet ethereum-wallet.zilliqa-wallet;ethereum-wallet.zilliqa-wallet --worker ezil-worker-zil;ezil-worker-eth --gpu-boost 5;0
+	
+	The --a0-is-zil parameter indicates that ZIL will be mined on a0 (algorithm 0 - the first algorithm). And no, there is no --a1-is-zil parameter.
+	--multi-algorithm-job-mode 3 also must be used, without it all of this won't work.
+	
+	Devfee will be mined only for ETH-ETC (algorithm 1)
