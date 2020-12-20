@@ -1,8 +1,8 @@
 Package: hive-miners-xmrig-new-xlarig
-Version: 0.6-02
+Version: 0.6-03
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-xmrig-new-xlarig-5.1.0
+Depends: hive-miners-xmrig-new-xlarig-5.2.0
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - XMRig-XLA for XLA/Scala
