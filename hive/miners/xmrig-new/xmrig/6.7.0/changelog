@@ -1,0 +1,7 @@
+XMRig v6.7.0
+* up to 20-30% faster RandomX dataset initialization with AVX2 on some CPUs
+* added VM detection
+* code cleanup and refactoring
+* fixed some errors found by static analysis
+
+
