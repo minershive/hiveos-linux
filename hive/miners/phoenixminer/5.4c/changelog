@@ -1,0 +1,4 @@
+PhoenixMiner 5.4c
+* validated support for Nvidia RTX 3090, 3080, 3070, and 3060Ti GPUs on current kernels and there are no speed increases from the previous PhoenixMiner release
+* added new kernels to allow mining on AMD Hawaii cards (R9 390, etc.) with the current and future DAG epochs
+* added support for DAG epochs up to 500
