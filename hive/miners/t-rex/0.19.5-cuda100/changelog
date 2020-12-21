@@ -1,0 +1,3 @@
+T-Rex 0.19.5
+* octopus up to 20% performance improvements on most 20xx and 30xx series GPUs with low PL
+* added solo mining support for octopus
