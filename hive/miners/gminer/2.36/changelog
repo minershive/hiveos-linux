@@ -1,0 +1,7 @@
+Gminer v2.36
+* support extra nonce length up to 6 bytes for Ethash/KAWPOW algorithms, now miner will works on f2pool, miningpoolhub and other pools
+* added display of fan speed, core clock, memory clock, DAG size, share difficulty for Ethash/KAWPOW algorithms
+* display power efficienty for cuckoo cycle algorithms in milliwatts
+* fixed bug with stale job logic on beam and cortex (it will increase hashrate on pool side)
+* added option to enable/disable caching of dag file (enabled by default, --cache_dag 0/1)
+* added option to enable/disable share check on CPU for Ethash/KAWPOW algorithms (enabled by default, --share_check 0/1)
