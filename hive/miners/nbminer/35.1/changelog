@@ -1,0 +1,3 @@
+NBMiner v35.1
+* ethash: more stable under high OC for Nvidia GPUs
+* octopus: improved hashrate 1-3% for 16, 20, 30 Nvidia GPUs
