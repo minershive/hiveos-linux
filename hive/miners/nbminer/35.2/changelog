@@ -1,0 +1,2 @@
+NBMiner v35.2
+* added DAG verification on ethash after creation, if miner showed log in red font: 'Verification failed, invalid 2.0%', please consider lower GPU overclock
