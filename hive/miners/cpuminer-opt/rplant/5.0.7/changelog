@@ -1,0 +1,6 @@
+CPUminer-Opt by rplant v5.0.7
+* added dynamic US and RU2 stratums for sugarchain and microbitcoin
+
+v5.0.6
+* DoH switched to google, now miner starts faster
+* bug fixes
