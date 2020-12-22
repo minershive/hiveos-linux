@@ -64,21 +64,15 @@ function sanitize_value() {
 }
 
 sanitize_hash_value() {
-  local v=`echo "$1" | awk '{ printf "%.8f", $1 }'`
+  #local v=`echo "$1" | awk '{ printf "%.8f", $1 }'`
+  # round to 5 significant digits
+  local v=`echo "$1" | awk '{if ($1 >= 1e5 || $1 == 0) printf "%d",$1; else if ($1 < 1e-4) printf "%.8f",$1; else printf "%.5g",int($1*1e8)/1e8;}'`
   if (( $(echo "$v * $2 < $3" | bc -l) )); then
     echo "$5 * $2" | bc
   elif (( $(echo "$v * $2 > $4" | bc -l) )); then
     echo "$6 * $2" | bc
   else
-    if (( $(echo "$v > 0.001" | bc -l) )); then
-      if (( $(echo "$v < 10000" | bc -l) )); then
-        echo $v | awk '{ printf "%.4f", $1 }'
-      else
-        echo $v | awk '{ printf "%.0f", $1 }'
-      fi
-    elif (( $(echo "$v == 0" | bc -l) )); then
-      echo 0
-    fi
+    echo "$v"
   fi
 }
 
@@ -96,19 +90,27 @@ function sanitize_temp() {
 }
 
 function sanitize_fan() {
-  local i_value
   local s_values=
-  for i_value in `echo "$@" | jq -rc '.[ ]'`; do
-    s_values+=${s_values:+,}`sanitize_value "$i_value" $FAN_MIN $FAN_MAX $FAN_FALLBACK_MIN $FAN_FALLBACK_MAX`
+  local a_values
+  local i_value
+  readarray -t a_values < <( echo "$@" | jq -rc '.[ ]' )
+  for i_value in "${a_values[@]}"; do
+    [[ -z "$i_value" || "$i_value" == "null" ]] &&
+      s_values+=${s_values:+,}"null" ||
+      s_values+=${s_values:+,}`sanitize_value "$i_value" $FAN_MIN $FAN_MAX $FAN_FALLBACK_MIN $FAN_FALLBACK_MAX`
   done
   echo "[$s_values]"
 }
 
 function sanitize_power() {
-  local i_value
   local s_values=
-  for i_value in `echo "$@" | jq -rc '.[ ]'`; do
-    s_values+=${s_values:+,}`sanitize_value "$i_value" $POWER_MIN $POWER_MAX $POWER_FALLBACK_MIN $POWER_FALLBACK_MAX`
+  local a_values
+  local i_value
+  readarray -t a_values < <( echo "$@" | jq -rc '.[ ]' )
+  for i_value in "${a_values[@]}"; do
+    [[ -z "$i_value" || "$i_value" == "null" ]] &&
+      s_values+=${s_values:+,}"null" ||
+      s_values+=${s_values:+,}`sanitize_value "$i_value" $POWER_MIN $POWER_MAX $POWER_FALLBACK_MIN $POWER_FALLBACK_MAX`
   done
   echo "[$s_values]"
 }
