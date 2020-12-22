@@ -1,0 +1,4 @@
+Gminer v2.37
+* fixed bug with '--proto stratum' for ethash mining appeared in v2.36, this bug may lead to share rejects
+* fixed mining on kawpow algorithm with intensity
+* lowered fee on kawpow algorithm to 1%
