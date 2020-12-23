@@ -136,10 +136,18 @@ function polaris_oc() {
 	for((idx=1; idx <= maxCoreState; idx++)); do
 		if [[ -z $coreState || $coreState -eq $idx || $AGGRESSIVE == 1 ]]; then
 			[[ ${CORE_CLOCK[$i]} -gt $MIN_CLOCK ]] && args+=" SclkDependencyTable/${idx}/Sclk=$(( CORE_CLOCK[i]*100 ))"
-			[[ ${CORE_VDDC[$i]} -gt $MIN_VOLT ]] && args+=" VddcLookupTable/${idx}/Vdd=${CORE_VDDC[$i]} SclkDependencyTable/${idx}/VddInd=${idx}"
+			if [[ ${CORE_VDDC[$i]} -gt $MIN_VOLT ]]; then
+				args+=" VddcLookupTable/${idx}/Vdd=${CORE_VDDC[$i]} SclkDependencyTable/${idx}/VddInd=${idx}"
+				args+=" VddgfxLookupTable/${idx}/Vdd=${CORE_VDDC[$i]}"
+			fi
 		fi
 	done
 
+	# set other states voltage in aggressive mode
+	[[ ${CORE_VDDC[$i]} -gt $MIN_VOLT && $AGGRESSIVE == 1 ]] &&
+		for((idx=9; idx <= 15; idx++)); do
+			args+=" VddcLookupTable/${idx}/Vdd=${CORE_VDDC[$i]}"
+		done
 
 	# set auto performance level to reset manual DPM if no state will be set
 	[[ -z $coreState && -z $memoryState ]] &&
