@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AUTOFAN_VERSION="2.32"
+AUTOFAN_VERSION="2.33"
 
 if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
 	source /etc/environment
@@ -12,6 +12,9 @@ fi
 export DISPLAY=":0"
 
 #AUTOFAN_LOG="/var/log/hive-autofan.log"
+
+TIMEOUT_AMD=3 # per each value per each GPU
+TIMEOUT_NVIDIA=60 # per all GPU at once
 
 # Must be empty in release
 DEBUG_COMMANDS=
@@ -460,7 +463,7 @@ nvidia_auto_fan_control() {
 	#[[ -n $args ]] && nvidia-settings $args > /dev/null 2>&1
 	if [[ -n $args ]]; then
 		[[ $DEBUG_COMMANDS == 1 ]] && echo "nvidia-settings $args"
-		nvs=`timeout -s9 60 nvidia-settings $args 2>&1`
+		nvs=`timeout --foreground -s9 $TIMEOUT_NVIDIA nvidia-settings $args 2>&1`
 		if [[ $? -ne 0 ]]; then
 			local debug=`dmesg -Tk | tail -n 300 | grep "Xid"`
 			if [[ $REBOOT_ON_ERROR == 1 ]]; then
@@ -481,7 +484,7 @@ amd_get_fan_speed() {
 	local index="$1"
 	local speed=0
 	[[ -z "${card_hwmon[index]}" ]] && return 1
-	local fan=`head -1 ${card_hwmon[index]}/pwm1 2>/dev/null`
+	local fan=`timeout --foreground -s9 $TIMEOUT_AMD head -1 ${card_hwmon[index]}/pwm1 2>/dev/null`
 	[[ $fan -gt ${card_fanmin[index]} && ${card_fanmax[index]} -gt ${card_fanmin[index]} ]] &&
 		speed=$(( (fan - card_fanmin[index])*100/(card_fanmax[index] - card_fanmin[index]) ))
 	echo "$speed"
@@ -493,12 +496,14 @@ amd_set_fan_speed() {
 	[[ -z "${card_hwmon[index]}" ]] && return 1
 	local fan="$2"
 	local speed=$(( fan*(card_fanmax[index] - card_fanmin[index])/100 + card_fanmin[index] ))
-	echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null && return 0
-	local pwm
-	pwm="`head -1 ${card_hwmon[index]}/pwm1_enable 2>/dev/null`" || return 2
-	[[ "$pwm" == "1" ]] && return 3
-	echo 1 > ${card_hwmon[index]}/pwm1_enable 2>/dev/null || return 4
-	echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null || return 5
+	timeout --foreground -s9 $TIMEOUT_AMD bash -c 'echo 1 > ${card_hwmon[index]}/pwm1_enable 2>/dev/null && 
+		echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null' && return 0 || return 2
+	#echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null && return 0
+	#local pwm
+	#pwm="`head -1 ${card_hwmon[index]}/pwm1_enable 2>/dev/null`" || return 2
+	#[[ "$pwm" == "1" ]] && return 3
+	#echo 1 > ${card_hwmon[index]}/pwm1_enable 2>/dev/null || return 4
+	#echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null || return 5
 }
 
 
