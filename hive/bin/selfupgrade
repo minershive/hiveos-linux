@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-. colors
+
+source colors
 
 HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
 
@@ -7,6 +8,8 @@ HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
 PCIIDS=/hive/etc/pci.ids
 
 [[ -f /hive-config/.DISKLESS_AMD && $(cat /proc/mounts | grep "/ " | awk '{print $1}') == tmpfs ]] && echo "${RED}Diskless rig. Selfupgrade restricted${NOCOLOR}" && exit 0
+
+[[ -f $RIG_CONF ]] && source $RIG_CONF
 
 #This will prevent asking interactive questions
 export DEBIAN_FRONTEND=noninteractive
