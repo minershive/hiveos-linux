@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AUTOFAN_VERSION="2.33"
+AUTOFAN_VERSION="2.34"
 
 if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
 	source /etc/environment
@@ -496,14 +496,14 @@ amd_set_fan_speed() {
 	[[ -z "${card_hwmon[index]}" ]] && return 1
 	local fan="$2"
 	local speed=$(( fan*(card_fanmax[index] - card_fanmin[index])/100 + card_fanmin[index] ))
-	timeout --foreground -s9 $TIMEOUT_AMD bash -c 'echo 1 > ${card_hwmon[index]}/pwm1_enable 2>/dev/null && 
-		echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null' && return 0 || return 2
-	#echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null && return 0
+	timeout --foreground -s9 $TIMEOUT_AMD bash -c "echo 1 > ${card_hwmon[index]}/pwm1_enable 2>/dev/null &&
+		echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null"
+	#timeout --foreground -s9 $TIMEOUT_AMD echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null && return 0
 	#local pwm
-	#pwm="`head -1 ${card_hwmon[index]}/pwm1_enable 2>/dev/null`" || return 2
+	#pwm=`timeout --foreground -s9 $TIMEOUT_AMD head -1 ${card_hwmon[index]}/pwm1_enable 2>/dev/null` || return 2
 	#[[ "$pwm" == "1" ]] && return 3
-	#echo 1 > ${card_hwmon[index]}/pwm1_enable 2>/dev/null || return 4
-	#echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null || return 5
+	#timeout --foreground -s9 $TIMEOUT_AMD echo 1 > ${card_hwmon[index]}/pwm1_enable 2>/dev/null || return 4
+	#timeout --foreground -s9 $TIMEOUT_AMD echo $speed > ${card_hwmon[index]}/pwm1 2>/dev/null || return 5
 }
 
 
