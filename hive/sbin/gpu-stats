@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
-
+# Usage: gpu-stats internal|amd|nvidia
 # GPU temps, fans, power, load
 
-###Usage: gpu-stats internal|amd|nvidia
-
-# force get gpu load on old drivers
-#AMD_ALWAYS_GET_LOAD=1
-
 #DEBUG=1
+TIMEOUT_AMD=2 # per each value per each GPU
+TIMEOUT_NVIDIA=30 # per all GPU at once
 
+set -o pipefail
 
 [[ -z $GPU_DETECT_JSON ]] &&
 	source /etc/environment
@@ -18,8 +16,9 @@
 	exit 1
 
 # Preventing from running nvidia tools if necessary
-NV_OFF=0
-[[ -f "/run/hive/NV_OFF" ]] && read NV_OFF < "/run/hive/NV_OFF"
+[[ -f /run/hive/NV_OFF ]] && NV_OFF=1 || NV_OFF=0
+
+
 NVIDIA_STATS=
 
 json=`cat $GPU_DETECT_JSON`
@@ -61,31 +60,72 @@ function amd_stats() { # @arr_index
 		#[[ -e ${hwmondir}/pwm1_min ]] && fanmin=`head -1 ${hwmondir}/pwm1_min` || fanmin=0
 		local fanmax=`echo "$json" | jq -r ".[$1] | if .fanmax==null then 255 else .fanmax end"`
 		local fanmin=`echo "$json" | jq -r ".[$1] | if .fanmin==null then 0 else .fanmin end"`
-		fan=`head -1 ${hwmondir}/pwm1`
+		fan=`timeout --foreground -s9 $TIMEOUT_AMD head -1 ${hwmondir}/pwm1`
 		[[ $fan -gt $fanmin && $fanmax -gt $fanmin ]] && speed=$(( (fan - fanmin) * 100 / (fanmax - fanmin) )) || speed=0
 	else
 		echo "Error: fan speed unknown for card $cardno" >&2
 	fi
 
 	local rpm=0
-	if [[ $speed -eq 100 && -e ${hwmondir}/fan1_input ]]; then
-		rpm=`head -1 ${hwmondir}/fan1_input`
-		[[ $rpm -eq 65535 ]] && speed=0 # driver bug
-	else
-		echo "Error: RPM unknown for card $cardno" >&2
+	if [[ $speed -eq 100 ]]; then
+		if [[ -e ${hwmondir}/fan1_input ]]; then
+			rpm=`timeout --foreground -s9 $TIMEOUT_AMD head -1 ${hwmondir}/fan1_input`
+			[[ $rpm -eq 65535 ]] && speed=0 # driver bug
+		else
+			echo "Error: RPM unknown for card $cardno" >&2
+		fi
 	fi
 
-	local temp=0
-	if [[ -e ${hwmondir}/temp1_input ]]; then
-		temp=`head -1 ${hwmondir}/temp1_input`
-		temp=$(( temp / 1000 ))
-	else
-		echo "Error: temp unknown for card $cardno" >&2
+	local amdgpu_pm_info=()
+	declare -A PMINFO=()
+	if [[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]]; then
+		readarray -t amdgpu_pm_info < /sys/kernel/debug/dri/$cardno/amdgpu_pm_info
+		# convert into associative array
+		for line in "${amdgpu_pm_info[@]}"; do
+			if [[ "$line" =~ ([^:]+):\ ([0-9]+) ]]; then
+				PMINFO["${BASH_REMATCH[1]// }"]="${BASH_REMATCH[2]}"
+			elif [[ "$line" =~ ([0-9]+)[^\(]+\(([^\)]+) ]]; then
+				PMINFO["${BASH_REMATCH[2]// }"]="${BASH_REMATCH[1]}"
+			fi
+		done
+		#echo "${PMINFO[GPUTemperature]}C, ${PMINFO[averageGPU]}W, ${PMINFO[GPULoad]}%, ${PMINFO[MEMLoad]}%" >&2
+	fi
+
+	local power="${PMINFO[averageGPU]}"
+	if [[ -z "$power" ]]; then
+		if [[ -e ${hwmondir}/power1_average ]]; then
+			power=`timeout --foreground -s9 $TIMEOUT_AMD head -1 ${hwmondir}/power1_average`
+			power=$(( power / 1000 / 1000 ))
+		else
+			echo "Error: power unknown for card $cardno" >&2
+		fi
+	fi
+
+	local load="${PMINFO[GPULoad]}"
+	if [[ -z "$load" ]]; then
+		# it works only on newer drivers
+		if [[ -e /sys/class/drm/card${cardno}/device/gpu_busy_percent ]]; then
+			load=`timeout --foreground -s9 $TIMEOUT_AMD head -1 /sys/class/drm/card${cardno}/device/gpu_busy_percent`
+		#else
+		#	echo "Error: power unknown for card $cardno" >&2
+		fi
+	fi
+
+	local mload="${PMINFO[MEMLoad]}"
+
+	local temp="${PMINFO[GPUTemperature]}"
+	if [[ -z "$temp" ]]; then
+		if [[ -e ${hwmondir}/temp1_input ]]; then
+			temp=`timeout --foreground -s9 $TIMEOUT_AMD head -1 ${hwmondir}/temp1_input`
+			temp=$(( temp / 1000 ))
+		else
+			echo "Error: temp unknown for card $cardno" >&2
+		fi
 	fi
 
 	local jtemp=0
 	if [[ -e ${hwmondir}/temp2_input ]]; then
-		jtemp=`head -1 ${hwmondir}/temp2_input`
+		jtemp=`timeout --foreground -s9 $TIMEOUT_AMD head -1 ${hwmondir}/temp2_input`
 		jtemp=$(( jtemp / 1000 ))
 	#else
 	#	echo "Error: jtemp unknown for card $cardno" >&2
@@ -93,38 +133,11 @@ function amd_stats() { # @arr_index
 
 	local mtemp=0
 	if [[ -e ${hwmondir}/temp3_input ]]; then
-		mtemp=`head -1 ${hwmondir}/temp3_input`
+		mtemp=`timeout --foreground -s9 $TIMEOUT_AMD head -1 ${hwmondir}/temp3_input`
 		mtemp=$(( mtemp / 1000 ))
 	#else
 	#	echo "Error: mtemp unknown for card $cardno" >&2
 	fi
-
-	local amdgpu_pm_info=
-	local power=0
-	if [[ -e ${hwmondir}/power1_average ]]; then
-		power=`head -1 ${hwmondir}/power1_average`
-		power=$(( power / 1000 / 1000 ))
-	elif [[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]]; then
-		# fallback to debug fs interface
-		amdgpu_pm_info=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info`
-		[[ ! -z $amdgpu_pm_info ]] &&
-			power=`echo "$amdgpu_pm_info" | grep -m1 '(average GPU)' | awk '{printf("%d", $1)}'`
-		[[ -z $power ]] && power=0
-	else
-		echo "Error: power unknown for card $cardno" >&2
-	fi
-
-	local load=0
-	# it works only on newer drivers
-	if [[ -e /sys/class/drm/card${cardno}/device/gpu_busy_percent ]]; then
-		load=`head -1 /sys/class/drm/card${cardno}/device/gpu_busy_percent`
-	else # get usage only if already have amdgpu_pm_info or AMD_ALWAYS_GET_LOAD is set
-		[[ -z "$amdgpu_pm_info" && $AMD_ALWAYS_GET_LOAD -eq 1 && -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]] &&
-			amdgpu_pm_info=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info`
-		[[ ! -z "$amdgpu_pm_info" ]] &&
-			load=`echo "$amdgpu_pm_info" | grep -m1 'GPU Load' | awk '{printf("%d", $3)}'`
-	fi
-	[[ -z "$load" ]] && load=0
 
 	put_stats "$1" "$temp" "$speed" "$power" "$load" "$jtemp" "$mtemp"
 
@@ -135,11 +148,12 @@ function amd_stats() { # @arr_index
 
 
 function nvidia_stats() { # @arr_index
-	if [[ -z $NVIDIA_STATS ]]; then
+	if [[ -z "$NVIDIA_STATS" ]]; then
 		[[ $NV_OFF -eq 1 ]] && return 1
 
 		# timeout should be high enough on systems under load
-		NVIDIA_STATS=`timeout -s9 30 nvtool --csv --quiet --busid --statuscode --temp --fanspeed --power --usage --status`
+		NVIDIA_STATS=`timeout --foreground -s9 $TIMEOUT_NVIDIA \
+			nvtool --csv --quiet --busid --statuscode --temp --fanspeed --power --usage --status`
 		exitcode=$?
 		if [[ $exitcode -ne 0 ]]; then
 			NVIDIA_STATS=" " # prevent query for every gpu
