@@ -30,7 +30,8 @@ function polaris_oc() {
 
 	[[ $(stat -c %s $savedpp) -lt 100 ]] && return 1
 
-	readarray -t data < <( /hive/opt/upp2/upp.py -p $savedpp get \
+	echo -n ${RED}
+	readarray -t data < <( /hive/opt/upp2/upp.py -p $savedpp --ignore get \
 		sHeader/TableFormatRevision \
 		MclkDependencyTable/NumEntries \
 		SclkDependencyTable/NumEntries \
@@ -40,7 +41,8 @@ function polaris_oc() {
 		PowerTuneTable/TDC \
 		PowerTuneTable/MaximumPowerDeliveryLimit \
 		VddcLookupTable/NumEntries \
-		2>/dev/null)
+		)
+	echo -n ${NOCOLOR}
 
 	# check pp_table version 7.1
 	[[ "${data[0]}" != 7 ]] && return 2
@@ -162,8 +164,8 @@ function polaris_oc() {
 
 	# apply all changes to PPT and check if they differ from already applied
 	local output=""
-	[[ ! -z "$args" ]] && output=`/hive/opt/upp2/upp.py -p $PPT set $args --write 2>&1 >/dev/null`
-
+	[[ ! -z "$args" ]] && output=`/hive/opt/upp2/upp.py -p $PPT --ignore set $args --write 2>&1 >/dev/null`
+	[[ ! -z "$output" ]] && echo "${RED}$output${NOCOLOR}"
 	# do not apply the same table again
 	if cmp $PPT $CARDPPT >/dev/null; then
 		echo "${GREEN}All changes were already applied to Power Play table $NOCOLOR"
@@ -173,7 +175,6 @@ function polaris_oc() {
 		cp $PPT $CARDPPT && sleep $SLEEP
 	# apply PPT to GPU
 	else
-		[[ ! -z "$output" ]] && echo "$output"
 		echo "${CYAN}Applying all changes to Power Play table $NOCOLOR"
 		cp $PPT $CARDPPT && sleep $SLEEP
 	fi
