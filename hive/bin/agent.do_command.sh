@@ -326,7 +326,7 @@ function do_command() {
 			[[ $af -ne 0 ]] && autofan stop > /dev/null 2>&1
 
 			# Batch mode
-			if [ $(echo $body | jq --raw-output '.batch != null') == 'true' ]; then
+			if [[ $(echo $body | jq --raw-output '.batch != null') == 'true' ]]; then
 				local gpu_groups=$(echo $body | jq --raw-output '.batch | length')
 				local queue=0
 				local errors=0
@@ -375,7 +375,7 @@ function do_command() {
 				local reboot_msg=""
 				#echo "Batch. need_reboot="$need_reboot >>/home/user/amd_reboot.log
 				[[ $need_reboot -eq 1 && $errors == 0 ]] && reboot_msg=", now reboot"
-				if [ $errors == 0 ]; then
+				if [[ $errors == 0 ]]; then
 					echo "$payload" | message ok "ROM flashing OK$reboot_msg" payload --id=$cmd_id --meta="$meta"
 				else
 					echo "$payload" | message warn "ROM flashing with errors$reboot_msg" payload --id=$cmd_id --meta="$meta"
@@ -451,7 +451,7 @@ function do_command() {
 				payload=`nvflash_linux -i$gpu_index -b /tmp/nvidia.saved.rom 2>&1`
 				exitcode=$?
 				# cleanup nvflash output
-				payload=`echo "${payload//$'\r'$'\n'/$'\n'}" | grep -vP "\x0d" | cat -s`
+				#payload=`echo "${payload//$'\r'$'\n'/$'\n'}" | grep -vP "\x0d" | cat -s`
 				echo "$payload"
 				if [[ $exitcode == 0 && -f /tmp/nvidia.saved.rom ]]; then
 					cat /tmp/nvidia.saved.rom | gzip -9 --stdout | base64 -w 0 | message file "$rom_name" payload --id=$cmd_id #> /dev/null
@@ -466,7 +466,7 @@ function do_command() {
 
 		nvidia_upload)
 			# Batch mode
-			if [ $(echo $body | jq --raw-output '.batch != null') == 'true' ]; then
+			if [[ $(echo $body | jq --raw-output '.batch != null') == 'true' ]]; then
 				#message info "Not finished yet" --id=$cmd_id
 				#return 0
 				local gpu_groups=$(echo $body | jq --raw-output '.batch | length')
@@ -476,7 +476,8 @@ function do_command() {
 				local errors=0
 				local meta_good=()
 				local meta_bad=()
-				payload=""
+				local exitcode
+				local payload=
 
 				screen -wipe > /dev/null 2>&1
 				sleep 1
@@ -487,7 +488,7 @@ function do_command() {
 					return 1
 				fi
 
-				for (( queue=0; queue<$gpu_groups; queue++ )); do
+				for (( queue=0; queue < gpu_groups; queue++ )); do
 					local gpu_list=`echo $body | jq --raw-output --arg queue $queue '.batch[$queue|tonumber].gpu_index' | tr ',' ' '`
 					local force=$(echo $body | jq --arg queue $queue '.batch[$queue|tonumber].force' --raw-output)
 					[[ ! -z $force && $force == "1" ]] && force=1 || force=0
@@ -508,44 +509,36 @@ function do_command() {
 					fi
 
 					# Flashing
-					local gpu_index=""
+					local gpu_index
 					for gpu_index in $gpu_list; do
-						payload+=`echo "=== Flashing card $gpu_index ==="`
-
-						nvflash_linux -s -i$gpu_index -r
-						exitcode=$?
-						if [[ exitcode -ne 0 ]]; then
-							payload+=$(echo "Error remove write protect from card $y")
-							errors=1
-							continue
-						fi
+						nvflash_linux -s -i$gpu_index -r # we do not check result
+						payload+="=== Flashing card $gpu_index ==="$'\n'
 						if [[ $force -eq 1 ]]; then
-							payload+=`hive-force-nvflash $gpu_index "/tmp/nvidia.uploaded.rom"`
+							payload+=`hive-force-nvflash $gpu_index /tmp/nvidia.uploaded.rom`
 						else
 							payload+=`nvflash_linux -s -A -i$gpu_index /tmp/nvidia.uploaded.rom`
 						fi
 						exitcode=$?
-
 						if [[ $exitcode == 0 ]]; then
 							meta_good+=($gpu_index)
 						else
 							meta_bad+=($gpu_index)
 							errors=1
 						fi
-						payload+=`echo -e "\r\n"`
+						payload+=$'\n'
 					done
 				done
 				local meta=$(jq -n --arg good "`echo ${meta_good[@]} | tr " " ","`" --arg bad "`echo ${meta_bad[@]} | tr " " ","`" '{$good,$bad}')
 				local reboot_msg=""
 				[[ $need_reboot -eq 1 && $errors == 0 ]] && reboot_msg=", now reboot"
 				# cleanup nvflash output
-				payload=`echo "${payload//$'\r'$'\n'/$'\n'}" | grep -vP "\x0d" | cat -s`
-				if [ $errors == 0 ]; then
+				#payload=`echo "${payload//$'\r'$'\n'/$'\n'}" | grep -vP "\x0d" | cat -s`
+				if [[ $errors == 0 ]]; then
 					echo "$payload" | message ok "ROM flashing OK$reboot_msg" payload --id=$cmd_id --meta="$meta"
 				else
 					echo "$payload" | message warn "ROM flashing with errors$reboot_msg" payload --id=$cmd_id --meta="$meta"
 				fi
-				if [[ $need_reboot -eq 1 && $error == 0 ]]; then
+				if [[ $need_reboot -eq 1 && $errors == 0 ]]; then
 					if [[ $as -ne 0 ]]; then
 						sed -i '/autoswitch/d' /hive/bin/hive
 						sed -i '/echo2 "> Starting autofan"/i\autoswitch start' /hive/bin/hive
@@ -589,50 +582,38 @@ function do_command() {
 						if [[ $gpu_index == -1 ]]; then # -1 = all
 							local nv_list=`cat /run/hive/gpu-detect.json | jq "[.[] | select ( .brand == \"nvidia\" )]"`
 							local nv_count=$(echo "$nv_list" | jq ". | length")
-							payload=""
-							local errors=0
-							for (( y=0; y < $nv_count; y++ ))
+							payload=
+							exitcode=0
+							for (( y=0; y < nv_count; y++ ))
 							do
-								nvflash_linux -s -i$y -r
-								exitcode=$?
-								if [[ exitcode -ne 0 ]]; then
-									payload+="Error remove write protect from card $y"$'\n'
-									errors=1
-								fi
-
-								if [[ $force -eq 1 && $exitcode -eq 0 ]]; then
+								nvflash_linux -s -i$y -r # we do not check result
+								# one by one in forced mode
+								if [[ $force -eq 1 ]]; then
 									payload+="=== Flashing card $y ==="$'\n'
-									payload+="$(hive-force-nvflash $y /tmp/nvidia.uploaded.rom)"$'\n'
-									exitcode=$?
-									[[ exitcode -ne 0 ]] && errors=1
+									payload+=`hive-force-nvflash $y /tmp/nvidia.uploaded.rom` || exitcode=$?
+									payload+=$'\n'
 								fi
 							done
-
-							exitcode=$errors
-
-							if [[ $force -eq 0 && $errors -eq 0 ]]; then
+							# all together in non-forced
+							if [[ $force -eq 0 ]]; then
 								payload="=== Flashing all cards ==="$'\n'
-								payload+="$(nvflash_linux -s -A /tmp/nvidia.uploaded.rom)"$'\n'
+								payload+=`nvflash_linux -s -A /tmp/nvidia.uploaded.rom`
 								exitcode=$?
+								payload+=$'\n'
 							fi
 						else
-							#local gpu_index_hex=$gpu_index
-							#[[ $gpu_index -gt 9 ]] && gpu_index_hex=`printf "\x$(printf %x $((gpu_index+55)))"` #convert 10 to A, 11 to B, ...
-							payload="$(nvflash_linux -s -i$gpu_index -r)"
-							exitcode=$?
-							if [[ $exitcode -eq 0 ]]; then
-								payload="=== Flashing card $gpu_index ==="$'\n'
-								if [[ $force -eq 1 ]]; then
-									payload+="$(hive-force-nvflash $gpu_index /tmp/nvidia.uploaded.rom)"$'\n'
-								else
-									payload+="$(nvflash_linux -s -A -i$gpu_index /tmp/nvidia.uploaded.rom)"$'\n'
-								fi
-								exitcode=$?
+							nvflash_linux -s -i$gpu_index -r # we do not check result
+							payload="=== Flashing card $gpu_index ==="$'\n'
+							if [[ $force -eq 1 ]]; then
+								payload+=`hive-force-nvflash $gpu_index /tmp/nvidia.uploaded.rom`
+							else
+								payload+=`nvflash_linux -s -A -i$gpu_index /tmp/nvidia.uploaded.rom`
 							fi
+							exitcode=$?
+							payload+=$'\n'
 						fi
-						#exitcode=$?
 						# cleanup nvflash output
-						payload=`echo "${payload//$'\r'$'\n'/$'\n'}" | grep -vP "\x0d" | cat -s`
+						#payload=`echo "${payload//$'\r'$'\n'/$'\n'}" | grep -vP "\x0d" | cat -s`
 						echo "$payload"
 						if [[ $exitcode == 0 ]]; then
 							echo "$payload" | message ok "ROM flashing OK, now reboot" payload --id=$cmd_id
