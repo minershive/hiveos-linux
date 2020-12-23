@@ -5,17 +5,16 @@ if [[ $# -lt 1 ]]; then
 	exit 1
 fi
 
-[ -t 1 ] && source colors
+source colors
 #[[ -t 1 || $2 == "--colors" ]] && source colors
 
 source /hive/etc/gpu.ids
 
-if lsmod | grep -q nvidia_drm; then
-	NV_OFF=0
-	[[ -f "/run/hive/NV_OFF" ]] && read NV_OFF < "/run/hive/NV_OFF"
-else
-	NV_OFF=1 # disable if nvidia driver is not loaded
-fi
+# Preventing from running nvidia tools if necessary
+[[ -f /run/hive/NV_OFF ]] && NV_OFF=1 || NV_OFF=0
+# disable Nvidia tools if no driver is loaded
+[[ $NV_OFF -eq 0 && `lsmod | grep -c ^nvidia` -eq 0 ]] && NV_OFF=1
+
 
 #NVIDIASMI_FILE_V2=${NVIDIASMI_FILE}_v2
 NVIDIA_DATA=
@@ -189,8 +188,9 @@ if [[ "$1" == "list" || "$1" == "listjson" ]]; then
 
 	done < <( echo "$list" )
 
-	if [[ $1 == "listjson" ]]; then
-
+	if [[ ! -z "$2" && "$1" == "listjson" ]]; then
+		echo "${gpus[@]}" | jq --slurp .
+	elif [[ "$1" == "listjson" ]]; then
 		# add missing GPUs according to busid mapping
 		[[ -e $RIG_CONF ]] && source $RIG_CONF
 		[[ -e $BUSID_FILE ]] && source $BUSID_FILE
