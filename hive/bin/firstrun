@@ -25,7 +25,7 @@ HELLO_OK="/tmp/.hive-hello-ok"
 mkdir -p "/hive-config"
 
 
-[[ $1 == "-f" ]] && echo "Forcing reconfig"
+[[ "$1" == "-f" ]] && echo "Forcing reconfig"
 
 HIVE_HOST_URL="$2"
 
@@ -55,6 +55,9 @@ if [[ ! -z "$3" ]]; then
 	echo "${CYAN}> Writing new config to \"$RIG_CONF\"${NOCOLOR}"
 	echo -e "HIVE_HOST_URL=\"$2\"\nFARM_HASH=\"$3\"\n$WORKER\n" > $RIG_CONF
 
+	# remove backup host
+	[[ -e "$API_HOST_FILE" ]] && rm $API_HOST_FILE
+
 	# try to connect
 	hello && echo "${BGREEN}Login OK. Happy mining!${NOCOLOR}" && exit 0
 
@@ -62,7 +65,7 @@ if [[ ! -z "$3" ]]; then
 	mv -f ${RIG_CONF}.bak ${RIG_CONF}
 	exit 1
 
-elif [[ ! -e $RIG_CONF || $1 == "-f" ]]; then
+elif [[ ! -e $RIG_CONF || "$1" == "-f" ]]; then
 	selfupgrade
 	disk-expand -s
 	msg=$(cat <<EOF
@@ -78,7 +81,7 @@ EOF
 elif [[ ! -e $HELLO_OK ]]; then
 	msg=$(cat <<EOF
 ${BRANDING_LOGO}
-${YELLOW}Config "$RIG_CONF" exists but during boot the connection to hive server failed.
+${YELLOW}Config "$RIG_CONF" exists but during boot the connection to API server failed.
 Either the server or your network is temporary down.
 If you have changed the password for this rig, then you need to enter credentials again.$NOCOLOR
 Run ${CYAN}hello${NOCOLOR} to try again. Or run ${CYAN}firstrun -f${NOCOLOR} to enter new ID and password.
@@ -90,7 +93,7 @@ EOF
 	sleep 5
 
 	echo "Trying to say hello again...";
-	hello
+	hello verbose
 	
 	exit 0
 
@@ -182,20 +185,12 @@ FILEEOF
 	echo -e "We recommend to change default password on rigs exposed to Internet."
 	echo -en "Set rig password as system? ${YELLOW}(Y/n)${NOCOLOR} "
 	ask_yn "y" && hive-passwd $passwd #Change password
-	
+
+	# remove backup host
+	[[ -e "$API_HOST_FILE" ]] && rm $API_HOST_FILE
+
 	# try to connect
-	hello #restartminer
-
-	if [[ $? -eq 0 ]]; then
-		#miner restart
-
-		# Apply OC if configs are available
-		#[[ -f $AMD_OC_CONF ]] && amd-oc-safe
-		#[[ -f $NVIDIA_OC_CONF ]] && nvidia-oc-log
-
-	 	echo -e "\n${BGREEN}Login OK. Happy mining!${NOCOLOR}\n"
-	 	exit 0
-	fi
+	hello && echo "${BGREEN}Login OK. Happy mining!${NOCOLOR}" && exit 0
 
 	echo -e "${RED}Sorry, id and password did not work.${NOCOLOR}\n"
 	echo -en "Try again? ${YELLOW}(Y/n)${NOCOLOR} "

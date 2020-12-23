@@ -4,7 +4,7 @@
 
 set -o pipefail
 
-[[ -t 1 ]] && . colors
+[[ "$1" != "nocolor" ]] && source colors
 
 skip_local_dns=0
 query_timeout=15
@@ -16,10 +16,10 @@ DEF_USE_DOH="cloudflare google alidns-doh"
 dns_srv=("8.8.8.8" "1.1.1.1" "114.114.114.114")
 
 # other servers to cache
-add_srv=("download.hiveos.farm" ${API_HOSTS[@]})
+add_srv=() # (download.hiveos.farm)
 
-# backup api servers
-#bak_srv=("api.hiveos.farm" "api-cf.hiveos.farm")
+# repo list
+HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
 
 # DNSCrypt resolver IP
 dc_ip="127.0.2.1"
@@ -209,8 +209,8 @@ function update_hosts {
 	[[ -z "$API_HOST_FILE" ]] && source /etc/environment
 	[[ -z "$HIVE_HOST_URL" && -e "$API_HOST_FILE" ]] && source $API_HOST_FILE # fallback api host
 	[[ -z "$HIVE_HOST_URL" ]] && echo "> HIVE_HOST_URL is empty" && return 2
-	local HOST=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
-	[[ -z "$HOST" ]] && echo "> Unable to parse host name: $HIVE_HOST_URL" && return 3
+	local host=`echo $HIVE_HOST_URL | awk -F'://' '{print $2}'`
+	[[ -z "$host" ]] && echo "> Unable to parse host name: $HIVE_HOST_URL" && return 3
 
 	# add rig host
 	# not using hostname-check here as it directly writes to /etc/hosts
@@ -261,27 +261,28 @@ function update_hosts {
 
 	read -a doh_srv < <( echo "$USE_DOH" )
 
-	# add Hive shell host
-	[[ ! -z "$HSSH_SRV" ]] && add_host "$HSSH_SRV"
-
-	# add Hive API host and exit on error
-	add_host "$HOST" || return $?
-
-	[[ ! "$HOST" =~ "hiveos.farm" ]] && return 0
-
-	# add backup servers for current API host
-	for host in "${bak_srv[@]}"
-	do
-		[[ "$host" == "$HOST" ]] && continue
-		add_host "$host" "$HOST"
+	# Hive API host
+	add_srv+=("$host")
+	# Hive shell host
+	[[ ! -z "$HSSH_SRV" ]] && add_srv+=("$HSSH_SRV")
+	# Repo hosts
+	[[ -f $HIVEREPO_LIST ]] &&
+		host=`grep -oP "deb\s*(http://|https://|)\K[0-9a-z\.-]+" $HIVEREPO_LIST` &&
+		add_srv+=($host)
+	# API URL hosts
+	for url in $API_HOST_URLs; do
+		[[ ! "$url" =~ ^(https?://)?([0-9a-z\.-]+)(:[0-9]+)?$ ]] && continue
+		host="${BASH_REMATCH[2]}"
+		[[ ! " ${add_srv[@]} " =~ " $host " ]] && add_srv+=("$host")
 	done
 
 	local code=0
-	# add other hosts
+	# add all hosts
 	for host in "${add_srv[@]}"
 	do
 		add_host "$host" || code=$?
 	done
+
 	return $code
 }
 

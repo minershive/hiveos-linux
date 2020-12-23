@@ -5,6 +5,7 @@
 
 [[ -z "$API_HOST_FILE" ]] && source /etc/environment
 
+set -o pipefail
 
 INTERVAL=10
 LOG="/var/log/hive-agent.log"
@@ -14,10 +15,11 @@ CONF_SEQ="/run/hive/confseq"
 
 API_TIMEOUT=15 # timeout to wait for miner API response, can take very long time on 13+ gpus
 API_SWITCH_BACK=3600 # sec
-API_ERRORS=3 # before switching to fallback hosts
+API_ERRORS=5 # before switching to fallback hosts
 
 API_DEFAULT_URL=()
-API_HOSTS_ARR=()
+API_URLS_ARR=()
+API_URLS_LAST=
 api_index=-1
 api_error=0
 api_last_switch=0
@@ -41,6 +43,8 @@ if [[ $1 != "run" ]]; then
 		echo -e "${RED}Agent screen is already running${NOCOLOR}\nRun ${CYAN}agent-screen${NOCOLOR} to resume screen" &&
 		exit 1
 
+	echo -500 > /proc/self/oom_score_adj
+
 	while true; do
 	$0 run
 	sleep 1
@@ -48,6 +52,7 @@ if [[ $1 != "run" ]]; then
 	done
 fi
 
+echo -300 > /proc/self/oom_score_adj
 
 #ROH Fan controller
 ROH=`lsusb | grep -c 16c0:05dc`
@@ -189,7 +194,7 @@ function wait-for-gpu-stats() {
 
 function parse_host_url() {
 	local host="$1"
-	[[ ! "$host" =~ ^(https?://)?([^:]+)(:[0-9]+)?$ ]] && return 1
+	[[ ! "$host" =~ ^(https?://)?([0-9a-z\.-]+)(:[0-9]+)?$ ]] && return 1
 	[[ -z "$2" ]] && return 0
 	local -n arr="$2"
 	arr[0]="${BASH_REMATCH[0]}" # full url
@@ -201,6 +206,7 @@ function parse_host_url() {
 
 # Main loop cycle
 function loop {
+	local exitcode="$1"
 	# increase current push interval if last command was received more then $RESPONSE_TIME ago
 	no_command=$(( $(date +%s) - LAST_COMMAND ))
 	[[ $no_command -gt $RESPONSE_TIME ]] && CUR_PUSH_INTERVAL=$PUSH_INTERVAL #&& echo "CUR_PUSH_INCREASED"
@@ -229,38 +235,44 @@ function loop {
 
 	# API hosts fallback
 	[[ $exitcode -eq 0 ]] && api_error=0 || ((api_error++))
-	if [[ "${API_HOSTS[@]}" != "${API_HOSTS_ARR[@]}" || "$HIVE_HOST_URL" != "$API_DEFAULT_URL" ]]; then
-		API_HOSTS_ARR=( ${API_HOSTS[@]} )
-		echo "${DGRAY}Reloading API hosts (${#API_HOSTS_ARR[@]}), using ${HIVE_HOST_URL:-none}${NOCOLOR}"
-		for host in "${API_HOSTS_ARR[@]}"; do
-			echo "${DGRAY} # $host${NOCOLOR}"
-		done
+	if [[ "$API_HOST_URLs" != "$API_URLS_LAST" || "$HIVE_HOST_URL" != "$API_DEFAULT_URL" ]]; then
+		API_URLS_LAST="$API_HOST_URLs"
+		API_URLS_ARR=( $API_HOST_URLs )
 		if parse_host_url "$HIVE_HOST_URL" API_DEFAULT_URL; then
 			[[ -e "$API_HOST_FILE" ]] && rm $API_HOST_FILE
 			api_last_switch=0
 			api_index=-1
 			api_error=0
+			# add default host to array if absent
+			[[ ${#API_URLS_ARR[@]} -gt 0 && ! " $API_HOST_URLs " =~ " $API_DEFAULT_URL " && ! "${API_URLS_ARR[0]}" =~ "${API_DEFAULT_URL[2]}" ]] &&
+				API_URLS_ARR=( "${API_DEFAULT_URL[0]}" $API_HOST_URLs )
 		else
 			API_DEFAULT_URL=()
-			echo "${RED}Default API host parsing error ($HIVE_HOST_URL)${NOCOLOR}"
+			echo "${RED}Default API URL parsing error ($HIVE_HOST_URL)${NOCOLOR}"
 		fi
-	elif [[ $api_error -ge $API_ERRORS && ${#API_HOSTS_ARR[@]} -gt 1 ]]; then
-		# skip first host if it is equal to default
-		[[ $api_index -eq -1 && " ${API_HOSTS_ARR[0]} " =~ " ${API_DEFAULT_URL[2]} " ]] && api_index=0
-		api_index=$(( (api_index + 1) % ${#API_HOSTS_ARR[@]} ))
+		echo "${GRAY}Reloading API URLs (${#API_URLS_ARR[@]}), using ${HIVE_HOST_URL:-none}${NOCOLOR}"
+		for url in "${API_URLS_ARR[@]}"; do
+			echo "${GRAY} # $url${NOCOLOR}"
+		done
+	elif [[ $api_error -ge $API_ERRORS && ${#API_URLS_ARR[@]} -gt 1 ]]; then
+		# skip first host if it is default
+		[[ $api_index -eq -1 && "${API_URLS_ARR[0]}" == "${API_DEFAULT_URL[0]}" ]] && api_index=0
+		api_index=$(( (api_index + 1) % ${#API_URLS_ARR[@]} ))
 		API_NEW_URL=()
-		if parse_host_url "${API_HOSTS_ARR[$api_index]}" API_NEW_URL &&
-			parse_host_url "${API_DEFAULT_URL[1]}${API_NEW_URL[2]}"; then
-			HIVE_HOST_URL="${API_DEFAULT_URL[1]}${API_NEW_URL[2]}" # use proto from default URL
-			echo "${DGRAY}Switching API to $HIVE_HOST_URL [$api_index]${NOCOLOR}"
+		if parse_host_url "${API_URLS_ARR[$api_index]}" API_NEW_URL; then
+			# use proto from default URL if no proto (and port) specified
+			[[ -z "${API_NEW_URL[1]}" && -z "${API_NEW_URL[3]}" ]] &&
+				parse_host_url "${API_DEFAULT_URL[1]}${API_NEW_URL[2]}" API_NEW_URL
+			HIVE_HOST_URL="${API_NEW_URL[0]}"
+			echo "${GRAY}Switching API to $HIVE_HOST_URL [$api_index]${NOCOLOR}"
 			echo "HIVE_HOST_URL=\"$HIVE_HOST_URL\"" > $API_HOST_FILE
 		else
-			echo "${RED}API host parse error (${API_HOSTS_ARR[$api_index]}) [$api_index]${NOCOLOR}"
+			echo "${RED}API URL parse error (${API_URLS_ARR[$api_index]}) [$api_index]${NOCOLOR}"
 		fi
 		api_last_switch=$(date +%s)
 	elif [[ -e "$API_HOST_FILE" ]]; then
 		if [[ $(( api_last_switch + API_SWITCH_BACK )) -lt $(date +%s) ]]; then
-			echo "${DGRAY}Switching back to $API_DEFAULT_URL after ${API_SWITCH_BACK} sec${NOCOLOR}"
+			echo "${GRAY}Switching back to $API_DEFAULT_URL after ${API_SWITCH_BACK} sec${NOCOLOR}"
 			rm $API_HOST_FILE
 			api_last_switch=0
 			api_index=-1
@@ -326,7 +338,6 @@ function loop {
 	fi
 	echo "$khs" > $HASHRATE_KHS
 
-
 	# ROH Fan controller blink error state
 	if [[ $ROH -ge 1 ]]; then
 		# update text to OLED screen
@@ -347,7 +358,7 @@ function loop {
 	[[ $CUR_PUSH_INTERVAL -gt 50 ]] && CUR_PUSH_INTERVAL=50
 	local now=$(date +%s)
 	if [[ $(( LAST_OK + CUR_PUSH_INTERVAL - INTERVAL/2 )) -ge $now ]]; then
-		echo "${DGRAY}$(( LAST_OK + $CUR_PUSH_INTERVAL - INTERVAL/2 - now )) sec until next push, waiting$NOCOLOR"
+		echo "${GRAY}$(( LAST_OK + $CUR_PUSH_INTERVAL - INTERVAL/2 - now )) sec until next push, waiting$NOCOLOR"
 		return 0
 	fi
 
@@ -488,8 +499,7 @@ function loop {
 
 	if [[ -z "$HIVE_HOST_URL" ]]; then
 		echo -e "${RED}No host, skipping sending stats${NOCOLOR}"
-		exitcode=99
-		return $exitcode
+		return 99
 	fi
 
 	#log request
@@ -528,16 +538,20 @@ function loop {
 	#echo "[`date`] < `echo $response | jq '.' -c`" >> $LOG
 	echo "[`date`] < $response" >> $LOG #full response even invalid
 
-	error=$(echo "$response" | jq '.error' --raw-output)
-	if [[ $? != 0 ]]; then
-		echo -e "${RED}Invalid response${NOCOLOR}: $HIVE_HOST_URL\n$response"
-		exitcode=101
-		return $exitcode
+	error=$(echo "$response" | jq '.error' --raw-output 2>/dev/null)
+	if [[ $? -ne 0 ]]; then
+		error=`echo "$response" | grep -oP "<title>\K[^<]+"`
+		if [[ ! -z "$error" ]]; then
+			echo "${RED}Bad response from $HIVE_HOST_URL: ${BRED}$error${NOCOLOR}"
+		else
+			echo "${RED}Invalid response from $HIVE_HOST_URL:${NOCOLOR}"
+			echo "${GRAY}$response${NOCOLOR}"
+		fi
+		return 101
 	fi
 	if [[ ! -z "$error" && "$error" != "null" ]]; then
-		echo -e "${RED}Error response${NOCOLOR}: $error"
-		exitcode=102
-		return $exitcode
+		echo -e "${RED}Error response from $HIVE_HOST_URL: ${BRED}$error${NOCOLOR}"
+		return 102
 	fi
 
 	if [[ $force_stop -eq 1 ]]; then
@@ -600,7 +614,7 @@ function loop {
 		fi
 	fi
 
-	return $exitcode # 0
+	return 0
 }
 
 
@@ -608,8 +622,10 @@ function loop {
 
 echo -e "\n\n[`date`] Started" >> $LOG
 
+exitcode=
 while true; do
 	# sleeping is controlled also by agent.gpu-stats now
-	loop
+	loop $exitcode
+	exitcode=$?
 	sleep 2 # to make sure we will not grab the same gpu-stats file
 done
