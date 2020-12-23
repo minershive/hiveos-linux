@@ -9,7 +9,7 @@ export LD_LIBRARY_PATH=/hive/lib
 # miner minimal work time in seconds for log rotation
 MINER_LOG_MIN_TIME=30
 
-
+echo 500 > /proc/self/oom_score_adj
 
 [[ ! -e $RIG_CONF ]] && echo "${RED}No rig config $RIG_CONF${NOCOLOR}" && exit 1
 [[ ! -e $WALLET_CONF ]] && echo "${RED}No wallet config $WALLET_CONF${NOCOLOR}" && exit 1
@@ -193,7 +193,7 @@ miner_start_ts=0
 while true; do
 	# do not rotate logs if miner restarts quickly to keep old logs
 	[[ $(date +%s) -ge $(( miner_start_ts + MINER_LOG_MIN_TIME )) ]] &&
-		miner logrotate $MINER_NAME || echo "${DGRAY}Skipping miner log rotation due to execution time < ${MINER_LOG_MIN_TIME}sec${NOCOLOR}"
+		miner logrotate $MINER_NAME || echo "${GRAY}Skipping miner log rotation due to execution time < ${MINER_LOG_MIN_TIME}sec${NOCOLOR}"
 
 	miner_start_ts=$(date +%s)
 
