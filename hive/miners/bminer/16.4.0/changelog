@@ -1,0 +1,2 @@
+Bminer v16.4.0
+* added support mining ETH on AMD 4G cards via the `-ethash-allocation` parameter
