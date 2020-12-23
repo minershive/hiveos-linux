@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
+# nvidia-oc [index] [busid]
 
-[[ "$1" != "--nocolor" ]] && . colors
+[[ "$1" != "nocolor" ]] && source colors
+
+[[ -f /run/hive/NV_OFF && ! " $@ " =~ " --force " ]] &&
+	echo "${YELLOW}NVIDIA driver is disabled. (use ${BYELLOW}--force${YELLOW} to override)${NOCOLOR}" &&
+	exit 1
+
+if [[ "$1" == -h || "$1" == --help ]]; then
+	echo "Usage: nvidia-info [--force] [index] [busid:00] ..."
+	exit 0
+fi
 
 date
 
@@ -24,6 +34,8 @@ function nvidiainfo() {
 					memtype pcie linkw sn uuid pstate status msg etc < <( echo "$gpuinfo" )
 		[[ -z "$busid" ]] && continue
 		busid="${busid#00000000:}" # trim prefix
+		# filter output by index or busid
+		[[ ! -z "${@//--force}" && (! " $@ " =~ ( $index ) && ! " $@ " =~  ( ${busid/.0} )) ]] && continue
 
 		echo ""
 
@@ -66,5 +78,6 @@ function nvidiainfo() {
 	done
 }
 
-nvidiainfo
+
+nvidiainfo $@
 
