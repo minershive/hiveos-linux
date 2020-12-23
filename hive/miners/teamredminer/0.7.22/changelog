@@ -1,0 +1,5 @@
+TeamRedMiner v0.7.22
+* rewrited ethash kernel for Navi, now should now be more stable and use less power
+* slightly reworked init procedure
+* added Claymore compatible API, see the '--cm_api_listen'
+
