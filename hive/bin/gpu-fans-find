@@ -21,8 +21,10 @@ amd_set_fan_pwm() {
 	local hwmondir="$1"
 	local fanpwm="$2"
 	[[ ! -e "$hwmondir" ]] && return
+	echo 1 > ${hwmondir}/pwm1_enable
 	echo "$fanpwm" > ${hwmondir}/pwm1 2>/dev/null && return
-	echo 1 > ${hwmondir}/pwm1_enable && echo "$fanpwm" > ${hwmondir}/pwm1
+	# try higher value
+	[[ $fanpwm -eq 0 ]] && echo "4" > ${hwmondir}/pwm1
 	return
 }
 
@@ -48,7 +50,7 @@ stop_fans() {
 		args+=" -a GPUPowerMizerMode=0"
 		args+=" -a GPULogoBrightness=0"
 		args+=" -a GPUFanControlState=1"
-		args+=" -a GPUTargetFanSpeed=0"
+		args+=" -a GPUTargetFanSpeed=1"
 
 		if [[ ! -z $args ]]; then
 			# apply nvidia-settings
@@ -120,7 +122,7 @@ test_gpu() {
 		args=" -a [gpu:$gpu_idx]/GPUFanControlState=1"
 		args+=" -a [gpu:$gpu_idx]/GPULogoBrightness=100"
 		for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
-			args+=" -a [fan:$i]/GPUTargetFanSpeed=100"
+			args+=" -a [fan:$i]/GPUTargetFanSpeed=99"
 		done
 		[[ "$DEBUG" == "1" ]] && echo $args ||
 			nvidia-settings $args 1>/dev/null
@@ -132,7 +134,7 @@ test_gpu() {
 		args=" -a [gpu:$gpu_idx]/GPUFanControlState=1"
 		args+=" -a [gpu:$gpu_idx]/GPULogoBrightness=0"
 		for (( i = $fan_idx; i < $(( $fan_idx+$fan_count )); i++ )); do
-			args+=" -a [fan:$i]/GPUTargetFanSpeed=0"
+			args+=" -a [fan:$i]/GPUTargetFanSpeed=1"
 		done
 		[[ "$DEBUG" == "1" ]] && echo $args ||
 			nvidia-settings $args 1>/dev/null
@@ -239,6 +241,7 @@ else
 	test_gpu $gpuid
 fi
 
+
 if [[ "$DEBUG" != "1" ]]; then
 	echo -e "${CYAN}> Restoring OC settings...${NOCOLOR}"
 	[[ ! -z ${NVIDIA_BUSID[*]} ]] && nvidia-oc 1>/dev/null
@@ -247,8 +250,8 @@ if [[ "$DEBUG" != "1" ]]; then
 	echo -e "> Starting autofan"
 	autofan start
 
-	echo -e "> Starting hashrate watchdog"
-	wd start
+	#echo -e "> Starting hashrate watchdog"
+	#wd start
 
 	echo -e "> Starting miner session"
 	miner start
