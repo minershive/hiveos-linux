@@ -14,7 +14,7 @@ PATH="./:/hive/bin:/hive/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:
 */15 * * * * /hive/sbin/logrotate
 
 #clean screen logs
-0 * * * * (for fname in /run/hive/miner.* ; do echo "" > $fname; done)
+0 * * * * (for fname in `realpath -eq /run/hive/miner.*`; do echo "" > $fname; done)
 
 
 # update PCI IDs db
