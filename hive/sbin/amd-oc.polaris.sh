@@ -39,6 +39,7 @@ function polaris_oc() {
 		PowerTuneTable/TDP \
 		PowerTuneTable/TDC \
 		PowerTuneTable/MaximumPowerDeliveryLimit \
+		VddcLookupTable/NumEntries \
 		2>/dev/null)
 
 	# check pp_table version 7.1
@@ -51,6 +52,7 @@ function polaris_oc() {
 	TDP=${data[5]}
 	TDC=${data[6]}
 	maxPower=${data[7]}
+	maxVddcIndex=$(( data[8] - 1 ))
 
 	echo "Max core: ${maxCoreClock}MHz, Max mem: ${maxMemoryClock}MHz, Max mem state: $maxMemoryState, Max core state: $maxCoreState"
 	echo "TDP: ${TDP}W, TDC: ${TDC}A, Max power: ${maxPower}W"
@@ -145,7 +147,7 @@ function polaris_oc() {
 
 	# set other states voltage in aggressive mode
 	[[ ${CORE_VDDC[$i]} -gt $MIN_VOLT && $AGGRESSIVE == 1 ]] &&
-		for((idx=9; idx <= 15; idx++)); do
+		for((idx=9; idx <= maxVddcIndex; idx++)); do
 			args+=" VddcLookupTable/${idx}/Vdd=${CORE_VDDC[$i]}"
 		done
 
