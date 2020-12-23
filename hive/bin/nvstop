@@ -24,12 +24,13 @@ do
 	#wd stop > /dev/null 2>&1
 	autofan stop > /dev/null 2>&1
 	systemctl stop hivex > /dev/null 2>&1
-	killall -9 xinit > /dev/null 2>&1
-	rmmod -f nvidia_uvm > /dev/null 2>&1
-	rmmod -f nvidia_drm > /dev/null 2>&1
-	rmmod -f nvidia_modeset > /dev/null 2>&1
-	rmmod -f nvidia > /dev/null 2>&1
 	sleep 1
+	killall -9 xinit > /dev/null 2>&1 && sleep 0.5
+	killall nvidia-persistenced > /dev/null 2>&1 && sleep 0.5
+	rmmod -f nvidia_uvm > /dev/null 2>&1 && sleep 0.5
+	rmmod -f nvidia_drm > /dev/null 2>&1 && sleep 0.5
+	rmmod -f nvidia_modeset > /dev/null 2>&1 && sleep 0.5
+	rmmod -f nvidia > /dev/null 2>&1 && sleep 0.5
 	count_nvidia=`lsmod | grep -c nvidia`
 	if [[ $count_nvidia -eq 0 ]]; then
 		echo -e "${GREEN}> Unload modules successfull${NOCOLOR}"
