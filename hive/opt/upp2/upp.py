@@ -3,7 +3,7 @@
 # To run without install relative imports needs to match the module ones, which
 # is true when in 'src' directory, then: python3 -m upp.upp --help
 
-VERSION="0.0.7-2"
+VERSION="0.0.7-3"
 
 import click
 import tempfile
@@ -20,6 +20,10 @@ REG_KEY_VAL = 'PP_PhmSoftPowerPlayTable'
 REG_HEADER = 'Windows Registry Editor Version 5.00' + 2 * '\r\n' + \
              '[HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\' + \
              REG_CTRL_CLASS + ']\r\n'
+
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 
 def _normalize_var_path(var_path_str):
@@ -45,7 +49,7 @@ def _validate_set_pair(set_pair):
     if '=' in set_pair and _is_int_or_float(set_pair.split('=')[-1]):
         return set_pair.split('=')
     else:
-        print("ERROR: Invalid variable assignment '{}'. ".format(set_pair),
+        eprint("ERROR: Invalid variable assignment '{}'. ".format(set_pair),
               "Assignment must be specified in <variable-path>=<value> ",
               "format. For example: /PowerTuneTable/TDP=75")
         return None, None
@@ -59,7 +63,7 @@ def _get_pp_data_from_registry(reg_file_path):
     try:
         from Registry import Registry
     except ImportError as e:
-        print('ERROR: -f/--from-registry option requires python-registry',
+        eprint('ERROR: -f/--from-registry option requires python-registry',
               'package, consider installing it with PIP.')
         sys.exit(-2)
     try:
@@ -68,8 +72,8 @@ def _get_pp_data_from_registry(reg_file_path):
         data_type = key.value(REG_KEY_VAL).value_type_str()
         registry_data = key.value(REG_KEY_VAL).raw_data()
     except Exception as e:
-        print(('ERROR: Can not get' + msg).format(reg_file_path, reg_path))
-        print(e)
+        eprint(('ERROR: Can not get' + msg).format(reg_file_path, reg_path))
+        eprint(e)
         return None
     print(('Successfully loaded' + msg).format(reg_file_path, reg_path))
     decode._write_pp_tables_file(tmp_pp_file.name, registry_data)
@@ -103,7 +107,7 @@ def _write_pp_to_reg_file(filename, data, debug=False):
         print('Written {} Soft PowerPlay bytes to {}'.format(len(data),
                                                              filename))
     else:
-        print('Can not write to {}'.format(filename))
+        eprint('Can not write to {}'.format(filename))
     return 0
 
 
@@ -117,8 +121,10 @@ def _write_pp_to_reg_file(filename, data, debug=False):
               metavar='<filename>')
 @click.option('--debug/--no-debug', '-d/ ', default='False',
               help='Debug mode.')
+@click.option('--ignore/--no-ignore ', '-i/ ', default='False',
+              help='Ignore invalid params and continue.')
 @click.pass_context
-def cli(ctx, debug, pp_file, from_registry):
+def cli(ctx, debug, pp_file, from_registry, ignore):
     """UPP: Uplift Power Play
 
     A tool for parsing, dumping and modifying data in Radeon PowerPlay tables.
@@ -163,6 +169,7 @@ def cli(ctx, debug, pp_file, from_registry):
     ctx.obj['DEBUG'] = debug
     ctx.obj['PPBINARY'] = pp_file
     ctx.obj['FROMREGISTRY'] = from_registry
+    ctx.obj['IGNORE'] = ignore
 
 
 @click.command(short_help='Show UPP version.')
@@ -245,6 +252,7 @@ def get(ctx, variable_path_set):
     decoded and displayed on console.
     Multiple PP parameters can be specified at the same time.
     """
+    ignore = ctx.obj['IGNORE']
     debug = ctx.obj['DEBUG']
     pp_file = ctx.obj['PPBINARY']
     from_registry = ctx.obj['FROMREGISTRY']
@@ -259,8 +267,11 @@ def get(ctx, variable_path_set):
         if res:
             print(res['value'])
         else:
-            print('ERROR: Incorrect variable path:', set_pair_str)
-            return 2
+            eprint('ERROR: Incorrect variable path:', set_pair_str)
+            if ignore:
+               print('null')
+            else:
+               return 2
 
     return 0
 
@@ -293,6 +304,7 @@ def set(ctx, variable_path_set, to_registry, write):
 
     will produce the file test.reg in the current working directory.
     """
+    ignore = ctx.obj['IGNORE']
     debug = ctx.obj['DEBUG']
     pp_file = ctx.obj['PPBINARY']
     set_pairs = []
@@ -307,8 +319,9 @@ def set(ctx, variable_path_set, to_registry, write):
                 else:
                     set_pairs += [var_path + [float(val)]]
             else:
-                print('ERROR: Incorrect variable path:', var)
-                return 2
+                eprint('ERROR: Incorrect variable path:', var)
+                if not ignore:
+                    return 2
         else:
             return 2
 
@@ -322,7 +335,7 @@ def set(ctx, variable_path_set, to_registry, write):
         #print("Commiting changes to '{}'.".format(pp_file))
         decode._write_pp_tables_file(pp_file, pp_bytes)
     else:
-        print("WARNING: Nothing was written to '{}'.".format(pp_file),
+        eprint("WARNING: Nothing was written to '{}'.".format(pp_file),
               "Add --write option to commit the changes for real!")
     if to_registry:
         _write_pp_to_reg_file(to_registry + '.reg', pp_bytes, debug=debug)

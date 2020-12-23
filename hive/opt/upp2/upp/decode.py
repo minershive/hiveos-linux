@@ -1,3 +1,4 @@
+import sys
 import codecs
 import struct
 import ctypes
@@ -21,6 +22,10 @@ primitives = [
     ctypes.c_int16, ctypes.c_uint16,
     ctypes.c_uint32, ctypes.c_float
 ]
+
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 
 def odict(init_data=None):
@@ -48,8 +53,8 @@ def _write_pp_tables_file(filename, raw_data):
     except PermissionError as e:
         msg = 'ERROR: {}\n' + \
               'To make PowerPlay table file writtable: sudo chmod o+w {}'
-        print(msg.format(e, filename, filename))
-        print(e)
+        eprint(msg.format(e, filename, filename))
+        eprint(e)
 
 
 def _bytes2hex(bytes):
@@ -93,7 +98,7 @@ def extract_rom(vrom_file, out_pp_file):
         rom_tbl = atom_rom_header_v2.from_buffer(rom_tbl_bytes)
     else:
         err_msg = 'Can not handle ATOM Common Table revision {}'
-        print(err_msg.format(rom_tbl_rev))
+        eprint(err_msg.format(rom_tbl_rev))
         return None
 
     print('Found ATOM Common Table rev. {}'.format(rom_tbl_rev))
@@ -101,7 +106,7 @@ def extract_rom(vrom_file, out_pp_file):
     rom_signature = bytearray(rom_tbl.uaFirmWareSignature).decode()
     if rom_signature != 'ATOM':
         err_msg = 'Invalid Video ROM signature: "{}", must match "ATOM".'
-        print(err_msg.format(rom_signature))
+        eprint(err_msg.format(rom_signature))
         return None
 
     # Dump some VROM info
@@ -155,7 +160,7 @@ def validate_pp(header, length, rawdump):
     if pp_len != length:
         msg = 'ERROR: Header length ({}) diffes from file length ({}). ' + \
               'Is this a valid PowerPlay table?'
-        print(msg.format(pp_len, length))
+        eprint(msg.format(pp_len, length))
         return None
     if rawdump:
         msg = 'PowerPlay table rev {}.{} size {} bytes'
@@ -245,7 +250,7 @@ def _get_ofst_cstruct(module, name, header_bytes, debug=False):
     elif module_suffix == 'atom_gen.vega10_pptable':
         family = 'Vega10'
     else:
-        print('ERROR: Module {} does not contain jump structures.', module)
+        eprint('ERROR: Module {} does not contain jump structures.', module)
         return cs, total_len
 
     # A helper for translating table names into resolvable ctype identifiers
@@ -524,7 +529,7 @@ def build_data_tree(data, raw=None, decoded=None, parent_name='/',
                     print('DEBUG: End of recursion into "{}"'.format(name))
 
     else:
-        print('ERROR: Unexpected data structure:', type(data))
+        eprint('ERROR: Unexpected data structure:', type(data))
 
     return decoded
 
@@ -555,7 +560,7 @@ def select_pp_struct(rawbytes, rawdump=False, debug=False):
         ctypes_strct = pp_struct.struct_smu_11_0_powerplay_table
     elif pp_ver is not None:
         msg = 'Can not decode PowerPlay table version {}.{}'
-        print(msg.format(pp_ver[0], pp_ver[1]))
+        eprint(msg.format(pp_ver[0], pp_ver[1]))
         return None
     else:
         return None
@@ -624,7 +629,7 @@ def get_value(pp_bin_file, var_path, data_dict=None, debug=False):
                 data = data[category]
             except KeyError:
                 msg = 'ERROR: Invalid parameter "{}", available ones are: {}'
-                print(msg.format(category, ', '.join([str(k) for k in data])))
+                eprint(msg.format(category, ', '.join([str(k) for k in data])))
                 return None
             except (TypeError, IndexError):
                 if isinstance(data, list):
@@ -632,12 +637,12 @@ def get_value(pp_bin_file, var_path, data_dict=None, debug=False):
                 else:
                     indices = []
                 msg = 'ERROR: Invalid parameter "{}", available ones are: {}'
-                print(msg.format(category, ', '.join(indices)))
+                eprint(msg.format(category, ', '.join(indices)))
                 return None
     if data is None:
-        print('ERROR: Table {} does not point anywhere'.format(category))
+        eprint('ERROR: Table {} does not point anywhere'.format(category))
     if isinstance(data, list):
-        print('ERROR: Decoded data does not contain any value, you probably',
+        eprint('ERROR: Decoded data does not contain any value, you probably',
               'wanna look deeper into data;',
               ', '.join([str(i) for i in range(len(data))]))
         return None
@@ -647,12 +652,12 @@ def get_value(pp_bin_file, var_path, data_dict=None, debug=False):
             key = list(data.keys())[0]
             if 'value' in data[key]:
                 return data[key]
-        print('ERROR: Decoded data does not contain any value, you probably',
+        eprint('ERROR: Decoded data does not contain any value, you probably',
               'wanna look deeper into data;',
               ', '.join([str(k) for k in data.keys()]))
         return None
     if not isinstance(data, dict):
-        print('ERROR: Decoded data does not contain any final values, you',
+        eprint('ERROR: Decoded data does not contain any final values, you',
               'probably wanna go back one step into the data structure')
         return None
 
@@ -692,7 +697,7 @@ def set_value(pp_bin_file, pp_tbl_bytes, var_path, new_value,
             msg = 'Changing {} from {} to {}'
             print(msg.format(var_pth_str, curr_val, new_value))
     else:
-        print('Can\'t decode {}'.format(var_path))
+        eprint('Can\'t decode {}'.format(var_path))
     bytes_value = struct.pack(d_type, new_value)
     if debug:
         current_bytes_value = pp_tbl_bytes[off:off+d_size]
