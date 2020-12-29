@@ -1,0 +1,5 @@
+Bminer v16.4.2
+* fixed crash on Nvidia on Ethereum mining
+
+Bminer v16.4.1
+* improved performance on mining ETH on AMD 4G cards
