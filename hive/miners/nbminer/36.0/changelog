@@ -1,0 +1,4 @@
+NBMiner v36.0
+* fixed crashing when mining kawpow algo on some GPUs in versions 35.x
+* removed algos: eaglesong, eaglesong_ethash, trb, hns, sipc, cuckaroo, cuckaroo_swap and reducing binary size
+
