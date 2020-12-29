@@ -1,8 +1,8 @@
 Package: hive-miners-cpuminer-opt-rplant
-Version: 0.6-15
+Version: 0.6-16
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-cpuminer-opt-rplant-5.0.7
+Depends: hive-miners-cpuminer-opt-rplant-5.0.9
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - CPUminer-opt fork by rplant

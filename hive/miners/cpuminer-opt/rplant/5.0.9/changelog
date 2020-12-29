@@ -1,0 +1,3 @@
+CPUminer-Opt by rplant v5.0.9
+* improved auto-stratum connect
+* added new `balloon` algo: Zentoshi coin
