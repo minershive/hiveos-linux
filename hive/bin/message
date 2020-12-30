@@ -29,7 +29,7 @@ fi
 
 #echo $#
 if [[ -z $data || -z $type ]]; then
-	echo "Usage: $0 success|danger|warning|info|file \"message\" [payload] [-i|--id=msgid] [-f|--file=path/name]"
+	echo "Usage: $0 success|danger|warning|info|file \"message\" [-i|--id=msgid] [-f|--file=path/name] [payload]"
 	echo "       $0 -f|--file=path/name"
 	echo "Aliases: ok|error|err|warn|default"
 	echo "payload is read from stdin"
@@ -76,12 +76,12 @@ for i in "$@"; do
 		payload|--payload)
 			#echo "With payload"
 			# cleanup output from progress bars
-			payload=$(sed 's/\r$//; s/\r/\r\n/g' | grep -v $'\r' | cat -s)
+			#payload=$(sed 's/\r$//; s/\r/\r\n/g' | grep -v $'\r' | cat -s)
 			# check for empty payload
-			if [[ "$payload" =~ [^[:space:]]+ ]]; then
-				payload_json=`echo -n "$payload" | jq -R -s '{"params": {"payload": .}}'` &&
-					request=`echo "$request $payload_json" | jq -sc '.[0] * .[1]'`
-			fi
+			#if [[ "$payload" =~ [^[:space:]]+ ]]; then
+			#	payload_json=`echo -n "$payload" | jq -R -s '{"params": {"payload": .}}'` &&
+			#		request=`echo "$request $payload_json" | jq -sc '.[0] * .[1]'`
+			#fi
 		;;
 		-f=*|--file=*)
 			[[ $type != "file" ]] && echo "Type \"file\" must be used" && exit 2
@@ -96,6 +96,17 @@ for i in "$@"; do
 	esac
 done
 
+# autodetect payload
+if [[ ! `readlink /dev/fd/0` =~  ^/dev/ ]]; then
+	#echo "With payload"
+	# cleanup output from progress bars
+	payload=$(sed 's/\r$//; s/\r/\r\n/g' 2>/dev/null | grep -v $'\r' | cat -s)
+	# check for empty payload
+	if [[ "$payload" =~ [^[:space:]]+ ]]; then
+		payload_json=`echo -n "$payload" | jq -R -s '{"params": {"payload": .}}'` &&
+			request=`echo "$request $payload_json" | jq -sc '.[0] * .[1]'`
+	fi
+fi
 
 #date
 echo -e "> Sending ${payload_json:+with payload }\"$type\": ${MSGCOLOR}$data${NOCOLOR}"
