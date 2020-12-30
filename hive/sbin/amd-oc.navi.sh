@@ -36,7 +36,7 @@ if [[ $NAVI_COUNT -ne 0 ]]; then
     # overdrive_table/max/ 0=gfxclock, 7=gfxvolt, 9=powerlimit, 8=memclock
     python3 /hive/opt/upp2/upp.py  -p /sys/class/drm/card$cardno/device/pp_table set \
     	smc_pptable/FanStopTemp=0 smc_pptable/FanStartTemp=0 smc_pptable/FanZeroRpmEnable=0 \
-    	smc_pptable/${NAVI_MinVoltageGfx}  \
+    	smc_pptable/MinVoltageGfx=${NAVI_MinVoltageGfx}  \
     	$args \
     	overdrive_table/max/8=${NAVI_MaxMemClock} \
     	overdrive_table/min/3=700 overdrive_table/min/5=700 \
