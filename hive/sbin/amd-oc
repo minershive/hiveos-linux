@@ -1,51 +1,56 @@
 #!/usr/bin/env bash
+# Usage: amd-oc log|stop|reset|nocolor|quiet
 
-#[ -t 1 ] &&
-source colors
 
-date
-echo ""
+OC_LOG=/var/log/amd-oc.log
+OC_TIMEOUT=120
+
 
 [[ -f $RIG_CONF ]] && source $RIG_CONF
+set -o pipefail
+
+n=`gpu-detect AMD`
+if [[ $n -eq 0 ]]; then
+	#echo "No AMD cards detected"
+	exit 0
+fi
+
+[[ "$1" != "nocolor" ]] && source colors
+
+if [[ "$1" == "log" ]]; then
+	cat $OC_LOG 2>/dev/null && echo -n "${NOCOLOR}"
+	exit
+fi
+
+# do not run OC simultaneously
+if [[ "$2" != "internal" ]]; then
+	readarray -t pids < <( pgrep -f "timeout .*$OC_LOG" )
+	for pid in "${pids[@]}"; do
+		echo -e "${BYELLOW}Killing running amd-oc ($pid)${NOCOLOR}\n"
+		# timeout process PID is equal to the PGID, so using it to kill process group
+		kill -- -$pid
+	done
+fi
+
+# just exit here
+[[ "$1" == "stop" ]] && exit 0
 
 [[ $MAINTENANCE == 2 ]] &&
-	echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
+	echo "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
 	exit 1
 
-if [[ ! -f $AMD_OC_CONF ]]; then
-	echo -e "ERROR: $AMD_OC_CONF does not exist"
-	exit
+
+# start main OC with timeout and logging
+if [[ "$2" != "internal" ]]; then
+	trap "echo -n $NOCOLOR" EXIT
+	timeout --foreground -s9 $OC_TIMEOUT bash -c "set -o pipefail; amd-oc \"$1\" internal 2>&1 | tee $OC_LOG"
+	exitcode=$?
+	if [[ $exitcode -ne 0 && $exitcode -ne 143 ]]; then
+		echo "${RED}ERROR: AMD OC failed${NOCOLOR}"
+		[[ "$1" != "quiet" ]] && cat $OC_LOG | message error "AMD OC failed" payload > /dev/null
+	fi
+	exit $exitcode
 fi
-
-source /hive/etc/gpu.ids
-
-# use target temp for HW autofan if AMD is disabled in autofan settings
-AMD_TARGET_TEMP=
-[[ -f $AUTOFAN_CONF ]] && AMD_TARGET_TEMP=$( source $AUTOFAN_CONF && [[ $ENABLED == 1 && $NO_AMD == 1 ]] && echo "$TARGET_TEMP" )
-
-
-if [[ ! -f $GPU_DETECT_JSON ]]; then
-	gpu_detect_json=`gpu-detect listjson`
-else
-	gpu_detect_json=$(< $GPU_DETECT_JSON)
-fi
-
-gpu_names=`echo "$gpu_detect_json" | jq -r -c '.[] | select(.brand == "amd") | (.busid+"\""+.name+" "+.mem+"\"")'`
-
-#readarray -t AMD_BUSIDS < <(lspci | grep -E "$GPU_DETECT_STRING" | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL" | cut -d" " -f1)
-readarray -t AMD_BUSIDS  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "amd") | .value.busid' )
-
-# this is needed for amdmemorytweak to work correct when internal AMD gpu is present
-readarray -t AMD_ALL_BUSIDS < <(lspci | grep -E "$GPU_DETECT_STRING" | grep "Advanced Micro Devices" | cut -d" " -f1)
-
-
-n=${#AMD_BUSIDS[@]}
-if [[ $n == 0 ]]; then
-	echo "No AMD cards detected, exiting"
-	exit
-fi
-
-echo "Detected $n AMD cards"
 
 
 print_array() {
@@ -62,8 +67,47 @@ print_array() {
 }
 
 
+date
+echo -e "\nDetected $n AMD cards\n"
+
+if [[ "$1" == "reset" ]]; then
+	echo -e "${YELLOW}Resetting OC to defaults${NOCOLOR}\n"
+else
+	[[ ! -f $AMD_OC_CONF ]] &&
+		echo "${YELLOW}$AMD_OC_CONF does not exist, exiting${NOCOLOR}" &&
+		exit 0
+	source $AMD_OC_CONF
+fi
+
+if [[ ! -f $GPU_DETECT_JSON ]]; then
+	gpu_detect_json=`gpu-detect listjson`
+else
+	gpu_detect_json=$(< $GPU_DETECT_JSON)
+fi
+
+source /hive/etc/gpu.ids
+
+# use target temp for HW autofan if AMD is disabled in autofan settings
+AMD_TARGET_TEMP=
+[[ -f $AUTOFAN_CONF ]] && AMD_TARGET_TEMP=$( source $AUTOFAN_CONF && [[ $ENABLED == 1 && $NO_AMD == 1 ]] && echo "$TARGET_TEMP" )
+
+gpu_names=`echo "$gpu_detect_json" | jq -r -c '.[] | select(.brand == "amd") | (.busid+"\""+.name+" "+.mem+"\"")'`
+
+#readarray -t AMD_BUSIDS < <(lspci | grep -E "$GPU_DETECT_STRING" | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL" | cut -d" " -f1)
+readarray -t AMD_BUSIDS  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "amd") | .value.busid' )
+
+# this is needed for amdmemorytweak to work correct when internal AMD gpu is present
+readarray -t AMD_ALL_BUSIDS < <(lspci | grep -E "$GPU_DETECT_STRING" | grep "Advanced Micro Devices" | cut -d" " -f1)
+
+
+n=${#AMD_BUSIDS[@]}
+if [[ $n -eq 0 ]]; then
+	echo -e "${RED}ERROR: No cards available for OC!\n${NOCOLOR}Please check BIOS settings, risers, connectors and PSU.\nUse OS image with suitable AMD driver version."
+	exit 1
+fi
+
 # MAP OC to MB BUS ID
-[[ -e "$BUSID_FILE" ]] && source $BUSID_FILE
+[[ -f "$BUSID_FILE" ]] && source $BUSID_FILE
 # prefer AMD especially for mixed rigs
 [[ ! -z "$BUSID_AMD" ]] && BUSID_MB="$BUSID_AMD"
 if [[ ! -z "$BUSID_MB" ]]; then
@@ -77,9 +121,6 @@ if [[ ! -z "$BUSID_MB" ]]; then
 	n=${#BUSID_MB[@]}
 fi
 
-
-source $AMD_OC_CONF
-
 PARAMS=(CORE_CLOCK CORE_VDDC CORE_STATE MEM_CLOCK MEM_STATE MVDD VDDCI SOCCLK SOCVDDMAX REF FAN PL)
 
 # pad arrays
@@ -90,8 +131,6 @@ for param in "${PARAMS[@]}"; do
 		read "$param[$i]" < <( echo "${arr[-1]}" ) # use last element of initial array
 	done
 done
-
-echo ""
 
 # Remap OC according to bus id
 if [[ ! -z $BUSID_MB ]]; then
@@ -155,29 +194,26 @@ for busid in "${AMD_ALL_BUSIDS[@]}"; do
 	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${PURPLE}$busid${NOCOLOR} $name ${YELLOW}=== `date +"%T"`${NOCOLOR}"
 	savedpp=/tmp/pp_tables/card$cardno/pp_table
 
-	[[ ! -e $savedpp ]] && echo -e "ERROR: $savedpp not found, try to reboot" && continue
+	[[ ! -f $savedpp ]] && echo -e "${RED}ERROR: $savedpp not found, try to reboot${NOCOLOR}" && continue
 
 	VEGAS_COUNT=$( lspci -vnns $busid | grep VGA -A 2 | grep AMD -A 2 | grep Vega -A 2 | grep -v "Vega 8" | wc -l )
 	NAVI_COUNT=$( lspci -vnns $busid | grep -Ei "$GPU_NAVI" | wc -l )
 	IS_VEGA10=$( lspci -vnns $busid | grep -Ei "$GPU_VEGA10" | wc -l )
 	IS_VEGA20=$( lspci -vnns $busid | grep -Ei "$GPU_VEGA20" | wc -l )
 
-	if [[ $VEGAS_COUNT -ne 0 || $NAVI_COUNT -ne 0 ]]; then
-		if [[ $IS_VEGA10 -gt 0 && $AGGRESSIVE == 1 ]]; then
-			source /hive/sbin/amd-oc.vega.aggressive.sh
-		else
-			source /hive/sbin/amd-oc.vega.sh
-		fi
-	else
+	if [[ $VEGAS_COUNT -eq 0 && $NAVI_COUNT -eq 0 ]]; then
 		source /hive/sbin/amd-oc.polaris.sh
+	elif [[ $NAVI_COUNT -gt 0 || $IS_VEGA20 -gt 0 ]]; then
+		source /hive/sbin/amd-oc.navi.sh
+	#elif [[ $IS_VEGA10 -gt 0 && $AGGRESSIVE == 1 ]]; then
+	#	source /hive/sbin/amd-oc.vega.aggressive.sh
+	#elif [[ $IS_VEGA10 -gt 0 ]]; then
+	else
+		source /hive/sbin/amd-oc.vega.sh
 	fi
 
 done
 
 echo ""
-
-sync
-#just in case, silly flushing reasons
-#sleep 0.2
 
 exit 0
