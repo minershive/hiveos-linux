@@ -15,22 +15,27 @@ DIR=`pwd`
 SCRIPT_PATH=`dirname $0`
 SCRIPT_NAME=`basename $0`
 cd $SCRIPT_PATH
-mydir=`pwd`
-myself="$mydir/$SCRIPT_NAME"
+myself="$DIR/$SCRIPT_NAME"
 
 # main url to images repo
-HIVE_URL=http://download.hiveos.farm
+HIVE_URL=https://download.hiveos.farm
+# repo list
+HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
+
+# image file mask
+HIVEOS_REGEX="hiveos-[^\"]+\.(zip|xz)"
 
 # direct urls to images
 STABLE_URL=$HIVE_URL/latest/
 VEGA_URL=$HIVE_URL/vega/
 BETA_URL=$HIVE_URL/beta/
-URL_MASK="^(http|ftp|https)://.*hiveos-.*\.(zip|xz)$"
+URL_MASK="^(http|ftp|https)://.*/${HIVEOS_REGEX}$"
 
 # images archive
 ARCHIVE_URL=$HIVE_URL/history/
+
 #ARCHIVE_REGEX="\"\Khiveos-[^\"]+.zip(?=\")"
-ARCHIVE_REGEX="(\"|^)\Khiveos-[^\"]+.(zip|xz)(?=($|\"))"
+ARCHIVE_REGEX="(\"|^)\K${HIVEOS_REGEX}(?=(\"|$))"
 
 # download timeout
 TIMEOUT=20
@@ -49,33 +54,33 @@ smbpasswd=
 nfs=0
 thishive=0
 checked=0
+download_path=
 
 
-BLACK='\033[0;30m'
-DGRAY='\033[1;30m'
-RED='\033[0;31m'
-BRED='\033[1;31m'
-GREEN='\033[0;32m'
-BGREEN='\033[1;32m'
-YELLOW='\033[0;33m'
-BYELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-BBLUE='\033[1;34m'
-PURPLE='\033[0;35m'
-BPURPLE='\033[1;35m'
-CYAN='\033[0;36m'
-BCYAN='\033[1;36m'
-LGRAY='\033[0;37m'
-WHITE='\033[1;37m'
-NOCOLOR='\033[0m'
-
+NOCOLOR=$'\033[0m'
+BLACK=$'\033[0;30m'
+DGRAY=$'\033[1;30m'
+RED=$'\033[0;31m'
+BRED=$'\033[1;31m'
+GREEN=$'\033[0;32m'
+BGREEN=$'\033[1;32m'
+YELLOW=$'\033[0;33m'
+BYELLOW=$'\033[1;33m'
+BLUE=$'\033[0;34m'
+BBLUE=$'\033[1;34m'
+PURPLE=$'\033[0;35m'
+BPURPLE=$'\033[1;35m'
+CYAN=$'\033[0;36m'
+BCYAN=$'\033[1;36m'
+LGRAY=$'\033[0;37m'
+WHITE=$'\033[1;37m'
+GRAY=$'\033[2;37m'
 
 [[ $(uname -sr) == *hive* ]] && thishive=1
 
 
-
 function exit_handler {
-	echo 
+	echo
 	echo "press any key to close session"
 	[[ -t 0 ]] && read -n 1 || read -t 600 -n 1
 }
@@ -93,89 +98,115 @@ function get_image_from_url { # return $url
 	url=`curl --connect-timeout $TIMEOUT --retry 2 -fskL --head -w '%{url_effective}' "$from_url" 2>/dev/null | tail -n 1`
 	if [[ $? -eq 0 ]]; then
 		[[ "$url" =~ $URL_MASK ]] && return 0
-		echo -e "$RED> Got bad url for $name image - $url$NOCOLOR"
+		echo -e "$RED> Got bad url for $name image - $url${NOCOLOR}"
 		return 1
 	fi
-	echo -e "$RED> Unable to get url for $name image$NOCOLOR"
+	echo -e "$RED> Unable to get url for $name image${NOCOLOR}"
 	return 2
 }
 
 
 function get_image_from_list {
-	local select=$1
-	local repo=$2
+	local select="$1"
+	local repo="$2"
 
-	[[ -z $repo ]] && URL=$ARCHIVE_URL || URL=$repo
+	[[ -z "$repo" ]] && URL=$ARCHIVE_URL || URL="$repo"
 	# trailing slash needed
 	[[ ! "$URL" =~ /$ ]] && URL+="/"
 
-	echo -e "${CYAN}> Loading Hive OS images list${NOCOLOR}"
+	echo -e "${CYAN}> Loading Hive OS images list from ${BCYAN}${URL}${NOCOLOR}"
 
 	local urls=()
-	local desc=()
+	local arr=()
+	declare -A IMAGE=()
 
 	# skip for custom repo
-	if [[ -z $repo ]]; then
-		get_image_from_url $STABLE_URL "Stable" && urls+=("$url") && desc+=("Latest Stable")
-		get_image_from_url $BETA_URL "Beta" && urls+=("$url") && desc+=("Latest Beta")
-		get_image_from_url $VEGA_URL "Vega" && urls+=("$url") && desc+=("Latest Vega")
+	if [[ -z "$repo" ]]; then
+		get_image_from_url $STABLE_URL "Stable" && urls+=("$url") && IMAGE["$url"]="Latest Stable"
+		get_image_from_url $BETA_URL "Beta" && urls+=("$url") && IMAGE["$url"]="Latest Beta"
+		get_image_from_url $VEGA_URL "Vega" && urls+=("$url") && IMAGE["$url"]="Latest Vega"
+		url=
 	fi
 
-	local list=
-	# works for ftp also
-	list=`curl -fskL --list --connect-timeout $TIMEOUT --retry 2 "$URL" 2>/dev/null`
-	if [[ $? -eq 0 ]]; then
-		readarray -t list < <( echo "$list" | grep -oP "$ARCHIVE_REGEX" | sed 's/%40/@/g' | sort -n -r -t "@" -k1 )
-		for img in "${list[@]}"; do
-			urls+=("${URL}${img}")
-		done
+	local list
+	if [[ -e "$URL" ]]; then
+		# local path
+		list=`ls -l "$URL" 2>/dev/null` &&
+			readarray -t arr < <( echo "$list" | grep -oP "$HIVEOS_REGEX" | sort -n -t "@" -k1 )
 	else
-		echo -e "${RED}> Unable to load images list from repository$NOCOLOR"
+		# works for ftp also
+		list=`curl -fskL --list --connect-timeout $TIMEOUT --retry 2 "$URL" 2>/dev/null` &&
+			readarray -t arr < <( echo "$list" | grep -oP "$ARCHIVE_REGEX" | sed 's/%40/@/g' | sort -n -t "@" -k1 ) ||
+				echo -e "${RED}> Unable to load images list from repository${NOCOLOR}"
 	fi
-	[[ ${#urls[@]} -eq 0 ]] && echo -e "${RED}> List is empty, exiting$NOCOLOR" && return 1
+
+	local img
+	for img in "${arr[@]}"; do
+		[[ ! -z "${IMAGE["${URL}${img}"]}" ]] && continue # "
+		urls+=("${URL}${img}")
+		if [[ -f "${URL}${img}" ]]; then
+			IMAGE["${URL}${img}"]="$(stat -c %s ${URL}${img} 2>/dev/null | awk '{printf "%d", $1/1e6}') MB"
+		else
+			IMAGE["${URL}${img}"]=""
+		fi
+	done
+
+	[[ ${#urls[@]} -eq 0 ]] && echo -e "${RED}> List is empty${NOCOLOR}" && return 1
 
 	# get images description
 	local versions=
 	# try to get from repo URL if specified
-	[[ ! -z $repo ]] && versions=`curl -fsLk --connect-timeout $TIMEOUT --retry 2 "${URL}VERSIONS.txt" 2>/dev/null`
+	[[ ! -z "$repo" ]] && versions=`curl -fsLk --connect-timeout $TIMEOUT --retry 2 "${URL}VERSIONS.txt" 2>/dev/null`
 	# try to get from Hive server
 	[[ -z $versions ]] && versions=`curl -fsLk --connect-timeout $TIMEOUT --retry 2 "${HIVE_URL}/VERSIONS.txt" 2>/dev/null`
-	[[ -z $versions ]] && echo -e "${RED}> Unable to load image descriptions$NOCOLOR"
+	[[ -z $versions ]] && echo -e "${RED}> Unable to load image descriptions${NOCOLOR}"
 	local SEP=" · "
 	local index=0
-	echo -e "${YELLOW}> Select version to install:$NOCOLOR"
-	printf "%b%2s) %b\n" $WHITE $index "${NOCOLOR}Exit"
-	for url in "${urls[@]}"
+
+	if [[ -z "$download_path" ]]; then
+		echo -e "${YELLOW}> Select version to install${NOCOLOR}"
+		printf "%b%2s) %b\n" $WHITE $index "${NOCOLOR}Exit"
+	elif [[ "$select" != -1 ]]; then
+		echo -e "${YELLOW}> Select version for download to ${BYELLOW}${download_path}${NOCOLOR}"
+		printf "%b%2s) %b\n" $WHITE $index "${NOCOLOR}Exit"
+	fi
+
+	for img in "${urls[@]}"
 	do
-		local ver=`basename "$url" 2>/dev/null`
+		local ver=`basename "$img" 2>/dev/null`
 		[[ "$ver" =~ ^(.*)(\.zip|\.img\.xz)$ ]] && name="${BASH_REMATCH[1]}" || name="$ver"
 		info=`echo "$versions" | grep -A 6 "^$name"`
-		[[ ! -z ${desc[$index]} ]] && ver+="${SEP}$WHITE${desc[$index]}$NOCOLOR" # desc[] is 0-based
+		[[ ! -z "${IMAGE["$img"]}" ]] && ver+="${SEP}${WHITE}${IMAGE["$img"]}${NOCOLOR}"
 		if [[ ! -z "$info" ]]; then
-			[[ "$info" =~ (\ [0-9]+\.[0-9]+\.[0-9]+)- ]] && ver+="${SEP}${CYAN}K$NOCOLOR${BASH_REMATCH[1]}"
-			nvidia=`echo "$info" | grep -m1 -oP "nvidia[^\s]* \K.*"` && ver+="${SEP}${GREEN}N$NOCOLOR $nvidia"
-			amd=`echo "$info" | grep -m1 -oP "amd[^\s]* \K.*"` && ver+="${SEP}${RED}A$NOCOLOR $amd"
+			[[ "$info" =~ (\ [0-9]+\.[0-9]+\.[0-9]+)- ]] && ver+="${SEP}${CYAN}K${NOCOLOR}${BASH_REMATCH[1]}"
+			nvidia=`echo "$info" | grep -m1 -oP "nvidia[^\s]* \K.*"` && ver+="${SEP}${GREEN}N${NOCOLOR} $nvidia"
+			amd=`echo "$info" | grep -m1 -oP "amd[^\s]* \K.*"` && ver+="${SEP}${RED}A${NOCOLOR} $amd"
 			boot=`echo "$info" | grep -m1 "^Dual"` && ver+="${SEP}$boot"
 		fi
 		((index++))
-		printf "%b%2s) %b\n" $WHITE $index "$NOCOLOR$ver"
+		printf "%b%2s) %b\n" $WHITE $index "${NOCOLOR}$ver"
 	done
 
-	# allow to select only in interactive shell
-	[[ ! -t 0 && -z $select ]] && echo -e "${RED}Run in interactive shell to select image or use ${WHITE}--list=${CYAN}N$NOCOLOR" && return 1
-
-	if [[ ! -z $select ]]; then
-		[[ ! $select =~ [0-9]+ || $select -eq 0 || -z ${urls[$(( $select - 1 ))]} ]] && echo -e "${RED}Invalid selection, exiting$NOCOLOR" && return 1
+	if [[ -z "$select" ]]; then
+		# allow to select only in interactive shell
+		[[ ! -t 0 ]] && echo -e "${RED}Run in interactive shell to select image or use ${WHITE}--list=${CYAN}N${NOCOLOR}" && return 1
+	elif [[ "$select" == -1 ]]; then
+		return 0
+	else
+		[[ ! "$select" =~ ^[0-9]+$ || $select -lt 1 || -z ${urls[$(( select - 1 ))]} ]] &&
+			echo -e "${RED}Invalid selection, exiting${NOCOLOR}" &&
+			return 1
 		url=`url_decode "${urls[$(( $select - 1 ))]}"`
+		echo "${GREEN}> $select${NOCOLOR}"
 		return 0
 	fi
 
 	while true;
 	do
 		read -p "> " REPLY
-		[[ "$REPLY" == "0" ]] && return 1
+		[[ "$REPLY" == "0" || "$REPLY" = "exit" || "$REPLY" = "q" ]] && return 1
 		[[ $REPLY -gt 0 && $REPLY -le ${#urls[@]} ]] && break
-		echo -e "${RED}Invalid selection$NOCOLOR"
+		echo -e "${RED}Invalid selection${NOCOLOR}"
 	done
 	((REPLY--))
 	url=$( url_decode "${urls[$REPLY]}" )
@@ -206,7 +237,7 @@ function check_packages {
 
 
 # Gets/downloads image
-function get {
+function get_image {
 	cd $TMPDIR
 	rm $TMPDIR/*hive* > /dev/null 2>&1
 
@@ -301,8 +332,8 @@ function get {
 # Starting actions
 function prepare {
 	#[[ $(tty) == *tty* ]] && echo "This script does not work in the local console, exiting" && return 1
-	pstree -As $$ | grep -q "xinit" && echo -e "${RED}Hive-replace does not work in X server console! Run it from text local or remote shell$NOCOLOR" && return 1
-	pstree -As $$ | grep -q -P "(ssh|shellinabox|hive-console|screen)" || (echo -e "${YELLOW}Hive-replace does not work in X server console! Make sure it is not running from it$NOCOLOR"; sleep 5)
+	pstree -As $$ | grep -q "xinit" && echo -e "${RED}Hive-replace does not work in X server console! Run it from text local or remote shell${NOCOLOR}" && return 1
+	pstree -As $$ | grep -q -P "(ssh|shellinabox|hive-console|screen)" || (echo -e "${YELLOW}Hive-replace does not work in X server console! Make sure it is not running from it${NOCOLOR}"; sleep 5)
 
 	mem=$(free -m | awk 'NR == 2{print$2}')
 	#clear
@@ -311,14 +342,19 @@ function prepare {
 	echo -e "${YELLOW}    Hive OS Image Installation${NOCOLOR}"
 	echo -e "${CYAN}***********************************${NOCOLOR}"
 	echo
-	echo -e "$WHITE$url$NOCOLOR"
+	echo -e "$WHITE$url${NOCOLOR}"
 	echo
 	echo "Total RAM=$mem Mb"
 	echo
 	[[ $mem -lt 2900 && $force -ne 1 ]] && echo -e "${RED}At least 3 GB RAM is required, exiting${NOCOLOR}" && return 1
 
-	PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
-	DISK_PART=`blkid -U "${PART_UUID}" | sed 's/\(^\/dev\/\)//'`
+	#PART_UUID=`cat /proc/cmdline | tr " " "\n" | grep "UUID" | sed 's/\(^root=UUID=\)//'`
+	PART_UUID=`grep -oP "root=UUID=\K[^\s]+" /proc/cmdline` &&
+		DISK_PART=`blkid -U "${PART_UUID}" | sed 's/\(^\/dev\/\)//'` ||
+		DISK_PART=`grep -oP "root=/dev/\K[^\s]+" /proc/cmdline`
+
+	[[ -z $DISK_PART ]] && echo -e "${RED}Unable to determine root disk${NOCOLOR}" && return 1
+
 	if [[ "$(echo $DISK_PART | grep -c nvme)" -gt 0 ]]; then
 		DISK_NAME=${DISK_PART::-2} #cutoff partnumber pN
 	else
@@ -365,10 +401,11 @@ function prepare {
 		echo -e "\n${CYAN}> Stopping Hive OS services${NOCOLOR}"
 		autoswitch stop > /dev/null 2>&1
 		miner stop > /dev/null 2>&1
-		systemctl stop hive-watchdog
 		autofan stop > /dev/null 2>&1
-		systemctl stop hivex > /dev/null 2>&1
+		systemctl stop hivex >/dev/null 2>&1
+		sleep 1
 		killall xinit > /dev/null 2>&1
+		systemctl stop hive-watchdog
 		#agent-screen stop
 	fi
 
@@ -376,14 +413,14 @@ function prepare {
 	swapoff -a
 
 	# get hive zip
-	get || return
+	get_image || return
 
 	# Disable kernel message to tty
 	echo 0 > /proc/sys/kernel/printk
 	echo 1 > /proc/sys/kernel/sysrq
 	echo 0 > /proc/sysrq-trigger
 
-	# stop services and remount RO	
+	# stop services and remount RO
 	echo -e "\n${CYAN}> Stopping services${NOCOLOR}"
 
 	term=`tty | grep -oP "\Ktty[0-9]+"`
@@ -485,7 +522,7 @@ function write {
 		exitcode=$?
 		[[ $exitcode -eq 0 ]] && echo -e "\r$(tail -n 1 ./progress 2>/dev/null)      "
 	fi 
-	[[ $exitcode -ne 0 ]] && echo -e "${RED}Write image failed, exiting$NOCOLOR" && return 2
+	[[ $exitcode -ne 0 ]] && echo -e "${RED}Write image failed, exiting${NOCOLOR}" && return 2
 
 	# Fix GPT table if needed
 	sgdisk -e /dev/$root_dev > /dev/null 2>&1
@@ -561,14 +598,15 @@ function usage {
 	echo -e "${CYAN}Usage: hive-replace [option] <Path or URL to ZIP/XZ file with Hive OS image>${NOCOLOR}"
 	echo -e
 	echo -e "Options:"
-	echo -e "${GREEN}  -l|--list|--list=NUM    ${NOCOLOR}List images from Hive server and select for install"
-	echo -e "${GREEN}  -s|--stable             ${NOCOLOR}Download and install latest ${BCYAN}Stable$NOCOLOR image from Hive server"
-	echo -e "${GREEN}  --vega                  ${NOCOLOR}Download and install latest ${CYAN}Vega$NOCOLOR image from Hive server"
-	echo -e "${GREEN}  --beta                  ${NOCOLOR}Download and install latest ${CYAN}Beta$NOCOLOR image from Hive server"
-	echo -e "${GREEN}  --repo=URL              ${NOCOLOR}List images from URL and select for install (HTTP(S)/FTP)"
+	echo -e "${GREEN}  -l|--list|--list=NUM    ${NOCOLOR}List images from Hive server and select for install (or download)"
+	echo -e "${GREEN}  -s|--stable             ${NOCOLOR}Download and install latest ${BCYAN}Stable${NOCOLOR} image from Hive server"
+	echo -e "${GREEN}  --vega                  ${NOCOLOR}Download and install latest ${CYAN}Vega${NOCOLOR} image from Hive server"
+	echo -e "${GREEN}  --beta                  ${NOCOLOR}Download and install latest ${CYAN}Beta${NOCOLOR} image from Hive server"
+	echo -e "${GREEN}  --repo[=URL]            ${NOCOLOR}List images from custom repository (specified by URL) and select for install (HTTP(S)/FTP)"
 	echo -e "${GREEN}  -y|--yes                ${NOCOLOR}Do not ask for confirmation, answer yes to all questions"
 	echo -e "${GREEN}  --force                 ${NOCOLOR}Force replace if RAM is less than 3GB. Use on your own risk"
 	echo -e "${GREEN}  --safe                  ${NOCOLOR}Run replace in safer way so running session can be resumed (run hive-replace or screen -r replace)"
+	echo -e "${GREEN}  --download=PATH         ${NOCOLOR}Download image to PATH (without replace). Can be used with other options (--stable)"
 	echo -e "${GREEN}  --hash=FARM_HASH        ${NOCOLOR}FARM_HASH from Web-interface. Optional for already configured rig"
 	echo -e "${GREEN}  --nfs                   ${NOCOLOR}To use NFS Shared resource. e.g.: ${GREEN}IP_NFS_server:/shared_dir/hive_image${NOCOLOR}"
 	echo -e "${GREEN}  --smb                   ${NOCOLOR}To use Windows Shared resource. e.g.: ${GREEN}//IP_Windows_comp/shared_folder/hive_image${NOCOLOR}"
@@ -613,7 +651,7 @@ if [[ "`pstree -As $$`" != *-screen-* ]] && screen -ls replace 2>/dev/null | gre
 fi
 
 
-if [[ $thishive -eq 1 || " $@ " =~ " --safe " ]]; then
+if [[ " $@ " =~ " --safe " || ($thishive -eq 1 && ! " $@ " =~ " --no-safe ") ]]; then
 	if [[ "`pstree -As $$`" != *-screen-* ]]; then
 		echo "Starting session"
 		screen -mS replace $0 $@ && exit
@@ -629,7 +667,7 @@ listparams=
 
 for param in "$@"; do
 	case "$param" in
-		--safe)
+		--safe|--no-safe)
 			# ignore it here
 		;;
 		--force)
@@ -665,11 +703,18 @@ for param in "$@"; do
 			listparams[2]=1
 		;;
 		-l=*|--list=*)
-			listparams[0]=${param#*=}
+			[[ ! "${param#*=}" =~ ^[0-9]+$ ]] && echo -e "${RED}> Non-numeric value, exiting${NOCOLOR}" && exit 1
+			listparams[0]="${param#*=}"
+		;;
+		--repo)
+			[[ ! -f $HIVEREPO_LIST ]] && echo -e "${RED}> No default repository, exiting${NOCOLOR}" && exit 1
+			repo=`grep -m1 -oP "deb\s*\K[^\s]+/repo/" $HIVEREPO_LIST`
+			[[ -z "$repo" || "$repo" =~ "${HIVE_URL##*/}" ]] && echo -e "${RED}> No custom repository, exiting${NOCOLOR}" && exit 1
+			listparams[1]="$repo"
 		;;
 		--repo=*)
-			[[ -z ${param#*=} ]] && echo -e "${RED}> Repository URL is required, exiting$NOCOLOR" && exit 1
-			listparams[1]=${param#*=}
+			[[ -z ${param#*=} ]] && echo -e "${RED}> Repository URL is required, exiting${NOCOLOR}" && exit 1
+			listparams[1]="${param#*=}"
 		;;
 		-s|--stable)
 			check_packages
@@ -683,8 +728,13 @@ for param in "$@"; do
 			check_packages
 			get_image_from_url $VEGA_URL "Vega" || exit
 		;;
+		--download=*)
+			[[ -z ${param#*=} ]] && echo -e "${RED}> Download PATH is required, exiting${NOCOLOR}" && exit 1
+			[[ ! -e ${param#*=} ]] && echo -e "${RED}> Provided PATH does not exist, exiting${NOCOLOR}" && exit 1
+			download_path="${param#*=}"
+		;;
 		*)
-			echo -e "${RED}Unknown param: ${WHITE}$param${RED}$NOCOLOR\n" && usage 2
+			echo -e "${RED}Unknown param: ${WHITE}$param${RED}${NOCOLOR}\n" && usage 2
 		;;
 	esac
 done
@@ -692,6 +742,30 @@ done
 
 [[ $nfs -eq 1 && $smb -eq 1 ]] && echo -e "${YELLOW}Specify only one of the options: ${GREEN}--smb${NOCOLOR} or ${GREEN}--nfs${NOCOLOR}. Both are not allowed${NOCOLOR}\n" && usage 1
 [[ ( $nfs -eq 1 || $smb -eq 1 ) && ( "$url" == *http* ||  "$url" == *ftp* ) ]] && echo -e "${YELLOW}--nfs or --smb and http or ftp - incompatible\n" && usage 1
+
+
+# only download in specified path
+if [[ ! -z "$download_path" ]]; then
+	[[ ! "$download_path" =~ /$ ]] && download_path+=/
+	check_packages
+	get_image_from_list -1 "$download_path"
+	echo
+	# list images from default repo
+	if [[ -z "$url" || ! -z "${listparams[@]}" ]]; then
+		get_image_from_list "${listparams[0]}" "${listparams[1]}" || exit
+	fi
+	# download new
+	TMPDIR="${download_path}tmp"
+	mkdir -p $TMPDIR || exit 1
+	get_image
+	exitcode=$?
+	if [[ $exitcode -eq 0 ]]; then
+		mv -f $TMPDIR/*hive* $download_path
+		#get_image_from_list -1 "$download_path"
+	fi
+	cd $DIR
+	exit $exitcode
+fi
 
 
 if [[ ! -z "${listparams[@]}" ]]; then
