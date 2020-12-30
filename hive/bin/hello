@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-
 # Sends hello to Hive, receives config files, restarts miner
 
-[[ -t 1 ]] && source colors
 
 CONF_SEQ="/run/hive/confseq"
 HELLO_OK="/tmp/.hive-hello-ok"
@@ -20,6 +18,8 @@ arg_redetect=0
 arg_boot=0
 # verbose output
 arg_verbose=0
+# no color
+arg_nocolor=0
 
 # check for arguments
 for var in "$@"; do
@@ -27,11 +27,14 @@ for var in "$@"; do
 		boot) arg_boot=1;;
 		redetect) arg_redetect=1;;
 		verbose) arg_verbose=1;;
+		nocolor) arg_nocolor=1;;
 		# used internally
 		retry) arg_retry=1;;
 		check) arg_check=1;;
 	esac
 done
+
+[[ $arg_nocolor == 0 ]] && source colors
 
 if [[ -z $RIG_CONF || -z "$API_HOST_FILE" ]]; then #reread env variables as after upgrade this can be empty
 	source /etc/environment
@@ -245,7 +248,7 @@ fi
 
 echo "${CYAN}> Sending Hello${NOCOLOR}"
 # print only in verbose mode
-[[ $arg_verbose == 1 ]] && echo "$request" | jq -c --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'
+[[ $arg_verbose == 1 ]] && echo `echo "$request" | jq ${NOCOLOR:+-C} --arg pass "${RIG_PASSWD//?/*}" '.params.passwd=$pass'`
 
 response=`echo "$request" | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST \
 			"${HIVE_URL}?id_rig=$RIG_ID&method=hello" -H "Content-Type: application/json"`
@@ -263,7 +266,7 @@ fi
 echo "${BGREEN}OK${NOCOLOR}"
 
 # output and check json
-parsed=`echo "$response" | jq -C '.' 2>/dev/null`
+parsed=`echo "$response" | jq ${NOCOLOR:+-C} '.' 2>/dev/null`
 exitcode=$?
 if [[ $exitcode -ne 0 ]]; then
 	[[ $arg_verbose == 1 ]] && echo "$response"
@@ -444,15 +447,14 @@ fi
 if [[ $arg_boot == 0 ]]; then
 	[[ -e $AMD_OC_CONF ]] && amd_oc=$(< $AMD_OC_CONF) || amd_oc=
 	if [[ "$old_amd_oc" != "$amd_oc" ]]; then
-		echo "${CYAN}"
-		amd-oc-safe
-		echo "${NOCOLOR}"
+		echo "${CYAN}> Applying AMD OC${NOCOLOR}"
+		amd-oc
 	fi
 
 	[[ -e $NVIDIA_OC_CONF ]] && nv_oc=$(< $NVIDIA_OC_CONF) || nv_oc=
 	if [[ "$old_nv_oc" != "$nv_oc" ]]; then
 		echo "${CYAN}> Applying NVIDIA OC${NOCOLOR}"
-		nvidia-oc-log
+		nvidia-oc
 	fi
 
 	[[ -e $WALLET_CONF ]] && wallet=$(< $WALLET_CONF) || wallet=

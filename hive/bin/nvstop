@@ -3,40 +3,46 @@
 . colors
 
 if [[ $1 == "start" ]]; then
-	echo -e ""
-	echo -e "${CYAN}> Starting services${NOCOLOR}"
-	rm /run/hive/NV_OFF > /dev/null 2>&1
-	systemctl start hivex > /dev/null 2>&1
-	sleep 10
+	echo ""
+	echo "${CYAN}> Starting services${NOCOLOR}"
+	hivex start >/dev/null 2>&1
+	autofan start > /dev/null 2>&1
 	exit
 fi
 
-try_count=3
-[[ ! -z $1 ]] && try_count=$1
-echo -e ""
-echo -e "${CYAN}> Stopping services${NOCOLOR}"
-echo 1 > /run/hive/NV_OFF
 
-for (( i=0; i < $try_count; i++ ))
+[[ -z "$1" ]] && try_count=3 || try_count="$1"
+
+echo ""
+echo "${CYAN}> Stopping services${NOCOLOR}"
+# disable Nvidia tools that can auto load driver again
+touch /run/hive/NV_OFF
+
+
+modules=()
+for (( i=0; i < try_count; i++ ))
 do
+	modules=()
 	autoswitch stop > /dev/null 2>&1
 	miner stop > /dev/null 2>&1
+	nvidia-oc stop > /dev/null 2>&1
 	#wd stop > /dev/null 2>&1
 	autofan stop > /dev/null 2>&1
-	systemctl stop hivex > /dev/null 2>&1
-	sleep 1
-	killall -9 xinit > /dev/null 2>&1 && sleep 0.5
+	hivex stop >/dev/null 2>&1
+	killall xinit > /dev/null 2>&1 && sleep 0.5
 	killall nvidia-persistenced > /dev/null 2>&1 && sleep 0.5
-	rmmod -f nvidia_uvm > /dev/null 2>&1 && sleep 0.5
-	rmmod -f nvidia_drm > /dev/null 2>&1 && sleep 0.5
-	rmmod -f nvidia_modeset > /dev/null 2>&1 && sleep 0.5
-	rmmod -f nvidia > /dev/null 2>&1 && sleep 0.5
+	for mod in nvidia_drm nvidia_uvm nvidia_modeset nvidia;do
+		if lsmod | grep -q $mod; then
+			rmmod -f $mod > /dev/null 2>&1 && sleep 0.5 || modules+=($mod)
+		fi
+	done
 	count_nvidia=`lsmod | grep -c nvidia`
 	if [[ $count_nvidia -eq 0 ]]; then
 		echo -e "${GREEN}> Unload modules successfull${NOCOLOR}"
 		exit 0
 	fi
-done	
-	
-echo -e "${RED}> Unload modules failed${NOCOLOR}"
+	sleep 0.5
+done
+
+echo -e "${RED}> Unload modules failed (${modules[*]})${NOCOLOR}"
 exit 1

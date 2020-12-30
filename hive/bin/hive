@@ -5,11 +5,16 @@
 # \  /\  /  __/ / _  \  __/ (_| | |_| | | | |  __/  / /\/\ \ (_) | | |  __/ / /\/\ \ | | | |  __/ | | (_| | \__ \
 #  \/  \/ \___| \/ \_/\___|\__, |\__,_|_|_|  \___|  \/    \/\___/|_|  \___| \/    \/_|_| |_|\___|_|  \__,_|_|___/
 #                             |_|
+
+
 source /etc/environment
 export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
 #export PATH
 #export CUDA_DEVICE_ORDER
 export HOME=/home/user #required by ccminer
+
+# prevent Nvidia driver loading by nvidia tools in ssh connection
+touch /run/hive/NV_OFF
 
 #[ -t 1 ] &&
 . colors #use them anyway
@@ -26,7 +31,7 @@ benchmark check > /dev/null 2>&1
 
 function echo2 {
 	echo -e "$1" > /dev/tty1
-	echo -e "$1"
+	echo -e "$1" | sed 's/\x1b\[[0-9;]*m//g' # remove colors from syslog
 }
 
 
@@ -91,17 +96,17 @@ echo2 "$BRANDING_LOGO$sysinfo\n"
 
 [[ $DISKLESS == 1 ]] && echo2 "\n${BGREEN}Diskless rig detected${NOCOLOR}\n\n"
 
-sleep 2
+#sleep 2
 
 ### OpenVPN #############################################################################################
 openvpn-install
-#will wait for interface
+# will wait for interface
 
 
-### Check for internal GPU ##############################################################################
 [[ -e $RIG_CONF ]] &&
 	. $RIG_CONF
 
+### Check for internal GPU ##############################################################################
 
 # rm config so maybe xorg autoconfig will work
 #rm /etc/X11/xorg.conf > /dev/null 2>&1
@@ -119,7 +124,7 @@ openvpn-install
 #fi
 
 ### Nvidia not first warning ############################################################################
-if [ $GPU_FIRST_AMD -gt 0 ] && [ $GPU_COUNT_NVIDIA -gt 0 ]; then
+if [[ $GPU_FIRST_AMD -gt 0 &&  $GPU_COUNT_NVIDIA -gt 0 ]]; then
 	echo2 "$YELLOW
 #####################################################################
 ###
@@ -152,7 +157,7 @@ if [[ ! -z $RIG_ID && ! -z $RIG_PASSWD && ! -z $HIVE_HOST_URL ]]; then
 	request=`jq -c -n --arg rig_id "$RIG_ID" --arg passwd "$RIG_PASSWD" '{"method":"get_options","params":{"rig_id": $rig_id,"passwd": $passwd}}' 2>/dev/null`
 	response=`echo "$request" | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "$HIVE_HOST_URL/worker/api" -H "Content-Type: application/json"`
 	if [[ $exitcode -ne 0 ]]; then
-		echo -e "${RED}Connection to Hive server '$HIVE_HOST_URL' failed ($exitcode)${NOCOLOR}"
+		echo -e "${RED}Connection to API server '$HIVE_HOST_URL' failed ($exitcode)${NOCOLOR}"
 	else
 		_IFS=$IFS; IFS=$'\n'
 		res=(`echo "$response" | jq -c -r '.error.code, .result.disable_gui, .result.maintenance_mode, .error.message' 2>/dev/null`)
@@ -173,7 +178,6 @@ fi
 
 if [[ $MAINTENANCE == 2 ]]; then
 	echo2 "> Maintenance mode. ${YELLOW}WITHOUT GPU DRIVERS!${NOCOLOR}"
-	echo 1 > /run/hive/NV_OFF
 else
 	[[ -e $BUSID_FILE ]] && source $BUSID_FILE
 
@@ -188,8 +192,8 @@ else
 		fi
 	fi
 
-	# Disable GPU audio
-	if [[ $BUSID_KEEP_AUDIO -eq 0 ]]; then
+	# Disable GPU audio. AMD does not like it
+	if [[ $BUSID_DISABLE_AUDIO -eq 1 ]]; then
 		for busid in $(lspci | grep "Audio" | grep "NVIDIA" | awk '{print $1}'); do
 			echo2 "> Disabling Audio device $busid"
 			echo 1 > /sys/bus/pci/devices/0000:$busid/remove
@@ -213,14 +217,15 @@ else
 		done
 	fi
 
-	### modprobe drivers, nvidia better to be first ##################################################################
-	rm /run/hive/NV_OFF > /dev/null 2>&1
-
+	### modprobe drivers, nvidia better to be first ########################################
 	if [[ $GPU_COUNT_NVIDIA -gt 0 ]]; then
 		echo2 "> Loading ${GREEN}NVIDIA${NOCOLOR} drivers, $GPU_COUNT_NVIDIA GPU"
 		modprobe nvidia_drm modeset=1
 	fi
-	if [ $GPU_COUNT_AMD -gt 0 ]; then
+	pgrep --full nvidia-persistenced > /dev/null || nvidia-persistenced --persistence-mode
+	rm /run/hive/NV_OFF > /dev/null 2>&1 # allow to run Nvidia tools
+
+	if [[ $GPU_COUNT_AMD -gt 0 ]]; then
 		if [[ -e /opt/dkms-vega/amdgpu.ko ]]; then
 			. /hive/sbin/opencl_insert
 		fi
@@ -240,6 +245,17 @@ else
 		fi
 	fi
 	#sleep 1
+fi
+
+
+# blacklist audio modules if present
+mods=`lsmod | grep -oP "\K^snd[^\s]*"`
+if [[ ! -z "$mods" ]]; then
+	echo -e "\n#sound modules" >> /etc/modprobe.d/blacklist-hive.conf
+	for mod in $mods; do
+		echo "blacklist $mod" >> /etc/modprobe.d/blacklist-hive.conf
+	done
+	update-initgrub > /dev/null
 fi
 
 
@@ -274,90 +290,78 @@ crontab /hive/etc/crontab.root
 
 
 echo2 "> Saying hello to server"
-hello boot
+hello boot verbose nocolor
 [[ -e $RIG_CONF ]] &&
 	. $RIG_CONF
 
+# Setup locale maybe on the very first run
+#[[ ! -z "$SYSTEM_LANG" ]] &&
+#	locale-setup "$SYSTEM_LANG" && 
+#	export LC_ALL="$SYSTEM_LANG"
 
 # cache host only if network is online to reduce boot time. it will be run by cron anyway
 if networkctl list | grep -q routable; then
 	echo2 "> Caching host resolve"
-	cache-hive-ip
+	cache-hive-ip nocolor
 fi
-
-# Setup locale maybe on the very first run
-[[ ! -z $SYSTEM_LANG ]] &&
-	locale-setup "$SYSTEM_LANG" &&
-	export $SYSTEM_LANG
 
 echo2 "> Starting agent screen"
 agent-screen start
 
 
 #remove previous log file for Nvidia OC
-[[ -e /var/log/nvidia-oc.log ]] && rm /var/log/nvidia-oc.log
-#remove old version
+#[[ -e /var/log/nvidia-oc.log ]] && rm /var/log/nvidia-oc.log
+# remove old version
 [[ -e /root/nvidia-oc ]] && rm /root/nvidia-oc
 
 
 # always generate X server config
-echo2 "> Creating Xorg config"
+echo2 "> Creating X server config"
 echo2 "`xorg-conf`"
-
 
 
 # auto enable X server for Nvidia gpu
 [[ -z $X_DISABLED && $GPU_COUNT_NVIDIA -gt 0 ]] && X_DISABLED=0
 
-
-# Nvidia OC will be run by xinit
 if [[ $X_DISABLED == 0 && $DISKLESS != 1 && $MAINTENANCE != 2 ]]; then
-	echo2 "> Starting HiveX"
-	systemctl start hivex
+	echo2 "> Starting X Server"
 
-	#give X server some time or nvidia-settings could throw an error
-	sleep 7
+	# don't know why by this fixes amdgpu 17.40 bug
+	# xf86OpenConsole: Switching VT failed
+	# maybe time needed to allocate VTs...
+	sleep 2
 
-	#Apply Nvidia OC before miner or it can hang on 13+ GPUs
-	eval `cat $NVIDIA_OC_CONF | grep '^RUNNING_DELAY'` #import only 1 variable
-	if [[ $GPU_COUNT_NVIDIA -gt 0 && -e $NVIDIA_OC_CONF && -z $RUNNING_DELAY ]]; then
-		#wait for oc only if RUNNING_DELAY is empty, otherwise we count on manual waiting delay
-		if [[ -z `pidof xinit` ]]; then
-			echo2 "xinit process not found, will not wait for Nvidia OC"
-			#break
-		else
-			for i in {1..30}; do #wait for nvidia-oc-log to start at least and create a file
-				[[ -e /var/log/nvidia-oc.log ]] && break #file exists already
-				echo2 "Waiting for /var/log/nvidia-oc.log... $i"
-				sleep 1
-			done
-
-			for i in {1..300}; do
-				#root     11463  0.0  0.0  15572  3136 ?        S    00:28   0:00 /bin/bash /hive/sbin/nvidia-oc
-				nvrunning=`ps aux | grep /hive/sbin/nvidia-oc | grep -v grep | wc -l`
-
-				[[ $nvrunning == 0 ]] && break
-
-				echo2 "Waiting for nvidia-oc to complete... $i"
-				sleep 1
-			done
-		fi
-	fi
-	
-	pgrep Xorg >/dev/null
-	if [[ $? -ne 0 ]]; then
-		echo2 "\n\n${RED}It seems X server failed to run.\nThis can happen with some GPUs and buggy drivers.\nBut you still can use Hive in console.${NOCOLOR}\n"
+	if ! hivex start >/dev/null; then
+		echo2 "\n${RED}It seems X server failed to run.\nThis can happen with some GPUs and buggy drivers.${NOCOLOR}\n"
 		sleep 3
 	fi
 fi
 
+
 # Sync CUDA RTL symlinks
 [[ $GPU_COUNT_NVIDIA -gt 0 ]] && nvidia-driver-update --cuda
 
-# Apply amd-oc before miner start
-[[ $MAINTENANCE != 2 ]] && amd-oc-safe
+
+[[ $MAINTENANCE != 2 ]] &&
+	echo2 "> Starting autofan" &&
+	autofan start
+
+#echo2 "> Starting octofan"
+$OCTOFAN
 
 
+# Apply OC before miner start
+if [[ $MAINTENANCE != 2 ]]; then
+	if [[ $GPU_COUNT_AMD -gt 0 ]]; then
+		echo2 "> Applying AMD OC"
+		amd-oc nocolor
+	fi
+	# it is applied in miner start. but let's apply it for compatibility
+	if [[ $GPU_COUNT_NVIDIA -gt 0 ]]; then
+		echo2 "> Applying Nvidia OC"
+		nvidia-oc nocolor
+	fi
+fi
 
 
 if [[ $MAINTENANCE == 1 || $MAINTENANCE == 2 ]]; then
@@ -370,7 +374,7 @@ else
 
 	#check the unfinished Benchmark, and continue if found
 	if [[ $bench == 1 ]]; then
-		echo2 "> Unfinished Benchmark found. Continue Benchmark"
+		echo2 "> Unfinished benchmark found. Continue Benchmark"
 		benchmark start
 	else
 		echo2 "> Starting miner"
@@ -379,29 +383,20 @@ else
 fi
 
 
-[[ $MAINTENANCE != 2 ]] &&
-	echo2 "> Starting autofan" &&
-	autofan start
-
-
-#echo2 "> Starting octofan"
-$OCTOFAN
-
-
 #k10temp for cpu temp
 modprobe k10temp
-if [ $(modinfo k10temp | grep alias | wc -l) -lt 12 ]; then
+if [[ $(modinfo k10temp | grep alias | wc -l) -lt 12 ]]; then
 	echo2 "> Installing k10temp module"
 	#nohup /hive/opt/k10temp/install.sh > /dev/null 2>&1 &
 	/hive/opt/k10temp/install.sh
 fi
 
 
-echo2 "> Hive Start Finished"
+echo2 "> System start complete"
 
 
 # restart console only if X not running
-pgrep Xorg >/dev/null || systemctl restart hive-console
+hivex status >/dev/null || systemctl restart hive-console
 
 
 exit 0

@@ -71,7 +71,7 @@ function oc_if_changed () {
 	if [[ ! -z $nvidia_oc_changed ]]; then
 		#echo -e "${YELLOW}Saving Nvidia OC config${NOCOLOR}"
 		echo "$nvidia_oc" > $NVIDIA_OC_CONF && sync
-		nvidia-oc-log quiet > /dev/null 2>&1
+		nvidia-oc quiet > /dev/null 2>&1
 		exitcode=$?
 		payload=`[[ -e /var/log/nvidia-oc.log ]] && cat /var/log/nvidia-oc.log`
 		#echo "$payload"
@@ -83,7 +83,7 @@ function oc_if_changed () {
 	if [[ ! -z $amd_oc_changed ]]; then
 		#echo -e "${YELLOW}Saving AMD OC config${NOCOLOR}"
 		echo "$amd_oc" > $AMD_OC_CONF && sync
-		amd-oc-safe quiet > /dev/null 2>&1
+		amd-oc quiet > /dev/null 2>&1
 		exitcode=$?
 		payload=`[[ -e /var/log/amd-oc.log ]] && cat /var/log/amd-oc.log`
 		[[ $exitcode == 0 ]] &&

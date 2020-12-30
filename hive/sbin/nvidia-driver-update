@@ -495,7 +495,7 @@ function install_driver() { # @url or @file, @force_install
 	local as=$(screen -ls | grep -c autoswitch)
 	local mn=$(screen -ls | grep -c miner)
 	local af=$(screen -ls | grep -c autofan)
-	local wd=$(wd status | grep -c running)
+	#local wd=$(wd status | grep -c running)
 
 	local exitcode=
 
@@ -518,14 +518,12 @@ function install_driver() { # @url or @file, @force_install
 
 	echo -e ""
 	echo -e "${CYAN}> Starting services${NOCOLOR}"
+	hivex start > /dev/null 2>&1
+	#nvidia-oc > /dev/null 2>&1 # it will be run by miner
 
-	rm /run/hive/NV_OFF > /dev/null 2>&1
-	systemctl start hivex > /dev/null 2>&1
-	sleep 10
-
-	[[ $wd -ne 0 ]] && wd start
-	[[ $mn -ne 0 ]] && miner start
+	#[[ $wd -ne 0 ]] && wd start
 	[[ $af -ne 0 ]] && autofan start
+	[[ $mn -ne 0 ]] && miner start
 	[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 
 	[[ $exitcode -ne 0 ]] && echo -e "${RED}> Driver installation failed ($exitcode)${NOCOLOR}" && return 1

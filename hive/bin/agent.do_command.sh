@@ -21,9 +21,9 @@ function do_nvstop() {
 function do_nvstart() {
 	#echo "nvstart $MAINTENANCE, $nv_wd, $nv_mn, $nv_af, $nv_as"
 	[[ $MAINTENANCE == 2 ]] && return
-	rm /run/hive/NV_OFF > /dev/null 2>&1
-	systemctl start hivex > /dev/null 2>&1
-	sleep 10
+	hivex start > /dev/null 2>&1
+	#nvidia-oc > /dev/null 2>&1 # it will be run by miner
+
 	#[[ $nv_wd -ne 0 ]] && wd start > /dev/null 2>&1
 	[[ $nv_mn -ne 0 ]] && miner start > /dev/null 2>&1
 	[[ $nv_af -ne 0 ]] && autofan start> /dev/null 2>&1
@@ -212,7 +212,7 @@ function do_command() {
 			if [[ ! -z $nvidia_oc_changed ]]; then
 				echo "$nvidia_oc" > $NVIDIA_OC_CONF && sync
 				nohup bash -c '
-					nvidia-oc-log quiet
+					nvidia-oc quiet
 					exitcode=$?
 					payload=`cat /var/log/nvidia-oc.log`
 					#echo "$payload"
@@ -235,7 +235,7 @@ function do_command() {
 			if [[ ! -z $amd_oc_changed ]]; then
 				echo "$amd_oc" > $AMD_OC_CONF && sync
 				nohup bash -c '
-					amd-oc-safe quiet
+					amd-oc quiet
 					exitcode=$?
 					payload=`cat /var/log/amd-oc.log`
 					#echo "$payload"
@@ -539,13 +539,6 @@ function do_command() {
 					echo "$payload" | message warn "ROM flashing with errors$reboot_msg" payload --id=$cmd_id --meta="$meta"
 				fi
 				if [[ $need_reboot -eq 1 && $errors == 0 ]]; then
-					if [[ $as -ne 0 ]]; then
-						sed -i '/autoswitch/d' /hive/bin/hive
-						sed -i '/echo2 "> Starting autofan"/i\autoswitch start' /hive/bin/hive
-						sed -i '/autoswitch/G' /hive/bin/hive
-						sed -i '/autoswitch/i\echo2 "> Starting autoswitch"' /hive/bin/hive
-						sed -i '/^$/N;/\n$/N;//D' /hive/bin/hive
-					fi
 					nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 					return 0
 				else
@@ -619,13 +612,6 @@ function do_command() {
 							echo "$payload" | message ok "ROM flashing OK, now reboot" payload --id=$cmd_id
 
 							if [[ $need_reboot -eq 1 ]]; then
-								if [[ $as -ne 0 ]]; then
-									sed -i '/autoswitch/d' /hive/bin/hive
-									sed -i '/echo2 "> Starting autofan"/i\autoswitch start' /hive/bin/hive
-									sed -i '/autoswitch/G' /hive/bin/hive
-									sed -i '/autoswitch/i\echo2 "> Starting autoswitch"' /hive/bin/hive
-									sed -i '/^$/N;/\n$/N;//D' /hive/bin/hive
-								fi
 								nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
 								return 0
 							fi
@@ -731,7 +717,7 @@ function oc_if_changed () {
 		#echo -e "${YELLOW}Saving Nvidia OC config${NOCOLOR}"
 		echo "$nvidia_oc" > $NVIDIA_OC_CONF && sync
 		if [[ $justwrite != 1 ]]; then
-			nvidia-oc-log quiet
+			nvidia-oc quiet
 			exitcode=$?
 			payload=`cat /var/log/nvidia-oc.log`
 			#echo "$payload"
@@ -745,7 +731,7 @@ function oc_if_changed () {
 		#echo -e "${YELLOW}Saving AMD OC config${NOCOLOR}"
 		echo "$amd_oc" > $AMD_OC_CONF && sync
 		if [[ $justwrite != 1 ]]; then
-			amd-oc-safe quiet
+			amd-oc quiet
 			exitcode=$?
 			payload=`cat /var/log/amd-oc.log`
 			#echo "$payload"
