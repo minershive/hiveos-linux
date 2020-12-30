@@ -1,0 +1,4 @@
+Gminer v2.39
+* added kernel auto-tuning for KAWPOW algorithm, this feature improves hashrate up to 4% on some GPUs
+* fixed AMD GPUs detection: now miner detects Vega and Navi
+
