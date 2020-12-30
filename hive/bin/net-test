@@ -30,21 +30,23 @@ WARN_COLOR=$LGREEN
 ERROR_COLOR=$BRED
 
 OK=$GREEN"[OK]"$NOCOLOR
-
 FAIL=$RED"[FAIL]"$NOCOLOR
+WARN=$YELLOW"[WARN]"$NOCOLOR
+
 
 unset GREP_OPTIONS
 
 # exit handler
 trap 'echo -e $NOCOLOR; exit 1' 2
 
+dnscrypt -s >/dev/null && DOH=1 || DOH=0
 
 LOCAL_IP=`hostname -I | awk '{print $1}'`
 LOCAL_GW=`ip route | awk '/default/ { print $3 }'`
 
 #LOCAL_DNS=`nslookup server | grep Server | cut -d ":" -f 2 | sed -e 's/^[ \t]*//'`
 LOCAL_DNS=(`grep ^nameserver /run/systemd/resolve/resolv.conf | awk '{print $2}'`)
-
+query_servers=
 
 function merge_all_dns {
 	ALL_DNS=()
@@ -54,8 +56,10 @@ function merge_all_dns {
 	# remove duplicates, empty and localhost
 	for ip in "${DNS[@]}"
 	do
-		[[ ! $ip =~ ^127\.0\.0\.[0-9]+$ && $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ && ! " ${ALL_DNS[@]} " =~ " $ip " ]] &&
-			ALL_DNS+=($ip)
+		[[ $ip =~ ^127\.0\.[0-9]{1,3}\.[0-9]{1,3}$ || ! $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ || " ${ALL_DNS[@]} " =~ " $ip " ]] &&
+			continue
+		ALL_DNS+=($ip)
+		query_servers+=" @$ip"
 	done
 }
 
@@ -187,7 +191,13 @@ function NSLookup {
 	#`nslookup $1 > /dev/null 2>&1`
 	res=(`dig -4 +noall +answer +retry=0 +time=15 "$host" | grep -oP ".*\sA\s\K[^\s]+$"`)
 	RESULT=$?
-	[[ $RESULT -eq  0 ]] && echo -e "$OK\t${CYAN}${res[@]}$NOCOLOR" || echo -e "$FAIL\t${ERROR_COLOR}Check DNS or connection settings$DNS"$NOCOLOR
+	# resolve using query DNS servers (without DoH only)
+	[[ $RESULT -eq 0 ]] && echo -e "$OK\t${CYAN}${res[@]}$NOCOLOR" && return $RESULT
+	if [[ $DOH_ENABLED -ne 1 && $DOH -eq 0 && ! -z "$query_servers" ]]; then
+		res=(`dig -4 +noall +answer +retry=0 +time=15 $query_servers "$host" | grep -oP ".*\sA\s\K[^\s]+$"`)
+		RESULT=$?
+	fi
+	[[ $RESULT -eq 0 ]] && echo -e "$WARN\t${BYELLOW}${res[@]}$NOCOLOR" || echo -e "$FAIL\t${ERROR_COLOR}Check DNS or connection settings$DNS"$NOCOLOR
 	return $RESULT
 }
 
@@ -238,6 +248,7 @@ function Connections {
 	if [[ "$API_HOST" =~ hiveos.farm$ ]]; then
 		echo -e "${YELLOW}> Checking connection to HIVE OS server:${NOCOLOR}"
 		Connection "hiveos.farm" "" " "
+		[[ $? -eq 4 && $DOH -ne 1 ]] && echo -e "$(PrintCase "")	${BRED}Or try to enable DoH service: ${WHITE}dnscrypt -i${NOCOLOR}"
 		# add default hosts
 		[[ -z "$API_HOST_URLs" || $ADV -eq 1 ]] &&
 			for host in "${API_HOSTS[@]}"; do
@@ -316,7 +327,18 @@ echo -e "${YELLOW}> Local Network Configuration:${NOCOLOR}"
 #echo -e "Gateway:   $LOCAL_GW"
 #echo -e "DNS:       ${LOCAL_DNS[@]}"
 networkctl status
-#echo
+
+if [[ $DOH -eq 1 ]]; then
+	mode="${BGREEN}Enabled globally"
+else
+	case "$DOH_ENABLED" in
+		2) mode="${BRED}Enabled, but not working";;
+		1) mode="${BPURPLE}Enabled for system services";;
+		0) mode="${BYELLOW}Disabled";;
+		*) mode="Not enabled";;
+	esac
+fi
+echo -e "DNS-over-HTTPS: $mode$NOCOLOR"
 
 merge_all_dns
 
