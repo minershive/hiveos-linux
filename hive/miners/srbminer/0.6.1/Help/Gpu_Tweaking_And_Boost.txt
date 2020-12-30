@@ -1,0 +1,59 @@
+Supported:
+[ VEGA56/64/FE/VII ] & [ RX 550/560, RX 470/480/570/580/590 ] & [ R9 280/290/380/390 ]
+
+If you previously started a monitoring software like HWinfo or GPU-Z, tweaks can't get applied, a machine restart is needed!
+
+
+
+--gpu-tweak-profile
+
+1. Miner must run with administrator/root privileges
+2. Be patient, it takes some time to find optimal settings for your gpu/rig. Always test 1 card at a time.
+3. If you start getting invalid shares or compute errors, that means the profile is too much for that gpu, so lower it.
+
+Tweak levels 0 - 10 :
+
+0 - no change, uses your original settings
+1 - light tweak
+.
+.
+.
+10 - max tweak
+
+Not every gpu can handle the same profile, so you need to find the right one for every gpu you have.
+Every profile has also weaker (low) settings. To use the low profile, add L after the profile number ( example: --gpu-tweak-profile 5L )
+
+If using config file, you must surround the value with quotation marks if you want to use the L profile. Example : "5L"
+
+
+--gpu-boost
+
+1. Miner must run with administrator/root privileges
+2. If you start getting invalid shares or compute errors, that means the boost value is too much for that gpu, so lower it.
+
+This option is same as the famous 'rx-boost' which can be found in other miners. 
+It's value goes from 0 to 50.
+
+
+--gpu-extra-config
+
+This parameter accepts some additional parameters (parameter for parameters, right) that can be / doesn't have to be algorithm specific.
+Right now it has only one parameter that it can set. In the future if more parameters will be added they will be separated with ':' .
+
+Parameters by order :
+
+1. Thread delay
+This one sets the predefined delay (in seconds) that needs to be maintained between worker threads on same GPU for same algorithm. It is used only if a GPU is using 2+ threads per algorithm.
+Accepted values : a b c d e f g h i j k l m n o p q r s t u
+
+a = 1.00
+b = 0.95
+c = 0.90
+.
+.
+.
+u = 0.00
+
+Example (set thread delay for every GPU to 0.90):
+SRBMiner-MULTI.exe --disable-cpu --algorithm cryptonight_xhv --gpu-extra-config c --pool xxx --wallet xxx
+

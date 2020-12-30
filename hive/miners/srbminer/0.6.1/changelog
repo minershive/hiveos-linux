@@ -1,0 +1,5 @@
+SRBMiner-Multi v0.6.1
+* added algorithm 'balloon_zentoshi' for Zentoshi coin for CPU mining, fee 0.85%
+* 'cryptonight_xhv' kernel small changes, pool side hashrate should be a little higher
+* auto setup for 'cryptonight_xhv' algorithm is a little more agressive now: if you experience some issues, use --gpu-auto-intensity 1 for lighter settings
+* removed parameter '--gpu-worksize'

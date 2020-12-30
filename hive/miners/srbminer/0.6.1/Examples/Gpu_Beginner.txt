@@ -1,0 +1,36 @@
+Examples:
+
+The only difference when using on Windows and Linux is the name of the executable, all the parameters are used the same way:
+
+Win: SRBMiner-Multi.exe
+Lin: ./SRBMiner-Multi
+
+These examples are for Windows OS.
+; is used to separate algorithms, ! is used to separate parameters for an algorithm
+On Linux you need to escape the ; character with a backslash! ( \; )
+
+Change the wallet address to your own.
+
+To define failover pools for an algorithm, use ! to separate them.
+Notice : 'stratum+tcps://' used when defining a pool will automatically enable TLS for that entry!
+Notice : to set multiple threads per GPU, use '+' to separate the values
+
+
+
+1. List all available GPU devices (from all AMD platforms)
+SRBMiner-MULTI.exe --list-devices
+
+
+2. Mine algorithm 'ethash' in full auto mode on all detected gpu's, on pool eu.dbixmine.pro
+SRBMiner-MULTI.exe --disable-cpu --algorithm ethash --pool eu.dbixmine.pro:9009 --wallet your-wallet
+
+
+3. Mine algorithm 'ethash', set intensity to 24 on all detected gpu's, on pool eu.dbixmine.pro
+SRBMiner-MULTI.exe --disable-cpu --algorithm ethash --gpu-intensity 24 --pool eu.dbixmine.pro:9009 --wallet your-wallet
+
+
+4. Mine algorithm 'bl2bsha3' with 2 threads per gpu, auto set on all detected gpu's, on pool handshake.6block.com
+SRBMiner-MULTI.exe --disable-cpu --algorithm bl2bsha3 --gpu-intensity 0+0 --pool handshake.6block.com:7701 --wallet your-wallet
+
+5. Mine algorithm 'cryptonight_xhv' on GPU's 0,1,4 with predefined intensity disabled for all GPU's and gpu-cn-mode set to 1 only for GPU 1
+SRBMiner-MULTI.exe --disable-cpu --algorithm cryptonight_xhv --gpu-id 0!1!4 --gpu-cn-mode 0!1!0 --gpu-auto-intensity 0 --pool haven.herominers.com:10450 --wallet your-wallet

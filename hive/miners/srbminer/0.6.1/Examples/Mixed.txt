@@ -1,0 +1,38 @@
+Examples:
+
+The only difference when using on Windows and Linux is the name of the executable, all the parameters are used the same way:
+
+Win: SRBMiner-Multi.exe
+Lin: ./SRBMiner-Multi
+
+These examples are for Windows OS.
+; is used to separate algorithms, ! is used to separate parameters for an algorithm
+On Linux you need to escape the ; character with a backslash! ( \; )
+
+Change the wallet address to your own.
+
+To define failover pools for an algorithm, use ! to separate them.
+Notice : 'stratum+tcps://' used when defining a pool will automatically enable TLS for that entry!
+Notice : to set multiple threads per GPU, use '+' to separate the values
+
+There is a simple rule for all multi algorithm aware parameters : separate algorithm settings with ';' and things within a specific algorithm with '!'
+
+
+
+1. Mine algorithm 'randomx' with 8 CPU threads, and 'ethash' on all available GPU's, but not with CPU, GPU auto tune mode set to fast, on pool xmrpool.eu and eth-pool.beepool.org
+SRBMiner-MULTI.exe --algorithm randomx;ethash --gpu-auto-tune 2 --cpu-threads 8;-1 --pool xmrpool.eu:443;eth-pool.beepool.org:9530 --wallet your-randomx-wallet;your-ethash-wallet
+
+
+2. Mine algorithm 'ethash' and 'bl2bsha3' in dual on GPU 0 only, and 'randomx' on CPU
+SRBMiner-MULTI.exe --algorithm ethash;bl2bsha3;randomx --cpu-threads -1;-1;0 --gpu-id 0;0;-1 --pool eu1.ethermine.org:4444;handshake.6block.com:7701;xmrpool.eu:443 --wallet your-ethash-wallet;your-bl2bsha3-wallet;your-randomx-wallet
+
+
+3. Mine algorithm 'randomx' and 'yespower2b' with auto set CPU threads, and 'ethash' on all available GPU's, but not with CPU, redirect jobs to next available algorithm, enable API, on pool xmrpool.eu, rplant.xyz and ethermine.org
+SRBMiner-MULTI.exe --multi-algorithm-job-mode 2 --api-enable --algorithm randomx;yespower2b;ethash --cpu-threads 0;0;-1 --pool xmrpool.eu:443;stratum-ru.rplant.xyz:7022;eu1.ethermine.org:4444 --wallet your-randomx-wallet;your-yespower2b-wallet;your-ethash-wallet
+
+
+4. Mine algorithm 'ethash' and 'bl2bsha3' in dual on GPU 0 only, and 'randomx' on CPU. Set 'ethash' intensity to 18, rest is auto set. 'bl2bsha3' will try to adapt to 'ethash' manually set intensity.
+SRBMiner-MULTI.exe --algorithm ethash;bl2bsha3;randomx --cpu-threads -1;-1;0 --gpu-id 0;0;-1 --gpu-intensity 18;0;-1 --pool eu1.ethermine.org:4444;handshake.6block.com:7701;xmrpool.eu:443 --wallet your-ethash-wallet;your-bl2bsha3-wallet;your-randomx-wallet
+
+5. Mine algorithm 'cryptonight_gpu' on GPU's 0 and 1, and 'ethash' on GPU's 2 and 3, and redirect jobs <-> when any of the pools disconnects.
+SRBMiner-MULTI.exe --algorithm cryptonight_gpu;ethash --disable-cpu --gpu-id 0!1!;2!3 --multi-algorithm-job-mode 2 --pool conceal.herominers.com:10360;eu1.ethermine.org:4444 --wallet your-conceal-wallet;your-ethash-wallet

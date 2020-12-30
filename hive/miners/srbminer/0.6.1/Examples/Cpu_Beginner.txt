@@ -1,0 +1,31 @@
+Examples:
+
+The only difference when using on Windows and Linux is the name of the executable, all the parameters are used the same way:
+
+Win: SRBMiner-Multi.exe
+Lin: ./SRBMiner-Multi
+
+These examples are for Windows OS.
+; is used to separate algorithms, ! is used to separate parameters for an algorithm
+On Linux you need to escape the ; character with a backslash! ( \; )
+
+Change the wallet address to your own.
+
+To define failover pools for an algorithm, use ! to separate them.
+Notice : 'stratum+tcps://' used when defining a pool will automatically enable TLS for that entry!
+
+
+1. Mine algorithm 'RandomX' in full auto mode on xmrpool.eu
+SRBMiner-MULTI.exe --disable-gpu --algorithm randomx --pool xmrpool.eu:443 --wallet your-wallet-here
+
+
+2. Mine algorithm 'RandomX' in full auto mode on xmrpool.eu, define failover pool nanopool.org
+SRBMiner-MULTI.exe --disable-gpu --algorithm randomx --pool xmrpool.eu:443!xmr-eu1.nanopool.org:14444 --wallet your-wallet-here
+
+
+3. Mine algorithm 'RandomX' with manually set number of threads to 8 on xmrpool.eu
+SRBMiner-MULTI.exe --disable-gpu --algorithm randomx --pool xmrpool.eu:443 --wallet your-wallet-here --cpu-threads 8
+
+
+4. Mine algorithm 'RandomX' with manually set number of threads to 8 and manual affinity (every other thread) on xmrpool.eu
+SRBMiner-MULTI.exe --disable-gpu --algorithm randomx --pool xmrpool.eu:443 --wallet your-wallet-here --cpu-threads 8 --cpu-affinity 0x5555
