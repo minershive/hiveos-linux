@@ -83,23 +83,22 @@ if [[ $1 == "setup" && -z $2 ]]; then
 	echo "### Found $wificonfig"
 	eval "`cat $wificonfig | tr -d '\r'`"
 
-	[[ -z $WIFI_SSID || -z $WIFI_PASSWORD ]] &&
+	[[ -z "$WIFI_SSID" || -z "$WIFI_PASSWORD" ]] &&
 		echo "No SSID and password in WiFi config, exiting" &&
 		exit 0
 
 	echo "Found WIFI_SSID=$WIFI_SSID"
 
 	interactive=0
-	#wifi $WIFI_SSID $WIFI_PASSWORD
-	#just continue
 fi
 
 
 wlanCount=`iwconfig 2>&1 | grep $wlandev | wc -l`
-[[ -z $wlanCount || $wlanCount = 0 ]] &&
-		echo -e "No ${YELLOW}$wlandev${NOCOLOR} interface found" &&
-	echo -e "Please check drivers, try ${CYAN}lsusb${NOCOLOR} to check USB device is present" &&
+if [[ -z $wlanCount || $wlanCount = 0 ]]; then
+		echo -e "No ${YELLOW}$wlandev${NOCOLOR} interface found"
+	echo -e "Please check drivers, try ${CYAN}lsusb${NOCOLOR} to check USB device is present"
 	exit 1
+fi
 
 
 # bring up interface if it is down
@@ -111,53 +110,61 @@ up=`ifconfig $wlandev up 2>&1`
 wifi_info
 
 
-[[ -z $WIFI_SSID || -z $WIFI_PASSWORD ]] &&
+[[ -z "$WIFI_SSID" || -z "$WIFI_PASSWORD" ]] &&
 while true; do
 	rescan=0
-	ssids=("[CUSTOM SSID]" "[RESCAN NETWORKS]")
+	WIFI_PASSWORD=
 	echo -en "${CYAN}Scanning networks...$NOCOLOR"
-	_IFS=$IFS; IFS=$'\n'
-	#ssids+=(`iw $wlandev scan 2>/dev/null | grep "SSID:" | awk -F ": " '{print $2}' | sort -u `)
-	ssids+=(`iwlist $wlandev scanning 2>/dev/null | grep -oP "ESSID:\"\K[^\"]+(?=\")" | sort -u `)
-	IFS=$_IFS
-	echo -e "$CYAN found $(( ${#ssids[@]} - 2 )) $NOCOLOR"
-	#if [[ ${#ssids[@]} -gt 2 ]]; then
-		# convert \xNN codes to symbols
-		for((i=2; i < ${#ssids[@]}; i++)); do
-			ssids[$i]=`echo -e "${ssids[$i]}"`
-		done
-		echo -e "${YELLOW}Select Access Point:${NOCOLOR}"
-		select WIFI_SSID in "${ssids[@]}"; do
-			[[ -z $WIFI_SSID ]] && continue
-			if [[ $REPLY -eq 1 ]]; then
-				WIFI_SSID=
-			elif [[ $REPLY -eq 2 ]]; then
-				rescan=1
-			else
-				echo -e "SSID: $WHITE$WIFI_SSID$NOCOLOR"
-			fi
+	readarray -t ssids < <(`iwlist $wlandev scanning 2>/dev/null | grep -oP "ESSID:\"\K[^\"]+(?=\")" | sort -u `)
+	ssids=("[RESCAN NETWORKS]" "[CUSTOM SSID]" "[ANY OPEN]" "${ssids[@]}")
+	echo -e "$CYAN found $(( ${#ssids[@]} - 3 )) $NOCOLOR"
+	for(( i=2; i < ${#ssids[@]}; i++ )); do
+		ssids[$i]=`echo -e "${ssids[$i]}"`
+	done
+	echo -e "${YELLOW}Select Access Point:${NOCOLOR}"
+	select WIFI_SSID in "${ssids[@]}"; do
+		[[ -z "$WIFI_SSID" ]] && continue
+		if [[ $REPLY -eq 1 ]]; then
+			rescan=1
+		elif [[ $REPLY -eq 2 ]]; then
+			WIFI_SSID=
+		elif [[ $REPLY -eq 3 ]]; then
+			WIFI_SSID="OPEN"
+			WIFI_PASSWORD="OPEN"
 			break
-		done
-		[[ $rescan -eq 1 ]] && continue
-	#fi
+		else
+			echo -e "SSID: $WHITE$WIFI_SSID$NOCOLOR"
+		fi
+		break
+	done
+	[[ $rescan -eq 1 ]] && continue
 
-	if [[ -z $WIFI_SSID ]]; then
+	if [[ -z "$WIFI_SSID" ]]; then
 		echo -e "${YELLOW}Enter your Access Point details${NOCOLOR}"
 		echo -n "SSID: "
 		read -r WIFI_SSID
-		[[ -z $WIFI_SSID ]] && echo "Empty value" && continue
+		[[ -z "$WIFI_SSID" ]] && echo "Empty value" && continue
 	fi
 
-	echo -n "Password: "
-	read -r WIFI_PASSWORD
-	[[ -z $WIFI_PASSWORD ]] && echo "Empty value" && continue
-	[[ ${#WIFI_PASSWORD} -lt 8 ]] && echo "Must be at least 8 characters" && continue
+	if [[ -z "$WIFI_PASSWORD" ]]; then
+		echo -n "Password (type 'NONE' for open network): "
+		read -r WIFI_PASSWORD
+		[[ -z "$WIFI_PASSWORD" ]] && echo "Empty value" && continue
+		[[ ${#WIFI_PASSWORD} -lt 8 && "$WIFI_PASSWORD" != "NONE" ]] && echo "Must be at least 8 characters" && continue
+	fi
 	break
 done
 
 
-wpa_passphrase "$WIFI_SSID" "$WIFI_PASSWORD" | tee /etc/wpa_supplicant/wpa_supplicant.conf
-echo -e "${YELLOW}Saved to /etc/wpa_supplicant/wpa_supplicant.conf${NOCOLOR}"
+if [[ "$WIFI_PASSWORD" == "OPEN" ]]; then
+	echo -e "network={\n key_mgmt=NONE\n priority=-999\n}" > /etc/wpa_supplicant/wpa_supplicant.conf
+elif [[ "$WIFI_PASSWORD" == "NONE" ]]; then
+	echo -e "network={\n ssid=\"$(backslash "$WIFI_SSID")\"\n key_mgmt=NONE\n}" > /etc/wpa_supplicant/wpa_supplicant.conf
+else
+	wpa_passphrase "$WIFI_SSID" "$WIFI_PASSWORD" | tee /etc/wpa_supplicant/wpa_supplicant.conf
+fi
+echo -e "${GREEN}Saved to /etc/wpa_supplicant/wpa_supplicant.conf${NOCOLOR}"
+
 
 systemctl is-enabled wpa_supplicant@$wlandev > /dev/null
 [[ $? == 1 ]] && systemctl enable wpa_supplicant@$wlandev #if the service exists and is enabled, do nothing
