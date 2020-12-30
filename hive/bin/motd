@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #ln -s /hive/bin/motd /etc/update-motd.d/00-my-motd
-. colors
+source colors
 
 set -o pipefail
 
@@ -28,6 +28,8 @@ SEP=" · "
 
 echo ""
 
+# hook Ctrl+C
+trap "echo $NOCOLOR; exit 0" SIGINT
 
 pretty_uptime() {
 	local t=`awk '{print int($1)}' /proc/uptime`
@@ -910,7 +912,7 @@ echo
 
 # show help only on boot and console session start
 # this does not work correct in teleconsole
-if [[ "$1" =~ ^(help|--help|-h)$ || `timeout -s9 3 ps --no-headers $PPID 2>/dev/null` =~ (-bash|motd) ]]; then
+if [[ "$1" =~ ^(help|--help|-h)$ || `timeout --foreground -s9 3 ps --no-headers $PPID 2>/dev/null` =~ (-bash|motd) ]]; then
 	# do not wrap help in motd
 	tput rmam
 	unbuffer helpme | tr -d '\r' | awk '{print $0" "}'
