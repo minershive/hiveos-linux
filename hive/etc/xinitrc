@@ -44,33 +44,20 @@ tint2 &
 
 termcmd=""
 
-#amd-oc is done before X server
-#amd-oc-safe
-#[[ $? = 0 ]] &&
-#    termcmd+="cat /var/log/amd-oc.log;"
-#termcmd+="amd-oc-safe;"
 
+## NVIDIA OC is there are GPUs
+#GPU_COUNT_NVIDIA=`gpu-detect NVIDIA`
+#[[ $GPU_COUNT_NVIDIA -gt 0 && -e $NVIDIA_OC_CONF ]] &&
+#	echo "> Nvidia OC" &&
+#   nvidia-oc > /var/log/nvidia-oc.log 2>&1 &&
+#   termcmd+="cat /var/log/nvidia-oc.log;"
+#   termcmd+=" nvidia-oc;"
 
-#cat /sys/class/drm/card0/device/power_dpm_force_performance_level
-#cat /sys/class/drm/card0/device/pp_dpm_sclk
-
-
-
-#NVIDIA OC is there are GPUs
-GPU_COUNT_NVIDIA=`gpu-detect NVIDIA`
-[[ $GPU_COUNT_NVIDIA > 0 && -e $NVIDIA_OC_CONF ]] &&
-	echo "> Nvidia OC" &&
-#    nvidia-oc > /var/log/nvidia-oc.log 2>&1 &&
-#    termcmd+="cat /var/log/nvidia-oc.log;"
-    termcmd+="nvidia-oc-log;"
-
+termcmd+=" /usr/bin/touch /run/hive/xready;"
 
 roxargs="--replace --maximise"
 (lsb_release -a 2>&1 | grep -q '16\.04') && roxargs+=' --disable-sm'
 roxterm $roxargs -e bash -c "$termcmd motd; firstrun; ([ -e /home/user/xinit.user.sh ] && bash /home/user/xinit.user.sh); bash" &
 
 
-
-
 openbox-session
-

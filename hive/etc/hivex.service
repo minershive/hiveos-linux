@@ -5,7 +5,10 @@ Description=Hive X Server
 
 [Service]
 Type=simple
-ExecStart=/hive/bin/hivex
+ExecStartPre=/bin/rm -f /run/hive/xready
+ExecStart=/hive/bin/hivex service
+ExecStopPost=/bin/rm -f /run/hive/xready
+ExecStopPost=/bin/systemctl restart hive-console
 
 #StandardOutput=syslog
 #StandardError=syslog

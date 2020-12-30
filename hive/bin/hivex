@@ -1,32 +1,87 @@
 #!/bin/bash
-#Runs nvidia-oc in X
-#Supposed to be run with service
+
+
 
 source /etc/environment
-[[ -f $RIG_CONF ]] && . $RIG_CONF
-
-[[ $X_DISABLED == 1 || $MAINTENANCE == 2 ]] && 
-	echo "X Server is disabled, exiting" && 
-	exit 0
+[[ -f $RIG_CONF ]] && source $RIG_CONF
 
 
-#don't know why by this fixes amdgpu 17.40 bug
-#xf86OpenConsole: Switching VT failed
-#maybe time needed to allocate VTs...
-sleep 2
+# Supposed to be run with service
+function x_service() {
+	if [[ $X_DISABLED == 1 || $MAINTENANCE == 2 ]]; then
+		echo "X Server is disabled, exiting"
+		return 0
+	fi
+
+	# don't know why by this fixes amdgpu 17.40 bug
+	# xf86OpenConsole: Switching VT failed
+	# maybe time needed to allocate VTs...
+	#sleep 2
+
+	export PATH="./:/hive/bin:/hive/sbin:$PATH"
+	rm /run/hive/NV_OFF > /dev/null 2>&1
+
+	sudo -i xinit /hive/etc/xinitrc
+	exitcode=$?
+
+	echo "xinit exited (exitcode=$exitcode)"
+
+	systemctl restart hive-console
+	return $exitcode
+}
 
 
+function x_ready() {
+	for(( i=0; i < 180; i++ )); do
+		systemctl status hivex >/dev/null || break
+		[[ -e /run/hive/xready ]] && echo "X server is ready" && return 0
+		sleep 1
+		[[ $i -eq 0 ]] && echo -n "Waiting. " || echo -n ". "
+	done
+	systemctl status hivex >/dev/null && echo "X server is not ready" || echo "Failed"
+	return 1
+}
 
-export PATH="./:/hive/bin:/hive/sbin:$PATH"
-rm /run/hive/NV_OFF > /dev/null 2>&1
-sudo -i xinit /hive/etc/xinitrc
-exitcode=$?
 
-echo ""
-echo "xinit exited (exitcode=$exitcode), starting hive-console"
+function x_stop() {
+	if systemctl status hivex >/dev/null; then
+		echo "> Stopping X server"
+		systemctl stop hivex
+		sleep 1
+	fi
+}
 
-#xinit failed, so no OC was run, do it now
-#it does not work here
-#amd-oc-safe
 
-systemctl restart hive-console
+function x_start() {
+	if ! systemctl status hivex >/dev/null; then
+		echo "> Starting X server"
+		systemctl start hivex
+	fi
+}
+
+
+case "$1" in
+	service)
+		x_service
+	;;
+	start)
+		x_start
+		x_ready
+	;;
+	stop)
+		x_stop
+	;;
+	restart)
+		x_stop
+		x_start
+		x_ready
+	;;
+	status)
+		systemctl status hivex
+	;;
+	*)
+		echo "Usage: hivex start|stop|restart|status"
+	;;
+esac
+
+exit
