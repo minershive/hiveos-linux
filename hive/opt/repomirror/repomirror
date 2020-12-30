@@ -320,6 +320,11 @@ case "$1" in
 		exit
 		;;
 
+	-g|--get|get)
+		[[ ! -d ${REPOPATH}/repo ]] && echo "${RED}> Repo directory does not exist (${REPOPATH}/repo)$NOCOLOR" && exit 1
+		hive-replace --download=${REPOPATH}/repo --no-safe ${@/$1}
+		;;
+
 	--upgrade)
 		do_upgrade || exit
 		rm_install
@@ -337,6 +342,7 @@ case "$1" in
   repomirror  -r | --remove	remove absolete unreferenced packages
   repomirror  -u | --uninstall	uninstall httpd and disable repo syncing
   repomirror  -l | --log	display repo syncing log
+  repomirror  -g | --get	get OS image for deploy (--stable, --beta)
 "
 		check_upgrade
 		exit 0
