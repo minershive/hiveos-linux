@@ -72,6 +72,8 @@ function start() {
 		exit 1
 	fi
 
+	nvidia-oc delay >/dev/null
+
 	echo -en "Starting ${CYAN}$MINER${NOCOLOR}"
 	#[[ ! -z $MINER2 ]] &&
 	#	echo -en " and ${CYAN}$MINER2${NOCOLOR}"
@@ -131,6 +133,9 @@ function stop() {
 
 	# prevent some miners from restarting in the loop
 	echo 1 > $MINER_STOP
+
+	# stop nvidia-oc
+	nvidia-oc stop >/dev/null
 
 	for pid in "${screens[@]}"; do
 		echo "Sending Ctrl+C to screen session $pid"

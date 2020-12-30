@@ -1,87 +1,67 @@
 #!/usr/bin/env bash
+# Usage: nvidia-oc delay|log|stop|reset|nocolor|quiet
+# internal: delayed
 
-#[ -t 1 ] &&
-. colors
 
+OC_LOG=/var/log/nvidia-oc.log
+OC_TIMEOUT=120
+NVS_TIMEOUT=10
+NVSMI_TIMEOUT=10
+MAX_DELAY=300
+PILLMEM=-1000
+export DISPLAY=":0"
+
+
+[[ -f $RIG_CONF ]] && source $RIG_CONF
 set -o pipefail
 
-date
-echo ""
+n=`gpu-detect NVIDIA`
+if [[ $n -eq 0 ]]; then
+	#echo "No NVIDIA cards detected"
+	exit 0
+fi
 
-[[ -f $RIG_CONF ]] && . $RIG_CONF
+[[ "$1" != "nocolor" ]] && source colors
+
+if [[ "$1" == "log" ]]; then
+	cat $OC_LOG 2>/dev/null && echo -n "${NOCOLOR}"
+	exit
+fi
+
+# do not run OC simultaneously
+if [[ "$2" != "internal" ]]; then
+	readarray -t pids < <( pgrep -f "timeout .*$OC_LOG" )
+	for pid in "${pids[@]}"; do
+		echo -e "${BYELLOW}Killing running nvidia-oc ($pid)${NOCOLOR}\n"
+		# timeout process PID is equal to the PGID, so using it to kill process group
+		kill -- -$pid
+	done
+fi
+
+# just exit here
+[[ "$1" == "stop" ]] && exit 0
+
+
+[[ -f /run/hive/NV_OFF ]] &&
+	echo "${YELLOW}NVIDIA driver is disabled, exiting${NOCOLOR}" &&
+	exit 0
 
 [[ $MAINTENANCE == 2 ]] &&
 	echo "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
 	exit 1
 
-#Preventing nvidia-smi from running if necessary
-NV_OFF=0
-[[ -f "/run/hive/NV_OFF" ]] && read NV_OFF < "/run/hive/NV_OFF"
-[[ $NV_OFF == 1 ]] && exit 0
 
-
-systemctl status hivex > /dev/null || echo "${YELLOW}WARNING: X Server is not running! Some settings will not be applied!${NOCOLOR}"
-
-export DISPLAY=":0"
-NVS_TIMEOUT=10
-NVSMI_TIMEOUT=10
-PILLMEM=-1000
-
-# check it in first place
-if [ ! -f $NVIDIA_OC_CONF ]; then
-	echo "$NVIDIA_OC_CONF does not exist"
-	exit
+# start main OC with timeout and logging
+if [[ "$2" != "internal" ]]; then
+	trap "echo -n $NOCOLOR" EXIT
+	timeout --foreground -s9 $OC_TIMEOUT bash -c "set -o pipefail; nvidia-oc \"$1\" internal 2>&1 | tee $OC_LOG"
+	exitcode=$?
+	if [[ $exitcode -ne 0 && $exitcode -ne 143 ]]; then
+		echo "${RED}ERROR: NVIDIA OC failed${NOCOLOR}"
+		[[ "$1" != "quiet" ]] && cat $OC_LOG | message error "NVIDIA OC failed" payload > /dev/null
+	fi
+	exit $exitcode
 fi
-
-source $NVIDIA_OC_CONF
-
-n=`gpu-detect NVIDIA`
-if [[ $n == 0 ]]; then
-	echo "No NVIDIA cards detected, exiting"
-	exit
-fi
-
-echo "Detected $n NVIDIA cards"
-
-if [[ ! -f $GPU_DETECT_JSON ]]; then
-	gpu_detect_json=`gpu-detect listjson`
-else
-	gpu_detect_json=$(< $GPU_DETECT_JSON)
-fi
-
-
-readarray -t NAME   < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.name' )
-readarray -t RAM    < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.mem' )
-readarray -t BUSID  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.busid' )
-readarray -t PLMAX  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_max' )
-readarray -t PLMIN  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_min' )
-readarray -t PLDEF  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_def' )
-readarray -t FANCNT < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.fan_cnt' )
-
-
-n=${#BUSID[@]}
-if [[ $n -eq 0 ]]; then
-	echo -e "No cards available for OC!\nPlease check BIOS settings, risers, connectors and PSU.\nTry to update Nvidia drivers."
-	exit 1
-fi
-
-
-if [[ ! -z $RUNNING_DELAY && $RUNNING_DELAY -gt 0 ]]; then
-	[[ ! -z $MAX_RUNNING_DELAY && $RUNNING_DELAY -gt $MAX_RUNNING_DELAY ]] &&
-		echo "${YELLOW}Limiting delay to ${MAX_RUNNING_DELAY} seconds${NOCOLOR}" &&
-		RUNNING_DELAY=$MAX_RUNNING_DELAY
-	echo "${CYAN}Sleeping $RUNNING_DELAY seconds...${NOCOLOR}"
-	sleep $RUNNING_DELAY
-fi
-
-
-pgrep --full nvidia-persistenced > /dev/null || nvidia-persistenced --persistence-mode
-
-
-# kill Pill if running.
-pkill -f '/hive/opt/ohgodapill/run.sh'
-pkill -f '/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2'
-[[ "$OHGODAPILL_ENABLED" -eq 1 && "$OHGODAPILL_START_TIMEOUT" -lt 0 ]] && PILLFIX=1 || PILLFIX=0
 
 
 print_array() {
@@ -98,21 +78,82 @@ print_array() {
 }
 
 
+date
+echo -e "\nDetected $n NVIDIA cards\n"
+
+hivex status >/dev/null || echo -e "${RED}ERROR: X Server is not running! Some settings will not be applied!${NOCOLOR}\n"
+
+
+if [[ "$1" == "reset" ]]; then
+	echo -e "${YELLOW}Resetting OC to defaults${NOCOLOR}\n"
+else
+	[[ ! -f $NVIDIA_OC_CONF ]] &&
+		echo "${YELLOW}$NVIDIA_OC_CONF does not exist, exiting${NOCOLOR}" &&
+		exit 0
+	source $NVIDIA_OC_CONF
+fi
+
+if [[ ! -f $GPU_DETECT_JSON ]]; then
+	gpu_detect_json=`gpu-detect listjson`
+else
+	gpu_detect_json=$(< $GPU_DETECT_JSON)
+fi
+
+readarray -t NAME   < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.name' )
+readarray -t RAM    < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.mem' )
+readarray -t BUSID  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.busid' )
+readarray -t PLMAX  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_max' )
+readarray -t PLMIN  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_min' )
+readarray -t PLDEF  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.plim_def' )
+readarray -t FANCNT < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "nvidia") | .value.fan_cnt' )
+
+n=${#BUSID[@]}
+if [[ $n -eq 0 ]]; then
+	echo -e "${RED}No cards available for OC!\n${NOCOLOR}Please check BIOS settings, risers, connectors and PSU.\nTry to update Nvidia drivers."
+	exit 1
+fi
+
+# delay is applied on every miner start
+NEED_DELAY=0
+DELAY=$RUNNING_DELAY
+[[ $DELAY -lt 0 ]] && DELAY=0
+if [[ $DELAY -gt 0 && "$1" != "delay" && "$1" != "delayed" ]]; then
+	echo -e "${YELLOW}Ignoring OC delay ${MAX_DELAY} secs. Use ${BYELLOW}nvidia-oc delay${YELLOW} to apply with it${NOCOLOR}\n"
+	DELAY=0
+fi
+if [[ $DELAY -gt 0 ]]; then
+	if [[ "$1" == "delayed" ]]; then
+		[[ $MAX_DELAY -gt 0 && $DELAY -gt $MAX_DELAY ]] &&
+			echo -e "${YELLOW}Limiting delay to ${MAX_DELAY} secs${NOCOLOR}" &&
+			DELAY=$MAX_DELAY
+		echo -e "${CYAN}Waiting $DELAY secs before applying...${NOCOLOR}\n"
+		sleep $DELAY
+		DELAY=0
+	fi
+fi
+
+
+pgrep --full nvidia-persistenced > /dev/null || nvidia-persistenced --persistence-mode
+# kill Pill if running.
+pkill -f '/hive/opt/ohgodapill/run.sh'
+pkill -f '/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2'
+[[ $OHGODAPILL_ENABLED -eq 1 && $OHGODAPILL_START_TIMEOUT -lt 0 ]] && PILLFIX=1 || PILLFIX=0
+
+
 # MAP OC to MB BUS ID
-[[ -e "$BUSID_FILE" ]] && source $BUSID_FILE
+[[ -f "$BUSID_FILE" ]] && source $BUSID_FILE
 # prefer NVIDIA especially for mixed rigs
 [[ ! -z "$BUSID_NVIDIA" ]] && BUSID_MB="$BUSID_NVIDIA"
 if [[ ! -z "$BUSID_MB" ]]; then
 	# add one more item to the end for not defined busid GPU
 	BUSID_MB=($BUSID_MB "@")
 	declare -A GPU_MAPPING
-	for((idx=0; idx<${#BUSID_MB[@]}; idx++))
+	for((idx=0; idx < ${#BUSID_MB[@]}; idx++))
 	do
 		GPU_MAPPING["${BUSID_MB[$idx]}"]=$idx     #"
 	done
 	n=${#BUSID_MB[@]}
 fi
-
 
 PARAMS=(CLOCK MEM PLIMIT FAN)
 
@@ -120,12 +161,10 @@ PARAMS=(CLOCK MEM PLIMIT FAN)
 for param in "${PARAMS[@]}"; do
 	[[ -z ${!param} ]] && continue
 	arr=(${!param})
-	for (( i=${#arr[@]}; i<$n; i++ )); do
+	for ((i=${#arr[@]}; i < n; i++)); do
 		read "$param[$i]" < <( echo "${arr[-1]}" ) # use last element of initial array
 	done
 done
-
-echo ""
 
 # Remap OC according to bus id
 if [[ ! -z $BUSID_MB ]]; then
@@ -135,8 +174,7 @@ if [[ ! -z $BUSID_MB ]]; then
 		declare -a "_$param"="( ${!arr} )"
 		unset "${param}"
 	done
-
-	for (( i=0; i < ${#BUSID[@]}; i++ )); do
+	for ((i=0; i < ${#BUSID[@]}; i++)); do
 		busid=${BUSID[$i]/:00\.0}
 		[[ ! -z $busid ]] && idx=${GPU_MAPPING[$busid]} || idx=
 		[[ -z $idx ]] && idx=${GPU_MAPPING["@"]}
@@ -161,18 +199,17 @@ for param in "${PARAMS[@]}"; do
 	print_array "$param" "${!arr}"
 done
 
-
 [[ "${FANCNT[*]}" =~ [2-9] ]] &&
 	print_array "FANCNT" "${FANCNT[*]//null/1}"
 
 
 AUTOFAN_ENABLED=$( [[ `pgrep -cf "/hive/sbin/autofan run"` -gt 0 && -f $AUTOFAN_CONF ]] && source $AUTOFAN_CONF && echo "$ENABLED" )
 
-
 nvparams=
 nvquery=`timeout -s9 $NVS_TIMEOUT nvidia-settings -q GPUMemoryTransferRateOffset -q GPUGraphicsClockOffset -q GPUTargetFanSpeed \
-             -q GPULogoBrightness -q GPUPowerMizerMode -q GPUPerfModes | grep -vE "values|target" | tr '\n' ' ' 2>&1`
+                 -q GPULogoBrightness -q GPUPowerMizerMode -q GPUPerfModes | grep -vE "values|target" | tr '\n' ' ' 2>&1`
 nvcode=$?
+
 if [[ $nvcode -eq 0 ]]; then
 	nvparams="${nvquery//Attribute/$'\n'}"
 elif [[ $nvcode -ge 124 ]]; then
@@ -185,37 +222,11 @@ fi
 fan_idx=0
 exitcode=0
 
-
 for (( i=0; i < ${#BUSID[@]}; ++i )); do
 	args=""
 
 	echo ""
 	echo "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${BUSID[$i]} ${GREEN}${NAME[$i]} ${RAM[$i]}${NOCOLOR}, PL: ${PLMIN[$i]}, ${PLDEF[$i]}, ${PLMAX[$i]} ${YELLOW}=== `date +"%T"`${NOCOLOR}"
-
-	#pldef=${PLDEF[$i]%%[!0-9]*}
-	#if [[ ! -z $PLIMIT && ${PLIMIT[$i]} -gt 0 ]]; then
-		# check limits
-		#if [[ $pldef -gt 0 ]]; then
-		#	plmax=${PLMAX[$i]%%[!0-9]*}
-		#	plmin=${PLMIN[$i]%%[!0-9]*}
-		#	[[ $plmax -gt $pldef && ${PLIMIT[$i]} -gt $plmax ]] && PLIMIT[$i]=${PLMAX[$i]%%[!0-9\.]*} && echo "${RED}Power limit was set to MAX value${NOCOLOR}"
-		#	[[ $plmin -lt $pldef && ${PLIMIT[$i]} -lt $plmin ]] && PLIMIT[$i]=${PLMIN[$i]%%[!0-9\.]*} && echo "${RED}Power limit was set to MIN value${NOCOLOR}"
-		#fi
-	#	nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl ${PLIMIT[$i]}`
-	#	nvcode=$?
-	#else
-		#if [[ $plcur != $pldef ]]; then
-	#		echo "Restoring default power limit ${pldef}"
-	#		nvresult=`timeout -s9 $NVSMI_TIMEOUT nvidia-smi -i $i -pl $pldef`
-	#		nvcode=$?
-		#fi
-	#fi
-	#[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
-	#nvresult=`echo "$nvresult" | grep -vE "^$|All done\."`
-	#[[ ! -z $nvresult ]] && echo "${color}$nvresult${NOCOLOR}"
-	#[[ $nvcode -ge 124 ]] && echo "${RED}nvidia-smi failed by timeout$NOCOLOR"
-	#[[ $nvcode -ne 0 ]] && exitcode=$nvcode
-
 
 	pldef="${PLDEF[$i]%%[!0-9]*}"
 	[[ -z "${PLIMIT[$i]}" ]] && PLIMIT[$i]=0
@@ -228,7 +239,7 @@ for (( i=0; i < ${#BUSID[@]}; ++i )); do
 
 
 	x=`echo "$nvparams" | grep -oP "'GPUPerfModes'.*\[gpu\:$i\].* perf=\K[0-9]+"`
-	if [[ -z $x ]]; then
+	if [[ -z "$x" ]]; then
 		x=3 # default
 		if   [[ ${NAME[$i]} =~ "RTX" ]]; then x=4
 		elif [[ ${NAME[$i]} =~ "P106-090" || ${NAME[$i]} =~ "P104-100" || ${NAME[$i]} =~ "P102-100" ]]; then x=1
@@ -257,15 +268,17 @@ for (( i=0; i < ${#BUSID[@]}; ++i )); do
 				args+=" -a [gpu:$i]/GPUFanControlState=0"
 		else
 			args+=" -a [gpu:$i]/GPUFanControlState=1"
-			for (( z = $fan_idx; z < $(( $fan_idx+$fans_count )); z++ )); do
+			for (( z = fan_idx; z < fan_idx + fans_count; z++ )); do
 				args+=" -a [fan:$z]/GPUTargetFanSpeed=${FAN[$i]}"
 			done
 		fi
 	fi
-	fan_idx=$(( $fan_idx+$fans_count ))
+	fan_idx=$(( fan_idx + fans_count ))
 
 
 	[[ -z "${CLOCK[$i]}" ]] && CLOCK[$i]=0
+	# if delay is set reset clocks for the first time
+	[[ ${CLOCK[$i]} -gt 0 && $DELAY -gt 0 ]] && CLOCK[$i]=0 && NEED_DELAY=1
 	if [[ `echo "$nvparams" | grep -oP "'GPUGraphicsClockOffset'.*\[gpu\:$i\]\): \K[0-9]+"` == "${CLOCK[$i]}" ]]; then
 		echo "  'GPUGraphicsClockOffset' was already set to ${CLOCK[$i]}"
 	else
@@ -274,7 +287,9 @@ for (( i=0; i < ${#BUSID[@]}; ++i )); do
 
 
 	[[ -z "${MEM[$i]}" ]] && MEM[$i]=0
-	[[ $PILLFIX -eq 1 && "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne $PILLMEM ]] && MEMCLOCK=0 || MEMCLOCK="${MEM[$i]}"
+	# if delay is set reset clocks for the first time
+	[[ ${MEM[$i]} -gt 0 && $DELAY -gt 0 ]] && MEM[$i]=0 && NEED_DELAY=1
+	[[ $PILLFIX -eq 1 && "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -gt $PILLMEM ]] && MEMCLOCK=0 || MEMCLOCK="${MEM[$i]}"
 	if [[ `echo "$nvparams" | grep -oP "'GPUMemoryTransferRateOffset'.*\[gpu\:$i\]\): \K[0-9]+"` == "$MEMCLOCK" ]]; then
 		echo "  'GPUMemoryTransferRateOffset' was already set to $MEMCLOCK"
 	else
@@ -289,11 +304,9 @@ for (( i=0; i < ${#BUSID[@]}; ++i )); do
 
 	if [[ ! -z $args ]]; then
 		echo -en "${RED}"
-		nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args 2>&1`
+		nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args 2>&1 | grep -v "^$"`
 		nvcode=$?
-		#[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
 		[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
-		nvresult=`echo "$nvresult" | grep -v "^$"`
 		echo "${NOCOLOR}$nvresult"
 		[[ $nvcode -ne 0 ]] && exitcode=$nvcode
 	fi
@@ -301,13 +314,22 @@ for (( i=0; i < ${#BUSID[@]}; ++i )); do
 done
 
 
+# apply delay only if some settings were reset
+if [[ $NEED_DELAY -gt 0 && $DELAY -gt 0 ]]; then
+	echo
+	echo "Full OC will be applied in $DELAY secs${NOCOLOR}"
+
+	# append to log file
+	nohup timeout -s9 $(( OC_TIMEOUT + DELAY )) \
+		bash -c "set -o pipefail; nvidia-oc delayed internal 2>&1 | tee -a $OC_LOG" > /dev/null 2>&1 &
+
 # start Pill if needed
-if [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
+elif [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
 	echo
 	echo "${YELLOW}===${NOCOLOR} Starting OhGodAnETHlargementPill ${YELLOW}=== `date +"%T"`${NOCOLOR}"
 	sleep 1
 
-	if [[ "$PILLFIX" -eq 1 ]]; then
+	if [[ $PILLFIX -eq 1 ]]; then
 		# phase 0
 		/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2 > /var/run/hive/ohgodapill 2>&1 &
 		sleep 1
@@ -317,41 +339,38 @@ if [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
 
 		# phase 1
 		args=
-		for (( i=0; i < $n; ++i )); do
-			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 && ${MEM[$i]} -ne $PILLMEM ]] &&
+		for (( i=0; i < ${#BUSID[@]}; ++i )); do
+			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 && ${MEM[$i]} -gt $PILLMEM ]] &&
 				args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[3]=$PILLMEM"
 		done
 		if [[ ! -z $args ]]; then
 			echo "${RED}"
-			nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args`
+			nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args | grep -v "^$"`
 			nvcode=$?
 			[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
-			nvresult=`grep -v "^$" <<< "$nvresult"`
 			echo "${NOCOLOR}$nvresult"
 			[[ $nvcode -ne 0 ]] && exitcode=$nvcode
 			sleep 1
 		fi
-	
+
 		# phase 2
 		args=
-		for (( i=0; i < $n; ++i )); do
-			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 && ${MEM[$i]} -ne $PILLMEM ]] &&
+		for (( i=0; i < ${#BUSID[@]}; ++i )); do
+			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 && ${MEM[$i]} -gt $PILLMEM ]] &&
 				args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[3]=${MEM[$i]}"
 		done
 		if [[ ! -z $args ]]; then
 			echo "${RED}"
-			nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args`
+			nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args | grep -v "^$"`
 			nvcode=$?
 			[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
-			nvresult=`grep -v "^$" <<< "$nvresult"`
 			echo "${NOCOLOR}$nvresult"
 			[[ $nvcode -ne 0 ]] && exitcode=$nvcode
 			sleep 1
 		fi
 	fi
 
-	echo
-	echo "Pill will be ready in ${OHGODAPILL_START_TIMEOUT#-} sec"
+	echo -e "\n  Pill will be ready in ${OHGODAPILL_START_TIMEOUT#-} sec"
 	nohup /hive/opt/ohgodapill/run.sh $OHGODAPILL_ARGS > /dev/null 2>&1 &
 fi
 
