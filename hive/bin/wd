@@ -175,6 +175,16 @@ function set_lastgood() {
 }
 
 
+function get_gpu_info() {
+	jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i
+		([]; . + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+"  Temp: "+.[1]+"C  Fan: "+.[2]+"%  Power: "+.[3]+"W"' $GPU_STATS_JSON 2>/dev/null
+	dmesg -Tk | tail -n 300 | grep "Xid"
+	[[ -z "$1" ]] && return 0 
+	COLUMNS=110 top -bHn 1 | head -n 20
+	return 0
+}
+
+
 function check_la() {
 	local max_la=${WD_MAX_LA:-$WD_DEF_LA}
 	[[ $max_la -lt $WD_MIN_LA ]] && max_la=$WD_MIN_LA
@@ -184,20 +194,18 @@ function check_la() {
 	# reboot immediately if LA (5 min) >= maxLA
 	if [[ ${la5%.*} -ge $max_la ]]; then
 		echo "${RED}LA is more than ${max_la}.0: $la5, rebooting ${NOCOLOR}"
-		local top=`COLUMNS=110 top -bHn 1 | head -n 20`
-		echo "$top" | message error "LA > $max_la, rebooting" payload >/dev/null
+		get_gpu_info | message error "LA > $max_la, rebooting" payload >/dev/null
 		sreboot fast
 	# reboot if LA (1 min) >= maxLA * 2
 	elif [[ ${la1%.*} -ge $max_la2x ]]; then
-		local top=`COLUMNS=110 top -bHn 1 | head -n 20`
 		# check few times to avoid short peaks
 		if [[ $high_la_count -ge 2 ]]; then
 			echo "${RED}LA(1m) $la1 > ${max_la2x}.0, rebooting ${NOCOLOR}"
-			echo "$top" | message error "LA > $max_la2x, rebooting" payload >/dev/null
+			get_gpu_info | message error "LA > $max_la2x, rebooting" payload >/dev/null
 			sreboot fast
 		else
 			echo "${RED}LA(1m): $la1 > ${max_la2x}.0, waiting ${NOCOLOR}"
-			[[ $high_la_count -eq 0 ]] && echo "$top" | message warning "LA > $max_la2x" payload >/dev/null
+			[[ $high_la_count -eq 0 ]] && get_gpu_info | message warning "LA > $max_la2x" payload >/dev/null
 		fi
 		((high_la_count++))
 	else
@@ -205,13 +213,6 @@ function check_la() {
 		[[ $check_count == 0 ]] &&
 			echo "${GREEN}OK${NOCOLOR} LA(5m): $la5 < ${max_la}.0, LA(1m): $la1 < ${max_la2x}.0"
 	fi
-}
-
-
-function get_gpu_info() {
-	jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i
-		([]; . + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+"  Temp: "+.[1]+"C  Fan: "+.[2]+"%  Power: "+.[3]+"W"' $GPU_STATS_JSON 2>/dev/null
-	return 0
 }
 
 
@@ -448,7 +449,7 @@ case $1 in
 		systemctl restart hive-watchdog
 	;;
 	log)
-		journalctl -u hive-watchdog --no-pager $2 $3 $4 $5 $6 $7 | tail -n 100
+		journalctl -u hive-watchdog -b --no-pager $2 $3 $4 $5 $6 $7 | tail -n 100
 	;;
 	status)
 		systemctl status hive-watchdog
