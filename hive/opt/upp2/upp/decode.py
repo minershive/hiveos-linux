@@ -558,6 +558,10 @@ def select_pp_struct(rawbytes, rawdump=False, debug=False):
         gpugen = 'Navi 10 or 14'
         from upp.atom_gen import smu_v11_0_navi10 as pp_struct
         ctypes_strct = pp_struct.struct_smu_11_0_powerplay_table
+    elif pp_ver == (15, 0):     # Navi 20, 21
+        gpugen = 'Navi 20 or 21'
+        from upp.atom_gen import smu_v11_0_7_navi20 as pp_struct
+        ctypes_strct = pp_struct.struct_smu_11_0_7_powerplay_table
     elif pp_ver is not None:
         msg = 'Can not decode PowerPlay table version {}.{}'
         eprint(msg.format(pp_ver[0], pp_ver[1]))

@@ -33,7 +33,7 @@
       --clang-args="--include stdint.h \
                     --include linux/drivers/gpu/drm/amd/include/atom-types.h \
                     --include linux/drivers/gpu/drm/amd/include/atombios.h" \
-       linux/drivers/gpu/drm/amd/powerplay/hwmgr/pptable_v1_0.h > pptable_v1_0.py
+       linux/drivers/gpu/drm/amd/pm/powerplay/hwmgr/pptable_v1_0.h > pptable_v1_0.py
 
 
 ## vega10_pptable.py (Vega10 aka Vega 56/64)
@@ -43,7 +43,7 @@
                     --include linux/drivers/gpu/drm/amd/include/atom-types.h \
                     --include linux/drivers/gpu/drm/amd/include/atomfirmware.h \
                     --include linux/drivers/gpu/drm/amd/include/atombios.h" \
-       linux/drivers/gpu/drm/amd/powerplay/hwmgr/vega10_pptable.h > vega10_pptable.py
+       linux/drivers/gpu/drm/amd/pm/powerplay/hwmgr/vega10_pptable.h > vega10_pptable.py
 
 
 ## vega20_pptable.py (Vega20 aka Radeon7)
@@ -52,8 +52,8 @@
       --clang-args="--include stdint.h \
                     --include linux/drivers/gpu/drm/amd/include/atom-types.h \
                     --include linux/drivers/gpu/drm/amd/include/atomfirmware.h \
-                    --include linux/drivers/gpu/drm/amd/powerplay/inc/smu11_driver_if.h " \
-       linux/drivers/gpu/drm/amd/powerplay/hwmgr/vega20_pptable.h > vega20_pptable.py
+                    --include linux/drivers/gpu/drm/amd/pm/inc/smu11_driver_if.h " \
+       linux/drivers/gpu/drm/amd/pm/powerplay/hwmgr/vega20_pptable.h > vega20_pptable.py
 
 
 ##  smu_v11_0_navi10.py (Navi10/14)
@@ -62,6 +62,16 @@
       --clang-args="--include stdint.h \
                     --include linux/drivers/gpu/drm/amd/include/atom-types.h \
                     --include linux/drivers/gpu/drm/amd/include/atomfirmware.h \
-                    --include linux/drivers/gpu/drm/amd/powerplay/inc/smu11_driver_if_navi10.h " \
-       linux/drivers/gpu/drm/amd/powerplay/inc/smu_v11_0_pptable.h > smu_v11_0_navi10.py
+                    --include linux/drivers/gpu/drm/amd/pm/inc/smu11_driver_if_navi10.h " \
+       linux/drivers/gpu/drm/amd/pm/inc/smu_v11_0_pptable.h > smu_v11_0_navi10.py
+
+
+##  smu_v11_0_navi20.py (Navi20/21)
+
+    clang2py -k 'mst' \
+      --clang-args="--include stdint.h \
+                    --include linux/drivers/gpu/drm/amd/include/atom-types.h \
+                    --include linux/drivers/gpu/drm/amd/include/atomfirmware.h \
+                    --include linux/drivers/gpu/drm/amd/pm/inc/smu11_driver_if_sienna_cichlid.h " \
+       linux/drivers/gpu/drm/amd/pm/inc/smu_v11_0_7_pptable.h > smu_v11_0_7_navi20.py
 

@@ -3,7 +3,7 @@
 # To run without install relative imports needs to match the module ones, which
 # is true when in 'src' directory, then: python3 -m upp.upp --help
 
-VERSION="0.0.7-3"
+VERSION="0.0.7-4"
 
 import click
 import tempfile
