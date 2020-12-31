@@ -85,8 +85,12 @@ function check_grub {
 	#	ln -s /hive/etc/grub /etc/default/grub #>/dev/null 2>&1
 	#fi
 
+	# remove symlink
+	readlink /etc/default/grub >/dev/null &&
+		rm -f /etc/default/grub
+
 	# update grub config to default if needed
-	if ! diff /hive/etc/grub /etc/default/grub >/dev/null; then
+	if ! diff -q /hive/etc/grub /etc/default/grub 2>/dev/null; then
 		cp -f /hive/etc/grub /etc/default/grub
 	fi
 
