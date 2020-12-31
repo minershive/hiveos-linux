@@ -115,23 +115,22 @@ while true; do
 	rescan=0
 	WIFI_PASSWORD=
 	echo -en "${CYAN}Scanning networks...$NOCOLOR"
-	readarray -t ssids < <(`iwlist $wlandev scanning 2>/dev/null | grep -oP "ESSID:\"\K[^\"]+(?=\")" | sort -u `)
+	readarray -t ssids < <(iwlist $wlandev scanning 2>/dev/null | grep -oP "ESSID:\"\K[^\"]+(?=\")" | sort -u)
 	ssids=("[RESCAN NETWORKS]" "[CUSTOM SSID]" "[ANY OPEN]" "${ssids[@]}")
 	echo -e "$CYAN found $(( ${#ssids[@]} - 3 )) $NOCOLOR"
-	for(( i=2; i < ${#ssids[@]}; i++ )); do
+	for(( i=3; i < ${#ssids[@]}; i++ )); do
 		ssids[$i]=`echo -e "${ssids[$i]}"`
 	done
 	echo -e "${YELLOW}Select Access Point:${NOCOLOR}"
 	select WIFI_SSID in "${ssids[@]}"; do
 		[[ -z "$WIFI_SSID" ]] && continue
-		if [[ $REPLY -eq 1 ]]; then
+		if [[ "$REPLY" == 1 ]]; then
 			rescan=1
-		elif [[ $REPLY -eq 2 ]]; then
+		elif [[ "$REPLY" == 2 ]]; then
 			WIFI_SSID=
-		elif [[ $REPLY -eq 3 ]]; then
+		elif [[ "$REPLY" == 3 ]]; then
 			WIFI_SSID="OPEN"
 			WIFI_PASSWORD="OPEN"
-			break
 		else
 			echo -e "SSID: $WHITE$WIFI_SSID$NOCOLOR"
 		fi
@@ -159,7 +158,7 @@ done
 if [[ "$WIFI_PASSWORD" == "OPEN" ]]; then
 	echo -e "network={\n key_mgmt=NONE\n priority=-999\n}" > /etc/wpa_supplicant/wpa_supplicant.conf
 elif [[ "$WIFI_PASSWORD" == "NONE" ]]; then
-	echo -e "network={\n ssid=\"$(backslash "$WIFI_SSID")\"\n key_mgmt=NONE\n}" > /etc/wpa_supplicant/wpa_supplicant.conf
+	echo "network={"$'\n'" ssid=\"$WIFI_SSID\""$'\n'" key_mgmt=NONE"$'\n'"}" > /etc/wpa_supplicant/wpa_supplicant.conf
 else
 	wpa_passphrase "$WIFI_SSID" "$WIFI_PASSWORD" | tee /etc/wpa_supplicant/wpa_supplicant.conf
 fi
