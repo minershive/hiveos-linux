@@ -81,12 +81,12 @@ function polaris_oc() {
 	if [[ ! -z $MEM_STATE ]]; then
 		if [[ ${MEM_STATE[$i]} -ge 0 && ${MEM_STATE[$i]} -le $maxMemoryState ]]; then
 			[[ ${MEM_STATE[$i]} != 0 ]] && # skip zero state, means auto
-				memoryState="${MEM_STATE[$i]}"
+				memoryState=${MEM_STATE[$i]}
 		else
 			if [[ -z ${VDDCI[$i]} && ${MEM_STATE[$i]} -gt $MIN_VOLT ]]; then
 				# using as vddci voltage for back compatibility
-				VDDCI[$i]="${MEM_STATE[$i]}"
-				memoryState="$maxMemoryState"
+				VDDCI[$i]=${MEM_STATE[$i]}
+				memoryState=$maxMemoryState
 			else
 				echo "${RED}ERROR: Invalid memory state ${MEM_STATE[$i]} specified $NOCOLOR"
 			fi
@@ -96,15 +96,16 @@ function polaris_oc() {
 	# set memory state if needed
 	[[ -z $memoryState && ${MEM_CLOCK[$i]} -gt $MIN_CLOCK ]] &&
 		echo "${YELLOW}Empty memory state, setting to max state $maxMemoryState $NOCOLOR" &&
-		memoryState="$maxMemoryState"
+		memoryState=$maxMemoryState
 
 	# in aggressive mode if memory voltage not specified using core voltage for back compatibility
 	[[ $AGGRESSIVE == 1 && ${MVDD[$i]} -le $MIN_VOLT && ${CORE_VDDC[$i]} -gt $MIN_VOLT ]] &&
 		echo "${YELLOW}Empty memory voltage, using core voltage ${CORE_VDDC[$i]} $NOCOLOR" &&
-		MVDD[$i]="${CORE_VDDC[$i]}"
+		MVDD[$i]=${CORE_VDDC[$i]}
 
 	[[ ${MVDD[$i]} -gt $MIN_VOLT && ${MVDD[$i]} -gt ${CORE_VDDC[$i]} ]] &&
-		echo "${RED}ERROR: Memory voltage can't be more than core voltage $NOCOLOR"
+		echo "${RED}ERROR: Memory voltage can't be more than core voltage $NOCOLOR" &&
+		MVDD[$i]=${CORE_VDDC[$i]}
 
 	# set target temp for HW autofan
 	[[ $AMD_TARGET_TEMP -gt 0 ]] &&
