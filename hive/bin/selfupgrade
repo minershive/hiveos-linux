@@ -78,7 +78,6 @@ function update_grub {
 # Check config grub and create symlink
 function check_grub {
 	[[ ! -f /hive/etc/grub ]] && return 1
-	[[ -e /etc/default/grub ]] && grub="$(< /etc/default/grub)" || grub=
 
 	#if [[ $(readlink /etc/default/grub) != "/hive/etc/grub" ]]; then
 	#	rm /etc/default/grub #>/dev/null 2>&1
@@ -87,8 +86,9 @@ function check_grub {
 
 	# remove symlink
 	readlink /etc/default/grub >/dev/null &&
-		rm -f /etc/default/grub &&
-		cp -f /hive/etc/grub /etc/default/grub
+		rm -f /etc/default/grub
+
+	[[ -f /etc/default/grub ]] && grub="$(< /etc/default/grub)" || grub=
 
 	# update grub config to default if needed
 	diff -q /hive/etc/grub /etc/default/grub 2>/dev/null ||
