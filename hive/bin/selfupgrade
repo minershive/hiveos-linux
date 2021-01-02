@@ -87,12 +87,12 @@ function check_grub {
 
 	# remove symlink
 	readlink /etc/default/grub >/dev/null &&
-		rm -f /etc/default/grub
+		rm -f /etc/default/grub &&
+		cp -f /hive/etc/grub /etc/default/grub
 
 	# update grub config to default if needed
-	if ! diff -q /hive/etc/grub /etc/default/grub 2>/dev/null; then
+	diff -q /hive/etc/grub /etc/default/grub 2>/dev/null ||
 		cp -f /hive/etc/grub /etc/default/grub
-	fi
 
 	[[ ! -f /hive/etc/grub.custom && -f /hive/etc/grub.custom.template ]] &&
 		cp /hive/etc/grub.custom.template /hive/etc/grub.custom
