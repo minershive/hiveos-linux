@@ -221,9 +221,11 @@ if [[ $exitcode -eq 0 ]]; then
 		updateavail=`apt list --upgradable 2>&1 | grep -c '^hive'`
 		repover-touch
 		if [[ $updateavail == 0 ]]; then
+			# force hello and grub update even with no update
+			check_grub
+			hello
 			[[ -e /hive-config/RepoVer ]] && newrepover=$(< /hive-config/RepoVer) || newrepover=0
 			if [[ "$repover" != "$newrepover" ]]; then
-				hello
 				echo "${GREEN}Upgrade to ${WHITE}${current_version}@${newrepover}${GREEN} complete. Have a happy mining.${NOCOLOR}"
 			else
 				echo "${GREEN}System is up to date already${NOCOLOR}"
