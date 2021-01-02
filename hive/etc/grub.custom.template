@@ -10,3 +10,8 @@
 
 ## For example if you want to enable ipv6 in kernel - uncomment next line
 #ipv6.disable=0
+
+## For buggy bioses 
+#pci=noaer,nocrs
+
+
