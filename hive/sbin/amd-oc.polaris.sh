@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DEFAULT_CORE_STATE=5
+DEFAULT_CORE_STATE=4
 
 SLEEP=1
 
