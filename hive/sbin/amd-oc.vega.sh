@@ -44,7 +44,7 @@ function vega10_oc() {
 	maxCoreClock=$(( data[3]/100 ))
 	maxMemoryClock=$(( data[4]/100 ))
 
-	echo "Max core: ${maxCoreClock}MHz, Max mem: ${maxMemoryClock}MHz, Max mem state: $maxMemoryState, Max core state: $maxCoreState, Max Soc state: $maxSocState"
+	echo "Max core: ${maxCoreClock}MHz, Max mem: ${maxMemoryClock}MHz, Max mem state: $maxMemoryState, Max core state: $maxCoreState, Max SoC state: $maxSocState"
 
 
 	# set target temp for HW autofan
@@ -60,8 +60,8 @@ function vega10_oc() {
 		args+=" VddmemLookupTable/0/Vdd=${MVDD[$i]}"
 		#in aggr set HBM voltage with atitool too
 		mvdd=$(echo "scale=2; ${MVDD[$i]}/1000" | bc )
-		[[ $AGGRESSIVE == 1 ]] && atitool -v=silent -i=$card_idx -vddcr_hbm=$mvdd >/dev/null && 
-		echo "Setting HBM voltage  to ${mvdd}V"
+		[[ $AGGRESSIVE == 1 ]] && atitool -v=silent -debug=0 -i=$card_idx -vddcr_hbm=$mvdd >/dev/null && 
+		echo "Setting HBM voltage to ${mvdd}V"
 	fi
 	if [[ ! -z ${MEM_CLOCK[$i]} ]];then
 	clk=${MEM_CLOCK[$i]}
@@ -80,7 +80,7 @@ function vega10_oc() {
 		args+=" MaxODEngineClock=$(( CORE_CLOCK[i]*100 )) "
 	
 	# set core voltage and clock
-	if [[ ! -z $CORE_VDDC && ${CORE_VDDC[$i]}  -gt $MIN_VOLT  ]]; then
+	if [[ ! -z $CORE_VDDC && ${CORE_VDDC[$i]} -gt $MIN_VOLT  ]]; then
 		for coreState in {0..7}; do
 			args+=" VddcLookupTable/$coreState/Vdd=${CORE_VDDC[$i]} "
 		done
@@ -102,8 +102,6 @@ function vega10_oc() {
 	fi
 
 
-
-
 	# apply all changes to PPT and check if they differ from already applied
 	local output=""
 	[[ ! -z "$args" ]] && output=`python3 /hive/opt/upp2/upp.py -p $PPT set $args --write >/dev/null`
@@ -123,21 +121,20 @@ function vega10_oc() {
 	#in aggr set Core/Soc voltage with atitool too
 	[[ $AGGRESSIVE == 1 &&  ${CORE_VDDC[$i]} -gt $MIN_VOLT  ]] && vdd=$(echo "scale=2; ${CORE_VDDC[$i]}/1000" | bc -l) &&
 			 		atitool -v=silent -i=$card_idx -vddcr_soc=$vdd >/dev/null && 
-			 		echo "Setting Core/Soc voltage  to ${vdd}V"
+			 		echo "Setting Core/SoC voltage to ${vdd}V"
 #	fi
 
 	#memtweak if exist
 	[[ ! -z $TWEAKS && `echo $TWEAKS | jq --arg gpu "$card_idx" -r -c '. | .amdmemtweak[$gpu|tonumber] | .cmdline'` != "null" ]] &&
 		amdmemtweak --gpu $card_idx `echo $TWEAKS | jq --arg gpu "$card_idx" -r -c '. | .amdmemtweak[$gpu|tonumber] | .cmdline'` || echo "No tweaks found for GPU$card_idx"
 
-		echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
+	echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
 
-			echo "Setting DPM core state to $maxCoreState" &&
-			echo $maxCoreState > /sys/class/drm/card$cardno/device/pp_dpm_sclk
+	echo "Setting DPM core state to $maxCoreState" &&
+	echo $maxCoreState > /sys/class/drm/card$cardno/device/pp_dpm_sclk
 
-					echo "Setting DPM memory state to $maxMemoryState" &&
-					echo $maxMemoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
-	
+	echo "Setting DPM memory state to $maxMemoryState" &&
+	echo $maxMemoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
 
 
 	# set fan speed
@@ -152,11 +149,7 @@ function vega10_oc() {
 	else
 		echo "Error: unable to get HWMON dir to set fan"
 	fi
-
-
-	# finally set REF
-#	[[ ${REF[$i]} -gt 0 ]] && amdmemtweak --gpu "$card_idx" --REF "${REF[$i]}"
 }
 
-
+# Main code
 vega10_oc
