@@ -15,7 +15,7 @@ get_hashes(){
   for (( t=0; t < $gpu_count; t++ )); do
     [[ $fork =~ "opencl" ]] && t_num=`cat ${log_name}_head | grep INFO | grep "device $t" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | cut -d "|" -f 2 | awk '{print $6}'` || t_num=$t
     if [[ ! -z $t_num ]]; then
-      t_hs=`cat $log_name | tail -200 | grep INFO | grep "GPU $t_num" | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | cut -d "|" -f 2 | awk '{print $8}' | cut -d "=" -f 2 | cut -d "/" -f 1`
+      t_hs=`cat $log_name | tail -2000 | grep INFO | grep "GPU $t_num" | grep "primes=" | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | cut -d "|" -f 2 | awk '{print $8}' | cut -d "=" -f 2 | cut -d "/" -f 1`
       [[ -z $t_hs ]] && t_hs=0
       hs+="$t_hs "
       khs=`echo $khs $t_hs | awk '{ printf("%.6f", $1 + $2/1000) }'`
@@ -26,7 +26,7 @@ get_hashes(){
 }
 
 get_miner_uptime(){
-  cat $log_name | tail -200 | grep INFO | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | cut -d "(" -f 2 | cut -d "." -f 1
+  cat $log_name | tail -2000 | grep INFO | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | cut -d "(" -f 2 | cut -d "." -f 1
 }
 
 get_log_time_diff(){
@@ -40,9 +40,9 @@ get_shares(){
   acc=0
   rej=0
   t=0
-  local line=`cat $log_name | tail -200 | grep '(ST/INV/DUP)' | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | cut -d ':' -f 4 `
+  local line=`cat $log_name | tail -2000 | grep '(ST/INV/DUP)' | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | cut -d ':' -f 4 `
     for t_line in $line; do
-      if [[ $t_line =~ "x" ]]; then 
+      if [[ $t_line =~ "x" ]]; then
         acc=$(($acc + ${t_line%%x}))
       else
         t=`echo $t_line | cut -d "/" -f 2 | cut -d "/" -f 1`
@@ -137,4 +137,3 @@ fi
 #echo acc:    $acc
 #echo rej:    $rej
 #echo bus_n:  $bus_numbers
-
