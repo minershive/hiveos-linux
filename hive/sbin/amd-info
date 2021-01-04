@@ -123,7 +123,7 @@ for bdir in $busids_dirs; do
 			echo "  Memory $meminfo  Type: $mem_type"
 	fi
 	
-	atitool -i=$i -vctfstatus -debug=0 | grep -E '  MVDDC  |   VDDCR_HBM  |  VDDCR_SOC  ' | sed  -e 's/ //g' \
+	atitool -i=$i -vctfstatus -debug=0 | grep -E '  MVDDQ  |  MVDDC  |   VDDCR_HBM  |  VDDCR_SOC  ' | sed  -e 's/ //g' \
 		-e 's/^/  /' -e 's/:/ : /g' | sed  ':a; /$/N; s/\n/,/; ta'
 
 	echo -n "  ${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${corev}mV"
