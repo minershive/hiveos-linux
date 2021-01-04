@@ -3,7 +3,6 @@
 
 export PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/sbin:/usr/local/bin:$PATH"
 
-
 # prevent running from pipe
 if [ $0 = "sh" ] || [ $0 = "bash" ]; then
 	sleep 1
@@ -11,11 +10,10 @@ if [ $0 = "sh" ] || [ $0 = "bash" ]; then
 	exit 1
 fi
 
+
 DIR=`pwd`
-SCRIPT_PATH=`dirname $0`
-SCRIPT_NAME=`basename $0`
-cd $SCRIPT_PATH
-myself="$DIR/$SCRIPT_NAME"
+SCRIPT_PATH=$( cd $(dirname ${BASH_SOURCE[0]}) && pwd )
+SCRIPT_NAME=`basename "$0"`
 
 # main url to images repo
 HIVE_URL=https://download.hiveos.farm
@@ -475,7 +473,8 @@ function prepare {
 	cp -a /usr/lib/x86_64-linux-gnu/libicu*.so* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
 
 	cp -aR /dev $TMPDIR > /dev/null 2>&1
-	cp $myself $TMPDIR > /dev/null 2>&1
+
+	cp $SCRIPT_PATH/$SCRIPT_NAME $TMPDIR > /dev/null 2>&1
 	chmod +x $TMPDIR/$SCRIPT_NAME > /dev/null 2>&1
 
 	# create conf for second part
@@ -633,7 +632,7 @@ function usage {
 if [[ $(id -u) -ne 0 ]]; then
 	echo "Root privileges required"
 	sudo chmod +x $0
-	exec sudo $myself $*
+	exec sudo $0 "$@"
 fi
 
 
