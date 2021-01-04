@@ -8,6 +8,9 @@ VEGA20=$( lspci -vnns $busid | grep VGA -A 2 | grep AMD -A 2 | grep Vega -A 2 | 
 NAVI_CVDDC_MIN=650   # Min VDDC - Gfx Core
 NAVI_CVDDC_MAX=1200  # Max VDDC - Gfx Core
 NAVI_CVDDC_SAFE=950  # Default fail safe voltage
+# SoC VDD limits, mV
+NAVI_SOC_VDD_MIN=650   # Min SoC VDD
+NAVI_SOC_VDD_MAX=1200  # Max SoC VDD
 # Memory Interface Controller Interface Voltage, mV
 NAVI_VDDCI_MIN=650   # Min VDDCI
 NAVI_VDDCI_MAX=850   # Max VDDCI
@@ -37,7 +40,7 @@ if [[ $NAVI_COUNT -ne 0 ]]; then
         args+="smc_pptable/FreqTableSocclk/1=${SOCCLK[$i]} "
     fi
 
-    if [[ ! -z $SOCVDDMAX && ${SOCVDDMAX[$i]} -gt 0 ]]; then
+    if [[ ! -z $SOCVDDMAX && ${SOCVDDMAX[$i]} -ge $NAVI_SOC_VDD_MIN && ${SOCVDDMAX[$i]} -le $NAVI_SOC_VDD_MAX ]]; then
         vlt_soc=$((${SOCVDDMAX[$i]} * 4 ))
         args+="smc_pptable/MaxVoltageSoc=${vlt_soc} "
     fi
