@@ -16,7 +16,7 @@ GRUB_TIMEOUT=3
 #GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
 GRUB_DISTRIBUTOR="Hive OS"
 #GRUB_CMDLINE_LINUX_DEFAULT="splash quiet"
-GRUB_CMDLINE_LINUX_DEFAULT="text consoleblank=0 intel_pstate=disable net.ifnames=0 ipv6.disable=1 pci=noaer iommu=soft amdgpu.vm_fragment_size=9 radeon.si_support=0 radeon.cik_support=0 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.ppfeaturemask=0xffff7fff noibrs noibpb nopti nospectre_v2 nospectre_v1 l1tf=off nospec_store_bypass_disable no_stf_barrier mds=off mitigations=off amdgpu.runpm=0 amdgpu.gpu_recovery=0"
+GRUB_CMDLINE_LINUX_DEFAULT="text consoleblank=0 intel_pstate=disable net.ifnames=0 ipv6.disable=1 pci=noaer iommu=soft usbcore.autosuspend=-1 radeon.si_support=0 radeon.cik_support=0 amdgpu.vm_fragment_size=9 amdgpu.si_support=1 amdgpu.cik_support=1 amdgpu.ppfeaturemask=0xffff7fff amdgpu.runpm=0 amdgpu.gpu_recovery=0 noibrs noibpb nopti nospectre_v2 nospectre_v1 l1tf=off nospec_store_bypass_disable no_stf_barrier mds=off mitigations=off"
 
 #use this pci=noaer if you have lots of "pci error" messages in log
 #run "update-initgub" after editing this file
