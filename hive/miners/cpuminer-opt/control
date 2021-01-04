@@ -1,5 +1,5 @@
 Package: hive-miners-cpuminer-opt
-Version: 0.6-68
+Version: 0.6-69
 Section: base
 Priority: optional
 Architecture: all

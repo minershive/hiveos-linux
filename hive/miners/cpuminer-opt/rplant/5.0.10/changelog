@@ -1,0 +1,3 @@
+CPUminer-Opt-rplant v5.0.10
+* add phi5 algo, combode coin
+* fix for `cpu-affininy`
