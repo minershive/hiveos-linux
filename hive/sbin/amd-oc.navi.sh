@@ -33,11 +33,11 @@ if [[ $NAVI_COUNT -ne 0 ]]; then
        args+="smc_pptable/MemMvddVoltage/1=${vlt_mvdd} smc_pptable/MemMvddVoltage/2=${vlt_mvdd} smc_pptable/MemMvddVoltage/3=${vlt_mvdd} "
     fi
 
-    if [[ ! -z $SOCCLK && ${SOCCLK[$i]} ]]; then
+    if [[ ! -z $SOCCLK && ${SOCCLK[$i]} -gt 0 ]]; then
         args+="smc_pptable/FreqTableSocclk/1=${SOCCLK[$i]} "
     fi
 
-    if [[ ! -z $SOCVDDMAX && ${SOCVDDMAX[$i]} ]]; then
+    if [[ ! -z $SOCVDDMAX && ${SOCVDDMAX[$i]} -gt 0 ]]; then
         vlt_soc=$((${SOCVDDMAX[$i]} * 4 ))
         args+="smc_pptable/MaxVoltageSoc=${vlt_soc} "
     fi
