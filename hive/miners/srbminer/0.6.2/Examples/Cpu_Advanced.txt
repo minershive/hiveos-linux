@@ -1,0 +1,47 @@
+Examples:
+
+The only difference when using on Windows and Linux is the name of the executable, all the parameters are used the same way:
+
+Win: SRBMiner-Multi.exe
+Lin: ./SRBMiner-Multi
+
+These examples are for Windows OS.
+; is used to separate algorithms, ! is used to separate parameters for an algorithm
+On Linux you need to escape the ; character with a backslash! ( \; )
+
+Change the wallet address to your own.
+
+To define failover pools for an algorithm, use ! to separate them.
+When mining more than 1 algorithm, you can't manually change pools, miner will automatically try the failover pool/s.
+
+Notice : 'stratum+tcps://' when defining a pool will automatically enable TLS for that entry!
+
+There is a simple rule for all multi algorithm aware parameters : separate algorithm settings with ';' and things within a specific algorithm with '!'
+
+
+
+
+1. Mine algorithm 'RandomX' and 'yespower2b' in full auto mode,on xmrpool.eu and rplant.xyz
+SRBMiner-MULTI.exe --disable-gpu --algorithm randomx;yespower2b --pool xmrpool.eu:443;stratum-ru.rplant.xyz:7022 --wallet randomx-wallet;yespower2b-wallet
+
+
+2. Mine algorithm 'RandomX' and 'yespower2b' with manually set number of threads to 4 for randomx, and auto set for yespower2b on xmrpool.eu and rplant.xyz
+SRBMiner-MULTI.exe --disable-gpu --algorithm randomx;yespower2b --pool xmrpool.eu:443;stratum-ru.rplant.xyz:7022 --wallet randomx-wallet;yespower2b-wallet --cpu-threads 4;0
+
+
+3. Mine algorithm 'RandomX' and 'yespower2b' with manually set number of threads to 4 and 4,on xmrpool.eu and rplant.xyz
+SRBMiner-MULTI.exe --disable-gpu --algorithm randomx;yespower2b --pool xmrpool.eu:443;stratum-ru.rplant.xyz:7022 --wallet randomx-wallet;yespower2b-wallet --cpu-threads 4;4
+
+
+4. Mine algorithm 'RandomX' and 'yespower2b' with manually set number of threads to 4 and 4, with distinct affinities, on xmrpool.eu and rplant.xyz
+SRBMiner-MULTI.exe --disable-gpu --algorithm randomx;yespower2b --pool xmrpool.eu:443;stratum-ru.rplant.xyz:7022 --wallet randomx-wallet;yespower2b-wallet --cpu-threads 4;4 --cpu-affinity 0x55;0x5500
+
+
+5. Mine algorithm 'RandomX' and 'yespower2b' with manually set number of threads to 4 and 4, with affinity set manually to randomx threads only, enabled logging, on xmrpool.eu and rplant.xyz
+SRBMiner-MULTI.exe --disable-gpu --algorithm randomx;yespower2b --pool xmrpool.eu:443;stratum-ru.rplant.xyz:7022 --wallet randomx-wallet;yespower2b-wallet --cpu-threads 4;4 --cpu-affinity 0x55;-1 --log-file log.txt
+
+6. Mine algorithm 'RandomX' and 'yespower2b' with manually set number of threads to 4 and 4, with affinity set manually to randomx threads only, enabled logging, on xmrpool.eu and rplant.xyz, with failover pools set too
+SRBMiner-MULTI.exe --disable-gpu --algorithm randomx;yespower2b --pool xmrpool.eu:443!stratum+tcps://pool.minexmr.com:443!xmr-eu1.nanopool.org:14444;stratum-ru.rplant.xyz:7022!mbc-asia.skypool.co:8003 --wallet randomx-wallet;yespower2b-wallet --cpu-threads 4;4 --cpu-affinity 0x55;-1 --log-file log.txt
+
+7. Mine algorithm 'randomepic', and when an ignored job is received, or pool disconnects, then mine algorithm 'RandomX' until 'randomepic' jobs become available again
+SRBMiner-MULTI.exe --disable-gpu --algorithm randomepic;randomx --multi-algorithm-job-mode 3 --pool epic-eu.icemining.ca:4000;xmrpool.eu:443 --wallet epic-wallet;randomx-wallet

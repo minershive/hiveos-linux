@@ -1,0 +1,70 @@
+Examples:
+
+The only difference when using on Windows and Linux is the name of the executable, all the parameters are used the same way:
+
+Win: SRBMiner-Multi.exe
+Lin: ./SRBMiner-Multi
+
+These examples are for Windows OS.
+; is used to separate algorithms, ! is used to separate parameters for an algorithm
+On Linux you need to escape the ; character with a backslash! ( \; )
+
+Change the wallet address to your own.
+
+To define failover pools for an algorithm, use ! to separate them.
+Notice : 'stratum+tcps://' used when defining a pool will automatically enable TLS for that entry!
+Notice : to set multiple threads per GPU, use '+' to separate the values
+
+There is a simple rule for all multi algorithm aware parameters : separate algorithm settings with ';' and things within a specific algorithm with '!'
+
+
+. Mine algorithm 'ethash' on GPU's 0,1,2,3 using --gpu-boost 5
+SRBMiner-MULTI.exe --disable-cpu --algorithm ethash --gpu-id 0!1!2!3 --gpu-boost 5 --pool ethereum.herominers.com:10200 --wallet your-wallet
+
+
+. Mine algorithm 'bl2bsha3' on GPU's 0,3,4, auto set them, on pool handshake.6block.com
+SRBMiner-MULTI.exe --disable-cpu --algorithm bl2bsha3 --gpu-id 0!3!4 --pool handshake.6block.com:7701 --wallet your-wallet
+
+
+. Mine algorithm 'bl2bsha3' on GPU's 0,3,4, set them all intensity 21, on pool handshake.6block.com
+SRBMiner-MULTI.exe --disable-cpu --algorithm bl2bsha3 --gpu-id 0!3!4 --gpu-intensity 21 --pool handshake.6block.com:7701 --wallet your-wallet
+
+
+. Mine algorithm 'bl2bsha3' on GPU's 0,3,4, manually set intensities to 20,21,22 on selected gpu's, on pool handshake.6block.com
+SRBMiner-MULTI.exe --disable-cpu --algorithm bl2bsha3 --gpu-id 0!3!4 --gpu-intensity 20!21!22 --pool handshake.6block.com:7701 --wallet your-wallet
+
+
+. Mine algorithm 'bl2bsha3' on GPU's 0,3,4, manually set intensities to 20,21,22 on selected gpu's, on pool handshake.6block.com
+SRBMiner-MULTI.exe --disable-cpu --algorithm bl2bsha3 --gpu-id 0!3!4 --gpu-intensity 20!21!22 --pool handshake.6block.com:7701 --wallet your-wallet
+
+
+. Mine algorithm 'bl2bsha3' on GPU's 0,3,4, manually set intensities to 20,21,22 on pool handshake.6block.com
+SRBMiner-MULTI.exe --disable-cpu --algorithm bl2bsha3 --gpu-id 0!3!4 --gpu-intensity 20!21!22 --pool handshake.6block.com:7701 --wallet your-wallet
+
+
+. Mine algorithm 'ethash' on GPU's 0,3,4,5 but turn off settings for GPU 5 and set its intensity manually to 21, on pool eth-pool.beepool.org
+SRBMiner-MULTI.exe --disable-cpu --algorithm ethash --gpu-id 0!3!4!5 --gpu-intensity 0!0!0!21 --pool eth-pool.beepool.org:9530 --wallet your-wallet
+
+
+. Mine algorithm 'bl2bsha3' on GPU's 0,3,4,5 but use 2 threads manually set on GPU's 4 and 5, on pool handshake.6block.com
+SRBMiner-MULTI.exe --disable-cpu --algorithm bl2bsha3 --gpu-id 0!3!4!5 --gpu-intensity 0!0!14+13!13+13 --pool handshake.6block.com:7701 --wallet your-wallet
+
+
+. Mine algorithm 'bl2bsha3' on GPU's 0,3,4,5 use 2 threads on all GPU's where first thread is set manually to intensity 13 and the second one is auto-set, on pool handshake.6block.com
+SRBMiner-MULTI.exe --disable-cpu --algorithm bl2bsha3 --gpu-id 0!3!4!5 --gpu-intensity 13+0 --pool handshake.6block.com:7701 --wallet your-wallet
+
+
+. Mine algorithm 'bl2bsha3' on GPU's 0,3,4,5 use 2 threads on all GPU's, set manually 'raw-intensity' values for every GPU, on pool handshake.6block.com
+SRBMiner-MULTI.exe --disable-cpu --algorithm bl2bsha3 --gpu-id 0!3!4!5 --gpu-intensity 8192+4096!7936+7936!4352+4096!8192+7936 --pool handshake.6block.com:7701 --wallet your-wallet
+
+
+. Mine algorithm 'bl2bsha3' on GPU's 0,3,4,5 and 'ethash' on GPU's 1,2 all GPU's auto set, on pool handshake.6block.com and eth-pool.beepool.org
+SRBMiner-MULTI.exe --disable-cpu --algorithm bl2bsha3;ethash --gpu-id 0!3!4!5;1!2 --pool handshake.6block.com:7701;eth-pool.beepool.org:9530 --wallet your-bl2bsha3-wallet;your-ethash-wallet
+
+
+. Mine algorithm 'bl2bsha3' on GPU's 0,3,4,5 and 'ethash' on GPU's 1,2 all GPU's auto set and all use their own tweak profile values, on pool handshake.6block.com and eth-pool.beepool.org
+SRBMiner-MULTI.exe --disable-cpu --algorithm bl2bsha3;ethash --gpu-id 0!3!4!5;1!2 --gpu-tweak-profile 5!7!7!6;5L!8L --pool handshake.6block.com:7701;eth-pool.beepool.org:9530 --wallet your-bl2bsha3-wallet;your-ethash-wallet
+
+
+. Dual mine algorithms 'ethash' and 'bl2bsha3' on every GPU , intensity auto set, on pool eth-pool.beepool.org and handshake.6block.com
+SRBMiner-MULTI.exe --disable-cpu --algorithm ethash;bl2bsha3 --pool eth-pool.beepool.org:9530;handshake.6block.com:7701 --wallet your-ethash-wallet;your-bl2bsha3-wallet

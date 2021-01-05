@@ -1,0 +1,15 @@
+Parameters:
+
+"algorithm" 					: used to inform miner which algorithm is this pool using (--list-algorithms)
+"pool" 							: address:port
+"wallet" 						: your wallet
+"password" 						: your password
+"tls"							: true or false, if true miner will use SSL/TLS to connect to pool
+"worker"						: worker name
+"nicehash" 						: true or false, set this to true if you are using Nicehash
+"send_stales"					: true or false, set this to false if you don't want to send stale shares to the pool (Default is true)
+"esm"							: ethash stratum mode (0 - eth-proxy, 1 - miner-proxy, default is 0)
+"keepalive"						: true of false, not every pool supports this
+"job_timeout" 					: number in seconds, if no job is received for this period, miner will reconnect to the pool (Default is off)
+"max_difficulty" 				: decimal number, if pool difficulty is above this value miner will reconnect to the pool
+"start_block_height" 			: number, start mining when defined block height is reached. Pool must send this info
