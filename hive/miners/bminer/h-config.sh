@@ -2,7 +2,11 @@
 
 function miner_ver() {
 	local MINER_VER=$BMINER_VER
-	[[ -z $MINER_VER ]] && MINER_VER=$MINER_LATEST_VER
+	if [[ -z $MINER_VER ]]; then 
+		MINER_VER=$MINER_LATEST_VER
+		[[ ! -z $MINER_LATEST_VER_UBU16 && $(lsb_release  -c) =~ xenial ]] &&
+			MINER_VER=$MINER_LATEST_VER_UBU16
+	fi
 	echo $MINER_VER
 }
 

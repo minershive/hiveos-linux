@@ -9,7 +9,12 @@ function miner_fork() {
 
 function miner_ver() {
 	local MINER_VER=$ETHMINER_VER
-	[[ -z $MINER_VER ]] && eval "MINER_VER=\$MINER_LATEST_VER_${MINER_FORK^^}" #uppercase MINER_FORK
+	if [[ -z $MINER_VER ]]; then
+		local -n MINER_VER="MINER_LATEST_VER_${MINER_FORK^^}" # uppercase MINER_FORK
+		local -n MINER_VER_CUDA11="MINER_LATEST_VER_${MINER_FORK^^}_CUDA11"
+		[[ ! -z $MINER_VER_CUDA11 && $(nvidia-smi --help 2>&1 | head -n 1 | grep -oP "v\K[0-9]+") -ge 455 ]] &&
+			MINER_VER=$MINER_VER_CUDA11
+	fi
 	echo $MINER_VER
 }
 

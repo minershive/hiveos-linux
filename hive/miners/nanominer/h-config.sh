@@ -2,10 +2,13 @@
 
 function miner_ver() {
   local MINER_VER=$NANOMINER_VER
-  [[ -z $MINER_VER ]] && MINER_VER=$MINER_LATEST_VER
+  if [[ -z $MINER_VER ]]; then
+    MINER_VER=$MINER_LATEST_VER
+    [[ ! -z $MINER_LATEST_VER_CUDA11 && $(nvidia-smi --help 2>&1 | head -n 1 | grep -oP "v\K[0-9]+") -ge 455 ]] && 
+      MINER_VER=$MINER_LATEST_VER_CUDA11
+  fi
   echo $MINER_VER
 }
-
 
 function miner_config_echo() {
   local MINER_VER=`miner_ver`

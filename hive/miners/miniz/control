@@ -1,8 +1,7 @@
 Package: hive-miners-miniz
-Version: 0.6-27
+Version: 0.6-28
 Section: base
 Priority: optional
 Architecture: all
-Depends: hive-miners-miniz-1.6x
 Maintainer: Bee <bee@hiveos.farm>
 Description: Hive miner - miniZ
