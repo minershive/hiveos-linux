@@ -1,0 +1,13 @@
+lolMiner v1.18a
+* Improved Zombie mode power draw & speed Polaris GPUs (R9 380, RX Fury, RX 4x0 and RX 5x0). 
+  Depending on configuration, the zombie mode now uses 0.5 to 1W less energy and is 0.2 to 0.4 mh/s faster
+* Added --zombie-tune parameter for Polaris GPUs. This will increase the performance of zombie mode (further up on the general improvement) by an other 5-15%, 
+  depending on parameter and epoch (later epochs profit more). Default value is 0 (off), for most cards the value of 2 is optimal. 
+  If you see cards getting slower then before, set to 0 or 1. 
+  Note: you either can give one value for the whole rig or provide a comma separated list for each card individually. Cards not running zombie mode ignore the parameter
+* The parameter --4g-alloc-size can now also be set for each card individually
+* Slight rework of Beam Hash III back end. Improves poolside hash rate by approx 0.2 to 0.3% - displayed hashrate and power consume kept equal
+* Fixed: segmentation fault when the dns resolve of a pool fails
+* Fixed: miner does not restart after connection loss
+* Applied potential fix for "address or port already in use" bug
+
