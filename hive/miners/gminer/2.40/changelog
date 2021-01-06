@@ -1,0 +1,10 @@
+Gminer v2.40
+* significant performance improvements for KawPoW, especially on rigs with large number of GPUs
+* improved compatibility with Ravencoin pools
+* added option to control DAG buffering mode single or dual via option `--dag_mode`
+* added option to support "Zombie Mode" for Ethash, Etchash and KawPoW algortihms via option `--dag_limit`
+* improved detection of freezing AMD GPUs
+* fixed display of core and memory clocks
+* display GPU PCI index on miner startup
+* removed unpopular algorithms: sero, vprogpow, progpowz, cuckarood29, cuckarood29v
+
