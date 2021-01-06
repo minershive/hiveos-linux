@@ -15,6 +15,7 @@ else
 fi
 
 #need nohup or the sreboot will stop miner and this process also in it
-nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+#nohup bash -c 'sreboot' > /tmp/nohup.log 2>&1 &
+sreboot
 
 exit 0
