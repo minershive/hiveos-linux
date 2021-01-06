@@ -8,6 +8,7 @@ OC_TIMEOUT=120
 NVS_TIMEOUT=10
 NVSMI_TIMEOUT=10
 MAX_DELAY=300
+MIN_DELAY=30
 PILLMEM=-1000
 export DISPLAY=":0"
 
@@ -123,6 +124,7 @@ if [[ $DELAY -gt 0 && "$1" != "delay" && "$1" != "delayed" ]]; then
 fi
 if [[ $DELAY -gt 0 ]]; then
 	if [[ "$1" == "delayed" ]]; then
+		[[ $DELAY -lt $MIN_DELAY ]] && DELAY=$MIN_DELAY
 		[[ $MAX_DELAY -gt 0 && $DELAY -gt $MAX_DELAY ]] &&
 			echo -e "${YELLOW}Limiting delay to ${MAX_DELAY} secs${NOCOLOR}" &&
 			DELAY=$MAX_DELAY
