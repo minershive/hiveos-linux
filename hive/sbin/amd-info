@@ -1,7 +1,20 @@
 #!/usr/bin/env bash
 
-#[ -t 1 ] &&
-. colors
+[[ "$1" != "nocolor" ]] && source colors
+
+if [[ "$1" == -h || "$1" == --help ]]; then
+	echo "Usage: amd-info [index] [busid:00] ..."
+	exit 0
+fi
+
+HIGH_TEMP=100
+MID_TEMP=70
+
+TIMEOUT_T1=5
+TIMEOUT_T2=10
+TIMEOUT_T3=15
+
+LEGACY=0
 
 date
 
@@ -37,18 +50,68 @@ fi
 
 # get gpu info from gpu-detect
 declare -A GPUINFO
-while IFS=";" read busid name vbios; do
-	GPUINFO["${busid:--}"]="$name $NOCOLOR$vbios"
-done < <( echo "$gpu_detect_json" | jq -r -c '.[] | (.busid+";"+.name+";"+.vbios)' 2>/dev/null )
+declare -A MEMINFO
+while IFS=";" read busid name mem memtype; do
+	GPUINFO["${busid:--}"]="$name ${WHITE}$mem"
+	MEMINFO["${busid:--}"]="$memtype"
+done < <( echo "$gpu_detect_json" | jq -r -c '.[] | (.busid+";"+.name+";"+.mem+";"+.mem_type)' 2>/dev/null )
+
+# get current memory params
+MEMTWEAK=`amdmemtweak --current`
 
 
-i=-1
+function get_clocks() {
+	local cardno="$1"
+	local param="$2"
+	if [[ ! -f "/sys/class/drm/card$cardno/device/$param" ]]; then
+		unset ${param}_clocks ${param}_state ${param}_mhz
+		return 1
+	fi
+	local -n pp_dpm="$param"
+	pp_dpm=$(< /sys/class/drm/card$cardno/device/$param)
+	readarray -t ${param}_clocks < <(echo "$pp_dpm" | grep -oP ":\s*\K[0-9]+")
+	read ${param}_state ${param}_mhz < <(echo "$pp_dpm" | grep -m1 '*' | awk '{print int($1)" "int($2)}')
+}
+
+
+function print_clocks() {
+	local param="$1"
+	local name="$2"
+	local color="$3"
+	local -n clocks="${param}_clocks"
+	local -n state="${param}_state"
+	local out=
+	if [[ ${#clocks[@]} -gt 0 ]]; then
+		for((i=0; i < ${#clocks[@]}; i++)); do
+			[[ $i == "$state" ]] && out+=" ${WHITE}${clocks[$i]}*${NOCOLOR}" || out+=" ${clocks[$i]}"
+		done
+		if [[ ! -z "$state" ]]; then
+			echo "  $name state: ${color:-$WHITE}$state${NOCOLOR}, clocks:$out"
+		else
+			echo "  $name clocks:$out"
+		fi
+	fi
+}
+
+
+print_temp() {
+	local temp=${1%%.}
+	local coef=$2
+	[[ -z $temp ]] && echo "${BPURPLE}n/a${NOCOLOR}" && return 1
+	[[ ! "$temp" =~ ^[0-9]+$ ]] && echo "${WHITE}$1°C${NOCOLOR}" && return 1
+	[[ $coef -gt 0 ]] && temp=$(( temp/coef ))
+	[[ $temp -ge $HIGH_TEMP ]] && echo "${BRED}${temp}°C${NOCOLOR}" && return
+	[[ $temp -ge $MID_TEMP ]] && echo "${BYELLOW}${temp}°C${NOCOLOR}" && return
+	echo "${BGREEN}${temp}°C${NOCOLOR}"
+}
+
+
+index=-1
 #for dir in $dirs; do
 for bdir in $busids_dirs; do
 	dir=`echo $bdir | awk -F\; '{print $2}'`
 
-	(( i++ ))
-	echo ""
+	(( index++ ))
 
 	[[ $dir =~ \/card([0-9a-z]+)\/ ]]
 	cardno=${BASH_REMATCH[1]}
@@ -59,77 +122,176 @@ for bdir in $busids_dirs; do
 	busid=`echo $bdir | awk -F\; '{print $1}'`
 	busid=${busid#0000:} #trim prefix
 
+	# filter output by index or busid
+	[[ ! -z "$@" && (! " $@ " =~ ( $index ) && ! " $@ " =~  ( ${busid/.0} )) ]] && continue
+
 	name="${GPUINFO["$busid"]}"
 	[[ -z "$name" ]] && name="`lspci -vmms "$busid" 2>/dev/null | grep -oP "^Device:\s\K.*"`"
 
-	[[ -z $cardno ]] && echo -e "${RED}ERROR: can not match card no in $dir${NOCOLOR}" && continue
-	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}$i${NOCOLOR}, ${PURPLE}$busid${NOCOLOR} ${BRED}$name ${YELLOW}===${NOCOLOR}"
+	[[ -z $cardno ]] && echo -e "${RED}ERROR: can not match card no in ${dir}${NOCOLOR}" && continue
 
-	amdcovc -a $i
+	echo ""
+	echo -e "${YELLOW}===${NOCOLOR} GPU ${CYAN}${index}${NOCOLOR}, ${PURPLE}${busid}${NOCOLOR} ${BRED}${name} ${YELLOW}===${NOCOLOR}"
+
+	#amdcovc -a $index
+
+	hwmondir=`realpath /sys/class/drm/card$cardno/device/hwmon/hwmon*/`
+
+	vbios=`cat /sys/class/drm/card$cardno/device/vbios_version 2>/dev/null | tr -d '[:cntrl:]'`
+	echo -n "  Bios: ${WHITE}${vbios}${NOCOLOR}"
+	uuid=`timeout -s9 $TIMEOUT_T1 atitool -i=$index -sidslt -debug=0 | grep -oP "^\s*\K[A-Z0-9]+$"`
+	[[ ! -z $uuid ]] && echo -n ", UUID: ${WHITE}${uuid}${NOCOLOR}"
+	echo ""
 
 	#echo "  Performance level: `cat /sys/class/drm/card$cardno/device/power_dpm_force_performance_level`"
 	#echo "  Core state: `cat /sys/class/drm/card$cardno/device/pp_dpm_sclk | grep '*'`"
 	#echo "  Mem state: `cat /sys/class/drm/card$cardno/device/pp_dpm_mclk | grep '*'`"
 
-	#plevel=`cat /sys/class/drm/card$cardno/device/power_dpm_force_performance_level`
+	#plevel=`cat /sys/class/drm/card$cardno/device/power_dpm_force_performance_level 2>/dev/null`
 	#[[ $plevel == "manual" ]] && plevelStr="${YELLOW}$plevel${NOCOLOR}" || plevelStr="${BLUE}$plevel${NOCOLOR}"
 
-	sclk=`grep -m1 '*' /sys/class/drm/card$cardno/device/pp_dpm_sclk 2>/dev/null` #3: 1100Mhz *
-	mclk=`grep -m1 '*' /sys/class/drm/card$cardno/device/pp_dpm_mclk 2>/dev/null` #2: 1900Mhz *
-	fanrpm=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/fan1_input 2>/dev/null` #rpm from fan
-	ref=`amdmemtweak --current | sed -n "/pci:0000:${busid}/,/pci/p" | grep -oP "REF: \K[0-9]+"`
-	core_dpm=`echo $sclk | awk '{print $1}' | sed -e 's/://'`
-	core_mhz=`echo $sclk | awk '{print $2}'`
-	mem_dpm=`echo $mclk | awk '{print $1}' | sed -e 's/://'`
-	mem_mhz=`echo $mclk | awk '{print $2}'`
+	amdgpu_pm_info=()
+	declare -A PMINFO=()
+	if [[ -f /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]]; then
+		readarray -t amdgpu_pm_info < /sys/kernel/debug/dri/$cardno/amdgpu_pm_info
+		# convert into associative array
+		for line in "${amdgpu_pm_info[@]}"; do
+			if [[ "$line" =~ ([^:]+):\ ([0-9\.]+) ]]; then
+				PMINFO["${BASH_REMATCH[1]// }"]="${BASH_REMATCH[2]}"
+			elif [[ "$line" =~ ([0-9\.]+)[^\(]+\(([^\)]+) ]]; then
+				PMINFO["${BASH_REMATCH[2]// }"]="${BASH_REMATCH[1]}"
+			fi
+		done
+		#echo "${PMINFO[@]}" #"
+	fi
+
+	power="${PMINFO[averageGPU]}"
+	if [[ -z "$power" && -f ${hwmondir}/power1_average ]]; then
+		power=$(< ${hwmondir}/power1_average)
+		power=$(( power/1000/1000 ))
+	fi
+
+	load="${PMINFO[GPULoad]}"
+	if [[ -z "$load" && -f /sys/class/drm/card${cardno}/device/gpu_busy_percent ]]; then
+		load=$(< /sys/class/drm/card${cardno}/device/gpu_busy_percent)
+	fi
+
+	mload="${PMINFO[MEMLoad]}"
+
+	gtemp="${PMINFO[GPUTemperature]}"
+	if [[ -z "$gtemp" && -f ${hwmondir}/temp1_input ]]; then
+		gtemp=$(< ${hwmondir}/temp1_input)
+		gtemp=$(( temp / 1000 ))
+	fi
+	#gtemp=`cat ${hwmondir}/temp1_input 2>/dev/null`
+	jtemp=`cat ${hwmondir}/temp2_input 2>/dev/null`
+	mtemp=`cat ${hwmondir}/temp3_input 2>/dev/null`
+	powercap=`cat ${hwmondir}/power1_cap 2>/dev/null`
+	fanrpm=`cat ${hwmondir}/fan1_input 2>/dev/null` # rpm from fan
+
+	fanspeed=0
+	if [[ -f ${hwmondir}/pwm1 ]]; then
+		[[ -f ${hwmondir}/pwm1_max ]] && fanmax=$(< ${hwmondir}/pwm1_max) || fanmax=255
+		[[ -f ${hwmondir}/pwm1_min ]] && fanmin=$(< ${hwmondir}/pwm1_min) || fanmin=0
+		fan=$(< ${hwmondir}/pwm1)
+		[[ $fan -gt $fanmin && $fanmax -gt $fanmin ]] && fanspeed=$(( (fan - fanmin) * 100 / (fanmax - fanmin) )) || fanspeed=0
+	fi
+
+	mem_mhz=${PMINFO[MCLK]}
+	core_mhz=${PMINFO[SCLK]}
+	vddc=${PMINFO[VDDGFX]}
+
+	ref=`echo "$MEMTWEAK" | sed -n "/pci:0000:${busid}/,/pci/p" | grep -m1 -oP "REF: \K[0-9]+"`
+
+	[[ -f /sys/class/drm/card$cardno/device/power_dpm_force_performance_level ]] &&
+		plevel=$(< /sys/class/drm/card$cardno/device/power_dpm_force_performance_level) ||
+		plevel="unknown"
+
+	get_clocks $cardno pp_dpm_sclk
+	get_clocks $cardno pp_dpm_mclk
+	get_clocks $cardno pp_dpm_socclk
+	get_clocks $cardno pp_dpm_dcefclk
+	get_clocks $cardno pp_dpm_fclk
+
+	core_dpm=$pp_dpm_sclk_state
+	mem_dpm=$pp_dpm_mclk_state
+
+	#[[ -z $core_mhz ]] && core_mhz=$pp_dpm_sclk_mhz
+	#[[ -z $mem_mhz ]] && core_mhz=$pp_dpm_mclk_mhz
+
 	ppod=`cat /sys/class/drm/card$cardno/device/pp_od_clk_voltage 2>/dev/null`
-	if [[ ! -z $ppod ]]; then
+	if [[ ! -z "$ppod" ]]; then
 		#corev=`echo "$ppod" | grep -m1 -A7 "OD_SCLK" | grep -m1 "$core_dpm:" | awk '{print $3}'`
 		memv=`echo "$ppod" | grep -m1 -A4 "OD_MCLK" | grep -m1 "$mem_dpm:" | awk '{print $3}'`
 	fi
-	corev=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(VDDGFX)' | awk '{print $1}'`
-	#[[ -z $corev ]] && corev=`vegatool -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
-	[[ -z $corev ]] && corev=`ohgodatool -i $cardno --show-voltage | grep -m1 -A1 "Voltage state $core_dpm" | grep VDD | sed -E "s/.*VDD = (.*)/\1/"`
-	[[ -z $memv || $memv == 0 ]] && memv=`ohgodatool -i $cardno --show-mem | grep -m1 -A1 "Memory state $mem_dpm" | grep VDDC | sed -E "s/.*VDDC: (.*)/\1/"`
+	mem_info=`ohgodatool -i $cardno --show-mem`
+	[[ -z $memv || $memv == 0 ]] && memv=`echo "$mem_info" | grep -m1 -A1 "Memory state $mem_dpm" | grep -oP "VDDC: \K.*"`
+	vddci=`echo "$mem_info" | grep -m1 -A2 "Memory state $mem_dpm" | grep -oP "VDDCI: \K.*"`
 
-	vddci=`ohgodatool -i $cardno --show-mem | grep -m1 -A2 "Memory state $mem_dpm" | grep VDDCI | sed -E "s/.*VDDCI: (.*)/\1/"`
+	echo -n "  Core: ${WHITE}${core_mhz} MHz${NOCOLOR}"
+	[[ ! -z $vddc ]] && echo -n " ${WHITE}${vddc}mV${NOCOLOR}"
+	echo -n ", Mem: ${WHITE}${mem_mhz} MHz${NOCOLOR}"
+	[[ ! -z $memv ]] && echo -n " ${WHITE}${memv}${NOCOLOR}"
+	[[ ! -z $vddci ]] && echo -n ", VDDCI: ${WHITE}${vddci}${NOCOLOR}"
+	[[ ! -z $ref ]] && echo -n ", REF: ${WHITE}$ref${NOCOLOR}"
+	echo ""
 
-	gtemp=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/temp1_input 2>/dev/null`
-	jtemp=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/temp2_input 2>/dev/null`
-	mtemp=`cat /sys/class/drm/card$cardno/device/hwmon/hwmon*/temp3_input 2>/dev/null`
-	[[ ! -z $jtemp ]] && [[ ! -z $mtemp ]] &&
-		echo -e  "  Temps :  GPU: $(($gtemp/1000))C   HotSpot: $(($jtemp/1000))C   Mem: $(($mtemp/1000))C "
+	echo -n "  PerfCtrl: ${WHITE}$plevel${NOCOLOR}, Load: ${WHITE}${load:-n/a}%${NOCOLOR}"
+	[[ ! -z $mload ]] && echo -n ", MemLoad: ${WHITE}${mload}%${NOCOLOR}"
+	echo -n ", Power: ${WHITE}${power} W${NOCOLOR}"
+	[[ ! -z $powercap ]] && echo -n ", Cap: ${WHITE}$(( powercap/1000/1000 )) W${NOCOLOR}"
+	echo ""
 
-	pwr='n/a'
-	[[ -e /sys/kernel/debug/dri/$cardno/amdgpu_pm_info ]] &&
-		pwr=`cat /sys/kernel/debug/dri/$cardno/amdgpu_pm_info | grep -m1 '(average GPU)' | awk '{print $1}'`
+	echo -n "  Core: $(print_temp $gtemp)"
+	[[ ! -z $jtemp ]] && echo -n ", HotSpot: $(print_temp $jtemp 1000)"
+	[[ ! -z $mtemp ]] && echo -n ", Mem: $(print_temp $mtemp 1000)"
+	echo ", Fan: ${WHITE}${fanspeed}%${NOCOLOR}, RPM: ${WHITE}${fanrpm:-n/a}${NOCOLOR}"
 
-	if [[ -e /sys/class/drm/card$cardno/device/current_link_speed ]]; then
-       pciestatus=$(atitool -i=$i -pciestatus -debug=0)
-       pciespeed=$(echo "$pciestatus" | grep "Link Speed" | sed "s/.*\= //")
-       pciewidth=$(echo "$pciestatus" | grep "Link Width" | sed "s/.*\= //")
-#		pciespeed=`cat /sys/class/drm/card$cardno/device/current_link_speed`
-#		pciewidth=`cat /sys/class/drm/card$cardno/device/current_link_width`
-		echo  "  PCIE Link speed: $pciespeed, PCIE Link width: $pciewidth"
+	print_clocks pp_dpm_sclk "Core" $BPURPLE
+	print_clocks pp_dpm_mclk "Mem " $BPURPLE
+	print_clocks pp_dpm_socclk "SOC "
+	print_clocks pp_dpm_dcefclk "DCEF"
+	print_clocks pp_dpm_fclk "F   "
+
+	if [[ -f /sys/class/drm/card$cardno/device/current_link_speed ]]; then
+		pciestatus=$(timeout -s9 $TIMEOUT_T3 atitool -i=$index -pciestatus -debug=0)
+		pciespeed=$(echo "$pciestatus" | grep -oP "Link Speed.*=\K.*")
+		pciewidth=$(echo "$pciestatus" | grep -oP "Link Width.*=\K.*")
+		#pciespeed=`cat /sys/class/drm/card$cardno/device/current_link_speed`
+		#pciewidth=`cat /sys/class/drm/card$cardno/device/current_link_width`
+		echo  "  PCIE Link speed:${WHITE}${pciespeed:-n/a}${NOCOLOR}, PCIE Link width:${WHITE}${pciewidth:-n/a}${NOCOLOR}"
 	fi
 
 	meminfo=
-	if [[ -e /sys/kernel/debug/dri/$cardno/amdgpu_vram_mm ]]; then
+	if [[ -f /sys/kernel/debug/dri/$cardno/amdgpu_vram_mm ]]; then
 		vram=`grep -m 1 "^total:" /sys/kernel/debug/dri/$cardno/amdgpu_vram_mm`
 		#total: 2097152, used 978872 free 1118280
 		[[ ! -z "$vram" ]] &&
-			meminfo=`echo "$vram" | awk '{printf "%s %.2f MB, %s: %.2f MB, %s: %.2f MB", $1, $2/256, $3, $4/256, $5, $6/256}'` &&
-			mem_type=$(gpu-detect listjson | jq -s '.[]|to_entries[]|select(.value.brand == "amd")|.value.mem_type' | jq -csr --arg i $i '.[$i|tonumber]') &&
-			echo "  Memory $meminfo  Type: $mem_type"
+			meminfo=`echo "$WHITE $NOCOLOR $vram" | awk '{printf "%s %s%.2f MB%s, %s: %s%.2f MB%s, %s: %s%.2f MB%s, ", $3, $1, $4/256, $2, $5, $1, $6/256, $2, $7, $1, $8/256, $2}'`
+		echo "  Memory ${meminfo}type: ${WHITE}${MEMINFO[$busid]}${NOCOLOR}"
 	fi
-	
-	atitool -i=$i -vctfstatus -debug=0 | grep -E '  MVDDQ  |  MVDDC  |   VDDCR_HBM  |  VDDCR_SOC  ' | sed  -e 's/ //g' \
-		-e 's/^/  /' -e 's/:/ : /g' | sed  ':a; /$/N; s/\n/,/; ta'
 
-	echo -n "  ${PURPLE}DPM${NOCOLOR} $core_dpm ${PURPLE}CORE${NOCOLOR} $core_mhz ${corev}mV"
-	echo -n " ${PURPLE}MDPM${NOCOLOR} $mem_dpm ${PURPLE}MEM${NOCOLOR} $mem_mhz $memv"
-	[[ ! -z $vddci ]] && echo -en " ${PURPLE}VDDCI${NOCOLOR} $vddci"
-	echo -n " ${PURPLE}REF${NOCOLOR} $ref"
-	echo    " ${PURPLE}PWR${NOCOLOR} $pwr W ${PURPLE}RPM${NOCOLOR} $fanrpm"
+	#timeout -s9 $TIMEOUT_T2 atitool -i=$index -vctfstatus -debug=0 | grep -E '  (MVDDQ|MVDDC|VDDCR_HBM|VDDCR_SOC)  ' | sed -e 's/ //g; s/^/  /; s/:/: /g;' | sed ':a; /$/N; s/\n/,/; ta'
+	vctfstatus=()
+	[[ ! -z $uuid && ! $uuid =~ ^0+$ ]] &&
+		readarray -t vctfstatus < <(timeout -s9 $TIMEOUT_T2 atitool -i=$index -vctfstatus -debug=0 | grep "VDD.*V$" | grep -v "Measured")
+	if [[ ${#vctfstatus[@]} -gt 0 ]]; then
+		out=
+		for line in "${vctfstatus[@]}"; do
+			[[ ! "$line" =~ ([^:]+):\ ([0-9\.]+) ]] && continue
+			volt=`echo "${BASH_REMATCH[2]}" | awk '{print int($1*1000)}'`
+			out+="${out:+, }${BASH_REMATCH[1]// }: ${WHITE}${volt}mV${NOCOLOR}"
+		done
+		[[ ! -z $out ]] && echo "  $out"
+	fi
 
+	# old legacy line
+	if [[ $LEGACY == 1 ]]; then
+		echo -n "  ${PURPLE}DPM${NOCOLOR} ${core_dpm:--} ${PURPLE}CORE${NOCOLOR} ${core_mhz:--}MHz ${vddc}mV"
+		echo -n " ${PURPLE}MDPM${NOCOLOR} ${mem_dpm:--} ${PURPLE}MEM${NOCOLOR} ${mem_mhz:--}MHz"
+		[[ ! -z $memv ]] && echo -n " $memv"
+		[[ ! -z $vddci ]] && echo -en " ${PURPLE}VDDCI${NOCOLOR} $vddci"
+		[[ ! -z $ref ]] && echo -n " ${PURPLE}REF${NOCOLOR} $ref"
+		echo    " ${PURPLE}PWR${NOCOLOR} ${power:-n/a} W" # ${PURPLE}RPM${NOCOLOR} ${fanrpm:-n/a}"
+	fi
 done
