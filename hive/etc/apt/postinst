@@ -171,6 +171,8 @@ fi
 rm -rf /hive/bminer* /hive/claymore* /hive/ccminer* /hive/cpuminer* /hive/custom* /hive/dstm* \
 /hive/ethminer* /hive/ewbf* /hive/lolminer* /hive/sgminer* /hive/xmr*
 
+# remove old version forgotten in some image
+[[ -f /root/nvidia-oc ]] && rm /root/nvidia-oc
 
 
 #will be created from stub

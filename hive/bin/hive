@@ -219,6 +219,7 @@ else
 
 	### modprobe drivers, nvidia better to be first ########################################
 	if [[ $GPU_COUNT_NVIDIA -gt 0 ]]; then
+		rm -f /var/log/nvidia-oc.log
 		echo2 "> Loading ${GREEN}NVIDIA${NOCOLOR} drivers, $GPU_COUNT_NVIDIA GPU"
 		modprobe nvidia_drm modeset=1
 	fi
@@ -226,6 +227,7 @@ else
 	rm /run/hive/NV_OFF > /dev/null 2>&1 # allow to run Nvidia tools
 
 	if [[ $GPU_COUNT_AMD -gt 0 ]]; then
+		rm -f /var/log/amd-oc.log
 		if [[ -e /opt/dkms-vega/amdgpu.ko ]]; then
 			. /hive/sbin/opencl_insert
 		fi
@@ -309,12 +311,6 @@ echo2 "> Starting agent screen"
 agent-screen start
 
 
-#remove previous log file for Nvidia OC
-#[[ -e /var/log/nvidia-oc.log ]] && rm /var/log/nvidia-oc.log
-# remove old version
-[[ -e /root/nvidia-oc ]] && rm /root/nvidia-oc
-
-
 # always generate X server config
 echo2 "> Creating X server config"
 echo2 "`xorg-conf`"
@@ -342,24 +338,19 @@ fi
 [[ $GPU_COUNT_NVIDIA -gt 0 ]] && nvidia-driver-update --cuda
 
 
-[[ $MAINTENANCE != 2 ]] &&
-	echo2 "> Starting autofan" &&
-	autofan start
-
 #echo2 "> Starting octofan"
 $OCTOFAN
 
 
 # Apply OC before miner start
 if [[ $MAINTENANCE != 2 ]]; then
-	if [[ $GPU_COUNT_AMD -gt 0 ]]; then
-		echo2 "> Applying AMD OC"
-		amd-oc nocolor
-	fi
-	# it is applied in miner start. but let's apply it for compatibility
 	if [[ $GPU_COUNT_NVIDIA -gt 0 ]]; then
 		echo2 "> Applying Nvidia OC"
-		nvidia-oc nocolor
+		nvidia-oc | sed 's/\x1b\[[0-9;]*m//g' # remove colors from syslog
+	fi
+	if [[ $GPU_COUNT_AMD -gt 0 ]]; then
+		echo2 "> Applying AMD OC"
+		amd-oc | sed 's/\x1b\[[0-9;]*m//g' # remove colors from syslog
 	fi
 fi
 
@@ -381,6 +372,11 @@ else
 		miner start
 	fi
 fi
+
+
+[[ $MAINTENANCE != 2 ]] &&
+	echo2 "> Starting autofan" &&
+	autofan start
 
 
 #k10temp for cpu temp
