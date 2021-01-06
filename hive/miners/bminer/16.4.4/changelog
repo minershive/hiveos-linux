@@ -1,0 +1,5 @@
+Bminer v16.4.4
+* Fix compatiblity issues with ETH pools that use the ethproxy protocols (e.g. Sparkpool)
+
+Bminer v16.4.3
+* Fix bugs that lead to high rejection rates in the AMD Ethereum solvers
