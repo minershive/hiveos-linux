@@ -25,7 +25,8 @@ fi
 [[ "$1" != "nocolor" ]] && source colors
 
 if [[ "$1" == "log" ]]; then
-	cat $OC_LOG 2>/dev/null && echo -n "${NOCOLOR}"
+	[[ ! -f $OC_LOG ]] && echo "${YELLOW}$OC_LOG does not exist${NOCOLOR}" && exit 1
+	cat $OC_LOG 2>/dev/null && echo -e "\n${GRAY}=== $OC_LOG === $( stat -c %y $OC_LOG )${NOCOLOR}"
 	exit
 fi
 
@@ -79,6 +80,24 @@ print_array() {
 }
 
 
+apply_settings() {
+	local args="$1"
+	local exitcode
+	local result
+	[[ -z "$args" ]] && return 0
+	echo -n "${RED}" # set color to red
+	result=`timeout --foreground -s9 $NVS_TIMEOUT nvidia-settings $args 2>&1 | grep -v "^$"`
+	exitcode=$?
+	if [[ $exitcode -eq 0 ]]; then
+		echo "${NOCOLOR}$result"
+	else
+		[[ ! -z "$result" ]] && echo "$result"
+		[[ $exitcode -ge 124 ]] && echo "nvidia-settings failed by timeout (exitcode=$exitcode)${NOCOLOR}" || echo "(exicode=$exitcode)${NOCOLOR}"
+	fi
+	return $exitcode
+}
+
+
 date
 echo -e "\nDetected $n NVIDIA cards\n"
 
@@ -114,32 +133,34 @@ if [[ $n -eq 0 ]]; then
 	exit 1
 fi
 
+
+[[ $OHGODAPILL_ENABLED -eq 1 && $OHGODAPILL_START_TIMEOUT -lt 0 ]] && PILLFIX=1 || PILLFIX=0
+
 # delay is applied on every miner start
+MSG=
 NEED_DELAY=0
 DELAY=$RUNNING_DELAY
 [[ $DELAY -lt 0 ]] && DELAY=0
 if [[ $DELAY -gt 0 && "$1" != "delay" && "$1" != "delayed" ]]; then
-	echo -e "${YELLOW}Ignoring OC delay ${MAX_DELAY} secs. Use ${BYELLOW}nvidia-oc delay${YELLOW} to apply with it${NOCOLOR}\n"
+	MSG=$'\n'"  ${YELLOW}Use ${BYELLOW}nvidia-oc delay${YELLOW} to apply OC with delay (${MAX_DELAY} secs)${NOCOLOR}"
 	DELAY=0
 fi
-if [[ $DELAY -gt 0 ]]; then
-	if [[ "$1" == "delayed" ]]; then
-		[[ $DELAY -lt $MIN_DELAY ]] && DELAY=$MIN_DELAY
-		[[ $MAX_DELAY -gt 0 && $DELAY -gt $MAX_DELAY ]] &&
-			echo -e "${YELLOW}Limiting delay to ${MAX_DELAY} secs${NOCOLOR}" &&
-			DELAY=$MAX_DELAY
-		echo -e "${CYAN}Waiting $DELAY secs before applying...${NOCOLOR}\n"
-		sleep $DELAY
-		DELAY=0
-	fi
+if [[ "$1" == "delayed" && $DELAY -gt 0 ]]; then
+	[[ $DELAY -lt $MIN_DELAY ]] && DELAY=$MIN_DELAY
+	[[ $MAX_DELAY -gt 0 && $DELAY -gt $MAX_DELAY ]] &&
+		echo -e "${YELLOW}Limiting delay to ${MAX_DELAY} secs${NOCOLOR}" &&
+		DELAY=$MAX_DELAY
+	echo -e "${CYAN}Waiting $DELAY secs before applying...${NOCOLOR}\n"
+	sleep $DELAY
+	DELAY=0
+	[[ $PILLFIX -eq 1 ]] && PILLFIX=-1 # Pill fix is already applied
+else
+	pgrep --full nvidia-persistenced > /dev/null || nvidia-persistenced --persistence-mode
+	echo "Killing PILL"
+	# kill Pill if running
+	pkill -f '/hive/opt/ohgodapill/run.sh'
+	pkill -f '/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2'
 fi
-
-
-pgrep --full nvidia-persistenced > /dev/null || nvidia-persistenced --persistence-mode
-# kill Pill if running.
-pkill -f '/hive/opt/ohgodapill/run.sh'
-pkill -f '/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2'
-[[ $OHGODAPILL_ENABLED -eq 1 && $OHGODAPILL_START_TIMEOUT -lt 0 ]] && PILLFIX=1 || PILLFIX=0
 
 
 # MAP OC to MB BUS ID
@@ -208,16 +229,16 @@ done
 AUTOFAN_ENABLED=$( [[ `pgrep -cf "/hive/sbin/autofan run"` -gt 0 && -f $AUTOFAN_CONF ]] && source $AUTOFAN_CONF && echo "$ENABLED" )
 
 nvparams=
-nvquery=`timeout -s9 $NVS_TIMEOUT nvidia-settings -q GPUMemoryTransferRateOffset -q GPUGraphicsClockOffset -q GPUTargetFanSpeed \
+nvquery=`timeout --foreground -s9 $NVS_TIMEOUT nvidia-settings -q GPUMemoryTransferRateOffset -q GPUGraphicsClockOffset -q GPUTargetFanSpeed \
                  -q GPULogoBrightness -q GPUPowerMizerMode -q GPUPerfModes | grep -vE "values|target" | tr '\n' ' ' 2>&1`
 nvcode=$?
 
 if [[ $nvcode -eq 0 ]]; then
 	nvparams="${nvquery//Attribute/$'\n'}"
 elif [[ $nvcode -ge 124 ]]; then
-	echo "NVS query error: nvidia-settings failed by timeout"
+	echo "${RED}NVS query error: nvidia-settings failed by timeout (exitcode=$nvcode)${NOCOLOR}"
 else
-	echo "NVS query error: $perfquery"
+	echo "${RED}NVS query error: $perfquery${NOCOLOR}"
 fi
 
 
@@ -232,13 +253,16 @@ for (( i=0; i < ${#BUSID[@]}; ++i )); do
 
 	pldef="${PLDEF[$i]%%[!0-9]*}"
 	[[ -z "${PLIMIT[$i]}" ]] && PLIMIT[$i]=0
-	nvresult=`timeout -s9 $NVSMI_TIMEOUT nvtool -q --nodev -i $i --setpl ${PLIMIT[$i]}`
+	echo -en "${RED}" # set color to red
+	nvresult=`timeout --foreground -s9 $NVSMI_TIMEOUT nvtool -q --nodev -i $i --setpl ${PLIMIT[$i]}`
 	nvcode=$?
-	[[ $nvcode -ne 0 ]] && color=$RED || color=$NOCOLOR
-	[[ ! -z "$nvresult" ]] && echo "${color}$nvresult${NOCOLOR}"
-	[[ $nvcode -ge 124 ]] && echo "${RED}nvtool failed by timeout$NOCOLOR"
-	[[ $nvcode -ne 0 ]] && exitcode=$nvcode
-
+	if [[ $nvcode -ne 0 ]]; then
+		exitcode=$nvcode
+		[[ ! -z "$nvresult" ]] && echo "$nvresult"
+		[[ $nvcode -ge 124 ]] && echo "nvtool failed by timeout (exitcode=$nvcode)${NOCOLOR}" || echo "(exicode=$nvcode)${NOCOLOR}"
+	else
+		echo "${NOCOLOR}$nvresult"
+	fi
 
 	x=`echo "$nvparams" | grep -oP "'GPUPerfModes'.*\[gpu\:$i\].* perf=\K[0-9]+"`
 	if [[ -z "$x" ]]; then
@@ -248,9 +272,9 @@ for (( i=0; i < ${#BUSID[@]}; ++i )); do
 		elif [[ ${NAME[$i]} =~ "1660 Ti"  || ${NAME[$i]} =~ "1660 SUPER" || ${NAME[$i]} =~ "1650 SUPER" ]]; then x=4
 		elif [[ ${NAME[$i]} =~ "P106-100" || ${NAME[$i]} =~ "1050" || ${NAME[$i]} =~ "1650" || ${NAME[$i]} =~ "1660" ]]; then x=2
 		fi
-		echo "  Max Perf mode: $x"
+		echo "  ${GRAY}Max Perf mode: $x${NOCOLOR}"
 	else
-		echo "  Max Perf mode: $x (auto)"
+		echo "  ${GRAY}Max Perf mode: $x (auto)${NOCOLOR}"
 	fi
 
 
@@ -263,7 +287,7 @@ for (( i=0; i < ${#BUSID[@]}; ++i )); do
 
 	[[ -z "${FAN[$i]}" ]] && FAN[$i]=0
 	if [[ `echo "$nvparams" | grep -oP "'GPUTargetFanSpeed'.*\[gpu\:$i\]\): \K[0-9]+"` == "${FAN[$i]}" ]]; then
-		echo "'GPUTargetFanSpeed' was already set to ${FAN[$i]}"
+		echo "  ${GRAY}Attribute 'GPUTargetFanSpeed' was already set to ${FAN[$i]}${NOCOLOR}"
 	else
 		if [[ ${FAN[$i]} == 0 ]]; then
 			[[ "$AUTOFAN_ENABLED" != 1 ]] &&
@@ -279,21 +303,21 @@ for (( i=0; i < ${#BUSID[@]}; ++i )); do
 
 
 	[[ -z "${CLOCK[$i]}" ]] && CLOCK[$i]=0
-	# if delay is set reset clocks for the first time
-	[[ ${CLOCK[$i]} -gt 0 && $DELAY -gt 0 ]] && CLOCK[$i]=0 && NEED_DELAY=1
-	if [[ `echo "$nvparams" | grep -oP "'GPUGraphicsClockOffset'.*\[gpu\:$i\]\): \K[0-9]+"` == "${CLOCK[$i]}" ]]; then
-		echo "  'GPUGraphicsClockOffset' was already set to ${CLOCK[$i]}"
+	# if delay is set reset clocks for the first time (except 1080* in Pill Fix mode)
+	[[ ${CLOCK[$i]} -gt 0 && $DELAY -gt 0 && ($PILLFIX -eq 0 || ! "${NAME[$i]}" =~ 1080) ]] && CLOCK[$i]=0 && NEED_DELAY=1
+	if [[ `echo "$nvparams" | grep -oP "'GPUGraphicsClockOffset'.*\[gpu\:$i\]\): \K-?[0-9]+"` == "${CLOCK[$i]}" ]]; then
+		echo "  ${GRAY}Attribute 'GPUGraphicsClockOffset' was already set to ${CLOCK[$i]}${NOCOLOR}"
 	else
 		args+=" -a [gpu:$i]/GPUGraphicsClockOffset[$x]=${CLOCK[$i]}"
 	fi
 
 
 	[[ -z "${MEM[$i]}" ]] && MEM[$i]=0
-	# if delay is set reset clocks for the first time
-	[[ ${MEM[$i]} -gt 0 && $DELAY -gt 0 ]] && MEM[$i]=0 && NEED_DELAY=1
+	# if delay is set reset clocks for the first time (except 1080* in Pill Fix mode)
 	[[ $PILLFIX -eq 1 && "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -gt $PILLMEM ]] && MEMCLOCK=0 || MEMCLOCK="${MEM[$i]}"
-	if [[ `echo "$nvparams" | grep -oP "'GPUMemoryTransferRateOffset'.*\[gpu\:$i\]\): \K[0-9]+"` == "$MEMCLOCK" ]]; then
-		echo "  'GPUMemoryTransferRateOffset' was already set to $MEMCLOCK"
+	[[ $MEMCLOCK -gt 0 && $DELAY -gt 0 ]] && MEMCLOCK=0 && NEED_DELAY=1
+	if [[ `echo "$nvparams" | grep -oP "'GPUMemoryTransferRateOffset'.*\[gpu\:$i\]\): \K-?[0-9]+"` == "$MEMCLOCK" ]]; then
+		echo "  ${GRAY}Attribute 'GPUMemoryTransferRateOffset' was already set to $MEMCLOCK${NOCOLOR}"
 	else
 		args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[$x]=$MEMCLOCK"
 	fi
@@ -303,30 +327,12 @@ for (( i=0; i < ${#BUSID[@]}; ++i )); do
 	[[ ! -z "$brightness" && ! -z "$LOGO_BRIGHTNESS" && "$brightness" != "$LOGO_BRIGHTNESS" ]] &&
 		args+=" -a [gpu:$i]/GPULogoBrightness=$LOGO_BRIGHTNESS"
 
-
-	if [[ ! -z $args ]]; then
-		echo -en "${RED}"
-		nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args 2>&1 | grep -v "^$"`
-		nvcode=$?
-		[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
-		echo "${NOCOLOR}$nvresult"
-		[[ $nvcode -ne 0 ]] && exitcode=$nvcode
-	fi
+	apply_settings "$args"
 
 done
 
-
-# apply delay only if some settings were reset
-if [[ $NEED_DELAY -gt 0 && $DELAY -gt 0 ]]; then
-	echo
-	echo "Full OC will be applied in $DELAY secs${NOCOLOR}"
-
-	# append to log file
-	nohup timeout -s9 $(( OC_TIMEOUT + DELAY )) \
-		bash -c "set -o pipefail; nvidia-oc delayed internal 2>&1 | tee -a $OC_LOG" > /dev/null 2>&1 &
-
 # start Pill if needed
-elif [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
+if [[ "$OHGODAPILL_ENABLED" -eq 1 && $PILLFIX -ne -1 && ($NEED_DELAY -eq 0 || $PILLFIX -eq 1) ]]; then
 	echo
 	echo "${YELLOW}===${NOCOLOR} Starting OhGodAnETHlargementPill ${YELLOW}=== `date +"%T"`${NOCOLOR}"
 	sleep 1
@@ -345,13 +351,9 @@ elif [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
 			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 && ${MEM[$i]} -gt $PILLMEM ]] &&
 				args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[3]=$PILLMEM"
 		done
-		if [[ ! -z $args ]]; then
-			echo "${RED}"
-			nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args | grep -v "^$"`
-			nvcode=$?
-			[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
-			echo "${NOCOLOR}$nvresult"
-			[[ $nvcode -ne 0 ]] && exitcode=$nvcode
+		if [[ ! -z "$args" ]]; then
+			echo -e "\n  ${GRAY}Phase I${NOCOLOR}"
+			apply_settings "$args"
 			sleep 1
 		fi
 
@@ -361,21 +363,27 @@ elif [[ "$OHGODAPILL_ENABLED" -eq 1 ]]; then
 			[[ "${NAME[$i]}" =~ 1080 && ${MEM[$i]} -ne 0 && ${MEM[$i]} -gt $PILLMEM ]] &&
 				args+=" -a [gpu:$i]/GPUMemoryTransferRateOffset[3]=${MEM[$i]}"
 		done
-		if [[ ! -z $args ]]; then
-			echo "${RED}"
-			nvresult=`timeout -s9 $NVS_TIMEOUT nvidia-settings $args | grep -v "^$"`
-			nvcode=$?
-			[[ $nvcode -ge 124 ]] && echo "nvidia-settings failed by timeout"
-			echo "${NOCOLOR}$nvresult"
-			[[ $nvcode -ne 0 ]] && exitcode=$nvcode
+		if [[ ! -z "$args" ]]; then
+			echo -e "\n  ${GRAY}Phase II${NOCOLOR}"
+			apply_settings "$args"
 			sleep 1
 		fi
 	fi
 
-	echo -e "\n  Pill will be ready in ${OHGODAPILL_START_TIMEOUT#-} sec"
+	echo -e "\n  ${WHITE}Pill will be ready in ${OHGODAPILL_START_TIMEOUT#-} sec${NOCOLOR}"
 	nohup /hive/opt/ohgodapill/run.sh $OHGODAPILL_ARGS > /dev/null 2>&1 &
 fi
 
-echo ""
+# apply delay only if some settings were reset
+if [[ $NEED_DELAY -gt 0 && $DELAY -gt 0 ]]; then
+	echo
+	echo "  ${WHITE}Full OC will be applied in $DELAY secs${NOCOLOR}"
+
+	# append to log file
+	nohup timeout -s9 $(( OC_TIMEOUT + DELAY )) \
+		bash -c "set -o pipefail; nvidia-oc delayed internal 2>&1 | tee -a $OC_LOG" > /dev/null 2>&1 &
+fi
+
+echo "$MSG"
 
 exit $exitcode
