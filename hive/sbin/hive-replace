@@ -134,7 +134,7 @@ function get_image_from_list {
 	else
 		# works for ftp also
 		list=`curl -fskL --list --connect-timeout $TIMEOUT --retry 2 "$URL" 2>/dev/null` &&
-			readarray -t arr < <( echo "$list" | grep -oP "$ARCHIVE_REGEX" | sed 's/%40/@/g' | sort -n -t "@" -k1 ) ||
+			readarray -t arr < <( echo "$list" | grep -oP "$ARCHIVE_REGEX" | sed 's/%40/@/g' | sort -r -n -t "@" -k 2 ) ||
 				echo -e "${RED}> Unable to load images list from repository${NOCOLOR}"
 	fi
 
