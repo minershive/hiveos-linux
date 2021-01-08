@@ -561,7 +561,7 @@ function write {
 	echo -e "Your rig is configured and ready to work under Hive OS."
 
 	if [[ $configured -eq 1 ]]; then
-		[[ -e old-config/rig.conf ]] && source old-config/rig.conf
+		[[ -f old-config/rig.conf ]] && source old-config/rig.conf
 		[[ ! -z "$RIG_ID" && ! -z "$RIG_PASSWD" && ! -z "$HIVE_HOST_URL" ]] &&
 			echo -e "RIG ID: $RIG_ID, API: $HIVE_HOST_URL"
 	fi
@@ -695,7 +695,7 @@ for param in "$@"; do
 			get_image_from_url "$param" "this" || exit
 		;;
 		*hive*.xz|*hive*.zip)
-			[[ ! -e "$param" && -e "$DIR/$param" ]] && param="$DIR/$param"
+			[[ -f "$DIR/$param" ]] && param="$DIR/$param"
 			url=$( url_decode "$param" )
 		;;
 		-l|--list)
@@ -729,7 +729,7 @@ for param in "$@"; do
 		;;
 		--download=*)
 			[[ -z ${param#*=} ]] && echo -e "${RED}> Download PATH is required, exiting${NOCOLOR}" && exit 1
-			[[ ! -e ${param#*=} ]] && echo -e "${RED}> Provided PATH does not exist, exiting${NOCOLOR}" && exit 1
+			[[ ! -f ${param#*=} ]] && echo -e "${RED}> Provided PATH does not exist, exiting${NOCOLOR}" && exit 1
 			download_path="${param#*=}"
 		;;
 		*)
