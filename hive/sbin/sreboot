@@ -54,8 +54,8 @@ if [[ $fastmode -eq 0 ]]; then
 	fi
 	killall apt apt-get dpkg 2>/dev/null
 
-	sync
-	umount -f /hive-config && mount -n -o ro /hive-config
+	#sync
+	#umount -f /hive-config && mount -n -o ro /hive-config
 	#mount -f -o remount,ro /
 
    	# stop hw watchdogs pings
@@ -72,7 +72,6 @@ fi
 #‘o’ – Shutdown the system immediately.
 #‘t’ – Output a list of current tasks and their information to the console.
 
-
 echo 1 > /proc/sys/kernel/sysrq # enable
 echo s > /proc/sysrq-trigger # sync
 sync
@@ -82,16 +81,13 @@ echo u > /proc/sysrq-trigger # umount
 if [[ $1 == "shutdown" || $1 == "wakealarm" || $POWERCYCLE -ne 0 ]]; then
 	if [[ $1 != "shutdown" ]]; then
 		[[ ! -z $2 ]] && WAKEALARM_TIMEOUT=$2
-		echo "> Setting wakealarm to $WAKEALARM_TIMEOUT seconds"
+		echo "> Setting wakealarm to $WAKEALARM_TIMEOUT sec and shutting down"
 		echo 0 > /sys/class/rtc/rtc0/wakealarm
 		echo +$WAKEALARM_TIMEOUT > /sys/class/rtc/rtc0/wakealarm
-	fi
-	echo "> Shutting down"
-	sleep 1
-	if [[ $2 == "fast" ]]; then
-		#echo 1 > /proc/sys/kernel/sysrq # enable
 		echo o > /proc/sysrq-trigger # poweroff
 	fi
+	echo "> Shutting down"
+	[[ $2 == "fast" ]] && echo o > /proc/sysrq-trigger # poweroff
 	poweroff # -f
 else
 	if [[ $1 == "wd" ]]; then
@@ -101,8 +97,6 @@ else
 		sleep 1
 	fi
 	echo "> Rebooting"
-	sleep 1
-	#echo 1 > /proc/sys/kernel/sysrq # enable
 	echo b > /proc/sysrq-trigger # reboot
 	reboot -f # does not work well on high LA
 fi
