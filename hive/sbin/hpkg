@@ -172,8 +172,10 @@ function fix_packages() {
 
 #------------------------------------------------------------------------------------------------------------------
 
-
-if [[ $1 == "remove" && $2 == "miners" ]]; then
+if [[ $1 == "purge" ]]; then
+	fix_packages
+	remove_miners "noinstall"
+elif [[ $1 == "remove" && $2 == "miners" ]]; then
 	remove_miners $3
 elif [[ $1 == "list" ]]; then
 	list $2
@@ -192,6 +194,7 @@ else
 ${YELLOW}update${NOCOLOR} - update packages list from repository
 ${YELLOW}check${NOCOLOR} - check for broken packages
 ${YELLOW}fix${NOCOLOR} - reinstall broken packages
+${YELLOW}purge${NOCOLOR} - remove all miners
 ${YELLOW}list${NOCOLOR} - list all installed hive packages
 ${YELLOW}list miners${NOCOLOR} - list only miners packages
 ${YELLOW}getlist${NOCOLOR} - list without versions
