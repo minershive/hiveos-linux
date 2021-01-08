@@ -18,7 +18,8 @@ fi
 [[ "$1" != "nocolor" ]] && source colors
 
 if [[ "$1" == "log" ]]; then
-	cat $OC_LOG 2>/dev/null && echo -n "${NOCOLOR}"
+	[[ ! -f $OC_LOG ]] && echo "${YELLOW}$OC_LOG does not exist${NOCOLOR}" && exit 1
+	cat $OC_LOG 2>/dev/null && echo -e "\n${GRAY}=== $OC_LOG === $( stat -c %y $OC_LOG )${NOCOLOR}"
 	exit
 fi
 
