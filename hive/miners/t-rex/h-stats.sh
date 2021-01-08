@@ -7,10 +7,11 @@ stat_raw=`echo 'summary' | nc -w $API_TIMEOUT localhost $MINER_API_PORT`
 if [[ $? -ne 0 ]]; then
 	echo -e "${YELLOW}Failed to read miner stats from localhost:${MINER_API_PORT}${NOCOLOR}"
 else
-	local gpu_worked=`echo $stat_raw | jq '.gpus[].gpu_id'`
+	#echo "$stat_raw" | jq -c .
+	local gpu_worked=`echo "$stat_raw" | jq '.gpus[].gpu_id'`
 	local gpu_busid=(`cat /var/run/hive/gpu-detect.json | jq -r '.[] | select(.brand=="nvidia") | .busid' | cut -d ':' -f 1`)
-	local busids=''
-	local gpuerr='' # rejected and invalid shares per GPU
+	local busids=()
+	local gpuerr=() # rejected and invalid shares per GPU
 	local idx=0
 	local rej_per_gpu=$(cat /var/run/hive/miners/t-rex/config.json | jq '.report_rejected_per_gpu')
 	for i in $gpu_worked; do
@@ -23,9 +24,9 @@ else
 		fi
 		idx=$((idx+1))
 	done
-	stats=$(jq --argjson gpus `echo ${busids[@]}  | jq -cs '.'` \
-	           --arg gpuerr `echo ${gpuerr[*]} | tr ' ' ';'` \
-	'{ hs: [.gpus[].hashrate], hs_units: "hs", temp: [.gpus[].temperature], fan: [.gpus[].fan_speed], uptime: .uptime, ar: [.accepted_count, .rejected_count, 0, $gpuerr], bus_numbers: $gpus, algo: .algorithm, ver: .version }' <<< $stat_raw)
+	stats=$(jq --argjson busids "`echo ${busids[@]}  | jq -cs '.'`" \
+	           --arg gpuerr "`echo ${gpuerr[*]} | tr ' ' ';'`" \
+	'{ hs: [.gpus[].hashrate], hs_units: "hs", temp: [.gpus[].temperature], fan: [.gpus[].fan_speed], uptime: .uptime, ar: [.accepted_count, .rejected_count, 0, $gpuerr], bus_numbers: $busids, algo: .algorithm, ver: .version }' <<< $stat_raw)
 
 	# total hashrate in khs
 	khs=$(jq ".hashrate/1000" <<< $stat_raw)
