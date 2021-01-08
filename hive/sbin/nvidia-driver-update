@@ -15,6 +15,7 @@ DRVREGEXP="${DRVPATTERN}\K[0-9\.]+(?=\.run)"
 DRVNVIDIAURL="https://download.nvidia.com/XFree86/Linux-x86_64/"
 
 CUDA_VER=(
+	11.2 460.27.04
 	11.1 455.23.04
 	11.0 450.51.05
 	10.2 440.33
