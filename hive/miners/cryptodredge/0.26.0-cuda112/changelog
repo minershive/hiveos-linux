@@ -1,0 +1,13 @@
+CryptoDredge v0.26.0 CUDA 11.2 build
+* added KawPow algorithm
+* added Chukwa-v2 algorithm
+* fixed MTP issue related to 'invalid device symbol'
+* added support NVIDIA Ampere (RTX 30XX)
+* added `--temperature-limit` and `--temperature-start` options
+* added off flag to Nimiq optimizer `--optimizer off`
+* avoid c-ares dependency on libnsl
+* removed no longer supported algorithms
+
+HIVE
+* Ubuntu 16.04 based images not supported
+* requires Nvidia drivers 460+
