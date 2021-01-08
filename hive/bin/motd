@@ -4,6 +4,7 @@ source colors
 
 set -o pipefail
 
+source /etc/environment
 [[ -f $RIG_CONF ]] && source $RIG_CONF
 [[ -e /hive/etc/gpu.ids ]] && source /hive/etc/gpu.ids
 
@@ -617,7 +618,9 @@ miners_info() {
 		[[ ! -z ${conf_miners[$idx]} ]] && output+="$SEP$BRED${conf_miners[$idx]}$miner_fork$NOCOLOR$miner_ver"
 		[[ ! -z ${run_miners[$idx]} ]] && output+="$SEP$BYELLOW${run_miners[$idx]}$NOCOLOR"
 	done
-	local fs; fs=`grep -m 1 -oP "FLIGHT SHEET \K\".*\"(?= ###$)" $WALLET_CONF 2>/dev/null` || fs="${BRED}EMPTY"
+	local fs=
+	[[ -f $WALLET_CONF ]] && 
+		fs=`grep -m 1 -oP "FLIGHT SHEET \K\".*\"(?= ###$)" $WALLET_CONF 2>/dev/null` || fs="${BRED}EMPTY"
 	echo "Flightsheet: $BCYAN$fs$NOCOLOR$output$NOCOLOR"
 
 	return 0
