@@ -8,9 +8,11 @@ else
   if [ $GMINER_ALGO == "150_5" ]; then
     local ac=$(jq -r '.total_accepted_shares' <<< "$stats_raw")
     local rj=$(jq -r '.total_rejected_shares' <<< "$stats_raw")
+    local inv=$(jq -r '.total_invalid_shares' <<< "$stats_raw")
   else
     local ac=$(jq '[.devices[].accepted_shares] | add' <<< "$stats_raw")
     local rj=$(jq '[.devices[].rejected_shares] | add' <<< "$stats_raw")
+    local inv=$(jq '[.devices[].invalid_shares] | add' <<< "$stats_raw")
   fi
   # set -x
   #All fans speed array
@@ -64,24 +66,26 @@ else
     stats=$(jq -c \
           --argjson temp "`echo "${temp_array[@]}" | jq -s . | jq -c .`" \
           --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
-          --arg ac "$ac" --arg rj "$rj" \
+          --arg ac "$ac" --arg rj "$rj" --arg iv "$inv" \
+          --arg inv_gpu "$(echo $stats_raw | jq -r '.devices[].invalid_shares' | tr '\n' ';')" \
           --arg ac2 "$ac2" --arg rj2 "$rj2" \
           --argjson bus_numbers "`echo "${bus_numbers[@]}" | jq -sc .`" \
           --arg algo "$GMINER_ALGO" --arg algo2 "$GMINER_ALGO2" \
-          --arg ver `miner_ver` \
+          --arg ver `echo $stats_raw | jq -r '.miner' | awk '{ print $2 }'` \
           --arg total_khs "$khs" --arg total_khs2 "$total_khs2" \
-          '{hs: [.devices[].speed], hs_units: "hs", ar: [$ac, $rj], $algo, $total_khs,
+          '{hs: [.devices[].speed], hs_units: "hs", ar: [$ac, $rj, $iv, $inv_gpu], $algo, $total_khs,
             hs2: [.devices[].speed2], hs_units2: "hs", ar2: [$ac2, $rj2], $algo2, $total_khs2,
             $bus_numbers, $temp, $fan, uptime: .uptime, $ver}' <<< "$stats_raw")
   else
     stats=$(jq -c \
           --argjson temp "`echo "${temp_array[@]}" | jq -s . | jq -c .`" \
           --argjson fan "`echo "${fans_array[@]}" | jq -s . | jq -c .`" \
-          --arg ac "$ac" --arg rj "$rj" \
+          --arg ac "$ac" --arg rj "$rj" --arg iv "$inv" \
+          --arg inv_gpu "$(echo $stats_raw | jq -r '.devices[].invalid_shares' | tr '\n' ';')" \
           --argjson bus_numbers "`echo "${bus_numbers[@]}" | jq -sc .`" \
           --arg algo "$GMINER_ALGO"  \
-          --arg ver `miner_ver` \
-          '{hs: [.devices[].speed], hs_units: "hs", ar: [$ac, $rj], $algo,
+          --arg ver `echo $stats_raw | jq -r '.miner' | awk '{ print $2 }'` \
+          '{hs: [.devices[].speed], hs_units: "hs", ar: [$ac, $rj, $iv, $inv_gpu], $algo,
             $bus_numbers, $temp, $fan, uptime: .uptime, $ver}' <<< "$stats_raw")
   fi
 fi

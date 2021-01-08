@@ -1,0 +1,3 @@
+Gminer v2.41
+* changed default --dag_mode values for polular AMD GPUs: will improve performance compared with previous version when no --dag_mode specified
+* display valid/stale/invalid shares for Ethash/Etchash and KAWPOW algorithms when solution check on CPU enabled: "stale_shares", "invalid_shares" in API response
