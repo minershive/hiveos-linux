@@ -172,14 +172,23 @@ function get_image_from_list {
 	for img in "${urls[@]}"
 	do
 		local ver=`basename "$img" 2>/dev/null`
-		[[ "$ver" =~ ^(.*)(\.zip|\.img\.xz)$ ]] && name="${BASH_REMATCH[1]}" || name="$ver"
-		info=`echo "$versions" | grep -A 6 "^$name"`
+		info=`echo "$versions" | tr '\n' '|' | sed 's/||/\n/g' | grep "$ver" | tr '|' '\n'`
+		# try without extension
+		if [[ -z "$info" ]]; then
+			[[ "$ver" =~ ^(.*)(\.zip|\.img\.xz)$ ]] &&
+				name="${BASH_REMATCH[1]}" &&
+				info=`echo "$versions" | tr '\n' '|' | sed 's/||/\n/g' | grep "$name" | tr '|' '\n'`
+		fi
+		#echo "$info"
 		[[ ! -z "${IMAGE["$img"]}" ]] && ver+="${SEP}${WHITE}${IMAGE["$img"]}${NOCOLOR}"
 		if [[ ! -z "$info" ]]; then
-			[[ "$info" =~ (\ [0-9]+\.[0-9]+\.[0-9]+)- ]] && ver+="${SEP}${CYAN}K${NOCOLOR}${BASH_REMATCH[1]}"
-			nvidia=`echo "$info" | grep -m1 -oP "nvidia[^\s]* \K.*"` && ver+="${SEP}${GREEN}N${NOCOLOR} $nvidia"
-			amd=`echo "$info" | grep -m1 -oP "amd[^\s]* \K.*"` && ver+="${SEP}${RED}A${NOCOLOR} $amd"
-			boot=`echo "$info" | grep -m1 "^Dual"` && ver+="${SEP}$boot"
+			#[[ "$info" =~ (\ [0-9]+\.[0-9]+\.[0-9]+)- ]] && ver+="${SEP}${CYAN}K${NOCOLOR}${BASH_REMATCH[1]}"
+			kernel=`echo "$info" | grep -m1 -ioP "Linux [^0-9]*\K[0-9]+\.[0-9]+\.[0-9]+"` && ver+="${SEP}${CYAN}K${NOCOLOR} $kernel"
+			nvidia=`echo "$info" | grep -m1 -ioP "^nvidia[^\s]* \K.*"` && ver+="${SEP}${GREEN}N${NOCOLOR} $nvidia"
+			amd=`echo "$info" | grep -m1 -ioP "^amd[^\s]* \K.*"` && ver+="${SEP}${RED}A${NOCOLOR} $amd"
+			#boot=`echo "$info" | grep -m1 "^Dual"` && ver+="${SEP}$boot"
+			# get last line for desc
+			desc=`echo "$info" | tail -n 1 | grep -ivP "^(amd|nvidia|Linux|md5|hiveos)"` && ver+="${SEP} $desc"
 		fi
 		((index++))
 		printf "%b%2s) %b\n" $WHITE $index "${NOCOLOR}$ver"
@@ -330,7 +339,11 @@ function get_image {
 # Starting actions
 function prepare {
 	#[[ $(tty) == *tty* ]] && echo "This script does not work in the local console, exiting" && return 1
-	pstree -As $$ | grep -q "xinit" && echo -e "${RED}Hive-replace does not work in X server console! Run it from text local or remote shell${NOCOLOR}" && return 1
+	if pstree -As $$ | grep -q "xinit"; then 
+		echo -e "${RED}Hive-replace does not work in X server console! Run it from text local or remote shell${NOCOLOR}"
+		[[ $thishive -eq 1 ]] && echo -e "${YELLOW}Use ${BYELLOW}hivex stop${YELLOW} to close X server. Then run hive-replace again${NOCOLOR}"
+		return 1
+	fi
 	pstree -As $$ | grep -q -P "(ssh|shellinabox|hive-console|screen)" || (echo -e "${YELLOW}Hive-replace does not work in X server console! Make sure it is not running from it${NOCOLOR}"; sleep 5)
 
 	mem=$(free -m | awk 'NR == 2{print$2}')
