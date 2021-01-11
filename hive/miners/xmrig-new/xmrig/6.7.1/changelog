@@ -1,0 +1,7 @@
+XMRig v6.7.1
+* Fixed log initialization
+* Added hashrate in the benchmark finished message
+* AstroBWT OpenCL fixes
+* RandomX x86 JIT: removed redundant CFROUND
+
+
