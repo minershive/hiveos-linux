@@ -9,6 +9,8 @@ NVS_TIMEOUT=10
 NVSMI_TIMEOUT=10
 MAX_DELAY=300
 MIN_DELAY=30
+# apply without delay
+NO_DELAY=10
 PILLMEM=-1000
 export DISPLAY=":0"
 
@@ -32,6 +34,13 @@ fi
 
 # do not run OC simultaneously
 if [[ "$2" != "internal" ]]; then
+	if [[ "$1" == "delay" ]]; then
+		[[ -f $NVIDIA_OC_CONF ]] && source $NVIDIA_OC_CONF
+		# exit if no delay is set. OC is already applied
+		[[ $RUNNING_DELAY -le 0 ]] &&
+			echo "${YELLOW}No delay is set, exiting${NOCOLOR}" &&
+			exit 0
+	fi
 	readarray -t pids < <( pgrep -f "timeout .*$OC_LOG" )
 	for pid in "${pids[@]}"; do
 		echo -e "${BYELLOW}Killing running nvidia-oc ($pid)${NOCOLOR}\n"
@@ -140,7 +149,7 @@ fi
 MSG=
 NEED_DELAY=0
 DELAY=$RUNNING_DELAY
-[[ $DELAY -lt 0 ]] && DELAY=0
+[[ $DELAY -lt $NO_DELAY ]] && DELAY=0
 if [[ $DELAY -gt 0 && "$1" != "delay" && "$1" != "delayed" ]]; then
 	MSG=$'\n'"  ${YELLOW}Use ${BYELLOW}nvidia-oc delay${YELLOW} to apply OC with delay (${MAX_DELAY} secs)${NOCOLOR}"
 	DELAY=0
@@ -370,7 +379,8 @@ if [[ "$OHGODAPILL_ENABLED" -eq 1 && $PILLFIX -ne -1 && ($NEED_DELAY -eq 0 || $P
 		fi
 	fi
 
-	echo -e "\n  ${WHITE}Pill will be ready in ${OHGODAPILL_START_TIMEOUT#-} sec${NOCOLOR}"
+	[[ $OHGODAPILL_START_TIMEOUT -eq 0 ]] && echo -e "\n  ${WHITE}Starting Pill${NOCOLOR}" ||
+		echo -e "\n  ${WHITE}Pill will be ready in ${OHGODAPILL_START_TIMEOUT#-} sec${NOCOLOR}"
 	nohup /hive/opt/ohgodapill/run.sh $OHGODAPILL_ARGS > /dev/null 2>&1 &
 fi
 
