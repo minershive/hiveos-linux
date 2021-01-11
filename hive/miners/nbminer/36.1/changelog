@@ -1,0 +1,7 @@
+NBMiner v36.1
+* lowered power comsumption for 20、30 series Nvidia GPU on octopus
+* improved hashrate 2% on 16 series Nvidia GPU on octopus
+* slightly reduced stale ratio on ethash
+* general improved overall stability, fixed a random crash
+* added detail datetime & cpu usage in summary log
+* ethash: if DAG verification failed, display corresponding GPU name in red in summary
