@@ -1,0 +1,5 @@
+T-Rex 0.19.7
+* improved stability for 30xx series GPUs on ethash/octopus/kawpow
+* verify overclock stability on ethash after DAG rebuild 'Instability detected' message is printed in case there are issues
+* added `gpu-report-interval` parameter to control hashrate summary report frequency based on the number of share submissions
+* added feature to internal watchdog to display a list of GPUs caused miner restart with GPU is idle error
