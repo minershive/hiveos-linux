@@ -38,7 +38,8 @@ function miner_config_gen() {
 		echo "$PHOENIXMINER_USER_CONFIG" >> $MINER_CONFIG
 	fi
 
-	echo "-mport $MINER_API_PORT" >> $MINER_CONFIG
+	echo "-cdmport $MINER_API_PORT" >> $MINER_CONFIG
+	echo "-cdm 1" >> $MINER_CONFIG
 	echo "-rmode 2" >> $MINER_CONFIG
 	echo "-logfile ${MINER_LOG_BASENAME}.log" >> $MINER_CONFIG
 	# echo "-allpools 1" >> $MINER_CONFIG
