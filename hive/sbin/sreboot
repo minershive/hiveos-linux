@@ -54,10 +54,6 @@ if [[ $fastmode -eq 0 ]]; then
 	fi
 	killall apt apt-get dpkg 2>/dev/null
 
-	#sync
-	#umount -f /hive-config && mount -n -o ro /hive-config
-	#mount -f -o remount,ro /
-
    	# stop hw watchdogs pings
 	killall -s 9 ${WATCHDOGS[@]} 2>/dev/null
 fi
@@ -73,9 +69,17 @@ fi
 #‘t’ – Output a list of current tasks and their information to the console.
 
 echo 1 > /proc/sys/kernel/sysrq # enable
+
+echo "> Flushing disks"
 echo s > /proc/sysrq-trigger # sync
-sync
+# wait for sync to really complete. it takes ages on slow drives
+sync 
+
+echo "> Unmounting disks"
 echo u > /proc/sysrq-trigger # umount
+# use it instead of just sleeping. it also takes some time on slow drives
+umount -f /hive-config && mount -n -o ro /hive-config
+mount -f -o remount,ro /
 
 
 if [[ $1 == "shutdown" || $1 == "wakealarm" || $POWERCYCLE -ne 0 ]]; then
