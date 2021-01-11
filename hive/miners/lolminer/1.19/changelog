@@ -1,0 +1,9 @@
+lolMiner v1.19
+* Added automatic tuning mode for --zombie-tune. This is default on, so just run the miner with --4g-alloc-size set only to run the zombie mode automatic tuning.
+  At the end it will report the configuration in case you want to use the configuration again.
+  You can also exclude cards from tuning or set their value manually, e.g. --zombie-tune 2,auto,0,auto 
+  will run the automatic tuning on the 2nd and 4th GPU while using fixed number 2 for first card and 0 for the 3rd one.
+  The tuning will need about 30 seconds per card in the rig to show first results. 
+  The next two phases take about 1 minute per card and followed by a approximately 1.5 minutes fine tune phase.
+* Ethash stratum connection will now reconnect after three pool rejected shares in a row that did pass own CPU verify before. 
+  This solves issues with unstable proxy forwarding e.g. in some ZIL pools. Also helps to get quicker to a failover pool if configured.
