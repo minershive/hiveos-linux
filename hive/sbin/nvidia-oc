@@ -165,7 +165,6 @@ if [[ "$1" == "delayed" && $DELAY -gt 0 ]]; then
 	[[ $PILLFIX -eq 1 ]] && PILLFIX=-1 # Pill fix is already applied
 else
 	pgrep --full nvidia-persistenced > /dev/null || nvidia-persistenced --persistence-mode
-	echo "Killing PILL"
 	# kill Pill if running
 	pkill -f '/hive/opt/ohgodapill/run.sh'
 	pkill -f '/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2'
@@ -235,7 +234,7 @@ done
 	print_array "FANCNT" "${FANCNT[*]//null/1}"
 
 
-AUTOFAN_ENABLED=$( [[ `pgrep -cf "/hive/sbin/autofan run"` -gt 0 && -f $AUTOFAN_CONF ]] && source $AUTOFAN_CONF && echo "$ENABLED" )
+AUTOFAN_ENABLED=$( [[ `pgrep -cf "/autofan run"` -gt 0 && -f $AUTOFAN_CONF ]] && source $AUTOFAN_CONF && echo "$ENABLED" )
 
 nvparams=
 nvquery=`timeout --foreground -s9 $NVS_TIMEOUT nvidia-settings -q GPUMemoryTransferRateOffset -q GPUGraphicsClockOffset -q GPUTargetFanSpeed \
@@ -379,8 +378,7 @@ if [[ "$OHGODAPILL_ENABLED" -eq 1 && $PILLFIX -ne -1 && ($NEED_DELAY -eq 0 || $P
 		fi
 	fi
 
-	[[ $OHGODAPILL_START_TIMEOUT -eq 0 ]] && echo -e "\n  ${WHITE}Starting Pill${NOCOLOR}" ||
-		echo -e "\n  ${WHITE}Pill will be ready in ${OHGODAPILL_START_TIMEOUT#-} sec${NOCOLOR}"
+	echo -e "\n  ${WHITE}Pill will be ready in ${OHGODAPILL_START_TIMEOUT#-} sec${NOCOLOR}"
 	nohup /hive/opt/ohgodapill/run.sh $OHGODAPILL_ARGS > /dev/null 2>&1 &
 fi
 
