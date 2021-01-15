@@ -1,0 +1,8 @@
+SRBMiner-Multi v0.6.3
+* added algorithm 'phi5' (Combode) for GPU mining, fee 0.85%
+* added algorithm 'yespowertide' (Tidecoin) for CPU mining, fee 0.85%
+* fixed 'cryptonight_xhv', now it works on coins other than Haven
+* performance increase on 'phi5' algorithm on CPU
+* bug fixes
+
+
