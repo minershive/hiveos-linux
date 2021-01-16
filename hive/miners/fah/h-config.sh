@@ -43,7 +43,7 @@ function miner_config_gen() {
   [[ ! -z $FAH_USER ]] && echo "  <user v='$FAH_USER'/>" >> $MINER_CONFIG
   [[ ! -z $FAH_PASS ]] && echo "  <passkey v='$FAH_PASS'/>" >> $MINER_CONFIG
 
-  local i-0; local j=0
+  local i=0; local j=0
   local line=
 
   echo "  <!-- Folding Slots -->" >> $MINER_CONFIG
