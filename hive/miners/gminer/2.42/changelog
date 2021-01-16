@@ -1,0 +1,6 @@
+Gminer v2.42
+* fixed performance regression for Ethash/Etchash algorithm on Nvidia miding edition cards
+* added auto-tune for Ethash/Etchash algorithm on Nvidia cards, miner automatically select fastest kernel, also you can select specific kernel manually by using `--oc` flag, currently 3 kernels available, 0 means auto-tune by miner
+* added display of shares per minute
+* added option to control hashrate report interval (--report_interval in seconds)
+* removed cuckarooz29 algorithm due Grin will not support it after hardfork
