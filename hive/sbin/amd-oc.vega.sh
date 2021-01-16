@@ -19,8 +19,8 @@ function vega10_oc() {
 	local MIN_CLOCK=700
 	local MIN_VOLT=750
 
-	local PPT=/tmp/pp_table$cardno
-	local CARDPPT=/sys/class/drm/card$cardno/device/pp_table
+	local PPT=/tmp/pp_table$cardno                            # PPT prepared
+	local CARDPPT=/sys/class/drm/card$cardno/device/pp_table  # PPT active
 
 	# using saved Power Play table
 	cp $savedpp $PPT
@@ -43,6 +43,7 @@ function vega10_oc() {
 	maxSocState=$(( data[2] - 1 ))
 	maxCoreClock=$(( data[3]/100 ))
 	maxMemoryClock=$(( data[4]/100 ))
+	safeCoreState=4
 
 	echo "Max core: ${maxCoreClock}MHz, Max mem: ${maxMemoryClock}MHz, Max mem state: $maxMemoryState, Max core state: $maxCoreState, Max SoC state: $maxSocState"
 
@@ -55,17 +56,20 @@ function vega10_oc() {
 	[[ ${MEM_CLOCK[$i]} -gt $maxMemoryClock && $maxMemoryClock -gt $MIN_CLOCK ]] &&
 		args+=" MaxODMemoryClock=$(( MEM_CLOCK[i]*100 ))"
 
+	# set memory voltage contoller interface voltage
+	if [[ ! -z ${VDDCI[$i]} &&  ${VDDCI[$i]} -gt $MIN_VOLT ]];then
+		args+=" VddciLookupTable/0/Vdd=${VDDCI[$i]}"
+	fi
 	# set memory voltage and clock
 	if [[ ! -z ${MVDD[$i]} &&  ${MVDD[$i]} -gt $MIN_VOLT ]];then
 		args+=" VddmemLookupTable/0/Vdd=${MVDD[$i]}"
 		#in aggr set HBM voltage with atitool too
 		mvdd=$(echo "scale=2; ${MVDD[$i]}/1000" | bc )
-		[[ $AGGRESSIVE == 1 ]] && atitool -v=silent -debug=0 -i=$card_idx -vddcr_hbm=$mvdd >/dev/null && 
-		echo "Setting HBM voltage to ${mvdd}V"
+		[[ $AGGRESSIVE == 1 ]] && atitool -v=silent -debug=0 -i=$card_idx -vddcr_hbm=$mvdd >/dev/null && echo "Setting HBM voltage to ${mvdd}V"
 	fi
 	if [[ ! -z ${MEM_CLOCK[$i]} ]];then
 	clk=${MEM_CLOCK[$i]}
-	for idx in `eval echo  {$maxMemoryState..1}`; do
+	for idx in `eval echo {$maxMemoryState..1}`; do
 #		[[ ${VDDCI[$i]} -gt $MIN_VOLT ]] && args+=" MclkDependencyTable/${idx}/Vddci=0"
 		[[ ${MVDD[$i]} -gt $MIN_VOLT ]] && args+=" MclkDependencyTable/${idx}/VddInd=1"
 
@@ -74,6 +78,24 @@ function vega10_oc() {
 		fi
 		clk=$(($clk-100))
 	done
+	# If SoC Clock isn't set than starting
+	# lookup procedure to find best matching SoC clock to memory clock 
+    SocState=$maxSocState
+    if [[ -z ${SOCCLK[i]} || ${SOCCLK[$i]} -eq 0 ]]; then
+    	for idx in `eval echo {1..$maxSocState}`; do
+    		SocClk=`python3 /hive/opt/upp2/upp.py -p $PPT get SocclkDependencyTable/$idx/Clk 2> /dev/null`
+			SocState=$idx
+			if [[ ${MEM_CLOCK[$i]} -ge $((SocClk/100)) ]]; then
+				args+=" SocclkDependencyTable/$idx/Clk=$SocClk "
+				continue
+			else
+				break
+			fi
+		done
+		args+=" SocclkDependencyTable/$SocState/Clk=$SocClk "
+	fi
+	#echo SoCClk=$SocClk
+	#End SocClock
 	fi
 	# set bios max core clock if needed
 	[[ ${CORE_CLOCK[$i]} -gt $maxCoreClock && $maxCoreClock -gt $MIN_CLOCK ]] &&
@@ -81,20 +103,34 @@ function vega10_oc() {
 	
 	# set core voltage and clock
 	if [[ ! -z $CORE_VDDC && ${CORE_VDDC[$i]} -gt $MIN_VOLT  ]]; then
-		for coreState in {0..7}; do
+		for coreState in `eval echo {1..$maxCoreState}`; do
 			args+=" VddcLookupTable/$coreState/Vdd=${CORE_VDDC[$i]} "
 		done
 	fi
+	if [[ $maxCoreState -ge $safeCoreState ]]; then
+		CoreState=$safeCoreState
+	else
+		CoreState=$maxCoreState
+	fi
 	if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} -gt $MIN_CLOCK ]]; then
 		clk=${CORE_CLOCK[$i]}
-		for idx in `eval echo  {$maxCoreState..0}`; do
-			args+="GfxclkDependencyTable/$idx/Clk=${clk}00 "
-			clk=$(($clk-20))
+		for idx in `eval echo {1..$CoreState}`; do
+    		CoreClk=`python3 /hive/opt/upp2/upp.py -p $PPT get GfxclkDependencyTable/$idx/Clk 2> /dev/null`
+			CoreState=$idx
+			if [[ $clk -gt $((CoreClk/100)) ]]; then
+				args+=" GfxclkDependencyTable/$idx/Clk=$CoreClk "
+				continue
+			else
+				break
+			fi
 		done
+		args+="GfxclkDependencyTable/$CoreState/Clk=${clk}00 "
+		
 		#in aggressive mode use soc OC
 		if [[  ! -z $SOCCLK && ${SOCCLK[$i]} -gt 800 ]];then
-		clk=$((${SOCCLK[$i]}+20))
-			for idx in `eval echo  {$maxSocState..0}`; do
+			clk=$((${SOCCLK[$i]}+20))
+			SocState=3 # TBD
+			for idx in `eval echo {$maxSocState..1}`; do
 				args+="SocclkDependencyTable/$idx/Clk=${clk}00 "
 				clk=$(($clk-10))
 		 	done
@@ -103,6 +139,7 @@ function vega10_oc() {
 
 
 	# apply all changes to PPT and check if they differ from already applied
+	# echo $args
 	local output=""
 	[[ ! -z "$args" ]] && output=`python3 /hive/opt/upp2/upp.py -p $PPT set $args --write >/dev/null`
 	# do not apply the same table again
@@ -117,7 +154,7 @@ function vega10_oc() {
 #		echo "$output"
 		echo "${CYAN}Applying all changes to Power Play table $NOCOLOR"
 		cp $PPT $CARDPPT && sleep $SLEEP
-		cat /sys/class/drm/card$cardno/device/pp_od_clk_voltage
+	#	cat /sys/class/drm/card$cardno/device/pp_od_clk_voltage
 	#in aggr set Core/Soc voltage with atitool too
 	[[ $AGGRESSIVE == 1 &&  ${CORE_VDDC[$i]} -gt $MIN_VOLT  ]] && vdd=$(echo "scale=2; ${CORE_VDDC[$i]}/1000" | bc -l) &&
 			 		atitool -v=silent -i=$card_idx -vddcr_soc=$vdd >/dev/null && 
@@ -130,13 +167,15 @@ function vega10_oc() {
 
 	echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
 
-	echo "Setting DPM core state to $maxCoreState" &&
-	echo $maxCoreState > /sys/class/drm/card$cardno/device/pp_dpm_sclk
+	echo -n "Setting DPM gfxСore state to ${PURPLE}$CoreState ${NOCOLOR}" &&
+	echo $CoreState > /sys/class/drm/card$cardno/device/pp_dpm_sclk  && echo "on ${GREEN}"`cat /sys/class/drm/card$cardno/device/pp_dpm_sclk | grep "*" | awk '{ print $2 }'`${NOCOLOR}
 
-	echo "Setting DPM memory state to $maxMemoryState" &&
-	echo $maxMemoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk
-
-
+	echo -n "Setting DPM SoC state to ${PURPLE}$SocState ${NOCOLOR}" &&
+	echo $SocState > /sys/class/drm/card$cardno/device/pp_dpm_socclk && echo "on ${GREEN}"`cat /sys/class/drm/card$cardno/device/pp_dpm_socclk | grep "*" | awk '{ print $2 }'`${NOCOLOR}
+	
+	echo -n -e "Setting DPM MEM state to ${PURPLE}$maxMemoryState ${NOCOLOR}" &&
+	echo $maxMemoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk && echo -e "on ${GREEN}"`cat /sys/class/drm/card$cardno/device/pp_dpm_mclk | grep "*" | awk '{ print $2 }'`${NOCOLOR}
+	
 	# set fan speed
 	local hwmondir=`realpath /sys/class/drm/card$cardno/device/hwmon/hwmon*/`
 	if [[ ! -z ${hwmondir} ]]; then
