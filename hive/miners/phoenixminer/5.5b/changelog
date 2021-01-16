@@ -1,0 +1,4 @@
+PhoenixMiner 5.5b
+* updated kernels for AMD Polaris, Vega and Navi GPUs that are slightly faster and use less power than before when mining ETH
+* automatically set `-ttli` instead of `-tmax` when the later is not supported by the driver. This will throttle down the GPUs when they reach the specified temperature to avoid overheating
+* added native kernels for AMD RX6800 and RX6900 GPUs. These are faster than the generic kernels and produce a lot less stale shares
