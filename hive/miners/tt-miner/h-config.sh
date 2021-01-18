@@ -45,7 +45,11 @@ function miner_config_gen() {
     CUDA_VERS=''
   fi
 
-  echo "-algo ${TT_MINER_ALGO}${CUDA_VERS}" >> $MINER_CONFIG
+  if [[ $TT_MINER_ALGO != 'PROGPOW092' ]]; then
+    echo "-algo ${TT_MINER_ALGO}${CUDA_VERS}" >> $MINER_CONFIG
+  else
+    echo "-algo ${TT_MINER_ALGO}" >> $MINER_CONFIG
+  fi
 
   pool1=$(head -n 1 <<< "$TT_MINER_URL")
   echo "-wal $TT_MINER_TEMPLATE" >> $MINER_CONFIG
