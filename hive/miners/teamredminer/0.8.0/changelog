@@ -1,0 +1,11 @@
+TeamRedMiner v0.8.0
+* Rewritten ethash kernels and new mining modes for all gpu types
+* Key features: 
+    * Polaris reintroduced B-mode: power efficiency and slight hashrate increase. B-mode must be enabled with `--eth_aggr_mode` or `--eth_config=Bxxx`
+    * Vega 56/64: greatly improved base kernel for efficiency. New B-mode that can shave off additional 1-2W on top of the A-mode kernel. B-mode must be enabled manually with `--eth_config`
+    * Radeon VII: huge boost with its new C-mode but requires a special Linux setup. Can now do 100 MH/s
+    * 5700/5700XT: can shave off as much as 8-9W(!) of power using the new B-mode and dropping core clk+voltage. B-mode now the default mining mode
+    * 5600XT: new B-mode has a much smaller effect. A-mode remains the default mining mode
+    * DAG cache is NOT compatible with the new B/C-modes. ETH+ZIL switchers have to choose between caching the epoch 0 dag and using the new mining modes
+    * Users are highly recommended to take a few minutes to read the 0.7-to-0.8 migration guide https://bit.ly/35SLIu2 and the new ethash tuning guide https://bit.ly/3bQAv0E
+    * Ethash 4GB kernels NOT rewritten
