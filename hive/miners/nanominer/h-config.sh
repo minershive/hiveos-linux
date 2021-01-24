@@ -4,7 +4,7 @@ function miner_ver() {
   local MINER_VER=$NANOMINER_VER
   if [[ -z $MINER_VER ]]; then
     MINER_VER=$MINER_LATEST_VER
-    [[ ! -z $MINER_LATEST_VER_CUDA11 && $(nvidia-smi --help 2>&1 | head -n 1 | grep -oP "v\K[0-9]+") -ge 455 ]] && 
+    [[ ! -z $MINER_LATEST_VER_CUDA11 && $(nvidia-smi --help 2>&1 | head -n 1 | grep -oP "v\K[0-9]+") -ge 455 ]] &&
       MINER_VER=$MINER_LATEST_VER_CUDA11
   fi
   echo $MINER_VER
@@ -61,6 +61,7 @@ function miner_config_gen() {
 
     eval "[[ ! -z \$NANOMINER_PASS$nom ]] && echo \"rigPassword=\$NANOMINER_PASS$nom\" >> \$MINER_CONFIG"
 
+    n=1
     if [[ ! -z $n_url ]]; then
       n_url=${n_url,,} #lowercase
       n_url=${n_url//" "/""}
