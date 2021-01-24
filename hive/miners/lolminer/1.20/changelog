@@ -1,0 +1,5 @@
+lolMiner v1.20
+* added new split & dual mining options. This allows more freedom or better latency and stability on ETH+ZIL dual mining as well as split mining, i.e. let some cards mine ETH while other (3 and 4G) cards mine ETC
+* significantly improved Ethash mining speed on R9 390 and Etchash speed on R9 290
+* fixed a bug with 4G cards crash on mining ETC when trying to falsely enter zombie-tune
+* fixed "Address already in use" API bug
