@@ -1,0 +1,6 @@
+T-Rex 0.19.9
+* added option `dag-build-mode` to fine tune DAG build mode, mostly to help with various stability issues, see readme for details
+* fixed stability regression for Pascal GPUs on ethash, kawpow, octopus
+* fixed summary report for displaying mining pool difficulty that isn't always updated
+* cosmetic changes: improve error descriptions, display block number when mining solo at some pools
+* added ability to execute custom scripts upon certain events: `script-start`, `script-epoch-change`, `script-crash`, `script-low-hash`
