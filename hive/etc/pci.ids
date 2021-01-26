@@ -1,8 +1,8 @@
 #
 #	List of PCI ID's
 #
-#	Version: 2021.01.03
-#	Date:    2021-01-03 03:15:02
+#	Version: 2021.01.11
+#	Date:    2021-01-11 03:15:01
 #
 #	Maintained by Albert Pool, Martin Mares, and other volunteers from
 #	the PCI ID Project at https://pci-ids.ucw.cz/.
@@ -26,7 +26,7 @@
 #		subvendor subdevice  subsystem_name	<-- two tabs
 
 0001  SafeNet (wrong ID)
-0010  Allied Telesis, Inc (Wrong ID)
+0010  Allied Telesis (Wrong ID)
 # This is a relabelled RTL-8139
 	8139  AT-2500TX V3 Ethernet
 0014  Loongson Technology LLC
@@ -49,17 +49,17 @@
 	7a19  PCI-to-PCI Bridge
 	7a24  OHCI USB Controller
 	7a29  PCI-to-PCI Bridge
-001c  PEAK-System Technik GmbH
+001c  PEAK-System Technik
 	0001  PCAN-PCI CAN-Bus controller
 		001c 0004  2 Channel CAN Bus SJC1000
 		001c 0005  2 Channel CAN Bus SJC1000 (Optically Isolated)
-003d  Lockheed Martin-Marietta Corp
+003d  Lockheed Martin-Marietta
 # Real TJN ID is e159, but they got it wrong several times --mj
-0059  Tiger Jet Network Inc. (Wrong ID)
-0070  Hauppauge computer works Inc.
+0059  Tiger Jet Network (Wrong ID)
+0070  Hauppauge computer works
 	7801  WinTV HVR-1800 MCE
-0071  Nebula Electronics Ltd.
-0095  Silicon Image, Inc. (Wrong ID)
+0071  Nebula Electronics
+0095  Silicon Image (Wrong ID)
 	0680  Ultra ATA/133 IDE RAID CONTROLLER CARD
 # Wrong ID used in subsystem ID of the TELES.S0/PCI 2.x ISDN adapter
 00a7  Teles AG (Wrong ID)
@@ -73,39 +73,39 @@
 # probably misprogrammed Intel Atom C2338 on Dell 0K8Y0N board
 0200  Dell (wrong ID)
 # 021b is not Compaq but there is a board misprogrammed
-021b  Compaq Computer Corporation
+021b  Compaq Computer
 	8139  HNE-300 (RealTek RTL8139c) [iPaq Networking]
-0270  Hauppauge computer works Inc. (Wrong ID)
-0291  Davicom Semiconductor, Inc. (Wrong ID)
-# SpeedStream is Efficient Networks, Inc, a Siemens Company
+0270  Hauppauge computer works (Wrong ID)
+0291  Davicom Semiconductor (Wrong ID)
+# SpeedStream is Efficient Networks a Siemens Company
 02ac  SpeedStream
 	1012  1012 PCMCIA 10/100 Ethernet Card [RTL81xx]
-02e0  XFX Pine Group Inc. (Wrong ID)
+02e0  XFX Pine Group (Wrong ID)
 0303  Hewlett-Packard Company (Wrong ID)
-0308  ZyXEL Communications Corporation (Wrong ID)
-0315  SK-Electronics Co., Ltd.
+0308  ZyXEL Communications (Wrong ID)
+0315  SK-Electronics
 0357  TTTech Computertechnik AG (Wrong ID)
 	000a  TTP-Monitoring Card V2.0
-0432  SCM Microsystems, Inc.
+0432  SCM Microsystems
 	0001  Pluto2 DVB-T Receiver for PCMCIA [EasyWatch MobilSet]
-0497  Dell Inc. (wrong ID)
+0497  Dell (wrong ID)
 0675  Dynalink
 	1700  IS64PH ISDN Adapter
 	1702  IS64PH ISDN Adapter
 	1703  ISDN Adapter (PCI Bus, DV, W)
 	1704  ISDN Adapter (PCI Bus, D, C)
-0721  Sapphire, Inc.
-0731  Jingjia Microelectronics Co Ltd
+0721  Sapphire
+0731  Jingjia Microelectronics
 	7200  JM7200 Series GPU
-0777  Ubiquiti Networks, Inc.
-0795  Wired Inc.
+0777  Ubiquiti Networks
+0795  Wired
 	6663  Butane II (MPEG2 encoder board)
 	6666  MediaPress (MPEG2 encoder board)
-07d1  D-Link System Inc
+07d1  D-Link System
 0824  T1042 [Freescale]
-0925  VIA Technologies, Inc. (Wrong ID)
-0a89  BREA Technologies Inc
-0b0b  Rhino Equipment Corp.
+0925  VIA Technologies (Wrong ID)
+0a89  BREA Technologies
+0b0b  Rhino Equipment
 	0105  R1T1
 	0205  R4FXO
 	0206  RCB4FXO 4-channel FXO analog telephony card
@@ -120,7 +120,7 @@
 	0905  R1T3 Single T3 Digital Telephony Card
 	0906  RCB24FXX 24-channel modular analog telephony card
 	0a06  RCB672FXX 672-channel modular analog telephony card
-0e11  Compaq Computer Corporation
+0e11  Compaq Computer
 	0001  PCI to EISA Bridge
 	0002  PCI to ISA Bridge
 	0046  Smart Array 64xx
@@ -227,10 +227,10 @@
 	c000  Remote Insight Lights-Out Edition
 	f130  NetFlex-3/P ThunderLAN 1.0
 	f150  NetFlex-3/P ThunderLAN 2.3
-0e55  HaSoTec GmbH
+0e55  HaSoTec
 0eac  SHF Communication Technologies AG
 	0008  Ethernet Powerlink Managing Node 01
-0f62  Acrox Technologies Co., Ltd.
+0f62  Acrox Technologies
 1000  Broadcom / LSI
 	0001  53c810
 		1000 1000  LSI53C810AE PCI to SCSI I/O Processor
@@ -920,8 +920,8 @@
 	0016  PCI-MFB Analogue I/O board
 	0017  PROTO-3 PCI Prototyping board
 	9100  INI-9100/9100W SCSI Host
-# nee ATI Technologies, Inc.
-1002  Advanced Micro Devices, Inc. [AMD/ATI]
+# nee ATI Technologies
+1002  Advanced Micro Devices [AMD/ATI]
 	1304  Kaveri
 	1305  Kaveri
 	1306  Kaveri
@@ -978,6 +978,9 @@
 	15ff  Fenghuang [Zhongshan Subor Z+]
 	1607  Arden
 	1636  Renoir
+	1638  Cezanne
+	163f  VanGogh
+	164c  Lucienne
 	1714  BeaverCreek HDMI Audio [Radeon HD 6500D and 6400G-6600G series]
 		103c 168b  ProBook 4535s
 	3150  RV380/M24 [Mobility Radeon X600]
@@ -1995,9 +1998,9 @@
 	6667  Jet ULT [Radeon R5 M230]
 	666f  Sun LE [Radeon HD 8550M / R5 M230]
 	66a0  Vega 20 [Radeon Instinct]
-	66a1  Vega 20
+	66a1  Vega 20 WKS GL-XE [Radeon Pro VII]
 	66a2  Vega 20
-	66a3  Vega 20
+	66a3  Vega 20 [Radeon Pro Vega II/Radeon Pro Vega II Duo]
 	66a7  Vega 20 [Radeon Pro Vega 20]
 	66af  Vega 20 [Radeon VII]
 	6704  Cayman PRO GL [FirePro V7900]
@@ -2906,7 +2909,12 @@
 	6864  Vega 10 [Radeon Pro V340]
 	6867  Vega 10 XL [Radeon Pro Vega 56]
 	6868  Vega 10 [Radeon PRO WX 8100/8200]
+	6869  Vega 10 XGA [Radeon Pro Vega 48]
+	686a  Vega 10 LEA
+	686b  Vega 10 XTXA [Radeon Pro Vega 64X]
 	686c  Vega 10 [Radeon Instinct MI25 MxGPU]
+	686d  Vega 10 GLXTA
+	686e  Vega 10 GLXLA
 	687f  Vega 10 XL/XT [Radeon RX Vega 56/64]
 		1002 0b36  RX Vega64
 		1002 6b76  RX Vega64
@@ -3157,6 +3165,7 @@
 		17af 3000  Radeon HD 6510
 		17af 3010  Radeon HD 5630
 	68da  Redwood LE [Radeon HD 5550/5570/5630/6390/6490/7570]
+		1462 8071  VR5550-MD1G (Radeon HD 5550)
 		148c 3000  Radeon HD 6390
 		148c 3001  Radeon HD 6490
 		1545 7570  Radeon HD 7570
@@ -3598,12 +3607,16 @@
 	731f  Navi 10 [Radeon RX 5600 OEM/5600 XT / 5700/5700 XT]
 		1458 2313  Radeon RX 5700 XT Gaming OC
 		1682 5701  RX 5700 XT RAW II
-		1da2 e411  Radeon RX 5600 XT
+		1da2 e408  Radeon RX 5700 / 5700 XT Pulse
+		1da2 e411  Radeon RX 5600 XT / 5700/5700 XT Pulse
 	7340  Navi 14 [Radeon RX 5500/5500M / Pro 5500M]
 	7341  Navi 14 [Radeon Pro W5500]
 	7347  Navi 14 [Radeon Pro W5500M]
 	734f  Navi 14 [Radeon Pro W5300M]
 	7360  Navi 12 [Radeon Pro 5600M]
+	7388  Arcturus GL-XL
+	738c  Arcturus GL-XL [AMD Instinct MI100]
+	738e  Arcturus GL-XL
 	73bf  Navi 21 [Radeon RX 6800/6800 XT / 6900 XT]
 	73c3  Navi 22
 	73df  Navi 22
@@ -4031,7 +4044,7 @@
 	cbb2  RS200 Host Bridge
 1003  ULSI Systems
 	0201  US201
-1004  VLSI Technology Inc
+1004  VLSI Technology
 	0005  82C592-FC1
 	0006  82C593-FC1
 	0007  82C594-AFC2
@@ -4065,7 +4078,7 @@
 	0308  SAA7785 ThunderBird PCI Audio Gameport
 	0702  VAS96011 [Golden Gate II]
 	0703  Tollgate
-1005  Avance Logic Inc. [ALI]
+1005  Avance Logic [ALI]
 	2064  ALG2032/2064
 	2128  ALG2364A
 	2301  ALG2301
@@ -4074,10 +4087,10 @@
 	2464  ALG2364A
 	2501  ALG2564A/25128A
 1006  Reply Group
-1007  NetFrame Systems Inc
+1007  NetFrame Systems
 1008  Epson
 100a  Phoenix Technologies
-100b  National Semiconductor Corporation
+100b  National Semiconductor
 	0001  DP83810
 	0002  87415/87560 IDE
 	000e  87560 Legacy I/O
@@ -4117,21 +4130,21 @@
 	0515  SC1100 XBus
 		100b 0505  SC1100 PCI to XBus bridge
 	d001  87410 IDE
-100c  Tseng Labs Inc
+100c  Tseng Labs
 	3202  ET4000/W32p rev A
 	3205  ET4000/W32p rev B
 	3206  ET4000/W32p rev C
 	3207  ET4000/W32p rev D
 	3208  ET6000
 	4702  ET6300
-100d  AST Research Inc
+100d  AST Research
 100e  Weitek
 	9000  P9000 Viper
 	9001  P9000 Viper
 	9002  P9000 Viper
 	9100  P9100 Viper Pro/SE
-1010  Video Logic, Ltd.
-1011  Digital Equipment Corporation
+1010  Video Logic
+1011  Digital Equipment
 	0001  DECchip 21050
 	0002  DECchip 21040 [Tulip]
 	0004  DECchip 21030 [TGA]
@@ -4234,7 +4247,7 @@
 		e4bf 1000  CC8-1-BLUES
 	1065  StrongARM DC21285
 		1069 0020  DAC960P / DAC1164P
-1012  Micronics Computers Inc
+1012  Micronics Computers
 1013  Cirrus Logic
 	0038  GD 7548
 	0040  GD 7555 Flat Panel GUI Accelerator
@@ -4451,7 +4464,7 @@
 	3022  QLA3022 Network Adapter
 	4022  QLA3022 Network Adapter
 	ffff  MPIC-2 interrupt controller
-1015  LSI Logic Corp of Canada
+1015  LSI Logic of Canada
 1016  ICL Personal Systems
 1017  SPEA Software AG
 	5343  SPEA 3D Accelerator
@@ -4491,7 +4504,7 @@
 	c24a  90C
 # ID for Newly Acquired Storage Products from Vitesse
 101d  Maxim Integrated Products
-101e  American Megatrends Inc.
+101e  American Megatrends
 	0009  MegaRAID 428 Ultra RAID Controller (rev 03)
 	1960  MegaRAID
 		101e 0471  MegaRAID 471 Enterprise 1600 RAID Controller
@@ -4519,8 +4532,8 @@
 		101e 0767  Dell Remote Assistant Card 2
 101f  PictureTel
 1020  Hitachi Computer Products
-1021  OKI Electric Industry Co. Ltd.
-1022  Advanced Micro Devices, Inc. [AMD]
+1021  OKI Electric Industry
+1022  Advanced Micro Devices [AMD]
 	1100  K8 [Athlon64/Opteron] HyperTransport Technology Configuration
 	1101  K8 [Athlon64/Opteron] Address Map
 	1102  K8 [Athlon64/Opteron] DRAM Controller
@@ -4679,6 +4692,7 @@
 	149b  Starship Reserved SSP
 	149c  Matisse USB 3.0 Host Controller
 		1462 7c37  X570-A PRO motherboard
+	149d  Vangogh CVIP
 	1510  Family 14h Processor Root Complex
 		174b 1001  PURE Fusion Mini
 	1512  Family 14h Processor Root Port
@@ -4760,7 +4774,7 @@
 	15b3  Stoney Miscellaneous Configuration
 	15b4  Stoney PM Configuration
 	15b5  Stoney NB Performance Monitor
-	15bc  Stoney PCIe [GFX,GPP] Bridge [4:0]
+	15bc  Stoney PCIe [GFX, GPP] Bridge [4:0]
 	15be  Stoney Audio Processor
 	15d0  Raven/Raven2 Root Complex
 		103c 8615  Pavilion Laptop 15-cw1xxx
@@ -4864,6 +4878,8 @@
 	1642  Renoir WLAN
 	1643  Renoir BT
 	1644  Renoir I2S
+	1648  VanGogh Root Complex
+	1649  VanGogh PSP/CCP
 	1700  Family 12h/14h Processor Function 0
 	1701  Family 12h/14h Processor Function 1
 	1702  Family 12h/14h Processor Function 2
@@ -5277,7 +5293,7 @@
 	00cf  AIC-7899P U160/m
 		1028 0106  PowerEdge 4600
 		1028 0121  PowerEdge 2650
-102b  Matrox Electronics Systems Ltd.
+102b  Matrox Electronics Systems
 # DJ: I've a suspicion that 0010 is a duplicate of 0d10.
 	0010  MGA-I [Impression?]
 	0100  MGA 1064SG [Mystique]
@@ -5608,7 +5624,7 @@
 		4c53 1050  CT7 mainboard
 		4c53 1051  CE7 mainboard
 		4c53 1080  CT8 mainboard
-102d  Wyse Technology Inc.
+102d  Wyse Technology
 	50dc  3328 Audio
 102e  Olivetti Advanced Technology
 102f  Toshiba America
@@ -5636,7 +5652,7 @@
 	5631  Media 3D
 	6057  MiroVideo DC10/DC30+
 1032  Compaq
-1033  NEC Corporation
+1033  NEC
 	0000  Vr4181A USB Host or Function Control Unit
 	0001  PCI to 486-like bus Bridge
 	0002  PCI to VL98 Bridge
@@ -5714,12 +5730,12 @@
 		1b96 0001  USB 3.0 PCIe Card
 	01e7  uPD72873 [Firewarden] IEEE1394a OHCI 1.1 Link/2-port PHY Controller
 	01f2  uPD72874 [Firewarden] IEEE1394a OHCI 1.1 Link/3-port PHY Controller
-1034  Framatome Connectors USA Inc.
+1034  Framatome Connectors USA
 1035  Comp. & Comm. Research Lab
-1036  Future Domain Corp.
+1036  Future Domain
 	0000  TMC-18C30 [36C70]
 1037  Hitachi Micro Systems
-1038  AMP, Inc
+1038  AMP
 1039  Silicon Integrated Systems [SiS]
 	0001  AGP Port (virtual PCI-to-PCI bridge)
 	0002  AGP Port (virtual PCI-to-PCI bridge)
@@ -5814,7 +5830,7 @@
 	5511  5511/5512
 	5513  5513 IDE Controller
 		1019 0970  P6STP-FL motherboard
-		1039 5513  SiS5513 EIDE Controller (A,B step)
+		1039 5513  SiS5513 EIDE Controller (A, B step)
 		1043 8035  CUSI-FX motherboard
 		1462 7010  MS-6701 motherboard
 		1631 5513  GA-8SIML Rev1.0 Motherboard
@@ -5908,8 +5924,8 @@
 	7019  SiS7019 Audio Accelerator
 	7502  Azalia Audio Controller
 		1043 81a1  P5SD2-FM/S mainboard
-103a  Seiko Epson Corporation
-103b  Tatung Corp. Of America
+103a  Seiko Epson
+103b  Tatung Of America
 103c  Hewlett-Packard Company
 	1005  A4977A Visualize EG
 	1008  Visualize FX
@@ -6060,7 +6076,7 @@
 		103c 1609  ProLiant MicroServer N36L
 103e  Solliday Engineering
 103f  Synopsys/Logic Modeling Group
-1040  Accelgraphics Inc.
+1040  Accelgraphics
 1041  Computrend
 1042  Micron
 	1000  PC Tech RZ1000
@@ -6068,7 +6084,7 @@
 	3000  Samurai_0
 	3010  Samurai_1
 	3020  Samurai_IDE
-1043  ASUSTeK Computer Inc.
+1043  ASUSTeK Computer
 	0464  Radeon R9 270x GPU
 	0521  RX580 [RX 580 Dual O8G]
 	0675  ISDNLink P-IN100-ST-D
@@ -6122,7 +6138,7 @@
 		1044 c032  ASR-2005S I2O Zero Channel
 		1044 c035  ASR-2010S I2O Zero Channel
 	c066  3010S Ultra3 Dual Channel
-1045  OPTi Inc.
+1045  OPTi
 	a0f8  82C750 [Vendetta] USB Controller
 	c101  92C264
 	c178  92C178
@@ -6146,8 +6162,8 @@
 	c935  EV1935 ECTIVA MachOne PCIAudio
 	d568  82C825 [Firebridge 2]
 	d721  IDE [FireStar]
-1046  IPC Corporation, Ltd.
-1047  Genoa Systems Corp
+1046  IPC
+1047  Genoa Systems
 1048  Elsa AG
 	0c60  Gladiac MX
 	0d22  Quadro4 900XGL [ELSA GLoria4 900XGL]
@@ -6155,7 +6171,7 @@
 	3000  QuickStep 3000
 	8901  Gloria XL
 		1048 0935  GLoria XL (Virge)
-1049  Fountain Technologies, Inc.
+1049  Fountain Technologies
 # nee SGS Thomson Microelectronics
 104a  STMicroelectronics
 	0000  STLS2F Host Bridge
@@ -6483,7 +6499,7 @@
 	b001  TMS320C6424
 	fe00  FireWire Host Controller
 	fe03  12C01A FireWire Host Controller
-104d  Sony Corporation
+104d  Sony
 	8004  DTL-H2500 [Playstation development board]
 	8009  CXD1947Q i.LINK Controller
 	800c  DTL-H800 [PS1 sound development board]
@@ -6529,15 +6545,15 @@
 	90dc  Baikal DMA Controller
 	90dd  Baikal Memory (DDR3/SPM)
 	90de  Baikal USB 3.0 xHCI Host Controller
-104e  Oak Technology, Inc
+104e  Oak Technology
 	0017  OTI-64017
 	0107  OTI-107 [Spitfire]
 	0109  Video Adapter
 	0111  OTI-64111 [Spitfire]
 	0217  OTI-64217
 	0317  OTI-64317
-104f  Co-time Computer Ltd
-1050  Winbond Electronics Corp
+104f  Co-time Computer
+1050  Winbond Electronics
 	0000  NE2000
 	0001  W83769F
 	0033  W89C33D 802.11 a/b/g BB/MAC
@@ -6557,10 +6573,10 @@
 	9921  W99200F MPEG-1 Video Encoder
 	9922  W99200F/W9922PF MPEG-1/2 Video Encoder
 	9970  W9970CF
-1051  Anigma, Inc.
+1051  Anigma
 1052  ?Young Micro Systems
 1053  Young Micro Systems
-1054  Hitachi, Ltd
+1054  Hitachi
 	3009  2Gbps Fibre Channel to PCI HBA 3009
 	300a  4Gbps Fibre Channel to PCI-X HBA 300a
 	300b  4Gbps Fibre Channel to PCI-X HBA 300b
@@ -6673,7 +6689,7 @@
 	6405  MPC184 Security Processor (S1 family)
 1058  Electronics & Telecommunications RSH
 1059  Kontron
-105a  Promise Technology, Inc.
+105a  Promise Technology
 	0d30  PDC20265 (FastTrak100 Lite/Ultra100)
 		1043 8042  AV7266-E South Bridge Promise RAID
 		105a 4d33  Ultra100
@@ -6754,7 +6770,7 @@
 	8760  PM8010 [SuperTrak EX SAS and SATA 6G RAID Controller]
 	c350  80333 [SuperTrak EX12350]
 	e350  80333 [SuperTrak EX24350]
-105b  Foxconn International, Inc.
+105b  Foxconn International
 105c  Wipro Infotech Limited
 105d  Number 9 Computer Company
 	2309  Imagine 128
@@ -6793,8 +6809,8 @@
 		105d 0037  Revolution IV-FP AGP (For SGI 1600SW)
 		11a4 0028  PVS5600M
 		11a4 0038  PVS5600D
-105e  Vtech Computers Ltd
-105f  Infotronic America Inc
+105e  Vtech Computers
+105f  Infotronic America
 1060  United Microelectronics [UMC]
 	0001  UM82C881
 	0002  UM82C886
@@ -6821,7 +6837,7 @@
 1061  I.I.T.
 	0001  AGX016
 	0002  IIT3204/3501
-1062  Maspar Computer Corp
+1062  Maspar Computer
 1063  Ocean Office Automation
 1064  Alcatel
 	1102  Dynamite 2840 (ADSL PCI modem)
@@ -6840,7 +6856,7 @@
 	0308  Tornado 3000 [OEM Evans & Sutherland]
 	1002  VG500 [VolumePro Volume Rendering Accelerator]
 1068  Diversified Technology
-1069  Mylex Corporation
+1069  Mylex
 	0001  DAC960P
 	0002  DAC960PD
 	0010  DAC960PG
@@ -6865,8 +6881,8 @@
 		1069 0040  eXtremeRAID 2000 support Device
 	ba57  eXtremeRAID 4000/5000 support Device
 		1069 0072  eXtremeRAID 5000 support Device
-106a  Aten Research Inc
-106b  Apple Inc.
+106a  Aten Research
+106b  Apple
 	0001  Bandit PowerPC host bridge
 	0002  Grand Central I/O
 	0003  Control Video
@@ -6952,13 +6968,13 @@
 	8804  LAN Controller
 	8805  100-BaseT LAN
 106d  Sequent Computer Systems
-106e  DFI, Inc
-106f  City Gate Development Ltd
-1070  Daewoo Telecom Ltd
+106e  DFI
+106f  City Gate Development
+1070  Daewoo Telecom
 1071  Mitac
 	8160  Mitac 8060B Mobile Platform
-1072  GIT Co Ltd
-1073  Yamaha Corporation
+1072  GIT
+1073  Yamaha
 	0001  3D GUI Accelerator
 	0002  YGV615 [RPA3 3D-Graphics Controller]
 	0003  YMF-740
@@ -6989,8 +7005,8 @@
 1074  NexGen Microsystems
 	4e78  82c500/1
 1075  Advanced Integrations Research
-1076  Chaintech Computer Co. Ltd
-1077  QLogic Corp.
+1076  Chaintech Computer
+1077  QLogic
 	1016  ISP10160 Single Channel Ultra3 SCSI Processor
 	1020  ISP1020 Fast-wide SCSI
 	1022  ISP1022 Fast-wide SCSI
@@ -7236,7 +7252,7 @@
 	8430  ISP8324 1/10GbE Converged Network Controller (NIC VF)
 	8431  8300 Series 10GbE Converged Network Adapter (FCoE VF)
 	8432  ISP2432M-based 10GbE Converged Network Adapter (CNA)
-1078  Cyrix Corporation
+1078  Cyrix
 	0000  5510 [Grappa]
 	0001  PCI Master
 	0002  5520 [Cognac]
@@ -7251,12 +7267,12 @@
 	0403  ZFMicro Expansion Bus
 1079  I-Bus
 107a  NetWorth
-# formerly Gateway 2000 / acquired by Acer Inc.
-107b  Gateway, Inc.
-107c  LG Electronics [Lucky Goldstar Co. Ltd]
-107d  LeadTek Research Inc.
+# formerly Gateway 2000 / acquired by Acer
+107b  Gateway
+107c  LG Electronics [Lucky Goldstar Ltd]
+107d  LeadTek Research
 	0000  P86C850
-107e  Interphase Corporation
+107e  Interphase
 	0001  5515 ATM Adapter [Flipper]
 	0002  100 VG AnyLan Controller
 	0004  5526 Fibre Channel Host Adapter
@@ -7273,7 +7289,7 @@
 	9027  5536-4P-BRI-U
 	9031  5536-1P-PRI
 	9033  5536-2P-PRI
-107f  Data Technology Corporation
+107f  Data Technology
 	0802  SL82C105
 1080  Contaq Microsystems
 	0600  82C599
@@ -7281,21 +7297,21 @@
 	c693  82c693
 1081  Supermac Technology
 	0d47  Radius PCI to NuBUS Bridge
-1082  EFA Corporation of America
-1083  Forex Computer Corporation
+1082  EFA of America
+1083  Forex Computer
 	0001  FR710
 1084  Parador
 1086  J. Bond Computer Systems
 1087  Cache Computer
 1088  Microcomputer Systems (M) Son
-1089  Data General Corporation
-# Formerly Bit3 Computer Corp.
+1089  Data General
+# Formerly Bit3 Computer
 108a  SBS Technologies
 	0001  VME Bridge Model 617
 	0010  VME Bridge Model 618
 	0040  dataBLIZZARD
 	3000  VME Bridge Model 2706
-108c  Oakleigh Systems Inc.
+108c  Oakleigh Systems
 108d  Olicom
 	0001  Token-Ring 16/4 PCI Adapter (3136/3137)
 	0002  16/4 Token Ring
@@ -7375,10 +7391,10 @@
 	abcd  Multithreaded 10-Gigabit Ethernet Network Controller
 	c416  Sun Fire System/System Controller Interface chip [sbbc]
 108f  Systemsoft
-1090  Compro Computer Services, Inc.
+1090  Compro Computer Services
 	4610  PCI RTOM
 	4620  GPIO HSD
-1091  Intergraph Corporation
+1091  Intergraph
 	0020  3D graphics processor
 	0021  3D graphics processor w/Texturing
 	0040  3D graphics frame buffer
@@ -8187,8 +8203,8 @@
 	fe61  VXIpc-850
 	fe70  VXIpc-880
 1094  First International Computers [FIC]
-# nee CMD Technology Inc
-1095  Silicon Image, Inc.
+# nee CMD Technology
+1095  Silicon Image
 	0240  Adaptec AAR-1210SA SATA HostRAID Controller
 	0640  PCI0640
 	0643  PCI0643
@@ -8225,15 +8241,15 @@
 		17c0 4083  Medion WIM 2210 Notebook PC [MD96850]
 1096  Alacron
 1097  Appian Technology
-1098  Quantum Designs (H.K.) Ltd
+1098  Quantum Designs (H.K.)
 	0001  QD-8500
 	0002  QD-8580
-1099  Samsung Electronics Co., Ltd
+1099  Samsung Electronics
 109a  Packard Bell
-109b  Gemlight Computer Ltd.
-109c  Megachips Corporation
-109d  Zida Technologies Ltd.
-109e  Brooktree Corporation
+109b  Gemlight Computer
+109c  Megachips
+109d  Zida Technologies
+109e  Brooktree
 	0310  Bt848 Video Capture
 	032e  Bt878 Video Capture
 	0350  Bt848 Video Capture
@@ -8401,20 +8417,20 @@
 	8230  Bt8230 ATM Segment/Reassembly Ctrlr (SRC)
 	8472  Bt8472
 	8474  Bt8474
-109f  Trigem Computer Inc.
-10a0  Meidensha Corporation
-10a1  Juko Electronics Ind. Co. Ltd
-10a2  Quantum Corporation
-10a3  Everex Systems Inc
+109f  Trigem Computer
+10a0  Meidensha
+10a1  Juko Electronics
+10a2  Quantum
+10a3  Everex Systems
 10a4  Globe Manufacturing Sales
-10a5  Smart Link Ltd.
+10a5  Smart Link
 	3052  SmartPCI562 56K Modem
 	5449  SmartPCI561 modem
-10a6  Informtech Industrial Ltd.
+10a6  Informtech Industrial
 10a7  Benchmarq Microelectronics
 10a8  Sierra Semiconductor
 	0000  STB Horizon 64
-10a9  Silicon Graphics Intl. Corp.
+10a9  Silicon Graphics
 	0001  Crosstalk to PCI Bridge
 	0002  Linc I/O controller
 	0003  IOC3 I/O controller
@@ -8461,24 +8477,24 @@
 	0105  SL82c105
 	0565  W83C553F/W83C554F
 10ae  Cornerstone Technology
-10af  Micro Computer Systems Inc
+10af  Micro Computer Systems
 10b0  CardExpert Technology
-10b1  Cabletron Systems Inc
+10b1  Cabletron Systems
 10b2  Raytheon Company
-10b3  Databook Inc
+10b3  Databook
 	3106  DB87144
 	b106  DB87144
-10b4  STB Systems Inc
+10b4  STB Systems
 	1b1d  Velocity 128 3D
 		10b4 237e  Velocity 4400
-10b5  PLX Technology, Inc.
+10b5  PLX Technology
 	0001  i960 PCI bus interface
 	0557  PCI9030 32-bit 33MHz PCI <-> IOBus Bridge
 		10b5 9030  Digium Tormenta 2 T400P-SS7 or E400P-SS7 Quad T1 or E1 PCI card
 	1000  PCI9030 32-bit 33MHz PCI <-> IOBus Bridge
 		10b5 9030  ATCOM AT400P Quad T1 PCI card
-	1024  Acromag, Inc. IndustryPack Carrier Card
-	1042  Brandywine / jxi2, Inc. - PMC-SyncClock32, IRIG A & B, Nasa 36
+	1024  Acromag IndustryPack Carrier Card
+	1042  Brandywine / jxi2 - PMC-SyncClock32, IRIG A & B, Nasa 36
 	106a  Dual OX16C952 4 port serial adapter [Megawolf Romulus/4]
 	1076  VScom 800 8 port serial adaptor
 	1077  VScom 400 4 port serial adaptor
@@ -8649,9 +8665,9 @@
 	9052  PCI9052 PCI <-> IOBus Bridge
 	9054  PCI9054 32-bit 33MHz PCI <-> IOBus Bridge
 		10b5 2455  Wessex Techology PHIL-PCI
-		10b5 2696  Innes Corp AM Radcap card
-		10b5 2717  Innes Corp Auricon card
-		10b5 2844  Innes Corp TVS Encoder card
+		10b5 2696  Innes AM Radcap card
+		10b5 2717  Innes Auricon card
+		10b5 2844  Innes TVS Encoder card
 		12c7 4001  Intel Dialogic DM/V960-4T1 PCI
 		12d9 0002  PCI Prosody Card rev 1.5
 		14b4 d100  Dektec DTA-100
@@ -8745,7 +8761,7 @@
 		10b6 000c  RapidFire 3140V2 16/4 TR Adapter
 	1000  Collage 25/155 ATM Client Adapter
 	1001  Collage 155 ATM Server Adapter
-10b7  3Com Corporation
+10b7  3Com
 	0001  3c985 1000BaseSX (SX/TX)
 # wrong ID?
 		9850 0001  3c985B-SX
@@ -8878,7 +8894,7 @@
 	9909  3CR990SVR97 [Typhoon Server 168-bit]
 	990a  3C990SVR [Typhoon Server]
 	990b  3C990SVR [Typhoon Server]
-10b8  Standard Microsystems Corp [SMC]
+10b8  Standard Microsystems [SMC]
 	0005  83c170 EPIC/100 Fast Ethernet Adapter
 		1055 e000  LANEPIC 10/100 [EVB171Q-PCI]
 		1055 e002  LANEPIC 10/100 [EVB171G-PCI]
@@ -8899,8 +8915,8 @@
 	1001  FDC 37C922
 	a011  83C170QF
 	b106  SMC34C90
-# Split off ALi Corporation in 2003
-10b9  ULi Electronics Inc.
+# Split off ALi in 2003
+10b9  ULi Electronics
 	0101  CMI8338/C3DX PCI Audio Device
 	0111  C-Media CMI8738/C3DX Audio Device (OEM)
 		10b9 0111  C-Media CMI8738/C3DX Audio Device (OEM)
@@ -8938,10 +8954,10 @@
 	1644  M1644/M1644T Northbridge+Trident
 	1646  M1646 Northbridge+Trident
 	1647  M1647 Northbridge [MAGiK 1 / MobileMAGiK 1]
-	1651  M1651/M1651T Northbridge [Aladdin-Pro 5/5M,Aladdin-Pro 5T/5TM]
-	1671  M1671 Super P4 Northbridge [AGP4X,PCI and SDR/DDR]
+	1651  M1651/M1651T Northbridge [Aladdin-Pro 5/5M, Aladdin-Pro 5T/5TM]
+	1671  M1671 Super P4 Northbridge [AGP4X, PCI and SDR/DDR]
 	1672  M1672 Northbridge [CyberALADDiN-P4]
-	1681  M1681 P4 Northbridge [AGP8X,HyperTransport and SDR/DDR]
+	1681  M1681 P4 Northbridge [AGP8X, HyperTransport and SDR/DDR]
 	1687  M1687 K8 Northbridge [AGP8X and HyperTransport]
 	1689  M1689 K8 Northbridge [Super K8 Single Chip]
 	1695  M1695 Host Bridge
@@ -9021,27 +9037,27 @@
 		103c 0024  Pavilion ze4400
 		103c 0025  XE4500 Notebook
 		1849 7101  ASRock 939Dual-SATA2 Motherboard
-10ba  Mitsubishi Electric Corp.
+10ba  Mitsubishi Electric
 	0301  AccelGraphics AccelECLIPSE
 	0304  AccelGALAXY A2100 [OEM Evans & Sutherland]
 	0308  Tornado 3000 [OEM Evans & Sutherland]
 		10dd 0024  Tornado 3000
 	1002  VG500 [VolumePro Volume Rendering Accelerator]
-10bb  Dapha Electronics Corporation
+10bb  Dapha Electronics
 10bc  Advanced Logic Research
 10bd  Surecom Technology
 	0e34  NE-34
-10be  Tseng Labs International Co.
-10bf  Most Inc
-10c0  Boca Research Inc.
-10c1  ICM Co., Ltd.
-10c2  Auspex Systems Inc.
-10c3  Samsung Semiconductors, Inc.
-10c4  Award Software International Inc.
-10c5  Xerox Corporation
-10c6  Rambus Inc.
+10be  Tseng Labs International
+10bf  Most
+10c0  Boca Research
+10c1  ICM
+10c2  Auspex Systems
+10c3  Samsung Semiconductors
+10c4  Award Software International
+10c5  Xerox
+10c6  Rambus
 10c7  Media Vision
-10c8  Neomagic Corporation
+10c8  Neomagic
 	0001  NM2070 [MagicGraph 128]
 	0002  NM2090 [MagicGraph 128V]
 	0003  NM2093 [MagicGraph 128ZV]
@@ -9088,14 +9104,14 @@
 		14c0 0004  MagicMedia 256AV Audio Device
 	8006  NM2360 [MagicMedia 256ZX Audio]
 	8016  NM2380 [MagicMedia 256XL+ Audio]
-10c9  Dataexpert Corporation
-10ca  Fujitsu Microelectr., Inc.
-10cb  Omron Corporation
-# nee Mentor ARC Inc
+10c9  Dataexpert
+10ca  Fujitsu Microelectr.
+10cb  Omron
+# nee Mentor ARC
 10cc  Mai Logic Incorporated
 	0660  Articia S Host Bridge
 	0661  Articia S PCI Bridge
-10cd  Advanced System Products, Inc
+10cd  Advanced System Products
 	1100  ASC1100
 	1200  ASC1200 [(abp940) Fast SCSI-II]
 	1300  ASC1300 / ASC3030 [ABP940-U / ABP960-U / ABP3925]
@@ -9120,15 +9136,15 @@
 	2019  MB86295S [CORAL P]
 	201e  MB86296S [CORAL PA]
 	202b  MB86297A [Carmine Graphics Controller]
-10d1  FuturePlus Systems Corp.
+10d1  FuturePlus Systems
 10d2  Molex Incorporated
-10d3  Jabil Circuit Inc
+10d3  Jabil Circuit
 10d4  Hualon Microelectronics
-10d5  Autologic Inc.
+10d5  Autologic
 10d6  Cetia
 10d7  BCM Advanced Research
 10d8  Advanced Peripherals Labs
-10d9  Macronix, Inc. [MXIC]
+10d9  Macronix [MXIC]
 	0431  MX98715
 	0512  MX98713
 	0531  MX987x5
@@ -9139,7 +9155,7 @@
 10da  Compaq IPG-Austin
 	0508  TC4048 Token Ring 4/16
 	3390  Tl3c3x9
-10db  Rohm LSI Systems, Inc.
+10db  Rohm LSI Systems
 10dc  CERN/ECP/EDU
 	0001  STAR/RD24 SCI-PCI (PMC)
 	0002  TAR/RD24 SCI-PCI (PMC)
@@ -9149,7 +9165,7 @@
 10dd  Evans & Sutherland
 	0100  Lightning 1200
 		10dd 0023  Lightning 1200 15+16M
-10de  NVIDIA Corporation
+10de  NVIDIA
 	0008  NV1 [STG2000X-B Series]
 	0009  NV1 [NV1 Series]
 	0018  NV3 [Riva 128]
@@ -9840,7 +9856,7 @@
 		103c 2a34  Pavilion a1677c
 		103c 30b5  Presario V3242AU
 		103c 30b7  Presario V6133CL
-		10de cb84  ASUSTeK Computer Inc. A8N-VM CSM Mainboard
+		10de cb84  ASUSTeK Computer A8N-VM CSM Mainboard
 		1462 7207  K8NGM2 series
 	026d  MCP51 USB Controller
 		103c 2a34  Pavilion a1677c
@@ -12147,6 +12163,7 @@
 	2192  TU116M [GeForce GTX 1650 Ti Mobile]
 	21ae  TU116GL
 	21bf  TU116GL
+	21c2  TU116
 	21c4  TU116 [GeForce GTX 1660 SUPER]
 	21d1  TU116BM [GeForce GTX 1660 Ti Mobile]
 	2204  GA102 [GeForce RTX 3090]
@@ -12169,9 +12186,11 @@
 	2486  GA104 [GeForce RTX 3060 Ti]
 	249c  GA104M [GeForce RTX 3080 Mobile / Max-Q 8GB/16GB]
 	249d  GA104M [GeForce RTX 3070 Mobile / Max-Q]
+	249f  GA104M
 	24ac  GA104 [GeForce RTX 30x0 Engineering Sample]
 	24ad  GA104 [GeForce RTX 3060 Engineering Sample]
 	24af  GA104 [GeForce RTX 3070 Engineering Sample]
+	24b6  GA104
 	24bf  GA104 [GeForce RTX 3070 Engineering Sample]
 	24dc  GA104M [GeForce RTX 3080 Mobile / Max-Q 8GB/16GB]
 	24dd  GA104M [GeForce RTX 3070 Mobile / Max-Q]
@@ -12183,7 +12202,7 @@
 	2560  GA106M [GeForce RTX 3060 Mobile / Max-Q]
 	2583  GA107 [GeForce RTX 3050]
 	25af  GA107 [GeForce RTX 3050 Engineering Sample]
-10df  Emulex Corporation
+10df  Emulex
 	0720  OneConnect NIC (Skyhawk)
 		103c 1934  FlexFabric 20Gb 2-port 650M Adapter
 		103c 1935  FlexFabric 20Gb 2-port 650FLB Adapter
@@ -12305,20 +12324,20 @@
 	fe11  Zephyr-X LightPulse Fibre Channel Host Adapter
 	fe12  Zephyr-X LightPulse FCoE Adapter
 	ff00  Neptune LightPulse Fibre Channel Host Adapter
-10e0  Integrated Micro Solutions Inc.
+10e0  Integrated Micro Solutions
 	5026  IMS5026/27/28
 	5027  IMS5027
 	5028  IMS5028
 	8849  IMS8849
 	8853  IMS8853
 	9128  IMS9128 [Twin turbo 128]
-10e1  Tekram Technology Co.,Ltd.
+10e1  Tekram Technology
 	0391  TRM-S1040
 		10e1 0391  DC-315U SCSI-3 Host Adapter
 	690c  DC-690c
 	dc29  DC-290
-10e2  Aptix Corporation
-10e3  Tundra Semiconductor Corp.
+10e2  Aptix
+10e3  Tundra Semiconductor
 	0000  CA91C042 [Universe]
 	0108  Tsi108 Host Bridge for Single PowerPC
 	0148  Tsi148 [Tempe]
@@ -12331,10 +12350,10 @@
 	a108  Tsi109 Host Bridge for Dual PowerPC
 10e4  Tandem Computers
 	8029  Realtek 8029 Network Card
-10e5  Micro Industries Corporation
-10e6  Gainbery Computer Products Inc.
+10e5  Micro Industries
+10e6  Gainbery Computer Products
 10e7  Vadem
-10e8  Applied Micro Circuits Corp.
+10e8  Applied Micro Circuits
 	1072  INES GPIB-PCI (AMCC5920 based)
 	2011  Q-Motion Video Capture/Edit board
 	4750  S5930 [Matchmaker]
@@ -12352,23 +12371,23 @@
 	80da  PCI-9812
 	80fc  APCI1500 Signal processing controller (16 dig. inputs + 16 dig. outputs)
 	811a  PCI-IEEE1355-DS-DE Interface
-	814c  Fastcom ESCC-PCI (Commtech, Inc.)
+	814c  Fastcom ESCC-PCI (Commtech)
 	8170  S5933 [Matchmaker] (Chipset Development Tool)
 	81e6  Multimedia video controller
 	828d  APCI3001 Signal processing controller (up to 16 analog inputs)
-	8291  Fastcom 232/8-PCI (Commtech, Inc.)
-	82c4  Fastcom 422/4-PCI (Commtech, Inc.)
-	82c5  Fastcom 422/2-PCI (Commtech, Inc.)
-	82c6  Fastcom IG422/1-PCI (Commtech, Inc.)
-	82c7  Fastcom IG232/2-PCI (Commtech, Inc.)
-	82ca  Fastcom 232/4-PCI (Commtech, Inc.)
+	8291  Fastcom 232/8-PCI (Commtech)
+	82c4  Fastcom 422/4-PCI (Commtech)
+	82c5  Fastcom 422/2-PCI (Commtech)
+	82c6  Fastcom IG422/1-PCI (Commtech)
+	82c7  Fastcom IG232/2-PCI (Commtech)
+	82ca  Fastcom 232/4-PCI (Commtech)
 	82db  AJA HDNTV HD SDI Framestore
-	82e2  Fastcom DIO24H-PCI (Commtech, Inc.)
+	82e2  Fastcom DIO24H-PCI (Commtech)
 	8406  PCIcanx/PCIcan CAN interface [Kvaser AB]
 	8407  PCIcan II CAN interface (A1021, PCB-07, PCB-08) [Kvaser AB]
-	8851  S5933 on Innes Corp FM Radio Capture card
+	8851  S5933 on Innes FM Radio Capture card
 	e004  X-Gene PCIe bridge
-10e9  Alps Electric Co., Ltd.
+10e9  Alps Electric
 10ea  Integraphics
 	1680  IGA-1680
 	1682  IGA-1682
@@ -12383,7 +12402,7 @@
 10eb  Artists Graphics
 	0101  3GA
 	8111  Twist3 Frame Grabber
-10ec  Realtek Semiconductor Co., Ltd.
+10ec  Realtek Semiconductor
 	0139  RTL-8139/8139C/8139C+ Ethernet Controller
 	3000  Killer E3000 2.5GbE Controller
 	5208  RTS5208 PCI Express Card Reader
@@ -12604,9 +12623,9 @@
 	c822  RTL8822CE 802.11ac PCIe Wireless Network Adapter
 	c82f  RTL8822CE 802.11ac PCIe Wireless Network Adapter
 	d723  RTL8723DE 802.11b/g/n PCIe Adapter
-10ed  Ascii Corporation
+10ed  Ascii
 	7310  V7310
-10ee  Xilinx Corporation
+10ee  Xilinx
 	0001  EUROCOM for PCI (ECOMP)
 	0002  Octal E1/T1 for PCI ETP Card
 	0007  Default PCIe endpoint ID
@@ -12627,6 +12646,7 @@
 	5005  Alveo U250
 	7038  FPGA Card XC7VX690T
 		17aa 402f  FPGA XC7VX690T-3FFG1157E
+	8019  Memory controller
 	8380  Ellips ProfiXpress Profibus Master
 	8381  Ellips Santos Frame Grabber
 	d154  Copley Controls CAN card (PCI-CAN-02)
@@ -12635,34 +12655,34 @@
 	ebf1  SED Systems Audio Interface Card
 	ebf2  SED Systems Common PCI Interface
 	ebf3  SED Systems PCIe-AXI Bridge
-10ef  Racore Computer Products, Inc.
+10ef  Racore Computer Products
 	8154  M815x Token Ring Adapter
-10f0  Peritek Corporation
+10f0  Peritek
 10f1  Tyan Computer
 	2865  Tyan Thunder K8E S2865
 	5300  Tyan S5380 Mainboard
-10f2  Achme Computer, Inc.
-10f3  Alaris, Inc.
-10f4  S-MOS Systems, Inc.
-10f5  NKK Corporation
+10f2  Achme Computer
+10f3  Alaris
+10f4  S-MOS Systems
+10f5  NKK
 	a001  NDR4000 [NR4600 Bridge]
 10f6  Creative Electronic Systems SA
-10f7  Matsushita Electric Industrial Co., Ltd.
-10f8  Altos India Ltd
+10f7  Matsushita Electric Industrial
+10f8  Altos India
 10f9  PC Direct
 10fa  Truevision
 	000c  TARGA 1000
 10fb  Thesys Gesellschaft fuer Mikroelektronik mbH
 	186f  TH 6255
-10fc  I-O Data Device, Inc.
+10fc  I-O Data Device
 # What's in the cardbus end of a Sony ACR-A01 card, comes with newer Vaio CD-RW drives
 	0003  Cardbus IDE Controller
 	0005  Cardbus SCSI CBSC II
-10fd  Soyo Computer, Inc
+10fd  Soyo Computer
 10fe  Fast Multimedia AG
 10ff  NCube
 1100  Jazz Multimedia
-1101  Initio Corporation
+1101  Initio
 	0002  INI-920 Ultra SCSI Adapter
 	1060  INI-A100U2W
 	1622  INI-1623 PCI SATA-II Controller
@@ -12821,8 +12841,8 @@
 		156d b700  G700/U700  (AlphaTop (Taiwan))
 		156d b795  G795  (AlphaTop (Taiwan))
 		156d b797  G797  (AlphaTop (Taiwan))
-# nee Triones Technologies, Inc.
-1103  HighPoint Technologies, Inc.
+# nee Triones Technologies
+1103  HighPoint Technologies
 	0003  HPT343/345/346/363
 	0004  HPT366/368/370/370A/372/372N
 		1103 0001  HPT370A
@@ -12864,8 +12884,8 @@
 	3220  RocketRAID 3220
 	3320  RocketRAID 3320
 	4310  RocketRaid 4310
-1104  RasterOps Corp.
-1105  Sigma Designs, Inc.
+1104  RasterOps
+1105  Sigma Designs
 	1105  REALmagic Xcard MPEG 1/2/3/4 DVD Decoder
 	8300  REALmagic Hollywood Plus DVD Decoder
 	8400  EM840x REALmagic DVD/MPEG-2 Audio/Video Decoder
@@ -12881,7 +12901,7 @@
 # Found in Cisco DMP-4305G
 	c621  EM8621L Digital Media Processor
 	c622  EM8622L MPEG-4.10 (H.264) and SMPTE 421M (VC-1) A/V Decoder
-1106  VIA Technologies, Inc.
+1106  VIA Technologies
 	0102  Embedded VIA Ethernet Controller
 	0130  VT6305 1394.A Controller
 	0198  P4X600 Host Bridge
@@ -13463,7 +13483,7 @@
 	f353  VX800/VX820 PCI Express Root Port
 1107  Stratus Computers
 	0576  VIA VT82C570MV [Apollo] (Wrong vendor ID!)
-1108  Proteon, Inc.
+1108  Proteon
 	0100  p1690plus_AA
 	0101  p1690plus_AB
 	0105  P1690Plus
@@ -13472,7 +13492,7 @@
 	0139  P1690Plus
 	013c  P1690Plus
 	013d  P1690Plus
-1109  Cogent Data Technologies, Inc.
+1109  Cogent Data Technologies
 	1400  EM110TX [EX110TX]
 110a  Siemens AG
 	0002  Pirahna 2-port
@@ -13484,7 +13504,7 @@
 	007c  FSC Remote Service Controller, shared memory device
 	007d  FSC Remote Service Controller, SMIC device
 	2101  HST SAPHIR V Primary PCI (ISDN/PMx)
-# Superfastcom-PCI (Commtech, Inc.) or DSCC4 WAN Adapter
+# Superfastcom-PCI (Commtech) or DSCC4 WAN Adapter
 	2102  DSCC4 PEB/PEF 20534 DMA Supported Serial Communication Controller with 4 Channels
 	2104  Eicon Diva 2.02 compatible passive ISDN card
 	3141  SIMATIC NET CP 5611 / 5621
@@ -13507,10 +13527,10 @@
 	4084  SIMATIC NET CP 1626
 	4942  FPGA I-Bus Tracer for MBD
 	6120  SZB6120
-110b  Chromatic Research Inc.
+110b  Chromatic Research
 	0001  Mpact Media Processor
 	0004  Mpact 2
-110c  Mini-Max Technology, Inc.
+110c  Mini-Max Technology
 110d  Znyx Advanced Systems
 110e  CPU Technology
 110f  Ross Technology
@@ -13519,12 +13539,12 @@
 	6073  Firepower Powerized SMP I/O ASIC
 1111  Santa Cruz Operation
 # Also claimed to be RNS or Rockwell International, current PCISIG records list Osicom
-1112  Osicom Technologies Inc
+1112  Osicom Technologies
 	2200  FDDI Adapter
 	2300  Fast Ethernet Adapter
 	2340  4 Port Fast Ethernet Adapter
 	2400  ATM Adapter
-1113  Accton Technology Corporation
+1113  Accton Technology
 	1211  SMC2-1211TX
 		103c 1207  EN-1207D Fast Ethernet Adapter
 		1113 1211  EN-1207D Fast Ethernet Adapter
@@ -13541,7 +13561,7 @@
 	d301  CPWNA100 (Philips wireless PCMCIA)
 	ec02  SMC 1244TX v3
 	ee23  SMCWPCIT-G 108Mbps Wireless PCI adapter
-1114  Atmel Corporation
+1114  Atmel
 	0506  at76c506 802.11b Wireless Network Adaptor
 1115  3D Labs
 1116  Data Translation
@@ -13556,11 +13576,11 @@
 	0060  DT340
 	0069  DT332
 	80c2  DT3162
-1117  Datacube, Inc
+1117  Datacube
 	9500  Max-1C SVGA card
 	9501  Max-1C image processing
 1118  Berg Electronics
-1119  ICP Vortex Computersysteme GmbH
+1119  ICP Vortex Computersysteme
 	0000  GDT 6000/6020/6050
 	0001  GDT 6000B/6010
 	0002  GDT 6110/6510
@@ -13632,7 +13652,7 @@
 	02ff  GDT MAXRP
 	0300  GDT NEWRX
 	0301  GDT NEWRX2
-111a  Efficient Networks, Inc
+111a  Efficient Networks
 	0000  155P-MF1 (FPGA)
 	0002  155P-MF1 (ASIC)
 	0003  ENI-25P ATM
@@ -13650,7 +13670,7 @@
 	1020  SpeedStream PCI 10/100 Network Card
 	1203  SpeedStream 1023 Wireless PCI Adapter
 111b  Teledyne Electronic Systems
-111c  Tricord Systems Inc.
+111c  Tricord Systems
 	0001  Powerbis Bridge
 # now owned by Microchip Technology
 111d  Microsemi / PMC / IDT
@@ -13722,19 +13742,19 @@
 111f  Precision Digital Images
 	4a47  Precision MX Video engine interface
 	5243  Frame capture bus interface
-# formerly EMC Corporation
+# formerly EMC
 1120  Dell EMC
 	2306  Unity Fibre Channel Controller
 	2501  Unity Ethernet Controller
 	2505  Unity Fibre Channel Controller
 1121  Zilog
-1122  Multi-tech Systems, Inc.
-1123  Excellent Design, Inc.
+1122  Multi-tech Systems
+1123  Excellent Design
 1124  Leutron Vision AG
 	2581  Picport Monochrome
 1125  Eurocore
 1126  Vigra
-1127  FORE Systems Inc
+1127  FORE Systems
 	0200  ForeRunner PCA-200 ATM
 	0210  PCA-200PC
 	0250  ATM
@@ -13743,13 +13763,13 @@
 	0400  ForeRunnerHE ATM Adapter
 		1127 0400  ForeRunnerHE ATM
 1129  Firmworks
-112a  Hermes Electronics Company, Ltd.
+112a  Hermes Electronics Company
 # nee Linotype - Hell AG
 112b  Heidelberger Druckmaschinen AGHeidelberger Druckmaschinen AG
 112c  Zenith Data Systems
 112d  Ravicad
-112e  Infomedia Microelectronics Inc.
-112f  Dalsa Inc.
+112e  Infomedia Microelectronics
+112f  Dalsa
 	0000  MVC IC-PCI
 	0001  MVC IM-PCI Video frame grabber/processor
 	0004  PCDig Digital Image Capture
@@ -13808,7 +13828,7 @@
 		0000 507b  Behold TV 507 RDS
 		0000 5201  Behold TV Columbus
 		0070 6701  WinTV HVR-1110
-		1019 4cb5  Elitegroup ECS TVP3XP FM1236 Tuner Card (NTSC,FM)
+		1019 4cb5  Elitegroup ECS TVP3XP FM1236 Tuner Card (NTSC, FM)
 		1043 0210  FlyTV mini Asus Digimatrix
 		1043 4843  TV-FM 7133
 		1043 4845  TV-FM 7135
@@ -13882,7 +13902,7 @@
 		0000 4036  Behold TV 403
 		0000 4037  Behold TV 403 FM
 		0000 4071  Behold TV 407 FM
-		1019 4cb4  Elitegroup ECS TVP3XP FM1216 Tuner Card(PAL-BG,FM)
+		1019 4cb4  Elitegroup ECS TVP3XP FM1216 Tuner Card(PAL-BG, FM)
 		1043 0210  Digimatrix TV
 		1043 4840  TV-FM 7134
 		1043 4842  TV-FM 7134
@@ -13997,8 +14017,8 @@
 		5ace 8201  Behold TV T8
 	9730  SAA9730 Integrated Multimedia and Peripheral Controller
 		1131 0000  Integrated Multimedia and Peripheral Controller
-1132  Mitel Corp.
-1133  Dialogic Corporation
+1132  Mitel
+1133  Dialogic
 	7701  Eiconcard C90
 	7711  Eiconcard C91
 	7901  EiconCard S90
@@ -14095,11 +14115,11 @@
 	0002  Dual PCI to RapidIO Bridge
 	000b  POET Serial RapidIO Bridge
 	000d  POET PSDMS Device
-1135  Fuji Xerox Co Ltd
+1135  Fuji Xerox
 	0001  Printer controller
 1136  Momentum Data Systems
 	0002  PCI-JTAG
-1137  Cisco Systems Inc
+1137  Cisco Systems
 	0023  VIC 81 PCIe Upstream Port
 	0040  VIC PCIe Upstream Port
 		1137 004f  VIC 1280 Dual 40Gb Mezzanine
@@ -14190,22 +14210,22 @@
 		1137 012e  VIC 1227 PCIe Userspace NIC
 		1137 0137  VIC 1380 Mezzanine Userspace NIC
 	023e  1GigE I350 LOM
-1138  Ziatech Corporation
+1138  Ziatech
 	8905  8905 [STD 32 Bridge]
-1139  Dynamic Pictures, Inc
+1139  Dynamic Pictures
 	0001  VGA Compatible 3D Graphics
-113a  FWB Inc
+113a  FWB
 113b  Network Computing Devices
-113c  Cyclone Microsystems, Inc.
+113c  Cyclone Microsystems
 	0000  PCI-9060 i960 Bridge
 	0001  PCI-SDK [PCI i960 Evaluation Platform]
 	0911  PCI-911 [i960Jx-based Intelligent I/O Controller]
 	0912  PCI-912 [i960CF-based Intelligent I/O Controller]
 	0913  PCI-913
 	0914  PCI-914 [I/O Controller w/ secondary PCI bus]
-113d  Leading Edge Products Inc
-113e  Sanyo Electric Co - Computer Engineering Dept
-113f  Equinox Systems, Inc.
+113d  Leading Edge Products
+113e  Sanyo Electric - Computer Engineering Dept
+113f  Equinox Systems
 	0808  SST-64P Adapter
 	1010  SST-128P Adapter
 	80c0  SST-16P DB Adapter
@@ -14213,18 +14233,18 @@
 	80c8  SST-16P Adapter
 	8888  SST-4P Adapter
 	9090  SST-8P Adapter
-1140  Intervoice Inc
-1141  Crest Microsystem Inc
-1142  Alliance Semiconductor Corporation
+1140  Intervoice
+1141  Crest Microsystem
+1142  Alliance Semiconductor
 	3210  AP6410
 	6422  ProVideo 6422
 	6424  ProVideo 6424
 	6425  ProMotion AT25
 	643d  ProMotion AT3D
-1143  NetPower, Inc
+1143  NetPower
 1144  Cincinnati Milacron
 	0001  Noservo controller
-1145  Workbit Corporation
+1145  Workbit
 	8007  NinjaSCSI-32 Workbit
 	f007  NinjaSCSI-32 KME
 	f010  NinjaSCSI-32 Workbit
@@ -14236,7 +14256,7 @@
 	f024  NinjaPATA-32 Delkin Cardbus UDMA
 	f103  NinjaPATA-32 Delkin Cardbus UDMA
 1146  Force Computers
-1147  Interface Corp
+1147  Interface
 # Nee Schneider & Koch
 1148  SysKonnect
 	4000  FDDI Adapter
@@ -14302,11 +14322,11 @@
 		1148 2200  SK-9S22 10/100/1000Base-T Dual Port Server Adapter, PCI-X, 2 Copper RJ-45
 		1148 2210  SK-9P22 10/100/1000 Base-T Dual Port PMC card
 		1148 2220  TPMC-GBE-CO
-		1148 8100  SK-9S81 1000Base-SX Server Adapter,PCI-X, Fiber SX/LC
+		1148 8100  SK-9S81 1000Base-SX Server Adapter, PCI-X, Fiber SX/LC
 		1148 8200  SK-9S82 1000Base-SX Dual Port Server Adapter, PCI-X, 2 Fiber SX/LC
 		1148 8210  SK-9P82 1000 Base-SX Dual Port PMC card
 		1148 8220  TPMC-GBE-FI
-		1148 9100  SK-9S91 1000Base-LX Server Adapter,PCI-X, Fiber LX/LC
+		1148 9100  SK-9S91 1000Base-LX Server Adapter, PCI-X, Fiber LX/LC
 		1148 9200  SK-9S92 1000Base-LX Dual Port Server Adapter, PCI-X, 2 Fiber LX/LC
 		1259 2973  AT-2971SX v2 Gigabit Adapter
 		1259 2974  AT-2971T v2 Gigabit Adapter
@@ -14321,23 +14341,23 @@
 		1148 9100  SK-9E91 Server Adapter
 		1148 9200  SK-9E92 Server Adapter
 	9e01  SK-9E21M 10/100/1000Base-T Adapter
-1149  Win System Corporation
+1149  Win System
 114a  VMIC
-	5565  GE-IP PCI5565,PMC5565 Reflective Memory Node
+	5565  GE-IP PCI5565, PMC5565 Reflective Memory Node
 	5579  VMIPCI-5579 (Reflective Memory Card)
 	5587  VMIPCI-5587 (Reflective Memory Card)
 	6504  VMIC PCI 7755 FPGA
 	7587  VMIVME-7587
-114b  Canopus Co., Ltd
+114b  Canopus
 114c  Annabooks
-114d  IC Corporation
-114e  Nikon Systems Inc
+114d  IC
+114e  Nikon Systems
 114f  Digi International
 	0002  AccelePort EPC
 	0003  RightSwitch SE-6
 	0004  AccelePort Xem
 	0005  AccelePort Xr
-	0006  AccelePort Xr,C/X
+	0006  AccelePort Xr, C/X
 	0009  AccelePort Xr/J
 	000a  AccelePort EPC/J
 	000c  DataFirePRIme T1 (1-port)
@@ -14396,24 +14416,24 @@
 	00f1  Digi Neo PCI-E 4 port
 	00f4  Digi Neo 4 (IBM version)
 	6001  Avanstar
-1150  Thinking Machines Corp
-1151  JAE Electronics Inc.
+1150  Thinking Machines
+1151  JAE Electronics
 1152  Megatek
-1153  Land Win Electronic Corp
-1154  Melco Inc
-1155  Pine Technology Ltd
+1153  Land Win Electronic
+1154  Melco
+1155  Pine Technology
 1156  Periscope Engineering
-1157  Avsys Corporation
-1158  Voarx R & D Inc
+1157  Avsys
+1158  Voarx R & D
 	3011  Tokenet/vg 1001/10m anylan
 	9050  Lanfleet/Truevalue
 	9051  Lanfleet/Truevalue
-1159  MuTech Corporation
+1159  MuTech
 	0001  MV-1000
 	0002  MV-1500
-115a  Harlequin Ltd
+115a  Harlequin
 115b  Parallax Graphics
-115c  Photron Ltd.
+115c  Photron
 115d  Xircom
 	0003  Cardbus Ethernet 10/100
 		1014 0181  10/100 EtherJet Cardbus Adapter
@@ -14451,17 +14471,17 @@
 		1115 1181  Cardbus Ethernet 100 + 56k Modem
 		115d 1181  CBEM56G-100 Ethernet + 56k Modem
 		8086 9181  PRO/100 LAN + Modem56 CardBus
-115e  Peer Protocols Inc
-115f  Maxtor Corporation
-1160  Megasoft Inc
+115e  Peer Protocols
+115f  Maxtor
+1160  Megasoft
 1161  PFU Limited
-1162  OA Laboratory Co Ltd
+1162  OA Laboratory
 1163  Rendition
 	0001  Verite 1000
 	2000  Verite V2000/V2100/V2200
 		1092 2000  Stealth II S220
 1164  Advanced Peripherals Technologies
-1165  Imagraph Corporation
+1165  Imagraph
 	0001  Motion TPEG Recorder/Player with audio
 # nee ServerWorks
 1166  Broadcom
@@ -14549,34 +14569,34 @@
 	0420  HT1100 PCI-Express Bridge
 	0421  HT1100 SAS/SATA Controller
 	0422  HT1100 PCI-Express Bridge
-1167  Mutoh Industries Inc
-1168  Thine Electronics Inc
+1167  Mutoh Industries
+1168  Thine Electronics
 1169  Centre for Development of Advanced Computing
 # nee Polaris Communications
-116a  Luminex Software, Inc.
+116a  Luminex Software
 	6100  Bus/Tag Channel
 	6800  Escon Channel
 	7100  Bus/Tag Channel
 	7800  Escon Channel
-116b  Connectware Inc
+116b  Connectware
 116c  Intelligent Resources Integrated Systems
 116d  Martin-Marietta
 116e  Electronics for Imaging
 116f  Workstation Technology
-1170  Inventec Corporation
+1170  Inventec
 1171  Loughborough Sound Images Plc
-1172  Altera Corporation
+1172  Altera
 	00a7  Stratix V
 	0530  Stratix IV
 	646c  KT-500/KT-521 board
-1173  Adobe Systems, Inc
+1173  Adobe Systems
 1174  Bridgeport Machines
-1175  Mitron Computer Inc.
+1175  Mitron Computer
 1176  SBE Incorporated
 1177  Silicon Engineering
-1178  Alfa, Inc.
+1178  Alfa
 	afa1  Fast Ethernet Adapter
-1179  Toshiba Corporation
+1179  Toshiba
 	0102  Extended IDE Controller
 	0103  EX-IDE Type-B
 	010e  PXP04 NVMe SSD
@@ -14615,8 +14635,8 @@
 	0d01  FIR Port Type-DO
 		1179 0001  FIR Port Type-DO
 117a  A-Trend Technology
-117b  L G Electronics, Inc.
-117c  ATTO Technology, Inc.
+117b  L G Electronics
+117c  ATTO Technology
 	002c  ExpressSAS R380
 	002d  ExpressSAS R348
 	0030  Ultra320 SCSI Host Adapter
@@ -14680,7 +14700,7 @@
 117d  Becton & Dickinson
 117e  T/R Systems
 117f  Integrated Circuit Systems
-1180  Ricoh Co Ltd
+1180  Ricoh
 	0465  RL5c465
 	0466  RL5c466
 	0475  RL5c475
@@ -14821,10 +14841,10 @@
 		17aa 21cf  ThinkPad T520
 	e852  PCIe xD-Picture Card Controller
 1181  Telmatics International
-1183  Fujikura Ltd
-1184  Forks Inc
-1185  Dataworld International Ltd
-1186  D-Link System Inc
+1183  Fujikura
+1184  Forks
+1185  Dataworld International
+1186  D-Link System
 	1002  DL10050 Sundance Ethernet
 		1186 1002  DFE-550TX/FX
 		1186 1012  DFE-580TX
@@ -14860,15 +14880,15 @@
 	4c00  Gigabit Ethernet Adapter
 		1186 4c00  DGE-530T Gigabit Ethernet Adapter
 	8400  D-Link DWL-650+ CardBus PC Card
-1187  Advanced Technology Laboratories, Inc.
-1188  Shima Seiki Manufacturing Ltd.
-1189  Matsushita Electronics Co Ltd
+1187  Advanced Technology Laboratories
+1188  Shima Seiki Manufacturing
+1189  Matsushita Electronics
 118a  Hilevel Technology
 118b  Hypertec Pty Limited
-118c  Corollary, Inc
+118c  Corollary
 	0014  PCIB [C-bus II to PCI bus host bridge chip]
 	1117  Intel 8-way XEON Profusion Chipset [Cache Coherency Filter]
-118d  BitFlow Inc
+118d  BitFlow
 	0001  Raptor-PCI framegrabber
 	0012  Model 12 Road Runner Frame Grabber
 	0014  Model 14 Road Runner Frame Grabber
@@ -14887,11 +14907,11 @@
 	0324  Model 24 Road Runner Frame Grabber
 	0344  Model 44 Road Runner Frame Grabber
 	b04e  Claxon CXP4 CoaXPress frame grabber
-118e  Hermstedt GmbH
+118e  Hermstedt
 118f  Green Logic
 1190  Tripace
 	c731  TP-910/920/940 PCI Ultra(Wide) SCSI Adapter
-1191  Artop Electronic Corp
+1191  Artop Electronic
 	0003  SCSI Cache Host Adapter
 	0004  ATP8400
 	0005  ATP850UF
@@ -14913,24 +14933,24 @@
 	8080  AEC67160 SCSI
 	8081  AEC67160S SCSI
 	808a  AEC67162 2-ch. LVD SCSI
-1192  Densan Company Ltd
-1193  Zeitnet Inc.
+1192  Densan Company
+1193  Zeitnet
 	0001  1221
 	0002  1225
 1194  Toucan Technology
-1195  Ratoc System Inc
-1196  Hytec Electronics Ltd
-1197  Gage Applied Sciences, Inc.
+1195  Ratoc System
+1196  Hytec Electronics
+1197  Gage Applied Sciences
 	010c  CompuScope 82G 8bit 2GS/s Analog Input Card
-1198  Lambda Systems Inc
-1199  Attachmate Corporation
+1198  Lambda Systems
+1199  Attachmate
 	0101  Advanced ISCA/PCI Adapter
-119a  Mind Share, Inc.
-119b  Omega Micro Inc.
+119a  Mind Share
+119b  Omega Micro
 	1221  82C092G
 119c  Information Technology Inst.
-119d  Bug, Inc. Sapporo Japan
-119e  Fujitsu Microelectronics Ltd.
+119d  Bug Sapporo Japan
+119e  Fujitsu Microelectronics
 	0001  FireStream 155
 	0003  FireStream 50
 119f  Bull HN Information Systems
@@ -14939,20 +14959,20 @@
 	1101  BXI Host Channel Adapter v1.2
 # BXI stands for Bull eXascale Interconnect
 	1121  BXI Host Channel Adapter v1.3
-11a0  Convex Computer Corporation
+11a0  Convex Computer
 11a1  Hamamatsu Photonics K.K.
 11a2  Sierra Research and Technology
-11a3  Deuretzbacher GmbH & Co. Eng. KG
+11a3  Deuretzbacher & Eng. KG
 11a4  Barco Graphics NV
-11a5  Microunity Systems Eng. Inc
-11a6  Pure Data Ltd.
-11a7  Power Computing Corp.
-11a8  Systech Corp.
-11a9  InnoSys Inc.
+11a5  Microunity Systems Eng.
+11a6  Pure Data
+11a7  Power Computing
+11a8  Systech
+11a9  InnoSys
 	4240  AMCC S933Q Intelligent Serial Card
 11aa  Actel
-# Nee Galileo Technology, Inc.
-11ab  Marvell Technology Group Ltd.
+# Nee Galileo Technology
+11ab  Marvell Technology Group
 	0146  GT-64010/64010A System Controller
 	0f53  88E6318 Link Street network controller
 	11ab  MV88SE614x SATA II PCI-E controller
@@ -15178,7 +15198,7 @@
 	d40f  Bobcat3 Ethernet Switch
 	f003  GT-64010 Primary Image Piranha Image Generator
 11ac  Canon Information Systems Research Aust.
-11ad  Lite-On Communications Inc
+11ad  Lite-On Communications
 	0002  LNE100TX
 		11ad 0002  LNE100TX
 		11ad 0003  LNE100TX
@@ -15189,11 +15209,11 @@
 	c115  LNE100TX [Linksys EtherFast 10/100]
 		11ad c001  LNE100TX [ver 2.0]
 		2646 000b  KNE111TX
-11ae  Aztech System Ltd
-11af  Avid Technology Inc.
+11ae  Aztech System
+11af  Avid Technology
 	0001  Cinema
 	ee40  Digidesign Audiomedia III
-11b0  V3 Semiconductor Inc.
+11b0  V3 Semiconductor
 	0002  V300PSC
 	0292  V292PBC [Am29030/40 Bridge]
 	0960  V96xPBC
@@ -15201,20 +15221,20 @@
 	c960  V96DPC
 11b1  Apricot Computers
 11b2  Eastman Kodak
-11b3  Barr Systems Inc.
+11b3  Barr Systems
 11b4  Leitch Technology International
 11b5  Radstone Technology Plc
-11b6  United Video Corp
+11b6  United Video
 11b7  Motorola
-11b8  XPoint Technologies, Inc
+11b8  XPoint Technologies
 	0001  Quad PeerMaster
-11b9  Pathlight Technology Inc.
+11b9  Pathlight Technology
 	c0ed  SSA Controller
-11ba  Videotron Corp
+11ba  Videotron
 11bb  Pyramid Technology
-11bc  Network Peripherals Inc
+11bc  Network Peripherals
 	0001  NP-PCI
-11bd  Pinnacle Systems Inc.
+11bd  Pinnacle Systems
 	002e  PCTV 40i
 	0040  Royal TS Function 1
 		11bd 0044  PCTV 2000i Dual DVB-T Pro PCI Tuner 1
@@ -15227,11 +15247,11 @@
 		11bd 0045  PCTV Dual Sat Pro PCI 4000i Common
 	0051  PCTV HD 800i
 	bede  AV/DV Studio Capture Card
-11be  International Microcircuits Inc
-11bf  Astrodesign, Inc.
+11be  International Microcircuits
+11bf  Astrodesign
 11c0  Hewlett Packard
 # nee Agere Systems nee Lucent Microelectronics
-11c1  LSI Corporation
+11c1  LSI
 	0440  56k WinModem
 		1033 8015  LT WinModem 56k Data+Fax+Voice+Dsvd
 		1033 8047  LT WinModem 56k Data+Fax+Voice+Dsvd
@@ -15374,10 +15394,10 @@
 	ed00  ET-131x PCI-E Ethernet Controller
 	ed01  ET-131x PCI-E Ethernet Controller
 11c2  Sand Microelectronics
-11c3  NEC Corporation
-11c4  Document Technologies, Inc
-11c5  Shiva Corporation
-11c6  Dainippon Screen Mfg. Co. Ltd
+11c3  NEC
+11c4  Document Technologies
+11c5  Shiva
+11c6  Dainippon Screen Mfg.
 11c7  D.C.M. Data Systems
 11c8  Dolphin Interconnect Solutions AS
 	0658  PSB32 SCI-Adapter D31x
@@ -15386,38 +15406,38 @@
 11c9  Magma
 	0010  16-line serial port w/- DMA
 	0011  4-line serial port w/- DMA
-11ca  LSI Systems, Inc
-11cb  Specialix Research Ltd.
+11ca  LSI Systems
+11cb  Specialix Research
 	2000  PCI_9050
 		11cb 0200  SX
 		11cb b008  I/O8+
 	4000  SUPI_1
 	8000  T225
-11cc  Michels & Kleberhoff Computer GmbH
-11cd  HAL Computer Systems, Inc.
+11cc  Michels & Kleberhoff Computer
+11cd  HAL Computer Systems
 11ce  Netaccess
-11cf  Pioneer Electronic Corporation
+11cf  Pioneer Electronic
 11d0  Lockheed Martin Federal Systems-Manassas
 11d1  Auravision
 	01f7  VxP524
 	01f9  VxP951
-11d2  Intercom Inc.
-11d3  Trancell Systems Inc
+11d2  Intercom
+11d3  Trancell Systems
 11d4  Analog Devices
 	1535  Blackfin BF535 processor
 	1805  SM56 PCI modem
-11d5  Ikon Corporation
+11d5  Ikon
 	0115  10115
 	0117  10117
 11d6  Tekelec Telecom
-11d7  Trenton Technology, Inc.
+11d7  Trenton Technology
 11d8  Image Technologies Development
-11d9  TEC Corporation
+11d9  TEC
 11da  Novell
-11db  Sega Enterprises Ltd
-11dc  Questra Corporation
+11db  Sega Enterprises
+11dc  Questra
 11dd  Crosfield Electronics Limited
-11de  Zoran Corporation
+11de  Zoran
 	6017  miroVIDEO DC30
 	6057  ZR36057PQC Video cutting chipset
 		1031 7efe  DC10 Plus
@@ -15430,26 +15450,26 @@
 		1de1 9fff  Video Kit C210
 11df  New Wave PDG
 11e0  Cray Communications A/S
-11e1  GEC Plessey Semi Inc.
+11e1  GEC Plessey Semi
 11e2  Samsung Information Systems America
-11e3  Quicklogic Corporation
+11e3  Quicklogic
 	0001  COM-ON-AIR Dosch&Amand DECT
 	0560  QL5064 Companion Design Demo Board
 	5030  PC Watchdog
 	8417  QL5064 [QuickPCI] PCI v2.2 bridge for SMT417 Dual TMS320C6416T PMC Module
-11e4  Second Wave Inc
+11e4  Second Wave
 11e5  IIX Consulting
 11e6  Mitsui-Zosen System Research
 11e7  Toshiba America, Elec. Company
-11e8  Digital Processing Systems Inc.
-11e9  Highwater Designs Ltd.
+11e8  Digital Processing Systems
+11e9  Highwater Designs
 11ea  Elsag Bailey
-11eb  Formation Inc.
-11ec  Coreco Inc
+11eb  Formation
+11ec  Coreco
 	000d  Oculus-F/64P
 	1800  Cobra/C6
 11ed  Mediamatics
-11ee  Dome Imaging Systems Inc
+11ee  Dome Imaging Systems
 11ef  Nicolet Technologies B.V.
 11f0  Compu-Shack
 	4231  FDDI
@@ -15459,11 +15479,11 @@
 	4235  FASTline-II UTP
 	4236  FASTline-II FO
 	4731  GIGAline
-11f1  Symbios Logic Inc
+11f1  Symbios Logic
 11f2  Picture Tel Japan K.K.
 11f3  Keithley Metrabyte
 	0011  KPCI-PIO24
-11f4  Kinetic Systems Corporation
+11f4  Kinetic Systems
 	2915  CAMAC controller
 11f5  Computing Devices International
 11f6  Compex
@@ -15476,7 +15496,7 @@
 		11f6 2011  ReadyLink 100TX
 	9881  RL100TX Fast Ethernet
 11f7  Scientific Atlanta
-11f8  PMC-Sierra Inc.
+11f8  PMC-Sierra
 	5220  BR522x [PMC-Sierra maxRAID SAS Controller]
 	7364  PM7364 [FREEDM - 32 Frame Engine & Datalink Mgr]
 	7375  PM7375 [LASAR-155 ATM SAR]
@@ -15501,12 +15521,12 @@
 	8073  PM8073 Tachyon SPCve 12G 16-port SAS/SATA controller
 	8531  PM8531 PFX 24xG3 Fanout PCIe Switches
 	8546  PM8546 B-FEIP PSX 96xG3 PCIe Storage Switch
-11f9  I-Cube Inc
-11fa  Kasan Electronics Company, Ltd.
-11fb  Datel Inc
+11f9  I-Cube
+11fa  Kasan Electronics Company
+11fb  Datel
 11fc  Silicon Magic
 11fd  High Street Consultants
-11fe  Pepperl+Fuchs Comtrol, Inc.
+11fe  Pepperl+Fuchs Comtrol
 	0001  RocketPort PCI 32-port w/external I/F
 	0002  RocketPort PCI 8-port w/external I/F
 	0003  RocketPort PCI 16-port w/external I/F
@@ -15571,29 +15591,29 @@
 	8805  RocketPort uPCI 4-port w/Quad Cable
 	880b  RocketPort Plus uPCI 4-port w/Quad Cable
 	8812  RocketPort Plus uPCI 4-port RS422 w/Quad Cable
-11ff  Scion Corporation
+11ff  Scion
 	0003  AG-5
-1200  CSS Corporation
-1201  Vista Controls Corp
-1202  Network General Corp.
+1200  CSS
+1201  Vista Controls
+1202  Network General
 	4300  Gigabit Ethernet Adapter
 		1202 9841  SK-9841 LX
 		1202 9842  SK-9841 LX dual link
 		1202 9843  SK-9843 SX
 		1202 9844  SK-9843 SX dual link
-1203  Bayer Corporation, Agfa Division
-1204  Lattice Semiconductor Corporation
+1203  Bayer Agfa Division
+1204  Lattice Semiconductor
 	1965  SB6501 802.11ad Wireless Network Adapter
-1205  Array Corporation
-1206  Amdahl Corporation
-1208  Parsytec GmbH
+1205  Array
+1206  Amdahl
+1208  Parsytec
 	4853  HS-Link Device
-1209  SCI Systems Inc
+1209  SCI Systems
 120a  Synaptel
 120b  Adaptive Solutions
-120c  Technical Corp.
-120d  Compression Labs, Inc.
-120e  Cyclades Corporation
+120c  Technical
+120d  Compression Labs
+120e  Cyclades
 	0100  Cyclom-Y below first megabyte
 	0101  Cyclom-Y above first megabyte
 	0102  Cyclom-4Y below first megabyte
@@ -15612,12 +15632,12 @@
 120f  Essential Communications
 	0001  Roadrunner serial HIPPI
 1210  Hyperparallel Technologies
-1211  Braintech Inc
-1213  Applied Intelligent Systems, Inc.
-1214  Performance Technologies, Inc.
-1215  Interware Co., Ltd
+1211  Braintech
+1213  Applied Intelligent Systems
+1214  Performance Technologies
+1215  Interware
 1216  Purup Prepress A/S
-1217  O2 Micro, Inc.
+1217  O2 Micro
 	00f7  Firewire (IEEE 1394)
 		1071 8209  Medion MIM 2240 Notebook PC [MD98100]
 		1179 ff50  Satellite P305D-S8995E
@@ -15674,9 +15694,9 @@
 	8331  O2 Flash Memory Card
 	8520  SD/MMC Card Reader Controller
 	8621  SD/MMC Card Reader Controller
-1218  Hybricon Corp.
-1219  First Virtual Corporation
-121a  3Dfx Interactive, Inc.
+1218  Hybricon
+1219  First Virtual
+121a  3Dfx Interactive
 	0001  Voodoo
 	0002  Voodoo 2
 	0003  Voodoo Banshee
@@ -15722,20 +15742,20 @@
 		121a 0009  Voodoo5 AGP 5500/6000
 	0057  Voodoo 3/3000 [Avenger]
 121b  Advanced Telecommunications Modules
-121c  Nippon Texaco., Ltd
-121d  LiPPERT ADLINK Technology GmbH
+121c  Nippon Texaco.
+121d  LiPPERT ADLINK Technology
 121e  CSPI
 	0201  Myrinet 2000 Scalable Cluster Interconnect
-121f  Arcus Technology, Inc.
-1220  Ariel Corporation
+121f  Arcus Technology
+1220  Ariel
 	1220  AMCC 5933 TMS320C80 DSP/Imaging board
-1221  Contec Co., Ltd
+1221  Contec
 	9172  PO-64L(PCI)H [Isolated Digital Output Board for PCI]
 	91a2  PO-32L(PCI)H [Isolated Digital Output Board for PCI]
 	91c3  DA16-16(LPCI)L [Un-insulated highly precise analog output board for Low Profile PCI]
 	b152  DIO-96D2-LPCI
 	c103  ADA16-32/2(PCI)F [High-Speed Analog I/O Board for PCI]
-1222  Ancor Communications, Inc.
+1222  Ancor Communications
 1223  Artesyn Communication Products
 	0003  PM/Link
 	0004  PM/T1
@@ -15748,18 +15768,18 @@
 	000d  BajaSpan Section 3
 	000e  PM/PPC
 1224  Interactive Images
-1225  Power I/O, Inc.
+1225  Power I/O
 1227  EIZO Rugged Solutions
 	0006  Raptor GFX 8P
 	0023  Raptor GFX [1100T]
 	0045  Raptor 4000-L [Linux version]
 	004a  Raptor 4000-LR-L [Linux version]
 1228  Norsk Elektro Optikk A/S
-1229  Data Kinesis Inc.
+1229  Data Kinesis
 122a  Integrated Telecom
-122b  LG Industrial Systems Co., Ltd
-122c  Sican GmbH
-122d  Aztech System Ltd
+122b  LG Industrial Systems
+122c  Sican
+122d  Aztech System
 	1206  368DSP
 	1400  Trident PCI288-Q3DII (NX)
 	50dc  3328 Audio
@@ -15770,32 +15790,32 @@
 	7722  Napatech XL1
 	7724  Napatech XL2/XA
 	7729  Napatech XD
-122f  Andrew Corporation
+122f  Andrew
 1230  Fishcamp Engineering
-1231  Woodward McCoach, Inc.
+1231  Woodward McCoach
 	04e1  Desktop PCI Telephony 4
 	05e1  Desktop PCI Telephony 5/6
 	0d00  LightParser
 	0d02  LightParser 2
 	0d13  Desktop PCI L1/L3 Telephony
 1232  GPT Limited
-1233  Bus-Tech, Inc.
-# nee Risq Modular Systems, Inc.
+1233  Bus-Tech
+# nee Risq Modular Systems
 1235  SMART Modular Technologies
-1236  Sigma Designs Corporation
+1236  Sigma Designs
 	0000  RealMagic64/GX
 	6401  REALmagic 64/GX (SD 6425)
-1237  Alta Technology Corporation
+1237  Alta Technology
 1238  Adtran
 1239  3DO Company
-123a  Visicom Laboratories, Inc.
-123b  Seeq Technology, Inc.
-123c  Century Systems, Inc.
-123d  Engineering Design Team, Inc.
+123a  Visicom Laboratories
+123b  Seeq Technology
+123c  Century Systems
+123d  Engineering Design Team
 	0000  EasyConnect 8/32
 	0002  EasyConnect 8/64
 	0003  EasyIO
-123e  Simutech, Inc.
+123e  Simutech
 # nee C-Cube Microsystems / acquired by Magnum Semiconductor
 123f  LSI Logic
 	00e4  MPEG
@@ -15813,10 +15833,10 @@
 		1002 0001  Cinemaster C 3.0 DVD Decoder
 		1002 0002  Cinemaster C 3.0 DVD Decoder
 		1328 0001  Cinemaster C 3.0 DVD Decoder
-1240  Marathon Technologies Corp.
+1240  Marathon Technologies
 1241  DSC Communications
-# Formerly Jaycor Networks, Inc.
-1242  JNI Corporation
+# Formerly Jaycor Networks
+1242  JNI
 	1560  JNIC-1560 PCI-X Fibre Channel Controller
 		1242 6562  FCX2-6562 Dual Channel PCI-X Fibre Channel Adapter
 		1242 656a  FCX-6562 PCI-X Fibre Channel Adapter
@@ -15825,7 +15845,7 @@
 	656a  FCX-6562 PCI-X Fibre Channel Adapter
 1243  Delphax
 # Audio-Visuelles Marketing und Computersysteme
-1244  AVM GmbH
+1244  AVM
 	0700  B1 ISDN
 	0800  C4 ISDN
 	0a00  A1 ISDN [Fritz]
@@ -15838,41 +15858,41 @@
 	2700  Fritz!Card DSL SL
 	2900  Fritz!Card DSL v2.0
 1245  A.P.D., S.A.
-1246  Dipix Technologies, Inc.
-1247  Xylon Research, Inc.
-1248  Central Data Corporation
-1249  Samsung Electronics Co., Ltd.
-124a  AEG Electrocom GmbH
+1246  Dipix Technologies
+1247  Xylon Research
+1248  Central Data
+1249  Samsung Electronics
+124a  AEG Electrocom
 124b  SBS/Greenspring Modular I/O
 	0040  PCI-40A or cPCI-200 Quad IndustryPack carrier
 		124b 9080  PCI9080 Bridge
-124c  Solitron Technologies, Inc.
-124d  Stallion Technologies, Inc.
+124c  Solitron Technologies
+124d  Stallion Technologies
 	0000  EasyConnection 8/32
 	0002  EasyConnection 8/64
 	0003  EasyIO
 	0004  EasyConnection/RA
 124e  Cylink
-124f  Infortrend Technology, Inc.
+124f  Infortrend Technology
 	0041  IFT-2000 Series RAID Controller
-1250  Hitachi Microcomputer System Ltd
+1250  Hitachi Microcomputer System
 1251  VLSI Solutions Oy
 1253  Guzik Technical Enterprises
-1254  Linear Systems Ltd.
+1254  Linear Systems
 	0065  DVB Master FD
 	007c  DVB Master Quad/o
-1255  Optibase Ltd
+1255  Optibase
 	1110  MPEG Forge
 	1210  MPEG Fusion
 	2110  VideoPlex
 	2120  VideoPlex CC
 	2130  VideoQuest
-1256  Perceptive Solutions, Inc.
+1256  Perceptive Solutions
 	4201  PCI-2220I
 	4401  PCI-2240I
 	5201  PCI-2000
-1257  Vertex Networks, Inc.
-1258  Gilbarco, Inc.
+1257  Vertex Networks
+1258  Gilbarco
 # nee Allied Telesyn International
 1259  Allied Telesis
 	2560  AT-2560 Fast Ethernet Adapter (i82557B)
@@ -15881,7 +15901,7 @@
 	a11e  RTL81xx Fast Ethernet
 	a120  21x4x DEC-Tulip compatible 10/100 Ethernet
 125a  ABB Power Systems
-125b  Asix Electronics Corporation
+125b  Asix Electronics
 	1400  AX88141 Fast Ethernet Controller
 		1186 1100  AX8814X Based PCI Fast Ethernet Adapter
 	9100  AX99100 PCIe to Multi I/O Controller
@@ -15890,7 +15910,7 @@
 		a000 6000  SPI
 		a000 7000  Local Bus
 		ea50 1c10  RXi2-BP
-125c  Aurora Technologies, Inc.
+125c  Aurora Technologies
 	0101  Saturn 4520P
 	0640  Aries 16000P
 125d  ESS Technology
@@ -15940,14 +15960,14 @@
 		14fe 0428  ES56-PI Data Fax Modem
 		14fe 0429  ES56-PI Data Fax Modem
 125e  Specialvideo Engineering SRL
-125f  Concurrent Technologies, Inc.
+125f  Concurrent Technologies
 # 4 x serial ports, 2 x printer ports
 	2071  CC PMC/232
 # 4 x serial ports, 2 x printer ports
 	2084  CC PMC/23P
 # 4 x serial ports, RS422
 	2091  CC PMC/422
-1260  Intersil Corporation
+1260  Intersil
 	3872  ISL3872 [Prism 3]
 		1468 0202  LAN-Express IEEE 802.11b Wireless LAN
 	3873  ISL3874 [Prism 2.5]/ISL3872 [Prism 3]
@@ -15986,12 +16006,12 @@
 # This is probably more likely a HW fault, but I am keeping it for now --mj
 	ffff  ISL3886IK
 		1260 0000  Senao 3054MP+ (J) mini-PCI WLAN 802.11g adapter
-1261  Matsushita-Kotobuki Electronics Industries, Ltd.
-1262  ES Computer Company, Ltd.
+1261  Matsushita-Kotobuki Electronics Industries
+1262  ES Computer Company
 1263  Sonic Solutions
-1264  Aval Nagasaki Corporation
-1265  Casio Computer Co., Ltd.
-1266  Microdyne Corporation
+1264  Aval Nagasaki
+1265  Casio Computer
+1266  Microdyne
 	0001  NE10/100 Adapter (i82557B)
 	1910  NE2000Plus (RT8029) Ethernet Adapter
 		1266 1910  NE2000Plus Ethernet Adapter
@@ -16000,14 +16020,14 @@
 	5a4b  Telsat Turbo
 1268  Tektronix
 1269  Thomson-CSF/TTM
-126a  Lexmark International, Inc.
-126b  Adax, Inc.
+126a  Lexmark International
+126b  Adax
 126c  Northern Telecom
 	1211  10/100BaseTX [RTL81xx]
 	126c  802.11b Wireless Ethernet Adapter
-126d  Splash Technology, Inc.
-126e  Sumitomo Metal Industries, Ltd.
-126f  Silicon Motion, Inc.
+126d  Splash Technology
+126e  Sumitomo Metal Industries
+126f  Silicon Motion
 	0501  SM501 VoyagerGX Rev. AA
 	0510  SM501 VoyagerGX Rev. B
 	0710  SM710 LynxEM
@@ -16022,7 +16042,7 @@
 	0910  SM910
 	2262  SM2262/SM2262EN SSD Controller
 	2263  SM2263EN/SM2263XT SSD Controller
-1270  Olympus Optical Co., Ltd.
+1270  Olympus Optical
 1271  GW Instruments
 1272  Telematics International
 1273  Hughes Network Systems
@@ -16098,15 +16118,15 @@
 		270f 7040  5880 AudioPCI On Motherboard 6ATA4
 	8001  CT5880 [AudioPCI]
 	8002  5880A [AudioPCI]
-1275  Network Appliance Corporation
-1276  Switched Network Technologies, Inc.
+1275  Network Appliance
+1276  Switched Network Technologies
 1277  Comstream
-1278  Transtech Parallel Systems Ltd.
+1278  Transtech Parallel Systems
 	0701  TPE3/TM3 PowerPC Node
 	0710  TPE5 PowerPC PCI board
 	1100  PMC-FPGA02
 	1101  TS-C43 card with 4 ADSP-TS101 processors
-1279  Transmeta Corporation
+1279  Transmeta
 	0060  TM8000 Northbridge
 	0061  TM8000 AGP bridge
 	0295  Northbridge
@@ -16229,15 +16249,15 @@
 	8234  RapidFire 616X ATM155 Adapter
 		108d 0022  RapidFire 616X ATM155 Adapter
 		108d 0027  RapidFire 616X ATM155 Adapter
-127b  Pixera Corporation
-127c  Crosspoint Solutions, Inc.
+127b  Pixera
+127c  Crosspoint Solutions
 127d  Vela Research
 127e  Winnov, L.P.
 	0010  Videum 1000 Plus
 127f  Fujifilm
-1280  Photoscript Group Ltd.
-1281  Yokogawa Electric Corporation
-1282  Davicom Semiconductor, Inc.
+1280  Photoscript Group
+1281  Yokogawa Electric
+1282  Davicom Semiconductor
 	6585  DM562P V90 Modem
 	9009  DM9009 Ethernet Controller
 	9100  21x4x DEC-Tulip compatible 10/100 Ethernet
@@ -16245,7 +16265,7 @@
 # Subsystem ID is main ID reveresed.
 		0291 8212  DM9102A (DM9102AE, SM9102AF) Ethernet 100/10 MBit
 	9132  Ethernet 100/10 MBit
-1283  Integrated Technology Express, Inc.
+1283  Integrated Technology Express
 	673a  IT8330G
 	8152  IT8152F/G Advanced RISC-to-PCI Companion Chip
 	8211  ITE 8211F Single Channel UDMA 133
@@ -16259,43 +16279,44 @@
 	8888  IT8888F/G PCI to ISA Bridge with SMB [Golden Gate]
 	8889  IT8889F PCI to ISA Bridge
 	8892  IT8892E PCIe to PCI Bridge
+		8086 200d  DH61CR motherboard
 	8893  IT8893E PCIe to PCI Bridge
 	e886  IT8330G
-1284  Sahara Networks, Inc.
-1285  Platform Technologies, Inc.
+1284  Sahara Networks
+1285  Platform Technologies
 	0100  AGOGO sound chip (aka ESS Maestro 1)
-1286  Mazet GmbH
-1287  M-Pact, Inc.
+1286  Mazet
+1287  M-Pact
 	001e  LS220D DVD Decoder
 	001f  LS220C DVD Decoder
-1288  Timestep Corporation
-1289  AVC Technology, Inc.
-128a  Asante Technologies, Inc.
-128b  Transwitch Corporation
-128c  Retix Corporation
-128d  G2 Networks, Inc.
+1288  Timestep
+1289  AVC Technology
+128a  Asante Technologies
+128b  Transwitch
+128c  Retix
+128d  G2 Networks
 	0021  ATM155 Adapter
-128e  Hoontech Corporation/Samho Multi Tech Ltd.
+128e  Hoontech Corporation/Samho Multi Tech
 	0008  ST128 WSS/SB
 	0009  ST128 SAM9407
 	000a  ST128 Game Port
 	000b  ST128 MPU Port
 	000c  ST128 Ctrl Port
-128f  Tateno Dennou, Inc.
-1290  Sord Computer Corporation
+128f  Tateno Dennou
+1290  Sord Computer
 1291  NCS Computer Italia
-1292  Tritech Microelectronics Inc
+1292  Tritech Microelectronics
 	fc02  Pyramid3D TR25202
 1293  Media Reality Technology
-1294  Rhetorex, Inc.
-1295  Imagenation Corporation
+1294  Rhetorex
+1295  Imagenation
 	0800  PXR800
 	1000  PXD1000
 1296  Kofax Image Products
-1297  Holco Enterprise Co, Ltd/Shuttle Computer
-1298  Spellcaster Telecommunications Inc.
+1297  Holco Enterprise Ltd/Shuttle Computer
+1298  Spellcaster Telecommunications
 1299  Knowledge Technology Lab.
-129a  VMetro, inc.
+129a  VMetro
 	0615  PBT-615 PCI-X Bus Analyzer
 	1100  PMC-FPGA05
 	1106  XMC-FPGA05F, PCI interface
@@ -16304,22 +16325,22 @@
 	1109  XMC-FPGA05D, PCIe interface
 129b  Image Access
 129c  Jaycor
-129d  Compcore Multimedia, Inc.
-129e  Victor Company of Japan, Ltd.
-129f  OEC Medical Systems, Inc.
+129d  Compcore Multimedia
+129e  Victor Company of Japan
+129f  OEC Medical Systems
 12a0  Allen-Bradley Company
-12a1  Simpact Associates, Inc.
-12a2  Newgen Systems Corporation
+12a1  Simpact Associates
+12a2  Newgen Systems
 12a3  Lucent Technologies
 	8105  T8105 H100 Digital Switch
-12a4  NTT Electronics Corporation
-12a5  Vision Dynamics Ltd.
-12a6  Scalable Networks, Inc.
-12a7  AMO GmbH
+12a4  NTT Electronics
+12a5  Vision Dynamics
+12a6  Scalable Networks
+12a7  AMO
 12a8  News Datacom
-12a9  Xiotech Corporation
-12aa  SDL Communications, Inc.
-12ab  YUAN High-Tech Development Co., Ltd.
+12a9  Xiotech
+12aa  SDL Communications
+12ab  YUAN High-Tech Development
 	0000  MPG160/Kuroutoshikou ITVC15-STVLP
 	0002  AU8830 [Vortex2] Based Sound Card With A3D Support
 	0003  T507 (DVB-T) TV tuner/capture device
@@ -16328,9 +16349,9 @@
 	4789  MPC788 MiniPCI Hybrid TV Tuner
 	fff3  MPG600/Kuroutoshikou ITVC16-STVLP
 	ffff  MPG600/Kuroutoshikou ITVC16-STVLP
-12ac  Measurex Corporation
-12ad  Multidata GmbH
-12ae  Alteon Networks Inc.
+12ac  Measurex
+12ad  Multidata
+12ae  Alteon Networks
 	0001  AceNIC Gigabit Ethernet
 		1014 0104  Gigabit Ethernet-SX PCI Adapter
 		12ae 0001  Gigabit Ethernet-SX (Universal)
@@ -16338,18 +16359,18 @@
 		10a9 8002  Acenic Gigabit Ethernet
 		12ae 0002  Gigabit Ethernet-T (3C986-T)
 	00fa  Farallon PN9100-T Gigabit Ethernet
-12af  TDK USA Corp
-12b0  Jorge Scientific Corp
+12af  TDK USA
+12b0  Jorge Scientific
 12b1  GammaLink
 12b2  General Signal Networks
-12b3  Inter-Face Co Ltd
-12b4  FutureTel Inc
-12b5  Granite Systems Inc.
+12b3  Inter-Face
+12b4  FutureTel
+12b5  Granite Systems
 12b6  Natural Microsystems
-12b7  Cognex Corporation
+12b7  Cognex
 12b8  Korg
 # Nee US Robotics
-12b9  3Com Corp, Modem Division
+12b9  3Com Modem Division
 	1006  WinModem
 		12b9 005c  USR 56k Internal Voice WinModem (Model 3472)
 		12b9 005e  USR 56k Internal WinModem (Models 662975)
@@ -16371,22 +16392,22 @@
 		12b9 00ad  USR 56k Internal FAX Modem (Model 5610)
 		12b9 00d3  USR 56K Internal V92 FAX Modem (Model 5610)
 		12b9 baba  USR 56K Internal Voice Modem 3CP3298-DEL (Model 5601) [Hawk]
-12ba  BittWare, Inc.
-12bb  Nippon Unisoft Corporation
+12ba  BittWare
+12bb  Nippon Unisoft
 12bc  Array Microsystems
-12bd  Computerm Corp.
-12be  Anchor Chips Inc.
+12bd  Computerm
+12be  Anchor Chips
 	3041  AN3041Q CO-MEM
 	3042  AN3042Q CO-MEM Lite
 		12be 3042  Anchor Chips Lite Evaluation Board
 12bf  Fujifilm Microdevices
 12c0  Infimed
-12c1  GMM Research Corp
+12c1  GMM Research
 12c2  Mentec Limited
-12c3  Holtek Microelectronics Inc
+12c3  Holtek Microelectronics
 	0058  PCI NE2K Ethernet
 	5598  PCI NE2K Ethernet
-12c4  Connect Tech Inc
+12c4  Connect Tech
 	0001  Blue HEAT/PCI 8 (RS232/CL/RJ11)
 	0002  Blue HEAT/PCI 4 (RS232)
 	0003  Blue HEAT/PCI 2 (RS232)
@@ -16421,8 +16442,8 @@
 	0081  PCIVST [Grayscale Thresholding Engine]
 	0085  Video Simulator/Sender
 	0086  THR2 Multi-scale Thresholder
-12c6  Mitani Corporation
-12c7  Dialogic Corp
+12c6  Mitani
+12c7  Dialogic
 # 12 Line, 6 port, CT-BUS/SC-BUS, loopstart FXO adaptor.
 	0546  Springware D/120JCT-LS
 # 24 Channel, 1 Port, CT-BUS/SC-BUS, T1/PRI adaptor.
@@ -16431,17 +16452,17 @@
 	0676  Springware D/41JCT-LS
 # 48 Channel, 2 Port, CT-BUS/SC-BUS, T1/PRI adaptor.
 	0685  Springware D/480JCT-2T1
-12c8  G Force Co, Ltd
+12c8  G Force
 12c9  Gigi Operations
 12ca  Integrated Computing Engines
-12cb  Antex Electronics Corporation
+12cb  Antex Electronics
 	0027  SC4 (StudioCard)
 	002e  StudioCard 2000
 12cc  Pluto Technologies International
 12cd  Aims Lab
-12ce  Netspeed Inc.
-12cf  Prophet Systems, Inc.
-12d0  GDE Systems, Inc.
+12ce  Netspeed
+12cf  Prophet Systems
+12d0  GDE Systems
 12d1  PSITech
 12d2  NVidia / SGS Thomson (Joint Venture)
 	0008  NV1
@@ -16474,12 +16495,12 @@
 12d3  Vingmed Sound A/S
 12d4  Ulticom (Formerly DGM&S)
 	0200  T1 Card
-12d5  Equator Technologies Inc
+12d5  Equator Technologies
 	0003  BSP16
 	1000  BSP15
-12d6  Analogic Corp
+12d6  Analogic
 12d7  Biotronic SRL
-# acquired by Diodes Inc.
+# acquired by Diodes
 12d8  Pericom Semiconductor
 	01a7  7C21P100 2-port PCI-X to PCI-X Bridge
 # 3Port-3Lane PCI Express Switch GreenPacket Family
@@ -16512,25 +16533,25 @@
 	1078  Prosody X class e1000 device
 		12d9 000d  Prosody X PCI
 		12d9 000e  Prosody X cPCI
-12da  True Time Inc.
-12db  Annapolis Micro Systems, Inc
-12dc  Symicron Computer Communication Ltd.
+12da  True Time
+12db  Annapolis Micro Systems
+12dc  Symicron Computer Communication
 12dd  Management Graphics
 12de  Rainbow Technologies
 	0200  CryptoSwift CS200
-12df  SBS Technologies Inc
+12df  SBS Technologies
 12e0  Chase Research
 	0010  ST16C654 Quad UART
 	0020  ST16C654 Quad UART
 	0030  ST16C654 Quad UART
-12e1  Nintendo Co, Ltd
-12e2  Datum Inc. Bancomm-Timing Division
-12e3  Imation Corp - Medical Imaging Systems
-12e4  Brooktrout Technology Inc
-12e5  Apex Semiconductor Inc
+12e1  Nintendo
+12e2  Datum Bancomm-Timing Division
+12e3  Imation - Medical Imaging Systems
+12e4  Brooktrout Technology
+12e5  Apex Semiconductor
 12e6  Cirel Systems
-12e7  Sunsgroup Corporation
-12e8  Crisc Corp
+12e7  Sunsgroup
+12e8  Crisc
 12e9  GE Spacenet
 12ea  Zuken
 12eb  Aureal Semiconductor
@@ -16569,21 +16590,21 @@
 		14a4 2106  AU8810 Vortex Digital Audio Processor
 	8803  Vortex 56k Software Modem
 		12eb 8803  Vortex 56k Software Modem
-12ec  3A International, Inc.
-12ed  Optivision Inc.
+12ec  3A International
+12ed  Optivision
 12ee  Orange Micro
 12ef  Vienna Systems
 12f0  Pentek
-12f1  Sorenson Vision Inc
-12f2  Gammagraphx, Inc.
+12f1  Sorenson Vision
+12f2  Gammagraphx
 12f3  Radstone Technology
 12f4  Megatel
 12f5  Forks
 12f6  Dawson France
 12f7  Cognex
-12f8  Electronic Design GmbH
+12f8  Electronic Design
 	0002  VideoMaker
-12f9  Four Fold Ltd
+12f9  Four Fold
 12fb  Spectrum Signal Processing
 	0001  PMC-MAI
 	00f5  F5 Dakar
@@ -16599,16 +16620,16 @@
 	dd62  Ingliston JTAG/ISP
 	eddc  ePMC-MSDDC
 	fa01  ePMC-FPGA
-12fc  Capital Equipment Corp
+12fc  Capital Equipment
 12fd  I2S
-12fe  ESD Electronic System Design GmbH
+12fe  ESD Electronic System Design
 12ff  Lexicon
-1300  Harman International Industries Inc
-1302  Computer Sciences Corp
+1300  Harman International Industries
+1302  Computer Sciences
 1303  Innovative Integration
 	0030  X3-SDF 4-channel XMC acquisition board
 1304  Juniper Networks
-1305  Netphone, Inc
+1305  Netphone
 1306  Duet Technologies
 # Nee ComputerBoards
 1307  Measurement Computing
@@ -16668,22 +16689,22 @@
 	0078  PCI-DAS6013
 	0079  PCI-DAS6014
 	0115  PCIe-DAS1602/16
-1308  Jato Technologies Inc.
+1308  Jato Technologies
 	0001  NetCelerator Adapter
 		1308 0001  NetCelerator Adapter
-1309  AB Semiconductor Ltd
+1309  AB Semiconductor
 130a  Mitsubishi Electric Microcomputer
-130b  Colorgraphic Communications Corp
-130c  Ambex Technologies, Inc
-130d  Accelerix Inc
-130e  Yamatake-Honeywell Co. Ltd
-130f  Advanet Inc
+130b  Colorgraphic Communications
+130c  Ambex Technologies
+130d  Accelerix
+130e  Yamatake-Honeywell
+130f  Advanet
 1310  Gespac
-1311  Videoserver, Inc
-1312  Acuity Imaging, Inc
-1313  Yaskawa Electric Co.
+1311  Videoserver
+1312  Acuity Imaging
+1313  Yaskawa Electric
 1315  Wavesat
-1316  Teradyne Inc
+1316  Teradyne
 1317  ADMtek
 	0981  21x4x DEC-Tulip compatible 10/100 Ethernet
 	0985  NC100 Network Everywhere Fast Ethernet 10/100
@@ -16698,20 +16719,20 @@
 		1317 8201  SMC2635W v2 802.11b Wireless Cardbus Adapter
 	8211  ADM8211 802.11b Wireless Interface
 	9511  21x4x DEC-Tulip compatible 10/100 Ethernet
-1318  Packet Engines Inc.
+1318  Packet Engines
 	0911  GNIC-II PCI Gigabit Ethernet [Hamachi]
-1319  Fortemedia, Inc
+1319  Fortemedia
 	0801  Xwave QS3000A [FM801]
 		1319 1319  FM801 PCI Audio
 	0802  Xwave QS3000A [FM801 game port]
 		1319 1319  FM801 PCI Joystick
 	1000  FM801 PCI Audio
 	1001  FM801 PCI Joystick
-131a  Finisar Corp.
-131c  Nippon Electro-Sensory Devices Corp
-131d  Sysmic, Inc.
-131e  Xinex Networks Inc
-131f  Siig Inc
+131a  Finisar
+131c  Nippon Electro-Sensory Devices
+131d  Sysmic
+131e  Xinex Networks
+131f  Siig
 	1000  CyberSerial (1-port) 16550
 	1001  CyberSerial (1-port) 16650
 	1002  CyberSerial (1-port) 16850
@@ -16753,20 +16774,20 @@
 	2081  CyberSerial (8-port) ST16654
 1320  Crypto AG
 1321  Arcobel Graphics BV
-1322  MTT Co., Ltd
-1323  Dome Inc
+1322  MTT
+1323  Dome
 1324  Sphere Communications
-1325  Salix Technologies, Inc
+1325  Salix Technologies
 1326  Seachange international
 1327  Voss scientific
 1328  quadrant international
 1329  Productivity Enhancement
-132a  Microcom Inc.
+132a  Microcom
 132b  Broadband Technologies
-132c  Micrel Inc
-132d  Integrated Silicon Solution, Inc.
+132c  Micrel
+132d  Integrated Silicon Solution
 1330  MMC Networks
-1331  RadiSys Corporation
+1331  RadiSys
 	0030  ENP-2611
 	8200  82600 Host Bridge
 	8201  82600 IDE
@@ -16776,22 +16797,22 @@
 	5415  MM-5415CN PCI Memory Module with Battery Backup
 	5425  MM-5425CN PCI 64/66 Memory Module with Battery Backup
 	6140  MM-6140D
-1334  Redcreek Communications, Inc
-1335  Videomail, Inc
+1334  Redcreek Communications
+1335  Videomail
 1337  Third Planet Publishing
 1338  BT Electronics
-133a  Vtel Corp
+133a  Vtel
 133b  Softcom Microsystems
-133c  Holontech Corp
+133c  Holontech
 133d  SS Technologies
-133e  Virtual Computer Corp
+133e  Virtual Computer
 133f  SCM Microsystems
-1340  Atalla Corp
-1341  Kyoto Microcomputer Co
-1342  Promax Systems Inc
-1343  Phylon Communications Inc
+1340  Atalla
+1341  Kyoto Microcomputer
+1342  Promax Systems
+1343  Phylon Communications
 # nee Crucial Technology
-1344  Micron Technology Inc
+1344  Micron Technology
 	5150  RealSSD P320h
 	5151  RealSSD P320m
 	5152  RealSSD P320s
@@ -16804,15 +16825,15 @@
 	5190  9200 ECO NVMe SSD
 	5191  9200 PRO NVMe SSD
 	5192  9200 MAX NVMe SSD
-1345  Arescom Inc
+1345  Arescom
 1347  Odetics
-1349  Sumitomo Electric Industries, Ltd.
-134a  DTC Technology Corp.
+1349  Sumitomo Electric Industries
+134a  DTC Technology
 	0001  Domex 536
 	0002  Domex DMX3194UP SCSI Adapter
-134b  ARK Research Corp.
-134c  Chori Joho System Co. Ltd
-134d  PCTel Inc
+134b  ARK Research
+134c  Chori Joho System
+134d  PCTel
 	2189  HSP56 MicroModem
 	2486  2304WT V.92 MDC Modem
 	7890  HSP MicroModem 56
@@ -16826,9 +16847,9 @@
 	7896  HSP MicroModem 56
 	7897  HSP MicroModem 56
 134e  CSTI
-134f  Algo System Co Ltd
-1350  Systec Co. Ltd
-1351  Sonix Inc
+134f  Algo System
+1350  Systec
+1351  Sonix
 # nee Vierling Communication SAS, nee Thales Idatys
 1353  dbeeSet Technology
 	0002  Proserver
@@ -16837,14 +16858,14 @@
 	0005  PCI-FUT-S0
 	0006  OTDU-1U (FPGA Zynq-7000)
 	0007  OTDU-EX
-1354  Dwave System Inc
-1355  Kratos Analytical Ltd
-1356  The Logical Co
+1354  Dwave System
+1355  Kratos Analytical
+1356  The Logical
 1359  Prisa Networks
 135a  Brain Boxes
 	0a61  UC-324 [VELOCITY RS422/485]
-135b  Giganet Inc
-135c  Quatech Inc
+135b  Giganet
+135c  Quatech
 	0010  QSC-100
 	0020  DSC-100
 	0030  DSC-200/300
@@ -16860,7 +16881,7 @@
 	01c0  SSCLP-200/300
 	0258  DSPSX-200/300
 135d  ABB Network Partner AB
-135e  Sealevel Systems Inc
+135e  Sealevel Systems
 	5101  Route 56.PCI - Multi-Protocol Serial Interface (Zilog Z16C32)
 	7101  Single Port RS-232/422/485/530
 	7201  Dual Port RS-232/422/485 Interface
@@ -16896,30 +16917,30 @@
 	0501  PTP270PEX PTP/IEEE1588 slave card (PCI Express)
 	0601  FRC511PEX Free Running Clock (PCI Express)
 1361  Soliton Systems K.K.
-1362  Fujifacom Corporation
-1363  Phoenix Technology Ltd
-1364  ATM Communications Inc
-1365  Hypercope GmbH
-1366  Teijin Seiki Co. Ltd
-1367  Hitachi Zosen Corporation
-1368  Skyware Corporation
+1362  Fujifacom
+1363  Phoenix Technology
+1364  ATM Communications
+1365  Hypercope
+1366  Teijin Seiki
+1367  Hitachi Zosen
+1368  Skyware
 1369  Digigram
 136a  High Soft Tech
 	0004  HST Saphir VII mini PCI
 	0007  HST Saphir III E MultiLink 4
 	0008  HST Saphir III E MultiLink 8
 	000a  HST Saphir III E MultiLink 2
-136b  Kawasaki Steel Corporation
+136b  Kawasaki Steel
 	ff01  KL5A72002 Motion JPEG
-136c  Adtek System Science Co Ltd
-136d  Gigalabs Inc
-136f  Applied Magic Inc
+136c  Adtek System Science
+136d  Gigalabs
+136f  Applied Magic
 1370  ATL Products
-1371  CNet Technology Inc
+1371  CNet Technology
 	434e  GigaCard Network Adapter
 		1371 434e  N-Way PCI-Bus Giga-Card 1000/100/10Mbps(L)
-1373  Silicon Vision Inc
-1374  Silicom Ltd.
+1373  Silicon Vision
+1374  Silicom
 	0024  Silicom Dual port Giga Ethernet BGE Bypass Server Adapter
 	0025  Silicom Quad port Giga Ethernet BGE Bypass Server Adapter
 	0026  Silicom Dual port Fiber Giga Ethernet 546 Bypass Server Adapter
@@ -16962,20 +16983,20 @@
 	0470  Octal-port Copper Gigabit Ethernet Express Module Bypass Server Adapter
 	0482  Dual-port Fiber (SR) 10 Gigabit Ethernet ExpressModule Bypass Server Adapter
 	0483  Dual-port Fiber (LR) 10 Gigabit Ethernet ExpressModule Bypass Server Adapter
-1375  Argosystems Inc
+1375  Argosystems
 1376  LMC
-1377  Electronic Equipment Production & Distribution GmbH
-1378  Telemann Co. Ltd
-1379  Asahi Kasei Microsystems Co Ltd
-137a  Mark of the Unicorn Inc
+1377  Electronic Equipment Production & Distribution
+1378  Telemann
+1379  Asahi Kasei Microsystems
+137a  Mark of the Unicorn
 	0001  PCI-324 Audiowire Interface
 137b  PPT Vision
-137c  Iwatsu Electric Co Ltd
-137d  Dynachip Corporation
-137e  Patriot Scientific Corporation
-137f  Japan Satellite Systems Inc
-1380  Sanritz Automation Co Ltd
-1381  Brains Co. Ltd
+137c  Iwatsu Electric
+137d  Dynachip
+137e  Patriot Scientific
+137f  Japan Satellite Systems
+1380  Sanritz Automation
+1381  Brains
 1382  Marian - Electronic & Software
 	0001  ARC88 audio recording card
 	2008  Prodif 96 Pro sound system
@@ -16988,8 +17009,8 @@
 	4088  Marc 4 Digi sound system
 	4248  Marc X sound system
 	4424  TRACE D4 Sound System
-1383  Controlnet Inc
-1384  Reality Simulation Systems Inc
+1383  Controlnet
+1384  Reality Simulation Systems
 1385  Netgear
 	006b  WA301 802.11b Wireless PCI Adapter
 	4100  MA301 802.11b Wireless PCI Adapter
@@ -16997,21 +17018,21 @@
 	620a  GA620 Gigabit Ethernet
 	630a  GA630 Gigabit Ethernet
 1386  Video Domain Technologies
-1387  Systran Corp
-1388  Hitachi Information Technology Co Ltd
+1387  Systran
+1388  Hitachi Information Technology
 1389  Applicom International
 	0001  PCI1500PFB [Intelligent fieldbus adaptor]
-138a  Fusion Micromedia Corp
+138a  Fusion Micromedia
 	003d  VFS491 Validity Sensor
-138b  Tokimec Inc
+138b  Tokimec
 138c  Silicon Reality
-138d  Future Techno Designs pte Ltd
-138e  Basler GmbH
-138f  Patapsco Designs Inc
-1390  Concept Development Inc
-1391  Development Concepts Inc
-1392  Medialight Inc
-1393  Moxa Technologies Co Ltd
+138d  Future Techno Designs pte
+138e  Basler
+138f  Patapsco Designs
+1390  Concept Development
+1391  Development Concepts
+1392  Medialight
+1393  Moxa Technologies
 	0001  UC7000 Serial
 	1020  CP-102 (2-port RS-232 PCI)
 	1021  CP-102UL (2-port RS-232 Universal PCI)
@@ -17051,9 +17072,9 @@
 	0001  LXT1001 Gigabit Ethernet
 		1186 4800  DGE-500SX
 		1394 0001  NetCelerator Adapter
-1395  Ambicom Inc
-1396  Cipher Systems Inc
-1397  Cologne Chip Designs GmbH
+1395  Ambicom
+1396  Cipher Systems
+1397  Cologne Chip Designs
 	08b4  ISDN network Controller [HFC-4S]
 		1397 08b4  HFC-4S [Cologne Chip HFC-4S Eval. Board]
 		1397 b51a  HFC-4S [Allo.com BRI card]
@@ -17103,21 +17124,21 @@
 		1397 b56a  HFC-E1 [beroNet BN1E1 miniPCI]
 	b700  ISDN network controller PrimuX S0 [HFC-PCI]
 	f001  GSM Network Controller [HFC-4GSM]
-1398  Clarion co. Ltd
-1399  Rios systems Co Ltd
-139a  Alacritech Inc
+1398  Clarion
+1399  Rios systems
+139a  Alacritech
 	0001  Quad Port 10/100 Server Accelerator
 	0003  Single Port 10/100 Server Accelerator
 	0005  Single Port Gigabit Server Accelerator
-139b  Mediasonic Multimedia Systems Ltd
-139c  Quantum 3d Inc
+139b  Mediasonic Multimedia Systems
+139c  Quantum 3d
 139d  EPL limited
 139e  Media4
 139f  Aethra s.r.l.
-13a0  Crystal Group Inc
-13a1  Kawasaki Heavy Industries Ltd
-13a2  Ositech Communications Inc
-13a3  Hifn Inc.
+13a0  Crystal Group
+13a1  Kawasaki Heavy Industries
+13a2  Ositech Communications
+13a3  Hifn
 	0005  7751 Security Processor
 	0006  6500 Public Key Processor
 	0007  7811 Security Processor
@@ -17146,11 +17167,11 @@
 		13a3 0036  DX1730 Acceleration Card
 	0037  8204 Acceleration Processor
 		13a3 0036  DX1740 Acceleration Card
-13a4  Rascom Inc
-13a5  Audio Digital Imaging Inc
-13a6  Videonics Inc
+13a4  Rascom
+13a5  Audio Digital Imaging
+13a6  Videonics
 13a7  Teles AG
-13a8  Exar Corp.
+13a8  Exar
 	0152  XR17C/D152 Dual PCI UART
 	0154  XR17C154 Quad UART
 	0158  XR17C158 Octal UART
@@ -17159,29 +17180,29 @@
 	0258  XR17V258 Octal UART PCI controller
 	0352  XR17V3521 Dual PCIe UART
 13a9  Siemens Medical Systems, Ultrasound Group
-13aa  Broadband Networks Inc
-13ab  Arcom Control Systems Ltd
-13ac  Motion Media Technology Ltd
-13ad  Nexus Inc
-13ae  ALD Technology Ltd
+13aa  Broadband Networks
+13ab  Arcom Control Systems
+13ac  Motion Media Technology
+13ad  Nexus
+13ae  ALD Technology
 13af  T.Sqware
-13b0  Maxspeed Corp
-13b1  Tamura corporation
-13b2  Techno Chips Co. Ltd
-13b3  Lanart Corporation
-13b4  Wellbean Co Inc
+13b0  Maxspeed
+13b1  Tamura
+13b2  Techno Chips
+13b3  Lanart
+13b4  Wellbean
 13b5  ARM
-13b6  Dlog GmbH
-13b7  Logic Devices Inc
+13b6  Dlog
+13b7  Logic Devices
 13b8  Nokia Telecommunications oy
-13b9  Elecom Co Ltd
+13b9  Elecom
 13ba  Oxford Instruments
-13bb  Sanyo Technosound Co Ltd
-13bc  Bitran Corporation
-13bd  Sharp corporation
-13be  Miroku Jyoho Service Co. Ltd
-13bf  Sharewave Inc
-13c0  Microgate Corporation
+13bb  Sanyo Technosound
+13bc  Bitran
+13bd  Sharp
+13be  Miroku Jyoho Service
+13bf  Sharewave
+13c0  Microgate
 	0010  SyncLink Adapter v1
 	0020  SyncLink SCC Adapter
 	0030  SyncLink Multiport Adapter
@@ -17189,7 +17210,7 @@
 	0080  SyncLink GT4 Adapter
 	00a0  SyncLink GT2 Adapter
 	0210  SyncLink Adapter v2
-13c1  3ware Inc
+13c1  3ware
 	1000  5xxx/6xxx-series PATA-RAID
 	1001  7xxx/8xxx-series PATA/SATA-RAID
 		13c1 1001  7xxx/8xxx-series PATA/SATA-RAID
@@ -17198,74 +17219,74 @@
 	1004  9650SE SATA-II RAID PCIe
 	1005  9690SA SAS/SATA-II RAID PCIe
 	1010  9750 SAS2/SATA-II RAID PCIe
-13c2  Technotrend Systemtechnik GmbH
+13c2  Technotrend Systemtechnik
 	000e  Technotrend/Hauppauge DVB card rev2.3
 	1019  TTechnoTrend-budget DVB S2-3200
 13c3  Janz Computer AG
 13c4  Phase Metrics
-13c5  Alphi Technology Corp
-13c6  Condor Engineering Inc
+13c5  Alphi Technology
+13c6  Condor Engineering
 	0520  CEI-520 A429 Card
 	0620  CEI-620 A429 Card
 	0820  CEI-820 A429 Card
 	0830  CEI-830 A429 Card
 	1004  P-SER Multi-channel PMC to RS-485/422/232 adapter
-13c7  Blue Chip Technology Ltd
+13c7  Blue Chip Technology
 	0adc  PCI-ADC
 	0b10  PCI-PIO
 	0d10  PCI-DIO
 	524c  PCI-RLY
 	5744  PCI-WDT
-13c8  Apptech Inc
-13c9  Eaton Corporation
-13ca  Iomega Corporation
-13cb  Yano Electric Co Ltd
+13c8  Apptech
+13c9  Eaton
+13ca  Iomega
+13cb  Yano Electric
 13cc  BARCO
-13cd  Compatible Systems Corporation
+13cd  Compatible Systems
 13ce  Cocom A/S
-13cf  Studio Audio & Video Ltd
-13d0  Techsan Electronics Co Ltd
+13cf  Studio Audio & Video
+13d0  Techsan Electronics
 	2103  B2C2 FlexCopII DVB chip / Technisat SkyStar2 DVB card
 	2104  B2C2 FlexCopIII DVB chip / Technisat SkyStar2 DVB card (rev 01)
 	2200  B2C2 FlexCopIII DVB chip / Technisat SkyStar2 DVB card
-13d1  Abocom Systems Inc
+13d1  Abocom Systems
 	ab02  ADMtek Centaur-C rev 17 [D-Link DFE-680TX] CardBus Fast Ethernet Adapter
 	ab03  21x4x DEC-Tulip compatible 10/100 Ethernet
 	ab06  RTL8139 [FE2000VX] CardBus Fast Ethernet Attached Port Adapter
 	ab08  21x4x DEC-Tulip compatible 10/100 Ethernet
-13d2  Shark Multimedia Inc
-13d4  Graphics Microsystems Inc
-13d5  Media 100 Inc
-13d6  K.I. Technology Co Ltd
-13d7  Toshiba Engineering Corporation
-13d8  Phobos corporation
-13d9  Apex PC Solutions Inc
-13da  Intresource Systems pte Ltd
-13db  Janich & Klass Computertechnik GmbH
-13dc  Netboost Corporation
-13dd  Multimedia Bundle Inc
+13d2  Shark Multimedia
+13d4  Graphics Microsystems
+13d5  Media 100
+13d6  K.I. Technology
+13d7  Toshiba Engineering
+13d8  Phobos
+13d9  Apex PC Solutions
+13da  Intresource Systems pte
+13db  Janich & Klass Computertechnik
+13dc  Netboost
+13dd  Multimedia Bundle
 13de  ABB Robotics Products AB
-13df  E-Tech Inc
+13df  E-Tech
 	0001  PCI56RVP Modem
 		13df 0001  PCI56RVP Modem
-13e0  GVC Corporation
-13e1  Silicom Multimedia Systems Inc
-13e2  Dynamics Research Corporation
-13e3  Nest Inc
-13e4  Calculex Inc
-13e5  Telesoft Design Ltd
-13e6  Argosy research Inc
+13e0  GVC
+13e1  Silicom Multimedia Systems
+13e2  Dynamics Research
+13e3  Nest
+13e4  Calculex
+13e5  Telesoft Design
+13e6  Argosy research
 13e7  NAC Incorporated
-13e8  Chip Express Corporation
-13e9  Intraserver Technology Inc
+13e8  Chip Express
+13e9  Intraserver Technology
 13ea  Dallas Semiconductor
-13eb  Hauppauge Computer Works Inc
-13ec  Zydacron Inc
+13eb  Hauppauge Computer Works
+13ec  Zydacron
 	000a  NPC-RC01 Remote control receiver
 13ed  Raytheion E-Systems
-13ee  Hayes Microcomputer Products Inc
-13ef  Coppercom Inc
-13f0  Sundance Technology Inc / IC Plus Corp
+13ee  Hayes Microcomputer Products
+13ef  Coppercom
+13f0  Sundance Technology / IC Plus
 	0200  IC Plus IP100A Integrated 10/100 Ethernet MAC + PHY
 		1043 8213  NX1001
 	0201  ST201 Sundance Ethernet
@@ -17273,12 +17294,12 @@
 	1023  IP1000 Family Gigabit Ethernet
 		1043 8180  NX1101
 13f1  Oce' - Technologies B.V.
-13f2  Ford Microelectronics Inc
-13f3  Mcdata Corporation
-13f4  Troika Networks, Inc.
+13f2  Ford Microelectronics
+13f3  Mcdata
+13f4  Troika Networks
 	1401  Zentai Fibre Channel Adapter
-13f5  Kansai Electric Co. Ltd
-13f6  C-Media Electronics Inc
+13f5  Kansai Electric
+13f6  C-Media Electronics
 	0011  CMI8738
 	0100  CM8338A
 		13f6 ffff  CMI8338/C3DX PCI Audio Device
@@ -17338,13 +17359,13 @@
 		7284 9783  eCLARO
 		7284 9787  CLARO II
 13f7  Wildfire Communications
-13f8  Ad Lib Multimedia Inc
-13f9  NTT Advanced Technology Corp.
-13fa  Pentland Systems Ltd
-13fb  Aydin Corp
+13f8  Ad Lib Multimedia
+13f9  NTT Advanced Technology
+13fa  Pentland Systems
+13fb  Aydin
 13fc  Computer Peripherals International
-13fd  Micro Science Inc
-13fe  Advantech Co. Ltd
+13fd  Micro Science
+13fe  Advantech
 	1240  PCI-1240 4-channel stepper motor controller card
 	1600  PCI-16xx series PCI multiport serial board (function 0)
 # This board has two PCI functions, appears as two PCI devices
@@ -17369,11 +17390,11 @@
 	a004  PCI-1612 4-port RS-232/422/485
 # FPGA bridge to two SJA1000
 	c302  MIOe-3680 2-Port CAN-Bus MIOe Module with Isolation Protection
-13ff  Silicon Spice Inc
-1400  Artx Inc
+13ff  Silicon Spice
+1400  Artx
 	1401  9432 TX
 1401  CR-Systems A/S
-1402  Meilhaus Electronic GmbH
+1402  Meilhaus Electronic
 	0630  ME-630
 	0940  ME-94
 	0950  ME-95
@@ -17450,11 +17471,11 @@
 	810b  ME-8100B
 	820a  ME-8200A
 	820b  ME-8200B
-1403  Ascor Inc
-1404  Fundamental Software Inc
-1405  Excalibur Systems Inc
-1406  Oce' Printing Systems GmbH
-1407  Lava Computer mfg Inc
+1403  Ascor
+1404  Fundamental Software
+1405  Excalibur Systems
+1406  Oce' Printing Systems
+1407  Lava Computer mfg
 	0100  Lava Dual Serial
 	0101  Lava Quatro A
 	0102  Lava Quatro B
@@ -17478,8 +17499,8 @@
 	8002  Lava Dual Parallel port A
 	8003  Lava Dual Parallel port B
 	8800  BOCA Research IOPPAR
-1408  Aloka Co. Ltd
-1409  Timedia Technology Co Ltd
+1408  Aloka
+1409  Timedia Technology
 	7168  PCI2S550 (Dual 16550 UART)
 		1409 0002  SER4036A3V (2x RS232 port)
 		1409 4027  SER4027A (1x RS232 port)
@@ -17495,17 +17516,17 @@
 	7268  SUN1888 (Dual IEEE1284 parallel port)
 		1409 0103  PAR4008A
 		1409 0104  PAR4018A
-140a  DSP Research Inc
+140a  DSP Research
 # Formerly RAMiX, GE Fanuc, GE Intelligent Platforms
-140b  Abaco Systems, Inc.
-140c  Elmic Systems Inc
-140d  Matsushita Electric Works Ltd
-140e  Goepel Electronic GmbH
-140f  Salient Systems Corp
-1410  Midas lab Inc
-1411  Ikos Systems Inc
-# Nee IC Ensemble Inc.
-1412  VIA Technologies Inc.
+140b  Abaco Systems
+140c  Elmic Systems
+140d  Matsushita Electric Works
+140e  Goepel Electronic
+140f  Salient Systems
+1410  Midas lab
+1411  Ikos Systems
+# Nee IC Ensemble
+1412  VIA Technologies
 	1712  ICE1712 [Envy24] PCI Multi-Channel I/O Controller
 		1412 1712  Hoontech ST Audio DSP 24
 		1412 d630  M-Audio Delta 1010
@@ -17542,7 +17563,7 @@
 		270f f645  ZNF3-250
 		3130 4154  MAYA 44 MKII
 1413  Addonics
-1414  Microsoft Corporation
+1414  Microsoft
 	0001  MN-120 (ADMtek Centaur-C based)
 	0002  MN-130 (ADMtek Centaur-P based)
 	5353  Hyper-V virtual VGA
@@ -17557,7 +17578,7 @@
 	580b  Secure Flash Controller (Xenon)
 	580d  System Management Controller (Xenon)
 	5811  Xenos GPU (Xenon)
-1415  Oxford Semiconductor Ltd
+1415  Oxford Semiconductor
 	8401  OX9162 Mode 1 (8-bit bus)
 	8403  OX9162 Mode 0 (parallel port)
 	9500  OX16PCI954 (Quad 16950 UART) function 0 (Disabled)
@@ -17588,23 +17609,23 @@
 		e4bf c504  CP4-SCAT Wireless Technologies Carrier Board
 		e4bf d551  DU1-MUSTANG Dual-Port RS-485 Interface
 	c308  EX-44016 16-port serial
-1416  Multiwave Innovation pte Ltd
-1417  Convergenet Technologies Inc
-1418  Kyushu electronics systems Inc
-1419  Excel Switching Corp
-141a  Apache Micro Peripherals Inc
-141b  Zoom Telephonics Inc
-141d  Digitan Systems Inc
-141e  Fanuc Ltd
-141f  Visiontech Ltd
+1416  Multiwave Innovation pte
+1417  Convergenet Technologies
+1418  Kyushu electronics systems
+1419  Excel Switching
+141a  Apache Micro Peripherals
+141b  Zoom Telephonics
+141d  Digitan Systems
+141e  Fanuc
+141f  Visiontech
 1420  Psion Dacom plc
 	8002  Gold Card NetGlobal 56k+10/100Mb CardBus (Ethernet part)
 	8003  Gold Card NetGlobal 56k+10/100Mb CardBus (Modem part)
-1421  Ads Technologies Inc
-1422  Ygrec Systems Co Ltd
-1423  Custom Technology Corp.
+1421  Ads Technologies
+1422  Ygrec Systems
+1423  Custom Technology
 1424  Videoserver Connections
-1425  Chelsio Communications Inc
+1425  Chelsio Communications
 	000b  T210 Protocol Engine
 	000c  T204 Protocol Engine
 	0022  10GbE Ethernet Adapter
@@ -18272,25 +18293,25 @@
 	6889  T62100-6089 Unified Wire Ethernet Controller [VF]
 	688a  T62100-608a Unified Wire Ethernet Controller [VF]
 	a000  PE10K Unified Wire Ethernet Controller
-1426  Storage Technology Corp.
+1426  Storage Technology
 1427  Better On-Line Solutions
-1428  Edec Co Ltd
-1429  Unex Technology Corp.
-142a  Kingmax Technology Inc
+1428  Edec
+1429  Unex Technology
+142a  Kingmax Technology
 142b  Radiolan
-142c  Minton Optic Industry Co Ltd
-142d  Pix stream Inc
+142c  Minton Optic Industry
+142d  Pix stream
 142e  Vitec Multimedia
 	4020  VM2-2 [Video Maker 2] MPEG1/2 Encoder
 	4337  VM2-2-C7 [Video Maker 2 rev. C7] MPEG1/2 Encoder
-142f  Radicom Research Inc
+142f  Radicom Research
 1430  ITT Aerospace/Communications Division
 1431  Gilat Satellite Networks
-1432  Edimax Computer Co.
+1432  Edimax Computer
 	9130  RTL81xx Fast Ethernet
-1433  Eltec Elektronik GmbH
-# Nee Real Time Devices US Inc.
-1435  RTD Embedded Technologies, Inc.
+1433  Eltec Elektronik
+# Nee Real Time Devices US
+1435  RTD Embedded Technologies
 	4520  PCI4520
 	6020  SPM6020
 	6030  SPM6030
@@ -18300,26 +18321,26 @@
 	7520  DM7520
 	7540  SDM7540
 	7820  DM7820
-1436  CIS Technology Inc
-1437  Nissin Inc Co
+1436  CIS Technology
+1437  Nissin
 1438  Atmel-dream
-1439  Outsource Engineering & Mfg. Inc
-143a  Stargate Solutions Inc
+1439  Outsource Engineering & Mfg.
+143a  Stargate Solutions
 143b  Canon Research Center, America
-143c  Amlogic Inc
-143d  Tamarack Microelectronics Inc
-143e  Jones Futurex Inc
-143f  Lightwell Co Ltd - Zax Division
-1440  ALGOL Corp.
-1441  AGIE Ltd
-1442  Phoenix Contact GmbH & Co.
+143c  Amlogic
+143d  Tamarack Microelectronics
+143e  Jones Futurex
+143f  Lightwell - Zax Division
+1440  ALGOL
+1441  AGIE
+1442  Phoenix Contact &
 1443  Unibrain S.A.
 1444  TRW
-1445  Logical DO Ltd
-1446  Graphin Co Ltd
-1447  AIM GmBH
+1445  Logical DO
+1446  Graphin
+1447  AIM
 1448  Alesis Studio Electronics
-1449  TUT Systems Inc
+1449  TUT Systems
 144a  Adlink Technology
 	6208  PCI-6208V
 	7250  PCI-7250
@@ -18336,10 +18357,10 @@
 	9114  PCI-9114
 # 2-16 MB SRAM, 4x UART, I2C, misc I/O
 	a001  ADi-BSEC
-# nee Loronix Information Systems Inc.
-144b  Verint Systems Inc.
-144c  Catalina Research Inc
-144d  Samsung Electronics Co Ltd
+# nee Loronix Information Systems
+144b  Verint Systems
+144c  Catalina Research
+144d  Samsung Electronics
 	1600  Apple PCIe SSD
 	a544  Exynos 8890 PCIe Root Complex
 	a800  XP941 PCIe SSD
@@ -18414,94 +18435,94 @@
 		1028 2099  EMC PowerEdge Express Flash Ent NVMe AGN SED RI U.2 Gen4 7.68TB
 	ecec  Exynos 8895 PCIe Root Complex
 144e  OLITEC
-144f  Askey Computer Corp.
-1450  Octave Communications Ind.
-1451  SP3D Chip Design GmBH
-1453  MYCOM Inc
+144f  Askey Computer
+1450  Octave Communications
+1451  SP3D Chip Design
+1453  MYCOM
 1454  Altiga Networks
-1455  Logic Plus Plus Inc
+1455  Logic Plus Plus
 1456  Advanced Hardware Architectures
-1457  Nuera Communications Inc
-1458  Gigabyte Technology Co., Ltd
+1457  Nuera Communications
+1458  Gigabyte Technology
 1459  DOOIN Electronics
-145a  Escalate Networks Inc
+145a  Escalate Networks
 145b  PRAIM SRL
 145c  Cryptek
-145d  Gallant Computer Inc
+145d  Gallant Computer
 145e  Aashima Technology B.V.
 145f  Baldor Electric Company
 	0001  NextMove PCI
-1460  DYNARC INC
-1461  Avermedia Technologies Inc
+1460  DYNARC
+1461  Avermedia Technologies
 	a3ce  M179
 	a3cf  M179
 	a836  M115 DVB-T, PAL/SECAM/NTSC Tuner
 	e836  M115S Hybrid Analog/DVB PAL/SECAM/NTSC Tuner
 	f436  AVerTV Hybrid+FM
-1462  Micro-Star International Co., Ltd. [MSI]
+1462  Micro-Star International [MSI]
 	aaf0  Radeon RX 580 Gaming X 8G
-1463  Fast Corporation
-1464  Interactive Circuits & Systems Ltd
+1463  Fast
+1464  Interactive Circuits & Systems
 1465  GN NETTEST Telecom DIV.
-1466  Designpro Inc.
+1466  Designpro
 1467  DIGICOM SPA
-1468  AMBIT Microsystem Corp.
+1468  AMBIT Microsystem
 1469  Cleveland Motion Controls
 # formerly IFR.
 146a  Aeroflex
 # 1.5 GHz to 3.0 GHz x 1Hz
 	3010  3010 RF Synthesizer
 	3a11  3011A PXI RF Synthesizer
-146b  Parascan Technologies Ltd
-146c  Ruby Tech Corp.
+146b  Parascan Technologies
+146c  Ruby Tech
 	1430  FE-1430TX Fast Ethernet PCI Adapter
-146d  Tachyon, INC.
-146e  Williams Electronics Games, Inc.
-146f  Multi Dimensional Consulting Inc
+146d  Tachyon
+146e  Williams Electronics Games
+146f  Multi Dimensional Consulting
 1470  Bay Networks
-1471  Integrated Telecom Express Inc
-1472  DAIKIN Industries, Ltd
-1473  ZAPEX Technologies Inc
+1471  Integrated Telecom Express
+1472  DAIKIN Industries
+1473  ZAPEX Technologies
 1474  Doug Carson & Associates
 1475  PICAZO Communications
-1476  MORTARA Instrument Inc
+1476  MORTARA Instrument
 1477  Net Insight
-1478  DIATREND Corporation
-1479  TORAY Industries Inc
+1478  DIATREND
+1479  TORAY Industries
 147a  FORMOSA Industrial Computing
-147b  ABIT Computer Corp.
+147b  ABIT Computer
 	1084  IP35 [Dark Raider]
-147c  AWARE, Inc.
+147c  AWARE
 147d  Interworks Computer Products
-147e  Matsushita Graphic Communication Systems, Inc.
-147f  NIHON UNISYS, Ltd.
+147e  Matsushita Graphic Communication Systems
+147f  NIHON UNISYS
 1480  SCII Telecom
-1481  BIOPAC Systems Inc
-1482  ISYTEC - Integrierte Systemtechnik GmBH
+1481  BIOPAC Systems
+1482  ISYTEC - Integrierte Systemtechnik
 	0001  PCI-16 Host Interface for ITC-16
-1483  LABWAY Corporation
-1484  Logic Corporation
-1485  ERMA - Electronic GmBH
+1483  LABWAY
+1484  Logic
+1485  ERMA - Electronic
 1486  L3 Communications Telemetry & Instrumentation
 1487  MARQUETTE Medical Systems
-1489  KYE Systems Corporation
+1489  KYE Systems
 148a  OPTO
-148b  INNOMEDIALOGIC Inc.
-148c  Tul Corporation / PowerColor
-148d  DIGICOM Systems, Inc.
+148b  INNOMEDIALOGIC
+148c  Tul / PowerColor
+148d  DIGICOM Systems
 	1003  HCF 56k Data/Fax Modem
-148e  OSI Plus Corporation
-148f  Plant Equipment, Inc.
-1490  Stone Microsystems PTY Ltd.
-1491  ZEAL Corporation
-1492  Time Logic Corporation
+148e  OSI Plus
+148f  Plant Equipment
+1490  Stone Microsystems PTY
+1491  ZEAL
+1492  Time Logic
 1493  MAKER Communications
-1494  WINTOP Technology, Inc.
-1495  TOKAI Communications Industry Co. Ltd
-1496  JOYTECH Computer Co., Ltd.
-1497  SMA Regelsysteme GmBH
+1494  WINTOP Technology
+1495  TOKAI Communications Industry
+1496  JOYTECH Computer
+1497  SMA Regelsysteme
 	1497  SMA Technologie AG
-1498  TEWS Technologies GmbH
+1498  TEWS Technologies
 	0330  TPMC816 2 Channel CAN bus controller.
 	035d  TPMC861 4-Channel Isolated Serial Interface RS422/RS485
 	0385  TPMC901 Extended CAN bus with 2/4/6 CAN controller
@@ -18511,41 +18532,41 @@
 	30c8  TPCI200 4 Slot IndustryPack PCI Carrier
 	70c8  TPCE200 4 Slot IndustryPack PCIe Carrier
 	9177  TXMC375 8 channel RS232/RS422/RS485 programmable serial interface
-1499  EMTEC CO., Ltd
-149a  ANDOR Technology Ltd
-149b  SEIKO Instruments Inc
-149c  OVISLINK Corp.
-149d  NEWTEK Inc
+1499  EMTEC
+149a  ANDOR Technology
+149b  SEIKO Instruments
+149c  OVISLINK
+149d  NEWTEK
 	0001  Video Toaster for PC
-149e  Mapletree Networks Inc.
-149f  LECTRON Co Ltd
-14a0  SOFTING GmBH
-14a1  Systembase Co Ltd
-14a2  Millennium Engineering Inc
+149e  Mapletree Networks
+149f  LECTRON
+14a0  SOFTING
+14a1  Systembase
+14a2  Millennium Engineering
 14a3  Maverick Networks
-14a4  Lite-On Technology Corporation
+14a4  Lite-On Technology
 	22f1  M8Pe Series NVMe SSD
 # Wrong vendor ID used
 	4318  Broadcom BCM4318 [AirForce One 54g] 802.11g WLAN Controller
-14a5  XIONICS Document Technologies Inc
-14a6  INOVA Computers GmBH & Co KG
-14a7  MYTHOS Systems Inc
-14a8  FEATRON Technologies Corporation
-14a9  HIVERTEC Inc
-14aa  Advanced MOS Technology Inc
-14ab  Mentor Graphics Corp.
-14ac  Novaweb Technologies Inc
+14a5  XIONICS Document Technologies
+14a6  INOVA Computers & KG
+14a7  MYTHOS Systems
+14a8  FEATRON Technologies
+14a9  HIVERTEC
+14aa  Advanced MOS Technology
+14ab  Mentor Graphics
+14ac  Novaweb Technologies
 14ad  Time Space Radio AB
-14ae  CTI, Inc
-14af  Guillemot Corporation
+14ae  CTI
+14af  Guillemot
 	7102  3D Prophet II MX
-14b0  BST Communication Technology Ltd
+14b0  BST Communication Technology
 14b1  Nextcom K.K.
-14b2  ENNOVATE Networks Inc
-14b3  XPEED Inc
+14b2  ENNOVATE Networks
+14b3  XPEED
 	0000  DSL NIC
 14b4  PHILIPS Business Electronics B.V.
-14b5  Creamware GmBH
+14b5  Creamware
 	0200  Scope
 	0300  Pulsar
 	0400  PulsarSRB
@@ -18554,10 +18575,10 @@
 	0900  DSP-Board
 	0a00  DSP-Board
 	0b00  DSP-Board
-14b6  Quantum Data Corp.
-14b7  PROXIM Inc
+14b6  Quantum Data
+14b7  PROXIM
 	0001  Symphony 4110
-14b8  Techsoft Technology Co Ltd
+14b8  Techsoft Technology
 14b9  Cisco Aironet Wireless Communications
 	0001  PC4800
 	0340  PC4800
@@ -18567,20 +18588,20 @@
 	a504  Cisco Aironet Wireless 802.11b
 	a505  Cisco Aironet CB20a 802.11a Wireless LAN Adapter
 	a506  Cisco Aironet Mini PCI b/g
-14ba  INTERNIX Inc.
+14ba  INTERNIX
 # ARCNET interface card based on SMSC COM20022 chip and manufactured for SMSC Japan
 	0600  ARC-PCI/22
-14bb  SEMTECH Corporation
-14bc  Globespan Semiconductor Inc.
+14bb  SEMTECH
+14bc  Globespan Semiconductor
 	d002  Pulsar [PCI ADSL Card]
 	d00f  Pulsar [PCI ADSL Card]
 14bd  CARDIO Control N.V.
 14be  L3 Communications
-14bf  SPIDER Communications Inc.
-14c0  COMPAL Electronics Inc
+14bf  SPIDER Communications
+14c0  COMPAL Electronics
 	1201  X550 10Gb 2P RJ45 OCP Mezz
-# now owned by CSP, Inc.
-14c1  MYRICOM Inc.
+# now owned by CSP
+14c1  MYRICOM
 	0008  Myri-10G Dual-Protocol NIC
 		14c1 0008  10G-PCIE-8A
 		14c1 0009  10G-PCIE-8A (MSI-X firmware)
@@ -18588,28 +18609,28 @@
 	8043  Myrinet 2000 Scalable Cluster Interconnect
 		103c 1240  Myrinet M2L-PCI64/2-3.0 LANai 7.4 (HP OEM)
 14c2  DTK Computer
-14c3  MEDIATEK Corp.
+14c3  MEDIATEK
 	7630  MT7630e 802.11bgn Wireless Network Adapter
 # MT7612E too?
 	7662  MT7662E 802.11ac PCI Express Wireless Network Adapter
-14c4  IWASAKI Information Systems Co Ltd
+14c4  IWASAKI Information Systems
 14c5  Automation Products AB
-14c6  Data Race Inc
-14c7  Modular Technology Holdings Ltd
-14c8  Turbocomm Tech. Inc.
-14c9  ODIN Telesystems Inc
-14ca  PE Logic Corp.
-14cb  Billionton Systems Inc
-14cc  NAKAYO Telecommunications Inc
-14cd  Universal Global Scientific Industrial Co.,Ltd
+14c6  Data Race
+14c7  Modular Technology Holdings
+14c8  Turbocomm Tech.
+14c9  ODIN Telesystems
+14ca  PE Logic
+14cb  Billionton Systems
+14cc  NAKAYO Telecommunications
+14cd  Universal Global Scientific Industrial
 	0001  USI-1514-1GbaseT [OCP1]
 	0002  USI-4227-SFP [OCP2]
 	0003  USI-X557-10GbaseT [OCP3]
 14ce  Whistle Communications
-14cf  TEK Microsystems Inc.
+14cf  TEK Microsystems
 14d0  Ericsson Axe R & D
-14d1  Computer Hi-Tech Co Ltd
-14d2  Titan Electronics Inc
+14d1  Computer Hi-Tech
+14d2  Titan Electronics
 	8001  VScom 010L 1 port parallel adaptor
 	8002  VScom 020L 2 port parallel adaptor
 	8010  VScom 100L 1 port serial adaptor
@@ -18633,26 +18654,26 @@
 	e001  VScom 010HV2 1 port parallel adaptor
 	e010  VScom 100HV2 1 port serial adaptor
 	e020  VScom 200HV2 2 port serial adaptor
-14d3  CIRTECH (UK) Ltd
+14d3  CIRTECH (UK)
 	0002  DTL-T14000 Rev. 1 [PS2 TOOL CD/DVD Emulator]
 	0003  DTL-T14000 Rev. 2 [PS2 TOOL CD/DVD Emulator]
 	0004  DTL-T14000 Rev. 3 [PS2 TOOL CD/DVD Emulator]
-14d4  Panacom Technology Corp
-14d5  Nitsuko Corporation
-14d6  Accusys Inc
+14d4  Panacom Technology
+14d5  Nitsuko
+14d6  Accusys
 	6101  ACS-61xxx, PCIe to SAS/SATA RAID HBA
 	6201  ACS-62xxx, External PCIe to SAS/SATA RAID controller
-14d7  Hirakawa Hewtech Corp
-14d8  HOPF Elektronik GmBH
-# Formerly SiPackets, Inc., formerly API NetWorks, Inc., formerly Alpha Processor, Inc.
-14d9  Alliance Semiconductor Corporation
+14d7  Hirakawa Hewtech
+14d8  HOPF Elektronik
+# Formerly SiPackets, formerly API NetWorks, formerly Alpha Processor
+14d9  Alliance Semiconductor
 	0010  AP1011/SP1011 HyperTransport-PCI Bridge [Sturgeon]
 	9000  AS90L10204/10208 HyperTransport to PCI-X Bridge
 14da  National Aerospace Laboratories
-14db  AFAVLAB Technology Inc
+14db  AFAVLAB Technology
 	2120  TK9902
-	2182  AFAVLAB Technology Inc. 8-port serial card
-14dc  Amplicon Liveline Ltd
+	2182  AFAVLAB Technology 8-port serial card
+14dc  Amplicon Liveline
 	0000  PCI230
 	0001  PCI242
 	0002  PCI244
@@ -18665,13 +18686,13 @@
 	0009  PCI236
 	000a  PCI272
 	000b  PCI215
-14dd  Boulder Design Labs Inc
-14de  Applied Integration Corporation
-14df  ASIC Communications Corp
+14dd  Boulder Design Labs
+14de  Applied Integration
+14df  ASIC Communications
 14e1  INVERTEX
 14e2  INFOLIBRIA
 14e3  AMTELCO
-14e4  Broadcom Inc. and subsidiaries
+14e4  Broadcom and subsidiaries
 	0576  BCM43224 802.11a/b/g/n
 	0800  Sentry5 Chipcommon I/O Controller
 	0804  Sentry5 PCI Bridge
@@ -18786,10 +18807,10 @@
 		1028 014a  PowerEdge 1750
 		1028 0170  PowerEdge 6850 Broadcom NetXtreme BCM5704
 		103c 310f  NC7782 Gigabit Server Adapter (PCI-X, 10,100,1000-T)
-		10a9 8013  Dual Port Gigabit Ethernet (PCI-X,Copper)
+		10a9 8013  Dual Port Gigabit Ethernet (PCI-X, Copper)
 		10a9 8018  Dual Port Gigabit Ethernet (A330)
 		10a9 801a  Dual Port Gigabit Ethernet (IA-blade)
-		10a9 801b  Quad Port Gigabit Ethernet (PCI-E,Copper)
+		10a9 801b  Quad Port Gigabit Ethernet (PCI-E, Copper)
 		10b7 2000  3C998-T Dual Port 10/100/1000 PCI-X
 		10b7 3000  3C999-T Quad Port 10/100/1000 PCI-X
 		1166 1648  NetXtreme CIOB-E 1000Base-T
@@ -19008,8 +19029,8 @@
 		14e4 800a  NetXtreme BCM5703 1000Base-T
 	16a8  NetXtreme BCM5704S Gigabit Ethernet
 		103c 132b  PCI-X 1000Mbps Dual-port Built-in
-		10a9 8014  Dual Port Gigabit Ethernet (PCI-X,Fiber)
-		10a9 801c  Quad Port Gigabit Ethernet (PCI-E,Fiber)
+		10a9 8014  Dual Port Gigabit Ethernet (PCI-X, Fiber)
+		10a9 801c  Quad Port Gigabit Ethernet (PCI-E, Fiber)
 		10b7 2001  3C998-SX Dual Port 1000-SX PCI-X
 # The Broadcom 57800 device has two 1Gig ports and two 10Gig ports. The subsystem information can be used to differentiate.
 	16a9  NetXtreme II BCM57800 1/10 Gigabit Ethernet Virtual Function
@@ -19462,24 +19483,24 @@
 		14e4 8028  Stingray Dual-Port 25Gb Ethernet PCIe SmartNIC w8GB DRAM (Part No BCM958802A8048C)
 		1bb0 0021  HPE SimpliVity Accelerator
 	d804  BCM58804 Stingray 100Gb Ethernet SoC
-14e5  Pixelfusion Ltd
-14e6  SHINING Technology Inc
+14e5  Pixelfusion
+14e6  SHINING Technology
 14e7  3CX
-14e8  RAYCER Inc
-14e9  GARNETS System CO Ltd
-14ea  Planex Communications, Inc
+14e8  RAYCER
+14e9  GARNETS System
+14ea  Planex Communications
 	ab06  FNW-3603-TX CardBus Fast Ethernet
 	ab07  RTL81xx RealTek Ethernet
 	ab08  FNW-3602-TX CardBus Fast Ethernet
-14eb  SEIKO EPSON Corp
+14eb  SEIKO EPSON
 # nee ACQIRIS
 14ec  Agilent Technologies
 	0000  Aciris Digitizer (malformed ID)
-14ed  DATAKINETICS Ltd
-14ee  MASPRO KENKOH Corp
-14ef  CARRY Computer ENG. CO Ltd
+14ed  DATAKINETICS
+14ee  MASPRO KENKOH
+14ef  CARRY Computer ENG.
 14f0  CANON RESEACH CENTRE FRANCE
-14f1  Conexant Systems, Inc.
+14f1  Conexant Systems
 	1002  HCF 56k Modem
 	1003  HCF 56k Modem
 	1004  HCF 56k Modem
@@ -19762,31 +19783,31 @@
 	2035  2035 DVB-S Satellite Receiver
 	2050  2050 DVB-T Terrestrial (Cable) Receiver
 	2060  2060 ATSC Terrestrial (Cable) Receiver
-14f4  TOKYO Electronic Industry CO Ltd
-14f5  SOPAC Ltd
+14f4  TOKYO Electronic Industry
+14f5  SOPAC
 14f6  COYOTE Technologies LLC
-14f7  WOLF Technology Inc
-14f8  AUDIOCODES Inc
+14f7  WOLF Technology
+14f8  AUDIOCODES
 	2077  TP-240 dual span E1 VoIP PCI card
 14f9  AG COMMUNICATIONS
 14fa  WANDEL & GOLTERMANN
-14fb  TRANSAS MARINE (UK) Ltd
-14fc  Quadrics Ltd
+14fb  TRANSAS MARINE (UK)
+14fc  Quadrics
 	0000  QsNet Elan3 Network Adapter
 	0001  QsNetII Elan4 Network Adapter
 	0002  QsNetIII Elan5 Network Adapter
-14fd  JAPAN Computer Industry Inc
-14fe  ARCHTEK TELECOM Corp
-14ff  TWINHEAD INTERNATIONAL Corp
-1500  DELTA Electronics, Inc
+14fd  JAPAN Computer Industry
+14fe  ARCHTEK TELECOM
+14ff  TWINHEAD INTERNATIONAL
+1500  DELTA Electronics
 	1360  RTL81xx RealTek Ethernet
-1501  BANKSOFT CANADA Ltd
-1502  MITSUBISHI ELECTRIC LOGISTICS SUPPORT Co Ltd
-1503  KAWASAKI LSI USA Inc
+1501  BANKSOFT CANADA
+1502  MITSUBISHI ELECTRIC LOGISTICS SUPPORT
+1503  KAWASAKI LSI USA
 1504  KAISER Electronics
-1505  ITA INGENIEURBURO FUR TESTAUFGABEN GmbH
-1506  CHAMELEON Systems Inc
-# Should be HTEC Ltd, but there are no known HTEC chips and 1507 is already used by mistake by Motorola (see vendor ID 1057).
+1505  ITA INGENIEURBURO FUR TESTAUFGABEN
+1506  CHAMELEON Systems
+# Should be HTEC but there are no known HTEC chips and 1507 is already used by mistake by Motorola (see vendor ID 1057).
 1507  Motorola ?? / HTEC
 	0001  MPC105 [Eagle]
 	0002  MPC106 [Grackle]
@@ -19797,26 +19818,26 @@
 	4802  Falcon
 	4803  Hawk
 	4806  CPX8216
-1508  HONDA CONNECTORS/MHOTRONICS Inc
-1509  FIRST INTERNATIONAL Computer Inc
-150a  FORVUS RESEARCH Inc
-150b  YAMASHITA Systems Corp
-150c  KYOPAL CO Ltd
-150d  WARPSPPED Inc
-150e  C-PORT Corp
-150f  INTEC GmbH
-1510  BEHAVIOR TECH Computer Corp
-1511  CENTILLIUM Technology Corp
-1512  ROSUN Technologies Inc
+1508  HONDA CONNECTORS/MHOTRONICS
+1509  FIRST INTERNATIONAL Computer
+150a  FORVUS RESEARCH
+150b  YAMASHITA Systems
+150c  KYOPAL
+150d  WARPSPPED
+150e  C-PORT
+150f  INTEC
+1510  BEHAVIOR TECH Computer
+1511  CENTILLIUM Technology
+1512  ROSUN Technologies
 1513  Raychem
-1514  TFL LAN Inc
+1514  TFL LAN
 1515  Advent design
-1516  MYSON Technology Inc
+1516  MYSON Technology
 	0800  MTD-8xx 100/10M Ethernet PCI Adapter
 	0803  SURECOM EP-320X-S 100/10M Ethernet PCI Adapter
 		1320 10bd  SURECOM EP-320X-S 100/10M Ethernet PCI Adapter
 	0891  MTD-8xx 100/10M Ethernet PCI Adapter
-1517  ECHOTEK Corp
+1517  ECHOTEK
 # old ID, now 1059
 1518  Kontron
 1519  TELEFON AKTIEBOLAGET LM Ericsson
@@ -19824,17 +19845,17 @@
 	1002  PCI-1002
 	1004  PCI-1004
 	1008  PCI-1008
-151b  COMBOX Ltd
-151c  DIGITAL AUDIO LABS Inc
+151b  COMBOX
+151c  DIGITAL AUDIO LABS
 	0003  Prodif T 2496
 	4000  Prodif 88
 151d  Fujitsu Computer Products Of America
-151e  MATRIX Corp
-151f  TOPIC SEMICONDUCTOR Corp
+151e  MATRIX
+151f  TOPIC SEMICONDUCTOR
 	0000  TP560 Data/Fax/Voice 56k modem
-1520  CHAPLET System Inc
-1521  BELL Corp
-1522  MainPine Ltd
+1520  CHAPLET System
+1521  BELL
+1522  MainPine
 	0100  PCI <-> IOBus Bridge
 		1522 0200  RockForceDUO 2 Port V.92/V.44 Data/Fax/Voice Modem
 		1522 0300  RockForceQUATRO 4 Port V.92/V.44 Data/Fax/Voice Modem
@@ -19869,7 +19890,7 @@
 		1522 4008  IQ Express 8-port V.34 Super-G3 Fax
 		1522 4100  IQ Express SideBand
 1523  MUSIC Semiconductors
-1524  ENE Technology Inc
+1524  ENE Technology
 	0510  CB710 Memory Card Reader Controller
 		103c 006a  NX9500
 	0520  FLASH memory: ENE Technology Inc:
@@ -19894,43 +19915,43 @@
 	1421  CB-720/2/4 Cardbus Controller
 	1422  CB-722/4 Cardbus Controller
 1525  IMPACT Technologies
-1526  ISS, Inc
+1526  ISS
 1527  SOLECTRON
 1528  ACKSYS
-# nee American Microsystems Inc
+# nee American Microsystems
 1529  ON Semiconductor
 152a  QUICKTURN DESIGN Systems
-152b  FLYTECH Technology CO Ltd
+152b  FLYTECH Technology
 152c  MACRAIGOR Systems LLC
-152d  QUANTA Computer Inc
-152e  MELEC Inc
+152d  QUANTA Computer
+152e  MELEC
 152f  PHILIPS - CRYPTO
-1530  ACQIS Technology Inc
-1531  CHRYON Corp
-1532  ECHELON Corp
+1530  ACQIS Technology
+1531  CHRYON
+1532  ECHELON
 	0020  LonWorks PCLTA-20 PCI LonTalk Adapter
 1533  BALTIMORE
-1534  ROAD Corp
-1535  EVERGREEN Technologies Inc
+1534  ROAD
+1535  EVERGREEN Technologies
 1536  ACTIS Computer
 1537  DATALEX COMMUNCATIONS
-1538  ARALION Inc
+1538  ARALION
 	0303  ARS106S Ultra ATA 133/100/66 Host Controller
 1539  ATELIER INFORMATIQUES et ELECTRONIQUE ETUDES S.A.
 153a  ONO SOKKI
-153b  TERRATEC Electronic GmbH
+153b  TERRATEC Electronic
 	1144  Aureon 5.1
 # Terratec seems to use several IDs for the same card.
 	1147  Aureon 5.1 Sky
 	1158  Philips Semiconductors SAA7134 (rev 01) [Terratec Cinergy 600 TV]
 153c  ANTAL Electronic
-153d  FILANET Corp
-153e  TECHWELL Inc
-153f  MIPS Technologies, Inc.
+153d  FILANET
+153e  TECHWELL
+153f  MIPS Technologies
 	0001  SOC-it 101 System Controller
-1540  PROVIDEO MULTIMEDIA Co Ltd
+1540  PROVIDEO MULTIMEDIA
 1541  MACHONE Communications
-# nee VIVID Technology Inc.
+# nee VIVID Technology
 1542  Concurrent Real-Time
 	9260  RCIM-II Real-Time Clock & Interrupt Module
 	9271  RCIM-III Real-Time Clock & Interrupt Module (PCIe)
@@ -19947,22 +19968,22 @@
 	4c22  Si3036 MC'97 DAA
 1544  DCM DATA Systems
 1545  VISIONTEK
-1546  IOI Technology Corp
-1547  MITUTOYO Corp
+1546  IOI Technology
+1547  MITUTOYO
 1548  JET PROPULSION Laboratory
 1549  INTERCONNECT Systems Solutions
-154a  MAX Technologies Inc
-154b  COMPUTEX Co Ltd
-154c  VISUAL Technology Inc
-154d  PAN INTERNATIONAL Industrial Corp
-154e  SERVOTEST Ltd
+154a  MAX Technologies
+154b  COMPUTEX
+154c  VISUAL Technology
+154d  PAN INTERNATIONAL Industrial
+154e  SERVOTEST
 154f  STRATABEAM Technology
-1550  OPEN NETWORK Co Ltd
-1551  SMART Electronic DEVELOPMENT GmBH
-1552  RACAL AIRTECH Ltd
-1553  CHICONY Electronics Co Ltd
-1554  PROLINK Microsystems Corp
-1555  GESYTEC GmBH
+1550  OPEN NETWORK
+1551  SMART Electronic DEVELOPMENT
+1552  RACAL AIRTECH
+1553  CHICONY Electronics
+1554  PROLINK Microsystems
+1555  GESYTEC
 1556  PLDA
 	1100  PCI Express Core Reference Design
 	110f  PCI Express Core Reference Design Virtual Function
@@ -19974,32 +19995,32 @@
 	1115  XpressLINK Ref Design
 	1116  XpressLINK-SOC Ref Design
 	be00  PCI Express Bridge
-1557  MEDIASTAR Co Ltd
+1557  MEDIASTAR
 1558  CLEVO/KAPOK Computer
-1559  SI LOGIC Ltd
-155a  INNOMEDIA Inc
-155b  PROTAC INTERNATIONAL Corp
-155c  Cemax-Icon Inc
-155d  Mac System Co Ltd
-155e  LP Elektronik GmbH
-155f  Perle Systems Ltd
+1559  SI LOGIC
+155a  INNOMEDIA
+155b  PROTAC INTERNATIONAL
+155c  Cemax-Icon
+155d  Mac System
+155e  LP Elektronik
+155f  Perle Systems
 1560  Terayon Communications Systems
-1561  Viewgraphics Inc
+1561  Viewgraphics
 1562  Symbol Technologies
-1563  A-Trend Technology Co Ltd
-1564  Yamakatsu Electronics Industry Co Ltd
-1565  Biostar Microtech Int'l Corp
-1566  Ardent Technologies Inc
+1563  A-Trend Technology
+1564  Yamakatsu Electronics Industry
+1565  Biostar Microtech Int'l
+1566  Ardent Technologies
 1567  Jungsoft
-1568  DDK Electronics Inc
-1569  Palit Microsystems Inc.
+1568  DDK Electronics
+1569  Palit Microsystems
 156a  Avtec Systems
-156b  2wire Inc
-156c  Vidac Electronics GmbH
-156d  Alpha-Top Corp
-156e  Alfa Inc
-156f  M-Systems Flash Disk Pioneers Ltd
-1570  Lecroy Corp
+156b  2wire
+156c  Vidac Electronics
+156d  Alpha-Top
+156e  Alfa
+156f  M-Systems Flash Disk Pioneers
+1570  Lecroy
 1571  Contemporary Controls
 	a001  CCSI PCI20-485 ARCnet
 	a002  CCSI PCI20-485D ARCnet
@@ -20023,45 +20044,45 @@
 1572  Otis Elevator Company
 1573  Lattice - Vantis
 1574  Fairchild Semiconductor
-1575  Voltaire Advanced Data Security Ltd
+1575  Voltaire Advanced Data Security
 1576  Viewcast COM
 1578  HITT
 	4d34  VPMK4 [Video Processor Mk IV]
 	5615  VPMK3 [Video Processor Mk III]
-1579  Dual Technology Corp
-157a  Japan Elecronics Ind Inc
-157b  Star Multimedia Corp
+1579  Dual Technology
+157a  Japan Elecronics
+157b  Star Multimedia
 157c  Eurosoft (UK)
 	8001  Fix2000 PCI Y2K Compliance Card
 157d  Gemflex Networks
 157e  Transition Networks
-157f  PX Instruments Technology Ltd
-1580  Primex Aerospace Co
-1581  SEH Computertechnik GmbH
-1582  Cytec Corp
-1583  Inet Technologies Inc
-1584  Uniwill Computer Corp
+157f  PX Instruments Technology
+1580  Primex Aerospace
+1581  SEH Computertechnik
+1582  Cytec
+1583  Inet Technologies
+1584  Uniwill Computer
 1585  Logitron
-1586  Lancast Inc
-1587  Konica Corp
-1588  Solidum Systems Corp
-1589  Atlantek Microsystems Pty Ltd
+1586  Lancast
+1587  Konica
+1588  Solidum Systems
+1589  Atlantek Microsystems Pty
 	0008  Leutron Vision PicPortExpress CL
 	0009  Leutron Vision PicPortExpress CL Stereo
-158a  Digalog Systems Inc
+158a  Digalog Systems
 158b  Allied Data Technologies
-158c  Hitachi Semiconductor & Devices Sales Co Ltd
+158c  Hitachi Semiconductor & Devices Sales
 158d  Point Multimedia Systems
-158e  Lara Technology Inc
+158e  Lara Technology
 158f  Ditect Coop
-# formerly 3PAR Inc.
+# formerly 3PAR
 1590  Hewlett Packard Enterprise
 	0001  Eagle Cluster Manager
 	0002  Osprey Cluster Manager
 	0003  Harrier Cluster Manager
 	a01d  FC044X Fibre Channel HBA
 1591  ARN
-1592  Syba Tech Ltd
+1592  Syba Tech
 	0781  Multi-IO Card
 	0782  Parallel Port Card 2xEPP
 	0783  Multi-IO Card
@@ -20070,32 +20091,32 @@
 	0787  Multi-IO Card
 	0788  Multi-IO Card
 	078a  Multi-IO Card
-1593  Bops Inc
-1594  Netgame Ltd
-1595  Diva Systems Corp
-1596  Folsom Research Inc
+1593  Bops
+1594  Netgame
+1595  Diva Systems
+1596  Folsom Research
 1597  Memec Design Services
 1598  Granite Microsystems
-1599  Delta Electronics Inc
+1599  Delta Electronics
 159a  General Instrument
-159b  Faraday Technology Corp
+159b  Faraday Technology
 	4321  StorLink SL3516 (Gemini) Host Bridge
 159c  Stratus Computer Systems
-159d  Ningbo Harrison Electronics Co Ltd
-159e  A-Max Technology Co Ltd
+159d  Ningbo Harrison Electronics
+159e  A-Max Technology
 159f  Galea Network Security
 15a0  Compumaster SRL
 15a1  Geocast Network Systems
-15a2  Catalyst Enterprises Inc
+15a2  Catalyst Enterprises
 	0001  TA700 PCI Bus Analyzer/Exerciser
 15a3  Italtel
 15a4  X-Net OY
-15a5  Toyota Macs Inc
-15a6  Sunlight Ultrasound Technologies Ltd
-15a7  SSE Telecom Inc
+15a5  Toyota Macs
+15a6  Sunlight Ultrasound Technologies
+15a7  SSE Telecom
 15a8  Shanghai Communications Technologies Center
 15aa  Moreton Bay
-15ab  Bluesteel Networks Inc
+15ab  Bluesteel Networks
 15ac  North Atlantic Instruments
 	6893  3U OpenVPX Multi-function I/O Board [Model 68C3]
 15ad  VMware
@@ -20117,9 +20138,9 @@
 	0820  Paravirtual RDMA controller
 	1977  HD Audio Controller
 15ae  Amersham Pharmacia Biotech
-15b0  Zoltrix International Ltd
-15b1  Source Technology Inc
-15b2  Mosaid Technologies Inc
+15b0  Zoltrix International
+15b1  Source Technology
+15b2  Mosaid Technologies
 15b3  Mellanox Technologies
 	0191  MT25408 [ConnectX IB Flash Recovery]
 	01f6  MT27500 Family [ConnectX-3 Flash Recovery]
@@ -20255,7 +20276,7 @@
 	4117  MT27712A0-FDCF-AE
 		1bd4 0039  SN10XMP2P25
 		1bd4 003a  25G SFP28 SP EO251FM9 Adapter
-		1bd4 004d  SN10XMP2P25,YZPC-01191-101
+		1bd4 004d  SN10XMP2P25, YZPC-01191-101
 	5274  MT21108 InfiniBridge
 	5a44  MT23108 InfiniHost
 	5a45  MT23108 [Infinihost HCA Flash Recovery]
@@ -20331,8 +20352,8 @@
 	d2f0  Quantum HDR (200Gbps) switch
 	d2f2  Quantum-2 NDR (400Gbps) switch
 15b4  CCI/TRIAD
-15b5  Cimetrics Inc
-15b6  Texas Memory Systems Inc
+15b5  Cimetrics
+15b6  Texas Memory Systems
 	0001  XP15 DSP Accelerator
 	0002  XP30 DSP Accelerator
 	0003  XP00 Data Acquisition Device
@@ -20349,7 +20370,7 @@
 	0013  XP100 DSP Accelerator [XP100-P3]
 	0014  RamSan Flash SSD
 	0015  ZBox
-15b7  Sandisk Corp
+15b7  Sandisk
 	2001  Skyhawk Series NVME SSD
 	5001  WD Black NVMe SSD
 	5002  WD Black 2018 / PC SN720 NVMe SSD
@@ -20362,7 +20383,7 @@
 	500b  PC SN530 NVMe SSD
 		1414 500b  Xbox Series X
 	500d  WD Ultrastar DC SN340 NVMe SSD
-15b8  ADDI-DATA GmbH
+15b8  ADDI-DATA
 	1001  APCI1516 SP controller (16 digi outputs)
 	1003  APCI1032 SP controller (32 digi inputs w/ opto coupler)
 	1004  APCI2032 SP controller (32 digi outputs)
@@ -20374,8 +20395,8 @@
 	7001  APCI7420 2-port Serial Controller
 	7002  APCI7300 Serial Controller
 15b9  Maestro Digital Communications
-15ba  Impacct Technology Corp
-15bb  Portwell Inc
+15ba  Impacct Technology
+15bb  Portwell
 15bc  Agilent Technologies
 	0100  HPFC-5600 Tachyon DX2+ FC
 	0103  QX4 PCI Express quad 4-gigabit Fibre Channel controller
@@ -20387,93 +20408,93 @@
 	2922  64 Bit, 133MHz PCI-X Exerciser & Protocol Checker
 	2928  64 Bit, 66MHz PCI Exerciser & Analyzer
 	2929  64 Bit, 133MHz PCI-X Analyzer & Exerciser
-15bd  DFI Inc
+15bd  DFI
 15be  Sola Electronics
-15bf  High Tech Computer Corp (HTC)
-15c0  BVM Ltd
+15bf  High Tech Computer (HTC)
+15c0  BVM
 15c1  Quantel
-15c2  Newer Technology Inc
-15c3  Taiwan Mycomp Co Ltd
-15c4  EVSX Inc
-15c5  Procomp Informatics Ltd
+15c2  Newer Technology
+15c3  Taiwan Mycomp
+15c4  EVSX
+15c5  Procomp Informatics
 	8010  1394b - 1394 Firewire 3-Port Host Adapter Card
 15c6  Technical University of Budapest
-15c7  Tateyama System Laboratory Co Ltd
+15c7  Tateyama System Laboratory
 	0349  Tateyama C-PCI PLC/NC card Rev.01A
-15c8  Penta Media Co Ltd
-15c9  Serome Technology Inc
+15c8  Penta Media
+15c9  Serome Technology
 15ca  Bitboys OY
-15cb  AG Electronics Ltd
-15cc  Hotrail Inc
-15cd  Dreamtech Co Ltd
-15ce  Genrad Inc
-15cf  Hilscher GmbH
+15cb  AG Electronics
+15cc  Hotrail
+15cd  Dreamtech
+15ce  Genrad
+15cf  Hilscher
 	0000  CIFX 50E-DP(M/S)
 15d1  Infineon Technologies AG
 15d2  FIC (First International Computer Inc)
-15d3  NDS Technologies Israel Ltd
-15d4  Iwill Corp
-15d5  Tatung Co
-15d6  Entridia Corp
-15d7  Rockwell-Collins Inc
-15d8  Cybernetics Technology Co Ltd
-15d9  Super Micro Computer Inc
-15da  Cyberfirm Inc
-15db  Applied Computing Systems Inc
-15dc  Litronic Inc
+15d3  NDS Technologies Israel
+15d4  Iwill
+15d5  Tatung
+15d6  Entridia
+15d7  Rockwell-Collins
+15d8  Cybernetics Technology
+15d9  Super Micro Computer
+15da  Cyberfirm
+15db  Applied Computing Systems
+15dc  Litronic
 	0001  Argus 300 PCI Cryptography Module
-15dd  Sigmatel Inc
-15de  Malleable Technologies Inc
-15df  Infinilink Corp
-15e0  Cacheflow Inc
-15e1  Voice Technologies Group Inc
-15e2  Quicknet Technologies Inc
+15dd  Sigmatel
+15de  Malleable Technologies
+15df  Infinilink
+15e0  Cacheflow
+15e1  Voice Technologies Group
+15e2  Quicknet Technologies
 	0500  PhoneJack-PCI
-15e3  Networth Technologies Inc
+15e3  Networth Technologies
 15e4  VSN Systemen BV
-15e5  Valley technologies Inc
-15e6  Agere Inc
-15e7  Get Engineering Corp
-15e8  National Datacomm Corp
+15e5  Valley technologies
+15e6  Agere
+15e7  Get Engineering
+15e8  National Datacomm
 	0130  Wireless PCI Card
 	0131  NCP130A2 Wireless NIC
-15e9  Pacific Digital Corp
+15e9  Pacific Digital
 	1841  ADMA-100 DiscStaQ ATA Controller
 15ea  Tokyo Denshi Sekei K.K.
-15eb  DResearch Digital Media Systems GmbH
-15ec  Beckhoff GmbH
+15eb  DResearch Digital Media Systems
+15ec  Beckhoff
 	3101  FC3101 Profibus DP 1 Channel PCI
 	5102  FC5102
-15ed  Macrolink Inc
-15ee  In Win Development Inc
-15ef  Intelligent Paradigm Inc
-15f0  B-Tree Systems Inc
-15f1  Times N Systems Inc
-15f2  Diagnostic Instruments Inc
-15f3  Digitmedia Corp
+15ed  Macrolink
+15ee  In Win Development
+15ef  Intelligent Paradigm
+15f0  B-Tree Systems
+15f1  Times N Systems
+15f2  Diagnostic Instruments
+15f3  Digitmedia
 15f4  Valuesoft
 15f5  Power Micro Research
-15f6  Extreme Packet Device Inc
+15f6  Extreme Packet Device
 15f7  Banctec
-15f8  Koga Electronics Co
-15f9  Zenith Electronics Corp
-15fa  J.P. Axzam Corp
-15fb  Zilog Inc
-15fc  Techsan Electronics Co Ltd
+15f8  Koga Electronics
+15f9  Zenith Electronics
+15fa  J.P. Axzam
+15fb  Zilog
+15fc  Techsan Electronics
 15fd  N-CUBED.NET
-15fe  Kinpo Electronics Inc
-15ff  Fastpoint Technologies Inc
-1600  Northrop Grumman - Canada Ltd
+15fe  Kinpo Electronics
+15ff  Fastpoint Technologies
+1600  Northrop Grumman - Canada
 1601  Tenta Technology
-1602  Prosys-tec Inc
+1602  Prosys-tec
 1603  Nokia Wireless Communications
-1604  Central System Research Co Ltd
+1604  Central System Research
 1605  Pairgain Technologies
 1606  Europop AG
-1607  Lava Semiconductor Manufacturing Inc
+1607  Lava Semiconductor Manufacturing
 1608  Automated Wagering International
-1609  Scimetric Instruments Inc
-1612  Telesynergy Research Inc.
+1609  Scimetric Instruments
+1612  Telesynergy Research
 1618  Stone Ridge Technology
 	0001  RDX 11
 	0002  HFT-01
@@ -20482,19 +20503,19 @@
 	0610  FarSync T1U (1 port X.21/V.35/V.24)
 	0620  FarSync T2U (2 port X.21/V.35/V.24)
 	0640  FarSync T4U (4 port X.21/V.35/V.24)
-	1610  FarSync TE1 (T1,E1)
+	1610  FarSync TE1 (T1, E1)
 	2610  FarSync DSL-S1 (SHDSL)
 	3640  FarSync T4E (4-port X.21/V.35/V.24)
 	4620  FarSync T2Ue PCI Express (2-port X.21/V.35/V.24)
 	4640  FarSync T4Ue PCI Express (4-port X.21/V.35/V.24)
-1619  FarSite Communications Ltd
+1619  FarSite Communications
 	0400  FarSync T2P (2 port X.21/V.35/V.24)
 	0440  FarSync T4P (4 port X.21/V.35/V.24)
 	0610  FarSync T1U (1 port X.21/V.35/V.24)
 	0620  FarSync T2U (2 port X.21/V.35/V.24)
 	0640  FarSync T4U (4 port X.21/V.35/V.24)
-	1610  FarSync TE1 (T1,E1)
-	1612  FarSync TE1 PCI Express (T1,E1)
+	1610  FarSync TE1 (T1, E1)
+	1612  FarSync TE1 PCI Express (T1, E1)
 	2610  FarSync DSL-S1 (SHDSL)
 	3640  FarSync T4E (4-port X.21/V.35/V.24)
 	4620  FarSync T2Ue PCI Express (2-port X.21/V.35/V.24)
@@ -20503,7 +20524,7 @@
 	5641  FarSync T4Ee PCI Express (4 port X.21/V.35/V.24)
 	6620  FarSync T2U-PMC PCI Express (2 port X.21/V.35/V.24)
 161f  Rioworks
-1621  Lynx Studio Technology, Inc.
+1621  Lynx Studio Technology
 	0020  LynxTWO-A
 	0021  LynxTWO-B
 	0022  LynxTWO-C
@@ -20511,7 +20532,7 @@
 	0024  Lynx AES16
 	0025  Lynx AES16-SRC
 	0028  Lynx AES16e
-1626  TDK Semiconductor Corp.
+1626  TDK Semiconductor
 	8410  RTL81xx Fast Ethernet
 1629  Kongsberg Spacetec AS
 	1003  Format synchronizer v3.0
@@ -20524,14 +20545,14 @@
 	5001  High Rate FEC
 	6001  High Rate Demodulator and FEC
 1631  Packard Bell B.V.
-1638  Standard Microsystems Corp [SMC]
+1638  Standard Microsystems [SMC]
 	1100  SMC2602W EZConnect / Addtron AWA-100 / Eumitcom PCI WL11000
-163c  Smart Link Ltd.
+163c  Smart Link
 	3052  SmartLink SmartPCI562 56K Modem
 	5449  SmartPCI561 Modem
-1641  MKNet Corp.
-1642  Bitland(ShenZhen) Information Technology Co., Ltd.
-# nee Brocade Communications Systems, Inc.
+1641  MKNet
+1642  Bitland(ShenZhen) Information Technology
+# nee Brocade Communications Systems
 1657  Cavium QLogic
 	0013  425/825/42B/82B 4Gbps/8Gbps PCIe dual port FC HBA
 		103c 1742  82B 8Gbps dual port FC HBA
@@ -20553,13 +20574,13 @@
 	0023  1867/1869 16Gbps FC HBA
 # Same Device_ID used for 410 (1port) and 420 (2 port) HBAs.
 	0646  400 4Gbps PCIe FC HBA
-165a  Epix Inc
+165a  Epix
 	c100  PIXCI(R) CL1 Camera Link Video Capture Board [custom QL5232]
 	d200  PIXCI(R) D2X Digital Video Capture Board [custom QL5232]
 	d300  PIXCI(R) D3X Digital Video Capture Board [custom QL5232]
 	eb01  PIXCI(R) EB1 PCI Camera Link Video Capture Board
 # Gidel Reconfigurable Computing
-165c  Gidel Ltd.
+165c  Gidel
 	5361  PROCStarII60-1
 	5362  PROCStarII60-2
 	5364  PROCStarII60-4
@@ -20629,14 +20650,14 @@
 	71b1  Proc10A
 	72b1  HawkEye
 	73b1  Proc10s
-165d  Hsing Tech. Enterprise Co., Ltd.
+165d  Hsing Tech. Enterprise
 165f  Linux Media Labs, LLC
 	1020  LMLM4 MPEG-4 encoder
-1661  Worldspace Corp.
-1668  Actiontec Electronics Inc
+1661  Worldspace
+1668  Actiontec Electronics
 	0100  Mini-PCI bridge
-# Formerly SiByte, Inc.
-166d  Broadcom Corporation
+# Formerly SiByte
+166d  Broadcom
 	0001  SiByte BCM1125/1125H/1250 System-on-a-Chip PCI
 	0002  SiByte BCM1125H/1250 System-on-a-Chip HyperTransport
 	0012  SiByte BCM1280/BCM1480 System-on-a-Chip PCI-X
@@ -20647,27 +20668,27 @@
 	20ad  5ACPCI.MFIO-K01 Profibus DP / K-Feldbus / COM
 1678  NetEffect
 	0100  NE020 10Gb Accelerated Ethernet Adapter (iWARP RNIC)
-1679  Tokyo Electron Device Ltd.
+1679  Tokyo Electron Device
 	3000  SD Standard host controller [Ellen]
-167b  ZyDAS Technology Corp.
+167b  ZyDAS Technology
 	2102  ZyDAS ZD1202
 		187e 3406  ZyAIR B-122 CardBus 11Mbs Wireless LAN Card
 		187e 3407  ZyAIR B-320 802.11b Wireless PCI Adapter
 	2116  ZD1212B Wireless Adapter
-167d  Samsung Electro-Mechanics Co., Ltd.
+167d  Samsung Electro-Mechanics
 	a000  MagicLAN SWL-2210P 802.11b [Intersil ISL3874]
-167e  ONNTO Corp.
+167e  ONNTO
 1681  Hercules
-1682  XFX Pine Group Inc.
+1682  XFX Pine Group
 	5701  Radeon 5700 XT Thicc III Ultra
 	c580  Radeon RX 580
-1688  CastleNet Technology Inc.
+1688  CastleNet Technology
 	1170  WLAN 802.11b card
-168a  Utimaco IS GmbH
+168a  Utimaco IS
 	2086  CryptoServer Se-Series Hardware Security Module
 	c040  CryptoServer CSe-Series Hardware Security Module
 	c051  CryptoServer Se-Series Gen2 Hardware Security Module
-# nee Atheros Communications, Inc.
+# nee Atheros Communications
 168c  Qualcomm Atheros
 	0007  AR5210 Wireless Network Adapter [AR5000 802.11a]
 		1737 0007  WPC54A Wireless PC Card
@@ -20692,7 +20713,7 @@
 		1113 ee23  SMCWPCIT-G 108Mbps Wireless PCI adapter
 		1154 033b  Buffalo WLI-CB-AMG54
 		1154 034e  Buffalo WLI-CB-AG108HP 802.11abg Cardbus Adapter
-		1186 3202  DWL-G650 (Rev B3,B5) Wireless cardbus adapter
+		1186 3202  DWL-G650 (Rev B3, B5) Wireless cardbus adapter
 		1186 3203  AirPlus DWL-G520 Wireless PCI Adapter (rev. A)
 		1186 3a07  AirXpert DWL-AG650 Wireless Cardbus Adapter
 		1186 3a08  AirXpert DWL-AG520 Wireless PCI Adapter
@@ -20918,29 +20939,29 @@
 	ff1d  AR922x Wireless Network Adapter
 # Found in "AVM Fritz!Box FON WLAN 7270v3"
 		168c ee1c  AR9220-AC1A [AVM Fritz!Box FON WLAN 7270 v3]
-1695  EPoX Computer Co., Ltd.
-169c  Netcell Corporation
+1695  EPoX Computer
+169c  Netcell
 	0044  Revolution Storage Processing Card
 # The right ID is 196d, but they got it nibble-swapped in 2202.
 169d  Club-3D VB (Wrong ID)
-16a5  Tekram Technology Co.,Ltd.
-16ab  Global Sun Technology Inc
+16a5  Tekram Technology
+16ab  Global Sun Technology
 	1100  GL24110P
 	1101  PLX9052 PCMCIA-to-PCI Wireless LAN
 	1102  PCMCIA-to-PCI Wireless Network Bridge
 	8501  WL-8305 Wireless LAN PCI Adapter
-16ae  SafeNet Inc
+16ae  SafeNet
 	0001  SafeXcel 1140
 	000a  SafeXcel 1841
 	1141  SafeXcel 1141
 # misused vendor ID 0001
 		0001 0001  SafeXcel 1141 v. 1.1
 	1841  SafeXcel 1842
-16af  SparkLAN Communications, Inc.
-16b4  Aspex Semiconductor Ltd
-16b8  Sonnet Technologies, Inc.
-16be  Creatix Polymedia GmbH
-16c3  Synopsys, Inc.
+16af  SparkLAN Communications
+16b4  Aspex Semiconductor
+16b8  Sonnet Technologies
+16be  Creatix Polymedia
+16c3  Synopsys
 	abcd  DWC_usb3 / PCIe bridge
 	abce  DWC_usb3
 	abcf  DWC_usb31
@@ -20948,12 +20969,12 @@
 16c6  Micrel-Kendin
 	8695  Centaur KS8695 ARM processor
 	8842  KSZ8842-PMQL 2-Port Ethernet Switch
-16c8  Octasic Inc.
+16c8  Octasic
 16c9  EONIC B.V. The Netherlands
-16ca  CENATEK Inc
+16ca  CENATEK
 	0001  Rocket Drive DL
-# nee Innocore Gaming Ltd., nee Densitron Gaming Ltd., a division of Densitron Technologies
-16cd  Advantech Co. Ltd
+# nee Innocore Gaming, nee Densitron Gaming, a division of Densitron Technologies
+16cd  Advantech
 	0101  DirectPCI SRAM for DPX-11x series
 	0102  DirectPCI SRAM for DPX-S/C/E-series
 	0103  DirectPCI ROM for DPX-11x series
@@ -20965,8 +20986,8 @@
 	0109  DirectPCI I/O for DPX-112
 	010a  DirectPCI I/O for DPX-C/E-series
 	010b  DirectPCI I/O for DPX-S series
-16ce  Roland Corp.
-16d5  Acromag, Inc.
+16ce  Roland
+16d5  Acromag
 	0504  PMC-DX504 Reconfigurable FPGA with LVDS I/O
 	0520  PMC520 Serial Communication, 232 Octal
 	0521  PMC521 Serial Communication, 422/485 Octal
@@ -21062,13 +21083,13 @@
 	7052  APA7-502 Reconfigurable Artix-7 52,160 Cell FPGA module 24 RS485 channels
 	7053  APA7-503 Reconfigurable Artix-7 52,160 Cell FPGA module 24 TTL & 12 RS485 channels
 	7054  APA7-504 Reconfigurable Artix-7 52,160 Cell FPGA module 24 LVDS channels
-16da  Advantech Co., Ltd.
+16da  Advantech
 	0011  INES GPIB-PCI
-16df  PIKA Technologies Inc.
+16df  PIKA Technologies
 16e2  Geotest-MTS
 16e3  European Space Agency
 	1e0f  LEON2FT Processor
-16e5  Intellon Corp.
+16e5  Intellon
 	6000  INT6000 Ethernet-to-Powerline Bridge [HomePlug AV]
 	6300  INT6300 Ethernet-to-Powerline Bridge [HomePlug AV]
 16ec  U.S. Robotics
@@ -21080,18 +21101,18 @@
 	ab06  USR997901A 10/100 Cardbus NIC
 16ed  Sycron N. V.
 	1001  UMIO communication card
-16f2  ETAS GmbH
+16f2  ETAS
 	0200  I/O board
 		16f2 0010  ES53xx I/O board
-16f3  Jetway Information Co., Ltd.
-16f4  Vweb Corp
+16f3  Jetway Information
+16f4  Vweb
 	8000  VW2010
-16f6  VideoTele.com, Inc.
-1702  Internet Machines Corporation (IMC)
-1705  Digital First, Inc.
+16f6  VideoTele.com
+1702  Internet Machines (IMC)
+1705  Digital First
 170b  NetOctave
 	0100  NSP2000-SSL crypto accelerator
-170c  YottaYotta Inc.
+170c  YottaYotta
 1719  EZChip Technologies
 	1000  NPA Access Network Processor Family
 # Seems to be a 2nd ID for Vitesse Semiconductor
@@ -21099,9 +21120,9 @@
 	7174  VSC7174 PCI/PCI-X Serial ATA Host Bus Controller
 172a  Accelerated Encryption
 	13c8  AEP SureWare Runner 1000V3
-# nee Fujitsu Siemens Computers GmbH
+# nee Fujitsu Siemens Computers
 1734  Fujitsu Technology Solutions
-1735  Aten International Co. Ltd.
+1735  Aten International
 1737  Linksys
 	0029  WPG54G ver. 4 PCI Card
 	1032  Gigabit Network Adapter
@@ -21119,14 +21140,14 @@
 	03eb  AC1003 Gigabit Ethernet
 1743  Peppercon AG
 	8139  ROL/F-100 Fast Ethernet Adapter with ROL
-1745  ViXS Systems, Inc.
+1745  ViXS Systems
 	2020  XCode II Series
 	2100  XCode 2100 Series
 1749  RLX Technologies
 174b  PC Partner Limited / Sapphire Technology
 174d  WellX Telecom SA
-175c  AudioScience Inc
-175e  Sanera Systems, Inc.
+175c  AudioScience
+175e  Sanera Systems
 1760  TEDIA spol. s r. o.
 	0101  PCD-7004 Digital Bi-Directional Ports PCI Card
 	0102  PCD-7104 Digital Input & Output PCI Card
@@ -21160,10 +21181,10 @@
 	0303  PCD-7006C Digital Input & Output PCI Card
 	0800  PCD8006 - PCIe digital Inputs/Outputs
 	ff00  CTU CAN FD PCIe Card
-1761  Pickering Interfaces Ltd
-1771  InnoVISION Multimedia Ltd.
+1761  Pickering Interfaces
+1771  InnoVISION Multimedia
 1775  General Electric
-177d  Cavium, Inc.
+177d  Cavium
 	0001  Nitrox XL N1
 	0003  Nitrox XL N1 Lite
 	0004  Octeon (and older) FIPS
@@ -21262,8 +21283,8 @@
 	a300  OCTEON TX CN83XX
 	af00  CN99xx [ThunderX2] Integrated PCI Host bridge
 	af84  CN99xx [ThunderX2] Integrated PCI Express RP Bridge
-1787  Hightech Information System Ltd.
-1789  Ennyah Technologies Corp.
+1787  Hightech Information System
+1789  Ennyah Technologies
 # also used by Struck Innovative Systeme for joint developments
 1796  Research Centre Juelich
 	0001  SIS1100 [Gigabit link]
@@ -21294,7 +21315,7 @@
 	001c  Quad 16bit, 150MHz ADC with 2.5GHz SFP
 	0030  100MHz, 64bit Sequence Generator based on Spartan6
 	0031  200MHz 64bit Sequence Generator based on Spartan7
-# nee Techwell, Inc.
+# nee Techwell
 1797  Intersil Techwell
 	5864  TW5864 multimedia video controller
 	6801  TW6802 multimedia video card
@@ -21331,7 +21352,7 @@
 	5121  DP-CPCI-5121-IP Carrier
 	5211  DP-CPCI-5211-IP Carrier
 	5679  AGE Display Module
-17a0  Genesys Logic, Inc
+17a0  Genesys Logic
 	7163  GL9701 PCIe to PCI Bridge
 	8083  GL880 USB 1.1 UHCI controller
 	8084  GL880 USB 2.0 EHCI controller
@@ -21340,18 +21361,18 @@
 17aa  Lenovo
 	402b  Intel 82599ES 10Gb 2-port Server Adapter X520-2
 17ab  Phillips Components
-17af  Hightech Information System Ltd.
+17af  Hightech Information System
 17b3  Hawking Technologies
 	ab08  PN672TX 10/100 Ethernet
-17b4  Indra Networks, Inc.
+17b4  Indra Networks
 	0011  WebEnhance 100 GZIP Compression Card
 	0012  WebEnhance 200 GZIP Compression Card
 	0015  WebEnhance 300 GZIP Compression Card
 	0016  StorCompress 300 GZIP Compression Card
 	0017  StorSecure 300 GZIP Compression and AES Encryption Card
-17c0  Wistron Corp.
-17c2  Newisys, Inc.
-# nee Airgo Networks, Inc.
+17c0  Wistron
+17c2  Newisys
+# nee Airgo Networks
 17cb  Qualcomm
 	0001  AGN100 802.11 a/b/g True MIMO Wireless Card
 		1385 5c00  WGM511 Pre-N 802.11g Wireless CardBus Adapter
@@ -21367,11 +21388,12 @@
 	0400  Datacenter Technologies QDF2432 PCI Express Root Port
 	0401  Datacenter Technologies QDF2400 PCI Express Root Port
 	1000  QCS405 PCIe Root Complex
-17cc  NetChip Technology, Inc
+	1101  QCA6390 Wireless Network Adapter [AX500-DBS (2x2)]
+17cc  NetChip Technology
 	2280  USB 2.0
-17cd  Cadence Design Systems, Inc.
-17cf  Z-Com, Inc.
-17d3  Areca Technology Corp.
+17cd  Cadence Design Systems
+17cf  Z-Com
+17d3  Areca Technology
 	1110  ARC-1110 4-Port PCI-X to SATA RAID Controller
 	1120  ARC-1120 8-Port PCI-X to SATA RAID Controller
 	1130  ARC-1130 12-Port PCI-X to SATA RAID Controller
@@ -21410,8 +21432,8 @@
 		17d3 1883  ARC-1883 8/12/16/24 Port PCIe 3.0 to SAS/SATA 12Gb RAID Controller
 	1884  ARC-1884 series PCIe 3.0 to SAS/SATA 12/6Gb RAID Controller
 	188a  ARC-1886 series PCIe 4.0 to NVMe/SAS/SATA 16/12/6Gb RAID Controller
-# nee Neterion Inc., previously S2io Inc.
-17d5  Exar Corp.
+# nee Neterion, previously S2io
+17d5  Exar
 	5731  Xframe 10-Gigabit Ethernet PCI-X
 	5732  Xframe II 10-Gigabit Ethernet PCI-X 2.0
 	5831  Xframe 10-Gigabit Ethernet PCI-X
@@ -21441,9 +21463,9 @@
 		17d5 7431  X3120 Dual Port 10GBase-T
 		17d5 7830  X3110 Single Port 10GBase-CR
 		17d5 7831  X3120 Dual Port 10GBase-CR
-17db  Cray Inc
+17db  Cray
 	0101  XT Series [Seastar] 3D Toroidal Router
-17de  KWorld Computer Co. Ltd.
+17de  KWorld Computer
 17df  Dini Group
 	1864  Virtex4 PCI Board w/ QL5064 Bridge [DN7000K10PCI/DN8000K10PCI/DN8000K10PSX/NOTUS]
 	1865  Virtex4 ASIC Emulator [DN8000K10PCIe]
@@ -21493,7 +21515,7 @@
 17e4  Sectra AB
 	0001  KK671 Cardbus encryption board
 	0002  KK672 Cardbus encryption board
-# nee Entropic Communications Inc.
+# nee Entropic Communications
 17e6  MaxLinear
 	0010  EN2010 [c.Link] MoCA Network Controller (Coax, PCI interface)
 	0011  EN2010 [c.Link] MoCA Network Controller (Coax, MPEG interface)
@@ -21502,9 +21524,9 @@
 	0027  EN2710 [c.Link] MoCA 2.0 Network Controller (Coax, PCIe interface)
 	3700  MoCA 2.0 Network Controller (Coax, PCIe interface)
 	3710  MoCA 2.5 Network Controller (Coax, PCIe interface)
-17ee  Connect Components Ltd
-17f2  Albatron Corp.
-17f3  RDC Semiconductor, Inc.
+17ee  Connect Components
+17f2  Albatron
+17f3  RDC Semiconductor
 	1010  R1010 IDE Controller
 	1011  R1011 IDE Controller
 	1012  R1012 IDE Controller
@@ -21541,30 +21563,30 @@
 	6040  R6040 MAC Controller
 	6060  R6060 USB 1.1 Controller
 	6061  R6061 USB 2.0 Controller
-17f7  Topdek Semiconductor Inc.
-17f9  Gemtek Technology Co., Ltd
-17fc  IOGEAR, Inc.
-17fe  InProComm Inc.
+17f7  Topdek Semiconductor
+17f9  Gemtek Technology
+17fc  IOGEAR
+17fe  InProComm
 	2120  IPN 2120 802.11b
 		1737 0020  WMP11 v4 802.11b Wireless-B PCI Adapter
 	2220  IPN 2220 802.11g
 		1468 0305  T60N871 802.11g Mini PCI Wireless Adapter
 		1737 0029  WPC54G v4 802.11g Wireless-G Notebook Adapter
-17ff  Benq Corporation
-1800  Qualcore Logic Inc.
+17ff  Benq
+1800  Qualcore Logic
 	1100  Nanospeed Trading Gateway
-1803  ProdaSafe GmbH
-1804  Ralink corp. (wrong ID)
+1803  ProdaSafe
+1804  Ralink (wrong ID)
 	3060  RT3060 Wireless 802.11n 1T/1R
 1805  Euresys S.A.
-1809  Lumanate, Inc.
-180c  IEI Integration Corp
-1813  Ambient Technologies Inc
+1809  Lumanate
+180c  IEI Integration
+1813  Ambient Technologies
 	4000  HaM controllerless modem
 		16be 0001  V9x HAM Data Fax Modem
 	4100  HaM plus Data Fax Modem
 		16be 0002  V9x HAM 1394
-1814  Ralink corp.
+1814  Ralink
 	0101  Wireless PCI Adapter RT2400 / RT2460
 		1043 0127  WiFi-b add-on Card
 		1371 0010  Minitar MNW2BPCI Wireless PCI Card
@@ -21648,42 +21670,42 @@
 	5592  RT5592 PCIe Wireless Network Adapter
 	e932  RT2560F 802.11 b/g PCI
 1815  Devolo AG
-1820  InfiniCon Systems Inc.
-1822  Twinhan Technology Co. Ltd
+1820  InfiniCon Systems
+1822  Twinhan Technology
 	4e35  Mantis DTV PCI Bridge Controller [Ver 1.0]
 182d  SiteCom Europe BV
 # HFC-based ISDN card
 	3069  ISDN PCI DC-105V2
 	9790  WL-121 Wireless Network Adapter 100g+ [Ver.3]
-182e  Raza Microelectronics, Inc.
+182e  Raza Microelectronics
 	0008  XLR516 Processor
 # Strange vendor ID used by BCM5785 when in RAID mode
 182f  Broadcom
 # HT1000 uses 3 IDs 1166:024a (Native SATA Mode), 1166:024b (PATA/IDE Mode), 182f:000b (RAID Mode) depends on SATA BIOS setting
 	000b  BCM5785 [HT1000] SATA (RAID Mode)
-1830  Credence Systems Corporation
+1830  Credence Systems
 	8000  CPIn
 	8001  CPId
 	8002  CPIx
 	8003  CPIq
-183b  MikroM GmbH
+183b  MikroM
 	08a7  MVC100 DVI
 	08a8  MVC101 SDI
 	08a9  MVC102 DVI+Audio
 	08b0  MVC200-DC
 1846  Alcatel-Lucent
-1849  ASRock Incorporation
+1849  ASRock
 184a  Thales Computers
 	1100  MAX II cPLD
-1850  Advantest Corporation
+1850  Advantest
 	0048  EK220-66401 Computer Interface Card
-1851  Microtune, Inc.
-1852  Anritsu Corp.
+1851  Microtune
+1852  Anritsu
 1853  SMSC Automotive Infotainment System Group
-1854  LG Electronics, Inc.
-185b  Compro Technology, Inc.
+1854  LG Electronics
+185b  Compro Technology
 	1489  VideoMate Vista T100
-185f  Wistron NeWeb Corp.
+185f  Wistron NeWeb
 1864  SilverBack
 	2110  ISNAP 2110
 1867  Topspin Communications
@@ -21705,19 +21727,19 @@
 	a101  VigraWATCH PCI
 	a102  VigraWATCH PMC
 	a103  Vigra I/O
-187e  ZyXEL Communications Corporation
+187e  ZyXEL Communications
 	3403  ZyAir G-110 802.11g
 	340e  M-302 802.11g XtremeMIMO
-1885  Avvida Systems Inc.
-1888  Varisys Ltd
+1885  Avvida Systems
+1888  Varisys
 	0301  VMFX1 FPGA PMC module
 	0601  VSM2 dual PMC carrier
 	0710  VS14x series PowerPC PCI board
 	0720  VS24x series PowerPC PCI board
-188a  Ample Communications, Inc
-1890  Egenera, Inc.
+188a  Ample Communications
+1890  Egenera
 1894  KNC One
-1896  B&B Electronics Manufacturing Company, Inc.
+1896  B&B Electronics Manufacturing Company
 	4202  MIport 3PCIU2 2-port Serial
 	4204  MIport 3PCIU4 4-port Serial
 	4208  MIport 3PCIU8 8-port Serial
@@ -21727,11 +21749,11 @@
 	bb10  3PCI2 2-Port Serial
 	bb11  3PCIO1 1-Port Isolated Serial
 1897  AMtek
-18a1  Astute Networks Inc.
-18a2  Stretch Inc.
+18a1  Astute Networks
+18a2  Stretch
 	0002  VRC6016 16-Channel PCIe DVR Card
 18a3  AT&T
-18ac  DViCO Corporation
+18ac  DViCO
 	d500  FusionHDTV 5
 	d800  FusionHDTV 3 Gold
 	d810  FusionHDTV 3 Gold-Q
@@ -21741,15 +21763,15 @@
 	db78  FusionHDTV DVB-T Dual Express
 18b8  Ammasso
 	b001  AMSO 1100 iWARP/RDMA Gigabit Ethernet Coprocessor
-# formally Info-Tek Corp.
-18bc  GeCube Technologies, Inc.
+# formally Info-Tek
+18bc  GeCube Technologies
 18c3  Micronas Semiconductor Holding AG
 	0720  nGene PCI-Express Multimedia Controller
 		1461 032e  Hybrid M779 PCI-E
 # Nee Octigabay System
-18c8  Cray Inc
+18c8  Cray
 18c9  ARVOO Engineering BV
-18ca  XGI Technology Inc. (eXtreme Graphics Innovation)
+18ca  XGI Technology (eXtreme Graphics Innovation)
 	0020  Z7/Z9 (XG20 core)
 	0021  Z9s/Z9m (XG21 core)
 	0027  Z11/Z11M
@@ -21760,13 +21782,13 @@
 # Sitecom HFC-S based ISDN controller card DC-105v2
 	3069  DC-105v2 ISDN controller
 18d4  Celestica
-18d8  Dialogue Technology Corp.
-18dd  Artimi Inc
+18d8  Dialogue Technology
+18dd  Artimi
 	4c6f  Artimi RTMI-100 UWB adapter
 18df  LeWiz Communications
 18e6  MPL AG
 	0001  OSCI [Octal Serial Communication Interface]
-18eb  Advance Multimedia Internet Technology, Inc.
+18eb  Advance Multimedia Internet Technology
 18ec  Cesnet, z.s.p.o.
 	6d05  ML555
 		18ec 0100  NIC (ethernet interfaces)
@@ -21816,8 +21838,8 @@
 		18ec 4200  Flexible FlowMon (szedata2) 1x10G
 		18ec ff00  Testing design
 		18ec ff01  Boot design
-18ee  Chenming Mold Ind. Corp.
-18f1  Spectrum GmbH
+18ee  Chenming Mold
+18f1  Spectrum
 18f4  Napatech A/S
 	0031  NT20X Network Adapter
 	0051  NT20X Capture Card
@@ -21856,7 +21878,7 @@
 	1051  [Texsis] Switch Virtual P2P PCI Bridge
 	2000  [Nexsis] Switch Integrated Mgmt. Endpoint
 	2001  [Texsis] Switch Integrated Mgmt. Endpoint
-18f7  Commtech, Inc.
+18f7  Commtech
 	0001  ESCC-PCI-335 Serial PCI Adapter [Fastcom]
 	0002  422/4-PCI-335 Serial PCI Adapter [Fastcom]
 	0003  232/4-1M-PCI Serial PCI Adapter [Fastcom]
@@ -21897,12 +21919,12 @@
 	0026  SuperFSCC-LVDS Serial PCI Adapter [Fastcom]
 # Software UARTs
 	0027  FSCC/4 Serial PCIe Adapter [Fastcom]
-18fb  Resilience Corporation
-1904  Hangzhou Silan Microelectronics Co., Ltd.
+18fb  Resilience
+1904  Hangzhou Silan Microelectronics
 	2031  SC92031 PCI Fast Ethernet Adapter
 	8139  RTL8139D [Realtek] PCI 10/100BaseTX ethernet adaptor
-1905  Micronas USA, Inc.
-1912  Renesas Technology Corp.
+1905  Micronas USA
+1912  Renesas Technology
 	0002  SH7780 PCI Controller (PCIC)
 	0011  SH7757 PCIe End-Point [PBI]
 	0012  SH7757 PCIe-PCI Bridge [PPB]
@@ -21912,8 +21934,8 @@
 	001a  SH7758 PCIe-PCI Bridge [PPB]
 	001b  SH7758 PCIe End-Point [PBI]
 	001d  SH7758 PCIe Switch [PS]
-1919  Soltek Computer Inc.
-1923  Sangoma Technologies Corp.
+1919  Soltek Computer
+1923  Sangoma Technologies
 	0040  A200/Remora FXO/FXS Analog AFT card
 	0100  A104d QUAD T1/E1 AFT card
 	0300  A101 single-port T1/E1
@@ -22047,14 +22069,14 @@
 		1924 0304  SFE4003-A4
 		1924 0500  SFE4005-A0
 	c101  EF1-21022T [EtherFabric]
-192a  BiTMICRO Networks Inc.
+192a  BiTMICRO Networks
 	0008  RAMPART
 192e  TransDimension
 1931  Option N.V.
 	000c  Qualcomm MSM6275 UMTS chip
 1932  DiBcom
 193c  MAXIM Integrated Products
-193d  Hangzhou H3C Technologies Co., Ltd.
+193d  Hangzhou H3C Technologies
 193f  AHA Products Group
 	0001  AHA36x-PCIX
 	0360  AHA360-PCIe
@@ -22071,9 +22093,9 @@
 1942  ClearSpeed Technology plc
 	e511  Advance X620 accelerator card
 	e521  Advance e620 accelerator card
-1947  C-guys, Inc.
+1947  C-guys
 	4743  CG200 Dual SD/SDIO Host controller device
-1948  Alpha Networks Inc.
+1948  Alpha Networks
 194a  DapTechnology B.V.
 	1111  FireSpy3850
 	1112  FireSpy450b
@@ -22084,9 +22106,9 @@
 	1201  FireTrac 3460bT (fallback firmware)
 	1202  FireTrac 3460bT
 	1203  FireTrac 3460bT (fallback firmware)
-# nee Curtis, Inc.
-1954  One Stop Systems, Inc.
-1957  Freescale Semiconductor Inc
+# nee Curtis
+1954  One Stop Systems
+1957  Freescale Semiconductor
 	0012  MPC8548E
 	0013  MPC8548
 	0014  MPC8543E
@@ -22171,7 +22193,7 @@
 # CFI device over PCIe
 	fc03  CFI
 1958  Faster Technology, LLC.
-1959  PA Semi, Inc
+1959  PA Semi
 	a000  PA6T Core
 	a001  PWRficient Host Bridge
 	a002  PWRficient PCI-Express Port
@@ -22194,7 +22216,7 @@
 		1234 3160  UHD2LC
 		1234 3300  Legacy UHD2
 		1234 3410  UHD2
-# nee Atheros Communications, Inc. nee Attansic Technology Corp.
+# nee Atheros Communications nee Attansic Technology
 1969  Qualcomm Atheros
 	1026  AR8121/AR8113/AR8114 Gigabit or Fast Ethernet
 		1043 8304  P5KPL-CM Motherboard
@@ -22222,24 +22244,24 @@
 	e091  Killer E220x Gigabit Ethernet Controller
 	e0a1  Killer E2400 Gigabit Ethernet Controller
 	e0b1  Killer E2500 Gigabit Ethernet Controller
-196a  Sensory Networks Inc.
+196a  Sensory Networks
 	0101  NodalCore C-1000 Content Classification Accelerator
 	0102  NodalCore C-2000 Content Classification Accelerator
 	0105  NodalCore C-3000 Content Classification Accelerator
 196d  Club-3D BV
 196e  PNY
-1971  AGEIA Technologies, Inc.
+1971  AGEIA Technologies
 	1011  Physics Processing Unit [PhysX]
 		1043 0001  PhysX P1
 # nee Eberspaecher Electronics
-1974  Star Electronics GmbH & Co. KG
+1974  Star Electronics & KG
 	0009  FlexCard PMC-II
 	0011  FlexCard PMC-II Ethernet
 	0018  FlexCard PXIe3
 	0019  FlexCard PCIe3
 1976  TRENDnet
 1977  Parsec
-197b  JMicron Technology Corp.
+197b  JMicron Technology
 	0250  JMC250 PCI Express Gigabit Ethernet Controller
 	0260  JMC260 PCI Express Fast Ethernet Controller
 	0368  JMB368 IDE controller
@@ -22271,30 +22293,30 @@
 	2392  SD/MMC Host Controller
 	2393  MS Host Controller
 	2394  xD Host Controller
-1982  Distant Early Warning Communications Inc
+1982  Distant Early Warning Communications
 	1600  OX16C954 HOST-A
 	16ff  OX16C954 HOST-B
-1987  Phison Electronics Corporation
+1987  Phison Electronics
 	5007  E7 NVMe Controller
 	5012  E12 NVMe Controller
 	5013  PS5013 E13 NVMe Controller
 	5016  E16 PCIe4 NVMe Controller
-1989  Montilio Inc.
+1989  Montilio
 	0001  RapidFile Bridge
 	8001  RapidFile
-198a  Nallatech Ltd.
+198a  Nallatech
 1993  Innominate Security Technologies AG
 1999  A-Logics
 	a900  AM-7209 Video Processor
-199a  Pulse-LINK, Inc.
+199a  Pulse-LINK
 199d  Xsigo Systems
 	8209  Virtual NIC Device
 	890a  Virtual HBA Device
 199f  Auvitek
 	8501  AU85X1 PCI REV1.1
 	8521  AU8521 TV card
-# nee ServerEngines Corp.
-19a2  Emulex Corporation
+# nee ServerEngines
+19a2  Emulex
 	0120  x1 PCIe Gen2 Bridge[Pilot4]
 	0200  BladeEngine 10Gb PCI-E iSCSI adapter
 	0201  BladeEngine 10Gb PCIe Network Adapter
@@ -22330,26 +22352,26 @@
 		103c 3315  NC553i 10Gb 2-port FlexFabric Converged Network Adapter
 		103c 337b  NC554FLB 10Gb 2-port FlexFabric Converged Network Adapter
 	0800  ServerView iRMC HTI
-19a8  DAQDATA GmbH
+19a8  DAQDATA
 19ac  Kasten Chase Applied Research
 	0001  ACA2400 Crypto Accelerator
-19ae  Progeny Systems Corporation
+19ae  Progeny Systems
 	0520  4135 HFT Interface Controller
 	0521  Decimator
-19ba  ZyXEL Communications Corp.
+19ba  ZyXEL Communications
 	2330  ZyWALL Turbo Card
-19c1  Exegy Inc.
+19c1  Exegy
 # nee NextNet Wireless
 19d1  Motorola Expedience
 19d4  Quixant Limited
-19da  ZOTAC International (MCO) Ltd.
+19da  ZOTAC International (MCO)
 19de  Pico Computing
-19e2  Vector Informatik GmbH
+19e2  Vector Informatik
 19e3  DDRdrive LLC
 	5801  DDRdrive X1
 	5808  DDRdrive X8
 	dd52  DDRdrive X1-30
-19e5  Huawei Technologies Co., Ltd.
+19e5  Huawei Technologies
 # subvendor
 	0123  ES3000 V3 NVMe PCIe SSD
 		19e5 3022  NVMe SSD ES3600P V3 800GB 2.5" U.2
@@ -22449,10 +22471,10 @@
 	1003  STIX - 2 Port T1/E1 Card
 	1004  STIX - 4 Port T1/E1 Card
 	1005  STIX - 4 Port FXS Card
-19ee  Netronome Systems, Inc.
+19ee  Netronome Systems
 19f1  BFG Tech
-19ff  Eclipse Electronic Systems, Inc.
-1a03  ASPEED Technology, Inc.
+19ff  Eclipse Electronic Systems
+1a03  ASPEED Technology
 	1150  AST1150 PCI-to-PCI Bridge
 	2000  ASPEED Graphics Family
 		15d9 0832  X10SRL-F
@@ -22467,13 +22489,13 @@
 1a0d  SEAKR Engineering
 1a0e  DekTec Digital Video B.V.
 	083f  DTA-2111 VHF/UHF Modulator
-1a17  Force10 Networks, Inc.
+1a17  Force10 Networks
 	8002  PB-10GE-2P 10GbE Security Card
 1a1d  GFaI e.V.
 	1a17  Meta Networks MTP-1G IDPS NIC
-1a1e  3Leaf Systems, Inc.
-1a22  Ambric Inc.
-1a29  Fortinet, Inc.
+1a1e  3Leaf Systems
+1a22  Ambric
+1a29  Fortinet
 	4338  CP8 Content Processor ASIC
 	4e36  NP6 Network Processor
 	4e37  NP7 Network Processor
@@ -22484,15 +22506,15 @@
 	0005  ETP v1.4
 	000a  ETP-104 v1.1
 	000e  DSLP-104 v1.1
-# nee Metalink Ltd.
+# nee Metalink
 1a30  Lantiq
 	0680  MtW8171 [Hyperion II]
 	0700  Wave300 PSB8224 [Hyperion III]
 	0710  Wave300 PSB8231 [Hyperion III]
-1a32  Quanta Microsystems, Inc
+1a32  Quanta Microsystems
 1a3b  AzureWave
 	1112  AR9285 Wireless Network Adapter (PCI-Express)
-1a41  Tilera Corp.
+1a41  Tilera
 	0001  TILE64 processor
 	0002  TILEPro processor
 	0200  TILE-Gx processor
@@ -22513,7 +22535,7 @@
 	3000  COB DTM V1
 	3001  COB DTM V2
 1a51  Hectronic AB
-1a55  Rohde & Schwarz DVS GmbH
+1a55  Rohde & Schwarz DVS
 	0010  SDStationOEM
 	0011  SDStationOEM II
 	0020  Centaurus
@@ -22533,17 +22555,17 @@
 # nee Bigfoot Networks, now owned by Intel
 1a56  Rivet Networks
 1a57  Highly Reliable Systems
-1a58  Razer USA Ltd.
+1a58  Razer USA
 1a5d  Celoxica
-1a5e  Aprius Inc.
-1a5f  System TALKS Inc.
+1a5e  Aprius
+1a5f  System TALKS
 1a68  VirtenSys Limited
-1a71  XenSource, Inc.
-1a73  Violin Memory, Inc
+1a71  XenSource
+1a73  Violin Memory
 	0001  Mozart [Memory Appliance 1010]
 1a76  Wavesat
-1a77  Lightfleet Corporation
-1a78  Virident Systems Inc.
+1a77  Lightfleet
+1a78  Virident Systems
 	0031  FlashMAX Drive
 		1a78 0034  FlashMAX PCIe SSD [rev 3]
 		1a78 0037  FlashMAX PCIe SSD [rev 3D]
@@ -22557,43 +22579,43 @@
 	0001  Vulcan SP HT6210 10-Gigabit Ethernet (rev 02)
 1a88  MEN Mikro Elektronik
 	4d45  Multifunction IP core
-1a8a  StarBridge, Inc.
-1a8c  Verigy Pte. Ltd.
+1a8a  StarBridge
+1a8c  Verigy Pte.
 	1100  E8001-66443 PCI Express CIC
 1a8e  DRS Technologies
 	2090  Model 2090 PCI Express
-1aa8  Ciprico, Inc.
+1aa8  Ciprico
 	0009  RAIDCore Controller
 	000a  RAIDCore Controller
-1aae  Global Velocity, Inc.
-1ab4  Distributed Management Task Force, Inc. (DMTF)
-1ab6  CalDigit, Inc.
+1aae  Global Velocity
+1ab4  Distributed Management Task Force (DMTF)
+1ab6  CalDigit
 	6201  RAID Card
 # Parallels VM virtual devices
-1ab8  Parallels, Inc.
+1ab8  Parallels
 	4000  Virtual Machine Communication Interface
 	4005  Accelerated Virtual Video Adapter
 	4006  Memory Ballooning Controller
 1ab9  Espia Srl
-1ac1  Global Unichip Corp.
+1ac1  Global Unichip
 	089a  Coral Edge TPU
 1ac8  Aeroflex Gaisler
 1acc  Point of View BV
-1ad7  Spectracom Corporation
+1ad7  Spectracom
 	8000  TSync-PCIe Time Code Processor
 	9100  TPRO-PCI-66U Timecode Reader/Generator
-1ade  Spin Master Ltd.
+1ade  Spin Master
 	1501  Swipetech barcode scanner
 	3038  PCIe Video Bridge
 		13c2 3016  TT-budget S2-4200 Twin
 		4254 0552  S952 v3
-1ae0  Google, Inc.
+1ae0  Google
 	0042  Compute Engine Virtual Ethernet [gVNIC]
 	abcd  Airbrush Combined Paintbox IPU/Oscar Edge TPU [Pixel Neural Core]
-1ae3  SANBlaze Technology, Inc.
-1ae7  First Wise Media GmbH
+1ae3  SANBlaze Technology
+1ae7  First Wise Media
 	0520  HFC-S PCI A [X-TENSIONS XC-520]
-1ae8  Silicon Software GmbH
+1ae8  Silicon Software
 # CameraLink frame grabber for Visual Applets
 	0751  mE5 marathon VCL
 # CameraLink HS frame grabber
@@ -22646,7 +22668,7 @@
 	0e42  microEnable IV AQ4-GE
 # GigE Vision frame grabber for Visual Applets
 	0e44  microEnable IV VQ4-GE
-1ae9  Wilocity Ltd.
+1ae9  Wilocity
 	0101  Wil6200 PCI Express Upstream Port
 	0200  Wil6200 PCI Express Port
 	0201  Wil6200 Wireless PCI Express Port
@@ -22676,9 +22698,9 @@
 	3001  ioMemory FHHL
 	3002  ioMemory HHHL
 	3003  ioMemory Mezzanine
-1aee  Caustic Graphics Inc.
-# nee Qumranet, Inc.
-1af4  Red Hat, Inc.
+1aee  Caustic Graphics
+# nee Qumranet
+1af4  Red Hat
 	1000  Virtio network device
 	1001  Virtio block device
 	1002  Virtio memory balloon
@@ -22708,18 +22730,18 @@
 	1053  Virtio socket
 	1110  Inter-VM shared memory
 		1af4 1100  QEMU Virtual Machine
-1af5  Netezza Corp.
-1afa  J & W Electronics Co., Ltd.
-1b03  Magnum Semiconductor, Inc,
+1af5  Netezza
+1afa  J & W Electronics
+1b03  Magnum Semiconductor
 	6100  DXT/DXTPro Multiformat Broadcast HD/SD Encoder/Decoder/Transcoder
 	7000  D7 Multiformat Broadcast HD/SD Encoder/Decoder/Transcoder
-1b08  MSC Technologies GmbH
+1b08  MSC Technologies
 1b0a  Pegatron
-1b13  Jaton Corp
-1b1a  K&F Computing Research Co.
+1b13  Jaton
+1b1a  K&F Computing Research
 	0e70  GRAPE
 1b1c  Corsair
-1b21  ASMedia Technology Inc.
+1b21  ASMedia Technology
 	0611  ASM1061 SATA IDE Controller
 	0612  ASM1062 Serial ATA Controller
 		1849 0612  Motherboard
@@ -22748,8 +22770,8 @@
 	cb20  COMBO-20G
 	cb40  COMBO-40G
 	cb80  NFB-40G2
-1b2c  Opal-RT Technologies Inc.
-1b36  Red Hat, Inc.
+1b2c  Opal-RT Technologies
+1b36  Red Hat
 	0001  QEMU PCI-PCI bridge
 	0002  QEMU PCI 16550A Adapter
 		1af4 1100  QEMU Virtual Machine
@@ -22788,20 +22810,20 @@
 	2014  TX320
 	2019  S6000
 # now owned by HGST (a Western Digital subsidiary)
-1b39  sTec, Inc.
+1b39  sTec
 	0001  S1120 PCIe Accelerator SSD
 1b3a  Westar Display Technologies
 	7589  HRED J2000 - JPEG 2000 Video Codec Device
-1b3e  Teradata Corp.
+1b3e  Teradata
 	1fa8  BYNET BIC2SE/X
 		1b3e 00a3  BYNET BIC2SX
 		1b3e 00c3  BYNET BIC2SE
-1b40  Schooner Information Technology, Inc.
+1b40  Schooner Information Technology
 # also used by some PROXIM (14b7) devices erroneously
 1b47  Numascale AS
 	0601  NumaChip N601
 	0602  NumaChip N602
-1b4b  Marvell Technology Group Ltd.
+1b4b  Marvell Technology Group
 	0640  88SE9128 SATA III 6Gb/s RAID Controller
 	2241  88NR2241 Non-Volatile memory controller
 		1028 2112  BOSS-N1 Monolithic
@@ -22840,7 +22862,7 @@
 	9480  88SE9480 SAS/SATA 6Gb/s RAID controller
 	9485  88SE9485 SAS/SATA 6Gb/s controller
 1b4c  GALAX
-1b55  NetUP Inc.
+1b55  NetUP
 	18f6  Dual DVB Universal CI card
 	18f7  Dual DVB Universal CI card rev 1.4
 	2a2c  Dual DVB-S2-CI card
@@ -22850,7 +22872,7 @@
 	f1c4  Dual ASI-RX/TX-CI card
 1b66  DELTACAST
 	0007  DELTA-3G-elp-d
-1b6f  Etron Technology, Inc.
+1b6f  Etron Technology
 	7023  EJ168 USB 3.0 Host Controller
 		1458 5007  GA-880GMA-USB3
 	7052  EJ188/EJ198 USB 3.0 Host Controller
@@ -22861,7 +22883,7 @@
 	1009  FL1009 USB 3.0 Host Controller
 	1100  FL1100 USB 3.0 Host Controller
 		16b8 6e31  Allegro Pro USB 3.0 PCIe
-1b74  OpenVox Communication Co. Ltd.
+1b74  OpenVox Communication
 	0115  D115P/D115E Single-port E1/T1 card
 	d130  D130P/D130E Single-port E1/T1 card (3rd GEN)
 	d210  D210P/D210E Dual-port E1/T1 card(2nd generation)
@@ -22869,11 +22891,11 @@
 	d410  D410/430 Quad-port E1/T1 card
 	d430  D410/430 Quad-port E1/T1 card
 1b79  Absolute Analysis
-1b85  OCZ Technology Group, Inc.
+1b85  OCZ Technology Group
 	1041  RevoDrive 3 X2 PCI-Express SSD 240 GB (Marvell Controller)
 	6018  RD400/400A SSD
 	8788  RevoDrive Hybrid
-1b94  Signatec / Dynamic Signals Corp
+1b94  Signatec / Dynamic Signals
 	e400  PX14400 Dual Xilinx Virtex5 based Digitizer
 1b96  Western Digital
 	2200  Ultrastar DC SN630 NVMe SSD
@@ -22887,12 +22909,12 @@
 	2600  Ultrastar DC ZN540 ZNS NVMe SSD
 	3714  PC SN730 NVMe SSD
 	3734  PC SN730 NVMe SSD
-1b9a  XAVi Technologies Corp.
-1baa  QNAP Systems, Inc.
+1b9a  XAVi Technologies
+1baa  QNAP Systems
 1bad  ReFLEX CES
 	c001  XpressGXA10-LP1150
 	c002  XpressGXA10-LP1151
-1bb0  SimpliVity Corporation
+1bb0  SimpliVity
 	0002  OmniCube Accelerator OA-3000
 	0010  OmniCube Accelerator OA-3000-2
 1bb1  Seagate Technology PLC
@@ -22954,13 +22976,13 @@
 	5304  BC-H04120A 4 port H.264 video and audio encoder / decoder
 	5308  BC-H08240A 8 port H.264 video and audio encoder / decoder
 	5310  BC-H16480A 16 port H.264 video and audio encoder / decoder
-1bb5  Quantenna Communications, Inc.
-1bbf  Maxeler Technologies Ltd.
+1bb5  Quantenna Communications
+1bbf  Maxeler Technologies
 	0003  MAX3
 	0004  MAX4
-1bcf  NEC Corporation
+1bcf  NEC
 	001c  Vector Engine 1.0
-1bd0  Astronics Corporation
+1bd0  Astronics
 	1001  Mx5 PMC/XMC Databus Interface Card
 	1002  PM1553-5 (PC/104+ MIL-STD-1553 Interface Card)
 	1004  AB3000 Series Rugged Computer
@@ -22968,17 +22990,17 @@
 	1101  OmniBus II PCIe Multi-Protocol Interface Card
 	1102  OmniBusBox II Multi-Protocol Interface Core
 	1103  OmniBus II cPCIe/PXIe Multi-Protocol Interface Card
-1bd4  Inspur Electronic Information Industry Co., Ltd.
+1bd4  Inspur Electronic Information Industry
 	0911  Arria10_PCIe_F10A1150
-1bee  IXXAT Automation GmbH
+1bee  IXXAT Automation
 	0003  CAN-IB200/PCIe
 1bef  Lantiq
 	0011  MIPS SoC PCI Express Port
-1bf4  VTI Instruments Corporation
+1bf4  VTI Instruments
 	0001  SentinelEX
 	7011  RX0xxx
 1bfd  EeeTOP
-1c09  CSP, Inc.
+1c09  CSP
 	4254  10G-PCIE3-8D-2S
 	4255  10G-PCIE3-8D-Q
 	4256  10G-PCIE3-8D-2S
@@ -23000,7 +23022,7 @@
 	001b  FD720
 	001c  FD922
 	001d  Vega
-1c28  Lite-On IT Corp. / Plextor
+1c28  Lite-On IT / Plextor
 	0122  M6e PCI Express SSD [Marvell 88SS9183]
 # previously Fiberblaze
 1c2c  Silicom Denmark
@@ -23036,19 +23058,19 @@
 	a014  FB2CGHH Capture 8x10Gb [Tivoli]
 	a015  FB2CGHH Capture 2x100Gb [Tivoli]
 # Used on V120 VME Crate Controller
-1c32  Highland Technology, Inc.
-1c33  Daktronics, Inc
-1c36  Annapurna Labs Ltd.
+1c32  Highland Technology
+1c33  Daktronics
+1c36  Annapurna Labs
 	0001  Gigabit Ethernet Adapter
 	0002  SFP+ 10G Ethernet Adapter
 1c3b  Accensus, LLC
 	0200  Telas2
 # http://www.accensusllc.com/accensustelas2.html
 	0300  Telas 2.V
-1c44  Enmotus Inc
+1c44  Enmotus
 	8000  8000 Storage IO Controller
 # A Western Digital Subsidiary
-1c58  HGST, Inc.
+1c58  HGST
 	0003  Ultrastar SN100 Series NVMe SSD
 		1014 04f5  PCIe3 1.6TB NVMe Flash Adapter
 		1014 04f6  PCIe3 3.2TB NVMe Flash Adapter
@@ -23066,11 +23088,10 @@
 		1c5c 0100  PE6110 NVMe Solid State Drive
 	2839  PE8000 Series NVMe Solid State Drive
 		1c5c 0100  PE8000 Series NVMe Solid State Drive
-1c5f  Beijing Memblaze Technology Co. Ltd.
-	000d  PBlaze5 520/526 AIC
-	003d  PBlaze5 920/926 AIC
-	010d  PBlaze5 520/526 U.2
-	013d  PBlaze5 920/926 U.2
+1c5f  Beijing Memblaze Technology
+	000d  PBlaze5 520/526
+	003d  PBlaze5 920/926
+	003e  PBlaze6 6920
 	0540  PBlaze4 NVMe SSD
 	0550  PBlaze5 700/900
 	0555  PBlaze5 510/516
@@ -23081,11 +23102,11 @@
 	0008  K1927BB1Ya [EC8430] Angara Interconnection Network Adapter
 1c7e  TTTech Computertechnik AG
 	0200  zFAS Debug Port
-1c7f  Elektrobit Austria GmbH
+1c7f  Elektrobit Austria
 	5100  EB5100
-1c8a  TSF5 Corporation
+1c8a  TSF5
 	0001  Hunter PCI Express
-1c8c  Mobiveil, Inc.
+1c8c  Mobiveil
 1cb0  Shannon Systems
 	d000  Venice NVMe SSD
 		1cb0 2010  Venice-E Series OCS U.2
@@ -23103,22 +23124,22 @@
 		1cb0 af10  Venice-E Series NVMe AIC
 # Venice-X Series NVMe AIC SSD(1.6T/3.2T/6.4T)
 		1cb0 af12  Venice-X Series NVMe AIC
-1cb1  Collion UG & Co.KG
-1cb5  Focusrite Audio Engineering Ltd
+1cb1  Collion UG &KG
+1cb5  Focusrite Audio Engineering
 	0002  Clarett
-1cb8  Dawning Information Industry Co., Ltd.
-1cc1  ADATA Technology Co., Ltd.
+1cb8  Dawning Information Industry
+1cc1  ADATA Technology
 	8201  XPG SX8200 Pro PCIe Gen3x4 M.2 2280 Solid State Drive
 1cc4  Union Memory (Shenzhen)
 	17ab  NVMe 256G SSD device
-1cc5  Embedded Intelligence, Inc.
+1cc5  Embedded Intelligence
 	0100  CAN-PCIe-02
-1cc7  Radian Memory Systems Inc.
+1cc7  Radian Memory Systems
 	0200  RMS-200
 	0250  RMS-250
-1ccf  Zoom Corporation
+1ccf  Zoom
 	0001  TAC-2 Thunderbolt Audio Converter
-1cd2  SesKion GmbH
+1cd2  SesKion
 	0301  Simulyzer-RT CompactPCI Serial DIO-1 card
 	0302  Simulyzer-RT CompactPCI Serial PSI5-ECU-1 card
 	0303  Simulyzer-RT CompactPCI Serial PSI5-SIM-1 card
@@ -23127,7 +23148,7 @@
 # supports 8x CAN (-FD) interfaces
 	0306  Simulyzer-RT CompactPCI Serial CAN-2 card (CAN-FD)
 	0307  Simulyzer-RT CompactPCI Serial DIO-2 card [Xilinx Zynq UltraScale+]
-1cd7  Nanjing Magewell Electronics Co., Ltd.
+1cd7  Nanjing Magewell Electronics
 	0010  Pro Capture Endpoint
 	0014  PRO CAPTURE AIO 4K PLUS
 	0017  PRO CAPTURE AIO 4K
@@ -23153,7 +23174,7 @@
 1cf7  Subspace Dynamics
 1d00  Pure Storage
 1d05  Tongfang Hongkong Limited
-1d0f  Amazon.com, Inc.
+1d0f  Amazon.com
 	cd01  NVMe SSD Controller
 	ec20  Elastic Network Adapter (ENA)
 	efa0  Elastic Fabric Adapter (EFA)
@@ -23223,11 +23244,11 @@
 1d1d  CNEX Labs
 	1f1f  QEMU NVM Express LightNVM Controller
 	2807  8800 series NVMe SSD
-# CEM Solutions Pvt. Ltd.
+# CEM Solutions Pvt.
 1d21  Allo
 1d22  Baidu Technology
 	1380  Cloud Storage Device
-1d26  Kalray Inc.
+1d26  Kalray
 	0040  Turbocard2 Accelerator
 	0080  Open Network Interface Card 80G
 	00c0  Turbocard3 Accelerator
@@ -23238,17 +23259,17 @@
 	0014  PM4
 	0015  PM4edge
 	0016  PM4edge User Device
-1d40  Techman Electronics (Changshu) Co., Ltd.
+1d40  Techman Electronics (Changshu)
 1d44  DPT
 	a400  PM2x24/PM3224
 1d49  Lenovo
-1d4c  Diamanti, Inc.
+1d4c  Diamanti
 1d5c  Fantasia Trading LLC
-1d61  Technobox, Inc.
+1d61  Technobox
 1d62  Nebbiolo Technologies
-1d65  Imagine Communications Corp.
+1d65  Imagine Communications
 	04de  Taurus/McKinley
-1d6a  Aquantia Corp.
+1d6a  Aquantia
 	0001  AQC107 NBase-T/IEEE 802.3bz Ethernet Controller [AQtion]
 	00b1  AQC100 10G Ethernet MAC controller [AQtion]
 	07b1  AQC107 NBase-T/IEEE 802.3bz Ethernet Controller [AQtion]
@@ -23300,19 +23321,19 @@
 		1d78 3103  D5457 U.2 1.6TB NVMe SSD
 		1d78 3105  D5457 U.2 3.2TB NVMe SSD
 		1d78 3107  D5457 U.2 6.4TB NVMe SSD
-1d7c  Aerotech, Inc.
+1d7c  Aerotech
 # Fiber-optic HyperWire motion control bus from Aerotech.
 	0001  HyperWire Adapter
-1d82  NETINT Technologies Inc.
+1d82  NETINT Technologies
 	0101  Codensity D400 SSD
 	0102  Codensity D408 PCIe Gen4 NVMe SSD
 	0202  Codensity T408 Video Encoding-Decoding Accelerator
-1d87  Fuzhou Rockchip Electronics Co., Ltd
+1d87  Fuzhou Rockchip Electronics
 	0100  RK3399 PCI Express Root Port
 	1808  RK1808 Neural Network Processor Card
 1d8f  Enyx
 1d93  YADRO (KNS Group)
-1d94  Chengdu Haiguang IC Design Co., Ltd.
+1d94  Chengdu Haiguang IC Design
 	1450  Root Complex
 	1451  I/O Memory Management Unit
 	1452  PCIe Dummy Host Bridge
@@ -23342,26 +23363,26 @@
 	7906  FCH SD Flash Controller
 	790b  FCH SMBus Controller
 	790e  FCH LPC Bridge
-1d95  Graphcore Ltd
+1d95  Graphcore
 	0001  Colossus GC2 [C2]
 	0002  Colossus GC1 [S1]
-1d97  Shenzhen Longsys Electronics Co., Ltd.
-1d9b  Facebook, Inc.
+1d97  Shenzhen Longsys Electronics
+1d9b  Facebook
 	0010  Networking DOM Engine
 	0011  IO Bridge
 1da1  Teko Telecom S.r.l.
 1da2  Sapphire Technology Limited
 	e26a  Radeon R7 250
-1da3  Habana Labs Ltd.
+1da3  Habana Labs
 	0001  HL-1000 AI Inference Accelerator [Goya]
 # PCIe accelerator card for Deep Learning training tasks
 	1000  HL-2000 AI Training Accelerator [Gaudi]
-1db2  ATP ELECTRONICS INC
-1dbb  NGD Systems, Inc.
-1dbf  Guizhou Huaxintong Semiconductor Technology Co., Ltd
+1db2  ATP ELECTRONICS
+1dbb  NGD Systems
+1dbf  Guizhou Huaxintong Semiconductor Technology
 	0401  StarDragon4800 PCI Express Root Port
-1dc5  FADU Inc.
-1dcd  Liqid Inc.
+1dc5  FADU
+1dcd  Liqid
 1dd8  Pensando Systems
 	1000  DSC Capri Upstream Port
 		1dd8 4000  Naples 100Gb 2-port QSFP28 x16 8GB
@@ -23426,16 +23447,16 @@
 1de0  Groq
 # rename due to conflict with a term in use by another company for an entirely different product.
 	0000  TSP100 Tensor Streaming Processor
-1de1  Tekram Technology Co.,Ltd.
+1de1  Tekram Technology
 	0391  TRM-S1040 [DC-315 / DC-395 series]
 	2020  DC-390
 	690c  690c
 	dc29  DC290
-1de5  Eideticom, Inc
+1de5  Eideticom
 	1000  IO Memory Controller
 	2000  NoLoad Hardware Development Kit
 	3000  eBPF-based PCIe Accelerator
-1dee  Biwin Storage Technology Co., Ltd.
+1dee  Biwin Storage Technology
 1def  Ampere Computing, LLC
 	e005  eMAG PCI Express Root Port 0
 	e006  eMAG PCI Express Root Port 1
@@ -23474,7 +23495,7 @@
 	0003  alst4x
 1dfc  JSC NT-COM
 	1181  TDM 8 Port E1/T1/J1 Adapter
-1e0f  KIOXIA Corporation
+1e0f  KIOXIA
 	0007  NVMe SSD Controller Cx6
 		1028 2078  DC NVMe CD6 RI 960GB
 		1028 2079  DC NVMe CD6 RI 1.92TB
@@ -23498,7 +23519,7 @@
 		1e0f 0001  Generic NVMe CM6 RI 3.84TB
 	0009  NVMe SSD
 		1e0f 0001  Toshiba RC500 NVMe SSD 500GB
-1e17  Arnold & Richter Cine Technik GmbH & Co. Betriebs KG
+1e17  Arnold & Richter Cine Technik & Betriebs KG
 1e24  Squirrels Research Labs
 	0101  Acorn CLE-101
 	0215  Acorn CLE-215
@@ -23511,15 +23532,16 @@
 # JungleCat VU35P Module
 	1635  JCM35
 1e26  Fujitsu Client Computing Limited
-1e36  Shanghai Enflame Technology Co. Ltd
+1e36  Shanghai Enflame Technology
 	0001  T10 [CloudBlazer]
 	0002  T11 [CloudBlazer]
 	0003  T10s [CloudBlazer]
 	8011  I10 [CloudBlazer]
-# nee Thinci, Inc
-1e38  Blaize, Inc
+	8012  I10L [CloudBlazer]
+# nee Thinci
+1e38  Blaize
 	0102  Xplorer X1600
-1e3b  Shenzhen DAPU Microelectronics Co., Ltd
+1e3b  Shenzhen DAPU Microelectronics
 	1098  Haishen NVMe SSD
 		1e3b 0001  Enterprise NVMe SSD U.2 0.8TB (H2100)
 		1e3b 0002  Enterprise NVMe SSD U.2 0.96TB (H2200)
@@ -23545,9 +23567,9 @@
 		1e3b 007d  Enterprise NVMe SSD HHHL 3.84TB (H3200)
 		1e3b 007f  Enterprise NVMe SSD HHHL 6.4TB (H3100)
 		1e3b 0080  Enterprise NVMe SSD HHHL 7.68TB (H3200)
-1e3d  Burlywood, Inc
-1e49  Yangtze Memory Technologies Co.,Ltd
-1e4b  MAXIO Technology (Hangzhou) Ltd.
+1e3d  Burlywood
+1e49  Yangtze Memory Technologies
+1e4b  MAXIO Technology (Hangzhou)
 	1001  NVMe SSD Controller MAP1001
 	1002  NVMe SSD Controller MAP1002
 	1003  NVMe SSD Controller MAP1003
@@ -23558,14 +23580,14 @@
 # Associative Processing Unit (APU)
 	0010  APU [Leda]
 		1e4c 0120  SE120
-1e57  Beijing Panyi Technology Co., Ltd
+1e57  Beijing Panyi Technology
 	0100  The device has already been deleted.
 		0000 0100  PY8800 64GB Accelerator
-1e60  Hailo Technologies Ltd.
+1e60  Hailo Technologies
 	2864  Hailo-8 AI Processor
-1e6b  Axiado Corp.
+1e6b  Axiado
 1e7b  Dataland
-1e7c  Brainchip Inc
+1e7c  Brainchip
 	bca1  AKD1000 Neural Network Coprocessor [Akida]
 1e85  Heitec AG
 1e89  ID Quantique SA
@@ -23573,22 +23595,22 @@
 	0003  Quantis-PCIe-240M
 # aka SED Systems
 1e94  Calian SED
-1e95  Solid State Storage Technology Corporation
-1eab  Hefei DATANG Storage Technology Co.,LTD.
+1e95  Solid State Storage Technology
+1eab  Hefei DATANG Storage Technology
 	300a  NVMe SSD Controller 300A
 	300b  NVMe SSD Controller 300B
 1eae  XFX Limited
-1eb1  VeriSilicon Inc
+1eb1  VeriSilicon
 	1001  Video Accelerator
 # nee Tumsan Oy
 1fc0  Ascom (Finland) Oy
 	0300  E2200 Dual E1/Rawpipe Card
 	0301  C5400 SHDSL/E1 Card
-# nee PathScale, Inc
-1fc1  QLogic, Corp.
+# nee PathScale
+1fc1  QLogic
 	000d  IBA6110 InfiniBand HCA
 	0010  IBA6120 InfiniBand HCA
-1fc9  Tehuti Networks Ltd.
+1fc9  Tehuti Networks
 	3009  10-Giga TOE SmartNIC
 	3010  10-Giga TOE SmartNIC
 		0000 3002  10-Giga TOE Single Port XFP SmartNIC
@@ -23639,46 +23661,46 @@
 1fcc  StreamLabs
 	f416  MS416
 	fb01  MH4LM
-1fce  Cognio Inc.
+1fce  Cognio
 	0001  Spectrum Analyzer PC Card (SAgE)
-1fd4  SUNIX Co., Ltd.
+1fd4  SUNIX
 	0001  Matrix multiport serial adapter
 	1999  Multiport serial controller
-2000  Smart Link Ltd.
+2000  Smart Link
 	2800  SmartPCI2800 V.92 PCI Soft DFT
-2001  Temporal Research Ltd
-2003  Smart Link Ltd.
+2001  Temporal Research
+2003  Smart Link
 	8800  LM-I56N
-2004  Smart Link Ltd.
-2048  Beijing SpaceControl Technology Co.Ltd
+2004  Smart Link
+2048  Beijing SpaceControl Technology
 20f4  TRENDnet
-2116  ZyDAS Technology Corp.
-21c3  21st Century Computer Corp.
+2116  ZyDAS Technology
+21c3  21st Century Computer
 22b8  Flex-Logix Technologies
 	22a0  Flex Logix InferX X1 Inference Accelerator
-22db  Missing Link Electronics, Inc.
-2304  Colorgraphic Communications Corp.
+22db  Missing Link Electronics
+2304  Colorgraphic Communications
 2348  Racore
 	2010  8142 100VG/AnyLAN
-2646  Kingston Technology Company, Inc.
+2646  Kingston Technology Company
 	0010  HyperX Predator PCIe AHCI SSD
 	2263  A2000 NVMe SSD
 	5008  U-SNS8154P3 NVMe SSD
 	500d  OM3PDP3 NVMe SSD
-270b  Xantel Corporation
-270f  Chaintech Computer Co. Ltd
-2711  AVID Technology Inc.
+270b  Xantel
+270f  Chaintech Computer
+2711  AVID Technology
 2955  Connectix Virtual PC
 	6e61  OHCI USB 1.1 controller
 2a15  3D Vision(???)
-2bd8  ROPEX Industrie-Elektronik GmbH
-3000  Hansol Electronics Inc.
+2bd8  ROPEX Industrie-Elektronik
+3000  Hansol Electronics
 3112  Satelco Ingenieria S.A.
 3130  AUDIOTRAK
 3142  Post Impression Systems.
 31ab  Zonet
 	1faa  ZEW1602 802.11b/g Wireless Adapter
-3388  Hint Corp
+3388  Hint
 	0013  HiNT HC4 PCI to ISDN bridge, Multimedia audio controller
 	0014  HiNT HC4 PCI to ISDN bridge, Network controller
 	0020  HB6 Universal PCI-PCI bridge (transparent mode)
@@ -23706,20 +23728,20 @@
 	8013  VXPro II IDE
 		3388 8013  VXPro II Chipset EIDE Controller
 	a103  Blackmagic Design DeckLink HD Pro
-3411  Quantum Designs (H.K.) Inc
-3442  Bihl+Wiedemann GmbH
+3411  Quantum Designs (H.K.)
+3442  Bihl+Wiedemann
 	1783  AS-i 3.0 cPCI Master
 	1922  AS-i 3.0 PCI Master
-3475  Arista Networks, Inc.
-3513  ARCOM Control Systems Ltd
-37d9  ITD Firm ltd.
+3475  Arista Networks
+3513  ARCOM Control Systems
+37d9  ITD Firm
 	1138  SCHD-PH-8 Phase detector
 # 12-ch Relay Actuator Card
 	1140  VR-12-PCI
 # multiport serial board
 	1141  PCI-485(422)
 	1142  PCI-CAN2
-3842  eVga.com. Corp.
+3842  eVga.com.
 38ef  4Links
 3d3d  3DLabs
 	0001  GLINT 300SX
@@ -23770,7 +23792,7 @@
 	1004  Permedia
 	3d04  Permedia
 	ffff  Glint VGA
-4005  Avance Logic Inc.
+4005  Avance Logic
 	0300  ALS300 PCI Audio Device
 	0308  ALS300+ PCI Audio Device
 	0309  PCI Input Controller
@@ -23786,7 +23808,7 @@
 	4000  ALS4000 Audio Chipset
 		4005 4000  ALS4000 Audio Chipset
 	4710  ALC200/200P
-4033  Addtron Technology Co, Inc.
+4033  Addtron Technology
 	1360  RTL8139 Ethernet
 4040  NetXen Incorporated
 	0001  NXB-10GXSR 10-Gigabit Ethernet PCIe Adapter with SR-XFP optical interface
@@ -23808,14 +23830,14 @@
 		152d 896b  TG20 Dual Port 10GbE Server/Storage Adapter
 		4040 0124  NX3031 Quad Port Gigabit Server Adapter
 		4040 0126  Dual Port SFP+ 10GbE Server Adapter
-4143  Digital Equipment Corp
+4143  Digital Equipment
 4144  Alpha Data
 	0044  ADM-XRCIIPro
 4150  ONA Electroerosion
 	0001  PCI32TLITE FILSTRUP1 PCI to VME Bridge Controller
 	0006  PCI32TLITE UART 16550 Opencores
 	0007  PCI32TLITE CAN Controller Opencores
-415a  Auzentech, Inc.
+415a  Auzentech
 416c  Aladdin Knowledge Systems
 	0100  AladdinCARD
 	0200  CPC
@@ -23830,7 +23852,7 @@
 	7073  CH356 PCI Quad Serial and Parallel Ports Controller
 	7173  CH355 PCI Quad Serial Port Controller
 434e  CAST Navigation LLC
-4444  Internext Compression Inc
+4444  Internext Compression
 	0016  iTVC16 (CX23416) Video Decoder
 		0070 0003  WinTV PVR 250
 		0070 0009  WinTV PVR 150
@@ -23895,7 +23917,7 @@
 		1461 a3ce  M179
 		1461 a3cf  M179
 4468  Bridgeport machines
-4594  Cogetec Informatique Inc
+4594  Cogetec Informatique
 45fb  Baldor Electric Company
 4624  Budker Institute of Nuclear Physics
 	adc1  ADC200ME High speed ADC
@@ -23903,12 +23925,12 @@
 	de02  DL200ME Middle resolution delay line PCI based card
 # Can't find any information on this company
 4651  TXIC
-4680  Umax Computer Corp
-4843  Hercules Computer Technology Inc
-4916  RedCreek Communications Inc
+4680  Umax Computer
+4843  Hercules Computer Technology
+4916  RedCreek Communications
 	1960  RedCreek PCI adapter
 4943  Growth Networks
-494f  ACCES I/O Products, Inc.
+494f  ACCES I/O Products
 	0508  PCI-IDO-16A FET Output Card
 	0518  PCI-IDO-32A FET Output Card
 	0520  PCI-IDO-48 FET Output Card
@@ -24031,11 +24053,11 @@
 	ecaa  PCI-A12-16A 12-bit 100kHz Analog Input w/2x Analog Output and FIFO Card
 	ece8  LPCI-A16-16A 16-bit 500kHz Analog Input low-profile Card
 	ece9  LPCI-AIO16A 16-bit 500kHz Analog Input low-profile Card
-4978  Axil Computer Inc
+4978  Axil Computer
 4a14  NetVin
 	5000  NV5000SC
 		4a14 5000  RT8029-Based Ethernet Adapter
-4b10  Buslogic Inc.
+4b10  Buslogic
 4c48  LUNG HWA Electronics
 4c52  LR-Link
 4c53  SBS Technologies
@@ -24044,17 +24066,17 @@
 		4c53 3001  PLUSTEST card (PMC)
 	0001  PLUSTEST-MM device
 		4c53 3002  PLUSTEST-MM card (PMC)
-4ca1  Seanix Technology Inc
-4d51  MediaQ Inc.
+4ca1  Seanix Technology
+4d51  MediaQ
 	0200  MQ-200
-4d54  Microtechnica Co Ltd
-4d56  MATRIX VISION GmbH
+4d54  Microtechnica
+4d56  MATRIX VISION
 	0000  [mvHYPERION-CLe/CLb] CameraLink PCI Express x1 Frame Grabber
 	0001  [mvHYPERION-CLf/CLm] CameraLink PCI Express x4 Frame Grabber
 	0010  [mvHYPERION-16R16/-32R16] 16 Video Channel PCI Express x4 Frame Grabber
 	0020  [mvHYPERION-HD-SDI] HD-SDI PCI Express x4 Frame Grabber
 	0030  [mvHYPERION-HD-SDI-Merger] HD-SDI PCI Express x4 Frame Grabber
-4ddc  ILC Data Device Corp
+4ddc  ILC Data Device
 	0100  DD-42924I5-300 (ARINC 429 Data Bus)
 	0300  SB-3620 Motion Feedback Device
 	0340  SB-3623 Motion Feedback Device
@@ -24083,21 +24105,21 @@
 	3000  SB-3644 Motion Feedback Device
 5045  University of Toronto
 	4243  BLASTbus PCI Interface Card v1
-5046  GemTek Technology Corporation
+5046  GemTek Technology
 	1001  PCI Radio
 5053  Voyetra Technologies
 	2010  Daytona Audio Adapter
-50b2  TerraTec Electronic GmbH
+50b2  TerraTec Electronic
 5136  S S Technologies
-5143  Qualcomm Inc
+5143  Qualcomm
 5145  Ensoniq (Old)
 	3031  Concert AudioPCI
-5168  Animation Technologies Inc.
+5168  Animation Technologies
 	0300  FlyDVB-S
 	0301  FlyDVB-T
-5301  Alliance Semiconductor Corp.
+5301  Alliance Semiconductor
 	0001  ProMotion aT3D
-5333  S3 Graphics Ltd.
+5333  S3 Graphics
 	0551  Plato/PX (system)
 	5631  86c325 [ViRGE]
 	8800  86c866 [Vision 866]
@@ -24242,8 +24264,8 @@
 		1092 5a55  Viper II Z200
 		1092 5a57  Viper II Z200
 	ca00  SonicVibes
-5431  AuzenTech, Inc.
-544c  Teralogic Inc
+5431  AuzenTech
+544c  Teralogic
 	0350  TL880-based HDTV/ATSC tuner
 544d  TBS Technologies
 	6178  DVB Tuner PCIe Card
@@ -24256,24 +24278,24 @@
 5455  Technische Universitaet Berlin
 	4458  S5933
 5456  GoTView
-5519  Cnet Technologies, Inc.
+5519  Cnet Technologies
 5544  Dunord Technologies
 	0001  I-30xx Scanner Interface
-5555  Genroco, Inc
+5555  Genroco
 	0003  TURBOstor HFP-832 [HiPPI NIC]
 	3b00  Epiphan DVI2PCIe video capture card
 5646  Vector Fabrics BV
-5654  VoiceTronix Pty Ltd
-5678  Dawicontrol Computersysteme GmbH
+5654  VoiceTronix Pty
+5678  Dawicontrol Computersysteme
 5700  Netpower
-# alternately Extreme Engineering Solutions, Inc.
-5845  X-ES, Inc.
-584d  AuzenTech Co., Ltd.
+# alternately Extreme Engineering Solutions
+5845  X-ES
+584d  AuzenTech
 5851  Exacq Technologies
 	8008  tDVR8008 8-port video capture card
 	8016  tDVR8016 16-chan video capture card
 	8032  tDVR8032 32-chan video capture card
-5853  XenSource, Inc.
+5853  XenSource
 	0001  Xen Platform Device
 	c000  Citrix XenServer PCI Device for Windows Update
 # Virtual device surfaced in guests to provide HID events.
@@ -24282,19 +24304,19 @@
 	c147  Virtualized Graphics Device
 	c200  XCP-ng Project PCI Device for Windows Update
 5854  GoTView
-5ace  Beholder International Ltd.
+5ace  Beholder International
 6205  TBS Technologies (wrong ID)
 6209  TBS Technologies (wrong ID)
-631c  SmartInfra Ltd
+631c  SmartInfra
 	1652  PXI-1652 Signal Generator
 	2504  PXI-2504 Signal Interrogator
 6356  UltraStor
 6374  c't Magazin fuer Computertechnik
 	6773  GPPCI
-6409  Logitec Corp.
-6549  Teradici Corp.
+6409  Logitec
+6549  Teradici
 	1200  TERA1200 PC-over-IP Host
-6666  Decision Computer International Co.
+6666  Decision Computer International
 	0001  PCCOM4
 	0002  PCCOM8
 	0004  PCCOM2
@@ -24306,33 +24328,33 @@
 	1022  4 photo couple 4 relay Card
 	1025  16 photo couple 16 relay Card
 	4000  WatchDog Card
-6688  Zycoo Co., Ltd
+6688  Zycoo
 	1200  CooVox TDM Analog Module
 	1400  CooVOX TDM GSM Module
 	1600  CooVOX TDM E1/T1 Module
 	1800  CooVOX TDM BRI Module
 # nee Qumranet
-6900  Red Hat, Inc.
+6900  Red Hat
 7063  pcHDTV
 	2000  HD-2000
 	3000  HD-3000
 	5500  HD5500 HDTV
-7284  HT OMEGA Inc.
+7284  HT OMEGA
 7357  IOxOS Technologies SA
 	7910  7910 [Althea]
 7401  EndRun Technologies
 	e100  PTP3100 PCIe PTP Slave Clock
-7470  TP-LINK Technologies Co., Ltd.
-7604  O.N. Electronic Co Ltd.
-7bde  MIDAC Corporation
+7470  TP-LINK Technologies
+7604  O.N. Electronic
+7bde  MIDAC
 7fed  PowerTV
-8008  Quancom Electronic GmbH
+8008  Quancom Electronic
 	0010  WDOG1 [PCI-Watchdog 1]
 	0011  PWDOG2 [PCI-Watchdog 2]
 	0015  Clock77/PCI & Clock77/PCIe (DCF-77 receiver)
 # Wrong ID used in subsystem ID of AsusTek PCI-USB2 PCI card.
-807d  Asustek Computer, Inc.
-8086  Intel Corporation
+807d  Asustek Computer
+8086  Intel
 	0007  82379AB
 	0008  Extended Express System Support Controller
 	0039  21145 Fast Ethernet
@@ -24415,6 +24437,7 @@
 	0100  2nd Generation Core Processor Family DRAM Controller
 		1028 04aa  XPS 8300
 		1043 844d  P8P67/P8H67 Series Motherboard
+		8086 200d  DH61CR motherboard
 	0101  Xeon E3-1200/2nd Generation Core Processor Family PCI Express Root Port
 		1028 04b2  Vostro 3350
 		106b 00dc  MacBookPro8,2 [Core i7, 15", 2011]
@@ -24494,6 +24517,7 @@
 		1043 844d  P8B WS Motherboard
 	0172  Xeon E3-1200 v2/3rd Gen Core processor Graphics Controller
 	0176  3rd Gen Core processor Graphics Controller
+	0201  Arctic Sound
 	0284  Comet Lake PCH-LP LPC Premium Controller/eSPI Controller
 	02a3  Comet Lake PCH-LP SMBus Host Controller
 	02a4  Comet Lake SPI (flash) Controller
@@ -26154,6 +26178,7 @@
 	1503  82579V Gigabit Network Connection
 		1043 849c  P8P67 Deluxe Motherboard
 		10cf 161c  LIFEBOOK E752
+		8086 200d  DH61CR motherboard
 	1507  Ethernet Express Module X520-P2
 	1508  82598EB Gigabit BX Network Connection
 	1509  82580 Gigabit Network Connection
@@ -26870,6 +26895,7 @@
 	1c02  6 Series/C200 Series Chipset Family 6 port Desktop SATA AHCI Controller
 		1028 04aa  XPS 8300
 		1043 844d  P8 series motherboard
+		8086 200d  DH61CR motherboard
 		8086 7270  Server Board S1200BT Family
 	1c03  6 Series/C200 Series Chipset Family 6 port Mobile SATA AHCI Controller
 		1028 04a3  Precision M4600
@@ -26920,6 +26946,7 @@
 		17aa 21cf  ThinkPad T520
 # Realtek ALC888 audio codec
 		8086 2008  DQ67SW board
+		8086 200d  DH61CR motherboard
 		8086 7270  Apple MacBookPro8,2 [Core i7, 15", 2011]
 	1c22  6 Series/C200 Series Chipset Family SMBus Controller
 		1028 04a3  Precision M4600
@@ -26928,6 +26955,7 @@
 		1028 04da  Vostro 3750
 		1043 844d  P8 series motherboard
 		17aa 21cf  ThinkPad T520
+		8086 200d  DH61CR motherboard
 		8086 7270  Server Board S1200BT Family / Apple MacBook Pro 8,1/8,2
 	1c24  6 Series/C200 Series Chipset Family Thermal Management Controller
 	1c25  6 Series/C200 Series Chipset Family DMI to PCI Bridge
@@ -26938,6 +26966,7 @@
 		1028 04da  Vostro 3750
 		1043 844d  P8 series motherboard
 		17aa 21cf  ThinkPad T520
+		8086 200d  DH61CR motherboard
 		8086 7270  Server Board S1200BT Family / Apple MacBook Pro 8,1/8,2
 	1c27  6 Series/C200 Series Chipset Family USB Universal Host Controller #1
 		8086 7270  Apple MacBookPro8,2 [Core i7, 15", 2011]
@@ -26950,6 +26979,7 @@
 		1028 04da  Vostro 3750
 		1043 844d  P8 series motherboard
 		17aa 21cf  ThinkPad T520
+		8086 200d  DH61CR motherboard
 		8086 7270  Server Board S1200BT Family / Apple MacBook Pro 8,1/8,2
 	1c33  6 Series/C200 Series Chipset Family LAN Controller
 	1c35  6 Series/C200 Series Chipset Family VECI Controller
@@ -26960,6 +26990,7 @@
 		1028 04da  Vostro 3750
 		1043 844d  P8 series motherboard
 		17aa 21cf  ThinkPad T520
+		8086 200d  DH61CR motherboard
 		8086 7270  Apple MacBookPro8,2 [Core i7, 15", 2011]
 	1c3b  6 Series/C200 Series Chipset Family MEI Controller #2
 	1c3c  6 Series/C200 Series Chipset Family IDE-r Controller
@@ -27003,6 +27034,7 @@
 	1c5a  Upgraded Q67 Express Chipset LPC Controller
 	1c5b  6 Series/C200 Series Chipset Family LPC Controller
 	1c5c  H61 Express Chipset LPC Controller
+		8086 200d  DH61CR motherboard
 	1c5d  6 Series/C200 Series Chipset Family LPC Controller
 	1c5e  6 Series/C200 Series Chipset Family LPC Controller
 	1c5f  6 Series/C200 Series Chipset Family LPC Controller
@@ -27748,7 +27780,7 @@
 		e4bf 0cc9  CC9-SAMBA
 		e4bf 0cd2  CD2-BEBOP
 	24c5  82801DB/DBL/DBM (ICH4/ICH4-L/ICH4-M) AC'97 Audio Controller
-		0e11 00b8  Analog Devices Inc. codec [SoundMAX]
+		0e11 00b8  Analog Devices codec [SoundMAX]
 		1014 0267  NetVista A30p
 		1014 0537  ThinkPad T4x Series
 		1014 055f  Thinkpad R50e model 1634
@@ -30978,7 +31010,16 @@
 		8086 1316  WiMAX/WiFi Link 5150 ABG
 	444e  Turbo Memory Controller
 	467f  Volume Management Device NVMe RAID Controller
+	4680  AlderLake-S GT1
+	46a0  AlderLake-P GT2
+	4905  DG1 [Iris Xe MAX Graphics]
+	4906  DG1 [Iris Xe Pod]
+	4907  SG1 [Server GPU SG-18M]
+	4908  DG1 [Iris Xe Graphics]
 	4c3d  Volume Management Device NVMe RAID Controller
+	4f80  DG2
+	4f81  DG2
+	4f82  DG2
 	5001  LE80578
 	5002  LE80578 Graphics Processor Unit
 	5009  LE80578 Video Display Controller
@@ -31726,17 +31767,17 @@
 	9a2f  Tiger Lake-H Thunderbolt 4 PCI Express Root Port #2
 	9a31  Tiger Lake-H Thunderbolt 4 PCI Express Root Port #3
 	9a33  Tiger Lake Trace Hub
-	9a49  Iris Xe Graphics
-	9b41  UHD Graphics
+	9a49  TigerLake GT2 [Iris Xe Graphics]
+	9b41  CometLake-U GT2 [UHD Graphics]
 	9b44  10th Gen Core Processor Host Bridge/DRAM Registers
 	9b53  Comet Lake-S 6c Host Bridge/DRAM Controller
 	9b54  10th Gen Core Processor Host Bridge/DRAM Registers
 	9b61  Comet Lake-U v1 4c Host Bridge/DRAM Controller
 	9b63  10th Gen Core Processor Host Bridge/DRAM Registers
 	9b64  10th Gen Core Processor Host Bridge/DRAM Registers
-	9bc4  UHD Graphics
-	9bc5  UHD Graphics 630
-	9bc8  UHD Graphics 630
+	9bc4  CometLake-H GT2 [UHD Graphics]
+	9bc5  CometLake-S GT2 [UHD Graphics 630]
+	9bc8  CometLake-S GT2 [UHD Graphics 630]
 	9c00  8 Series SATA Controller 1 [IDE mode]
 	9c01  8 Series SATA Controller 1 [IDE mode]
 	9c02  8 Series SATA Controller 1 [AHCI mode]
@@ -32380,7 +32421,7 @@
 	f1a6  SSD Pro 7600p/760p/E 6100p Series
 		8086 390b  SSD Pro 7600p/760p/E 6100p Series [NVM Express]
 	f1a8  SSD 660P Series
-8088  Beijing Wangxun Technology Co., Ltd.
+8088  Beijing Wangxun Technology
 	0101  WX1860A2 Gigabit Ethernet Controller
 		8088 0201  Dual-Port Ethernet Network Adaptor SF200T
 	0102  WX1860A2S Gigabit Ethernet Controller
@@ -32404,24 +32445,24 @@
 		8088 0000  Ethernet Network Adaptor RP1000 for 10GbE SFP+
 	2001  Ethernet Controller RP2000 for 10GbE SFP+
 		8088 2000  Ethernet Network Adaptor RP2000 for 10GbE SFP+
-80ee  InnoTek Systemberatung GmbH
+80ee  InnoTek Systemberatung
 	beef  VirtualBox Graphics Adapter
 	cafe  VirtualBox Guest Service
-8322  Sodick America Corp.
+8322  Sodick America
 8384  SigmaTel
-8401  TRENDware International Inc.
+8401  TRENDware International
 8686  ScaleMP
 	1010  vSMP Foundation controller [vSMP CTL]
 	1011  vSMP Foundation MEX/FLX controller [vSMP CTL]
-8800  Trigem Computer Inc.
+8800  Trigem Computer
 	2008  Video assistant component
-8866  T-Square Design Inc.
+8866  T-Square Design
 8888  Silicon Magic
 8912  TRX
 # 8c4a is not Winbond but there is a board misprogrammed
 8c4a  Winbond
 	1980  W89C940 misprogrammed [ne2k]
-8e0e  Computone Corporation
+8e0e  Computone
 8e2e  KTI
 	3000  ET32P2
 9004  Adaptec
@@ -32879,18 +32920,18 @@
 	809f  AIC-7902 U320 w/HostRAID
 907f  Atronics
 	2015  IDE-2015PL
-919a  Gigapixel Corp
+919a  Gigapixel
 9412  Holtek
 	6565  6565
-9413  Softlogic Co., Ltd.
+9413  Softlogic
 	6010  SOLO6010 MPEG-4 Video encoder/decoder
 	6110  SOLO6110 H.264 Video encoder/decoder
-9618  JusonTech Corporation
+9618  JusonTech
 	0001  JusonTech Gigabit Ethernet Controller
-9699  Omni Media Technology Inc
+9699  Omni Media Technology
 	6565  6565
 # nee Netmos Technology
-9710  MosChip Semiconductor Technology Ltd.
+9710  MosChip Semiconductor Technology
 	9250  PCI-to-PCI bridge [MCS9250]
 	9805  PCI 1 port parallel adapter
 	9815  PCI 9815 Multi-I/O Controller
@@ -32908,7 +32949,7 @@
 	9855  PCI 9855 Multi-I/O Controller
 # Parallel port at BAR0. Serial ports at BAR2-5
 		1000 0014  1P4S
-# Parallel ports at BAR0,BAR2. Serial ports at BAR4-5
+# Parallel ports at BAR0, BAR2. Serial ports at BAR4-5
 		1000 0022  2P2S (2 Parallel / 2 16550A Serial Port Adapter)
 	9865  PCI 9865 Multi-I/O Controller
 	9900  MCS9900 Multi-I/O Controller
@@ -32920,25 +32961,25 @@
 	9990  MCS9990 PCIe to 4‐Port USB 2.0 Host Controller
 # Subsystem ID on a 3c985B-SX network card
 9850  3Com (wrong ID)
-9902  Stargen Inc.
+9902  Stargen
 	0001  SG2010 PCI over Starfabric Bridge
 	0002  SG2010 PCI to Starfabric Gateway
 	0003  SG1010 Starfabric Switch and PCI Bridge
-9d32  Beijing Starblaze Technology Co. Ltd.
+9d32  Beijing Starblaze Technology
 	0000  STAR1000 PCIe NVMe SSD Controller
 	1001  STAR1000P PCIe NVMe SSD Controller
 	1201  STAR1200C NVMe SSD
 	1202  STAR1200I NVMe SSD
 	1203  STAR1200L NVMe SSD
 	1204  STAR1200E NVMe SSD
-a000  Asix Electronics Corporation (Wrong ID)
-a0a0  AOPEN Inc.
-a0f1  UNISYS Corporation
-a200  NEC Corporation
+a000  Asix Electronics (Wrong ID)
+a0a0  AOPEN
+a0f1  UNISYS
+a200  NEC
 a259  Hewlett Packard
-a25b  Hewlett Packard GmbH PL24-MKT
+a25b  Hewlett Packard PL24-MKT
 a304  Sony
-a727  3Com Corporation
+a727  3Com
 	0013  3CRPAG175 Wireless PC Card
 	6803  3CRDAG675B Wireless 11a/b/g Adapter
 aa00  iTuner
@@ -32959,27 +33000,27 @@ aa0e  iTuner
 aa0f  iTuner
 aa42  Scitex Digital Video
 aa55  Ncomputing X300 PCI-Engine
-aaaa  Adnaco Technology Inc.
+aaaa  Adnaco Technology
 	0001  H1 PCIe over fiber optic host controller
 	0002  R1BP1 PCIe over fiber optic expansion chassis
-abcd  Vadatech Inc.
-ac1e  Digital Receiver Technology Inc
+abcd  Vadatech
+ac1e  Digital Receiver Technology
 ac3d  Actuality Systems
 ad00  Alta Data Technologies LLC
-aecb  Adrienne Electronics Corporation
+aecb  Adrienne Electronics
 	6250  VITC/LTC Timecode Reader card [PCI-VLTC/RDR]
 affe  Sirrix AG security technologies
 	01e1  PCI1E1 1-port ISDN E1 interface
 	02e1  PCI2E1 2-port ISDN E1 interface
 	450e  PCI4S0EC 4-port ISDN S0 interface
 	dead  Sirrix.PCI4S0 4-port ISDN S0 interface
-b100  OpenVox Communication Co. Ltd.
+b100  OpenVox Communication
 # Not registered officially
 b10b  Uakron PCI Project
 b1b3  Shiva Europe Limited
-b1d9  ATCOM Technology co., LTD.
+b1d9  ATCOM Technology
 # Pinnacle should be 11bd, but they got it wrong several times --mj
-bd11  Pinnacle Systems, Inc. (Wrong ID)
+bd11  Pinnacle Systems (Wrong ID)
 bdbd  Blackmagic Design
 	a106  Multibridge Extreme
 	a117  Intensity Pro
@@ -33021,10 +33062,10 @@ c001  TSI Telsys
 c0a9  Micron/Crucial Technology
 	2263  P1 NVMe PCIe SSD
 c0de  Motorola
-c0fe  Motion Engineering, Inc.
-ca3b  Cambrionix Ltd.
-ca50  Varian Australia Pty Ltd
-cace  CACE Technologies, Inc.
+c0fe  Motion Engineering
+ca3b  Cambrionix
+ca50  Varian Australia Pty
+cace  CACE Technologies
 	0001  TurboCap Port A
 	0002  TurboCap Port B
 	0023  AirPcap N
@@ -33034,14 +33075,14 @@ cafe  Chrysalis-ITS
 	0006  Luna PCI-e 3000 Hardware Security Module
 	0007  Luna K6 Hardware Security Module
 	0008  Luna K7 Hardware Security Module
-cc53  ScaleFlux Inc.
+cc53  ScaleFlux
 cccc  Catapult Communications
 ccec  Curtiss-Wright Controls Embedded Computing
-cddd  Tyzx, Inc.
+cddd  Tyzx
 	0101  DeepSea 1 High Speed Stereo Vision Frame Grabber
 	0200  DeepSea 2 High Speed Stereo Vision Frame Grabber
 ceba  KEBA AG
-d161  Digium, Inc.
+d161  Digium
 	0120  Wildcard TE120P single-span T1/E1/J1 card
 	0205  Wildcard TE205P/TE207P dual-span T1/E1/J1 card 5.0V
 	0210  Wildcard TE210P/TE212P dual-span T1/E1/J1 card 3.3V
@@ -33080,9 +33121,9 @@ d209  Ultimarc
 	1500  PAC Drive
 	15a2  SpinTrak
 	1601  AimTrak
-d4d4  Dy4 Systems Inc
+d4d4  Dy4 Systems
 	0601  PCI Mezzanine Card
-d531  I+ME ACTIA GmbH
+d531  I+ME ACTIA
 d84d  Exsys
 dada  Datapath Limited
 	0133  VisionRGB-X2
@@ -33101,7 +33142,7 @@ dada  Datapath Limited
 	1153  VisionDVI-DL
 	1154  VisionSDI2
 db10  Diablo Technologies
-dc93  Dawicontrol GmbH
+dc93  Dawicontrol
 dcba  Dynamic Engineering
 	0046  PCIe Altera Cyclone IV
 # VPX format Receiver Controller Board
@@ -33113,7 +33154,7 @@ dcba  Dynamic Engineering
 	0052  PCIeBiSerialDb37 BA22 LVDS IO
 # 8 port 16550 compatible UART, PMC format, RS-232 IO, RTS, CTS, DTR, DSR supported
 	0066  PMC-OctalUART-232
-dd01  Digital Devices GmbH
+dd01  Digital Devices
 	0003  Octopus DVB Adapter
 		dd01 0001  Octopus DVB adapter
 		dd01 0002  Octopus LE DVB adapter
@@ -33132,18 +33173,18 @@ dd01  Digital Devices GmbH
 		dd01 0041  Octopus CI Single
 	0201  Resi DVB-C Modulator
 		dd01 0001  Resi DVB-C Modulator
-dead  Indigita Corporation
-deaf  Middle Digital Inc.
+dead  Indigita
+deaf  Middle Digital
 	9050  PC Weasel Virtual VGA
 	9051  PC Weasel Serial Port
 	9052  PC Weasel Watchdog Timer
-# formerly SoftHard Technology Ltd.
+# formerly SoftHard Technology
 deda  XIMEA
 	4001  CB or MX camera
 	4021  MT camera
 e000  Winbond
 	e000  W89C940
-e159  Tiger Jet Network Inc. / ICP DAS
+e159  Tiger Jet Network / ICP DAS
 	0001  Tiger3XX Modem/ISDN interface
 		0059 0001  128k ISDN-S/T Adapter
 		0059 0003  128k ISDN-U Adapter
@@ -33153,7 +33194,7 @@ e159  Tiger Jet Network Inc. / ICP DAS
 		b1d9 0003  AX400P 4-port analog card
 	0002  Tiger100APC ISDN chipset
 e1c5  Elcus
-e4bf  EKF Elektronik GmbH
+e4bf  EKF Elektronik
 	0ccd  CCD-CALYPSO
 	0cd1  CD1-OPERA
 	0cd2  CD2-BEBOP
@@ -33164,7 +33205,7 @@ e4bf  EKF Elektronik GmbH
 	cc47  CCG-RUMBA
 	cc4d  CCM-BOOGIE
 e4e4  Xorcom
-e55e  Essence Technology, Inc.
+e55e  Essence Technology
 ea01  Eagle Technology
 	000a  PCI-773 Temperature Card
 	0032  PCI-730 & PC104P-30 Card
@@ -33181,7 +33222,7 @@ ea60  RME
 	9897  Digi32 Pro
 	9898  Digi32/8
 eabb  Aashima Technology B.V.
-eace  Endace Measurement Systems, Ltd
+eace  Endace Measurement Systems
 	3100  DAG 3.10 OC-3/OC-12
 	3200  DAG 3.2x OC-3/OC-12
 	320e  DAG 3.2E Fast Ethernet
@@ -33239,18 +33280,18 @@ eace  Endace Measurement Systems, Ltd
 	a140  DAG 10X4-P 10/40G Ethernet
 	a14e  DAG 10X4-S 10/40G Ethernet
 	eace  vDAG virtual device
-ec80  Belkin Corporation
+ec80  Belkin
 	ec00  F5D6000
-ecc0  Echo Digital Audio Corporation
-edd8  ARK Logic Inc
+ecc0  Echo Digital Audio
+edd8  ARK Logic
 	a091  1000PV [Stingray]
 	a099  2000PV [Stingray]
 	a0a1  2000MT
 	a0a9  2000MI
 # Found on M2N68-AM Motherboard
-f043  ASUSTeK Computer Inc. (Wrong ID)
-f05b  Foxconn International, Inc. (Wrong ID)
-f15e  SiFive, Inc.
+f043  ASUSTeK Computer (Wrong ID)
+f05b  Foxconn International (Wrong ID)
+f15e  SiFive
 f1d0  AJA Video
 	c0fe  Xena HS/HD-R
 	c0ff  Kona/Xena 2
@@ -33290,23 +33331,23 @@ f1d0  AJA Video
 	eb25  Corvid 44 12g
 	efac  Xena SD-MM/SD-22-MM
 	facd  Xena HD-MM
-f5f5  F5 Networks, Inc.
+f5f5  F5 Networks
 # Subsystem ID for PATA controller on nForce motherboard
-f849  ASRock Incorporation (Wrong ID)
+f849  ASRock (Wrong ID)
 fa57  Interagon AS
 	0001  PMC [Pattern Matching Chip]
-fab7  Fabric7 Systems, Inc.
-febd  Ultraview Corp.
+fab7  Fabric7 Systems
+febd  Ultraview
 # Nee Epigram
-feda  Broadcom Inc
+feda  Broadcom
 	a0fa  BCM4210 iLine10 HomePNA 2.0
 	a10e  BCM4230 iLine10 HomePNA 2.0
-fede  Fedetec Inc.
+fede  Fedetec
 	0003  TABIC PCI v3
-fffd  XenSource, Inc.
+fffd  XenSource
 	0101  PCI Event Channel Controller
 # Used in some old VMWare products before they got a real ID assigned
-fffe  VMWare Inc (temporary ID)
+fffe  VMWare (temporary ID)
 	0710  Virtual SVGA
 ffff  Illegal Vendor ID
 
