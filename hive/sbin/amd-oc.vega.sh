@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DEFAULT_CORE_STATE=7
+DEFAULT_CORE_STATE=4
 
 SLEEP=1
 
@@ -18,6 +18,7 @@ function vega10_oc() {
 
 	local MIN_CLOCK=700
 	local MIN_VOLT=750
+	local HARD_LIM=800
 
 	local PPT=/tmp/pp_table$cardno                            # PPT prepared
 	local CARDPPT=/sys/class/drm/card$cardno/device/pp_table  # PPT active
@@ -64,8 +65,9 @@ function vega10_oc() {
 	if [[ ! -z ${MVDD[$i]} &&  ${MVDD[$i]} -gt $MIN_VOLT ]];then
 		args+=" VddmemLookupTable/0/Vdd=${MVDD[$i]}"
 		#in aggr set HBM voltage with atitool too
-		mvdd=$(echo "scale=2; ${MVDD[$i]}/1000" | bc )
-		[[ $AGGRESSIVE == 1 ]] && atitool -v=silent -debug=0 -i=$card_idx -vddcr_hbm=$mvdd >/dev/null && echo "Setting HBM voltage to ${mvdd}V"
+		mvdd=$(echo "scale=3; ${MVDD[$i]}/1000" | bc )
+		#[[ $AGGRESSIVE == 1 ]] && atitool -v=silent -debug=0 -i=$card_idx -vddcr_hbm=$mvdd >/dev/null && echo "Setting HBM voltage to ${mvdd}V"
+		atitool -v=silent -debug=0 -i=$card_idx -vddcr_hbm=$mvdd >/dev/null && echo "Setting HBM voltage to ${mvdd}V"
 	fi
 	if [[ ! -z ${MEM_CLOCK[$i]} ]];then
 	clk=${MEM_CLOCK[$i]}
@@ -103,7 +105,8 @@ function vega10_oc() {
 	
 	# set core voltage and clock
 	if [[ ! -z $CORE_VDDC && ${CORE_VDDC[$i]} -gt $MIN_VOLT  ]]; then
-		for coreState in `eval echo {1..$maxCoreState}`; do
+		[[ ${CORE_VDDC[$i]} -gt $HARD_LIM ]] && minCoreState=1 || minCoreState=0
+		for coreState in `eval echo {$minCoreState..$maxCoreState}`; do
 			args+=" VddcLookupTable/$coreState/Vdd=${CORE_VDDC[$i]} "
 		done
 	fi
@@ -156,7 +159,7 @@ function vega10_oc() {
 		cp $PPT $CARDPPT && sleep $SLEEP
 	#	cat /sys/class/drm/card$cardno/device/pp_od_clk_voltage
 	#in aggr set Core/Soc voltage with atitool too
-	[[ $AGGRESSIVE == 1 &&  ${CORE_VDDC[$i]} -gt $MIN_VOLT  ]] && vdd=$(echo "scale=2; ${CORE_VDDC[$i]}/1000" | bc -l) &&
+	[[ ${CORE_VDDC[$i]} -gt $MIN_VOLT && ${CORE_VDDC[$i]} -lt $HARD_LIM ]] && vdd=$(echo "scale=2; ${CORE_VDDC[$i]}/1000" | bc -l) &&
 			 		atitool -v=silent -i=$card_idx -vddcr_soc=$vdd >/dev/null && 
 			 		echo "Setting Core/SoC voltage to ${vdd}V"
 #	fi
