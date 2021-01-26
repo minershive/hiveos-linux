@@ -1,0 +1,7 @@
+XMRig v6.8.0
+* Added DMI/SMBIOS reader: added information about memory modules on the miner startup and for online benchmark, added new HTTP API endpoint: GET /2/dmi, added new config option "dmi"
+* Improved MSR subsystem code quality
+* RandomX JIT x86: removed unnecessary instructions
+
+
+
