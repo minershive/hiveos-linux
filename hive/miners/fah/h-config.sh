@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 function miner_ver() {
-	local MINER_VER=$FINMINER_VER
-	[[ -z $MINER_VER ]] && MINER_VER=$MINER_LATEST_VER
-	echo $MINER_VER
+  local MINER_VER=$FAH_VER
+  [[ -z $MINER_VER ]] && MINER_VER=$MINER_LATEST_VER
+  echo $MINER_VER
 }
 
 function miner_config_echo() {
-	local MINER_VER=`miner_ver`
-	miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/config.xml"
+  local MINER_VER=`miner_ver`
+  miner_echo_config_file "/hive/miners/$MINER_NAME/$MINER_VER/config.xml"
 }
 
 function miner_config_gen() {
@@ -21,9 +21,14 @@ function miner_config_gen() {
 
   echo "<config>" > $MINER_CONFIG
   echo "  <!-- Client Control -->" >> $MINER_CONFIG
-  echo "  <fold-anon v='true'/>" >> $MINER_CONFIG
+  if [[ -z $FAH_PASS ]]; then
+    echo "  <fold-anon v='true'/>" >> $MINER_CONFIG
+  else
+    echo "  <fold-anon v='false'/>" >> $MINER_CONFIG
+  fi
   echo "  <core-dir v='/home/user/fah/' />" >> $MINER_CONFIG
   echo "  <data-directory v='/home/user/fah/' />" >> $MINER_CONFIG
+  echo "  <auto-conf v='false'/>" >> $MINER_CONFIG
 
   echo "  <!-- Folding Core -->" >> $MINER_CONFIG
   [[ ! -z $FAH_CPU_USAGE ]] && echo "  <cpu-usage v='$FAH_CPU_USAGE' />" >> $MINER_CONFIG
@@ -91,6 +96,4 @@ function miner_config_gen() {
   fi
 
   echo "</config>" >> $MINER_CONFIG
-
-
 }
