@@ -1,0 +1,7 @@
+Gminer v2.44
+* improved compatibility with Ethash pools (shardpool.io)
+* improved handling of device freezing
+* improved auto-tuning
+* added two kernels for Ethash, miner support 5 kernels for Nvidia GPUs, miner automatically select optimal kernel, also you can select specific kernel by `--oc`, see miner manual for details
+
+
