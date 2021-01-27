@@ -80,7 +80,7 @@
 # SpeedStream is Efficient Networks a Siemens Company
 02ac  SpeedStream
 	1012  1012 PCMCIA 10/100 Ethernet Card [RTL81xx]
-02e0  XFX Pine Group (Wrong ID)
+02e0  XFX (Wrong ID)
 0303  Hewlett-Packard Company (Wrong ID)
 0308  ZyXEL Communications (Wrong ID)
 0315  SK-Electronics
@@ -921,7 +921,7 @@
 	0017  PROTO-3 PCI Prototyping board
 	9100  INI-9100/9100W SCSI Host
 # nee ATI Technologies
-1002  Advanced Micro Devices [AMD/ATI]
+1002  Advanced Micro Devices, Inc. [AMD/ATI]
 	1304  Kaveri
 	1305  Kaveri
 	1306  Kaveri
@@ -6084,7 +6084,7 @@
 	3000  Samurai_0
 	3010  Samurai_1
 	3020  Samurai_IDE
-1043  ASUSTeK Computer
+1043  ASUS
 	0464  Radeon R9 270x GPU
 	0521  RX580 [RX 580 Dual O8G]
 	0675  ISDNLink P-IN100-ST-D
@@ -7005,7 +7005,7 @@
 1074  NexGen Microsystems
 	4e78  82c500/1
 1075  Advanced Integrations Research
-1076  Chaintech Computer
+1076  Chaintech
 1077  QLogic
 	1016  ISP10160 Single Channel Ultra3 SCSI Processor
 	1020  ISP1020 Fast-wide SCSI
@@ -9856,7 +9856,7 @@
 		103c 2a34  Pavilion a1677c
 		103c 30b5  Presario V3242AU
 		103c 30b7  Presario V6133CL
-		10de cb84  ASUSTeK Computer A8N-VM CSM Mainboard
+		10de cb84  ASUS A8N-VM CSM Mainboard
 		1462 7207  K8NGM2 series
 	026d  MCP51 USB Controller
 		103c 2a34  Pavilion a1677c
@@ -18443,7 +18443,7 @@
 1455  Logic Plus Plus
 1456  Advanced Hardware Architectures
 1457  Nuera Communications
-1458  Gigabyte Technology
+1458  Gigabyte
 1459  DOOIN Electronics
 145a  Escalate Networks
 145b  PRAIM SRL
@@ -18459,7 +18459,7 @@
 	a836  M115 DVB-T, PAL/SECAM/NTSC Tuner
 	e836  M115S Hybrid Analog/DVB PAL/SECAM/NTSC Tuner
 	f436  AVerTV Hybrid+FM
-1462  Micro-Star International [MSI]
+1462  MSI
 	aaf0  Radeon RX 580 Gaming X 8G
 1463  Fast
 1464  Interactive Circuits & Systems
@@ -18508,7 +18508,7 @@
 1489  KYE Systems
 148a  OPTO
 148b  INNOMEDIALOGIC
-148c  Tul / PowerColor
+148c  PowerColor
 148d  DIGICOM Systems
 	1003  HCF 56k Data/Fax Modem
 148e  OSI Plus
@@ -20007,13 +20007,13 @@
 1560  Terayon Communications Systems
 1561  Viewgraphics
 1562  Symbol Technologies
-1563  A-Trend Technology
+1563  A-Trend
 1564  Yamakatsu Electronics Industry
-1565  Biostar Microtech Int'l
+1565  Biostar
 1566  Ardent Technologies
 1567  Jungsoft
 1568  DDK Electronics
-1569  Palit Microsystems
+1569  Palit
 156a  Avtec Systems
 156b  2wire
 156c  Vidac Electronics
@@ -20679,7 +20679,7 @@
 	a000  MagicLAN SWL-2210P 802.11b [Intersil ISL3874]
 167e  ONNTO
 1681  Hercules
-1682  XFX Pine Group
+1682  XFX
 	5701  Radeon 5700 XT Thicc III Ultra
 	c580  Radeon RX 580
 1688  CastleNet Technology
@@ -23688,7 +23688,7 @@
 	5008  U-SNS8154P3 NVMe SSD
 	500d  OM3PDP3 NVMe SSD
 270b  Xantel
-270f  Chaintech Computer
+270f  Chaintech
 2711  AVID Technology
 2955  Connectix Virtual PC
 	6e61  OHCI USB 1.1 controller
@@ -23741,7 +23741,7 @@
 # multiport serial board
 	1141  PCI-485(422)
 	1142  PCI-CAN2
-3842  eVga.com.
+3842  EVGA
 38ef  4Links
 3d3d  3DLabs
 	0001  GLINT 300SX
@@ -24353,7 +24353,7 @@
 	0011  PWDOG2 [PCI-Watchdog 2]
 	0015  Clock77/PCI & Clock77/PCIe (DCF-77 receiver)
 # Wrong ID used in subsystem ID of AsusTek PCI-USB2 PCI card.
-807d  Asustek Computer
+807d  ASUS
 8086  Intel
 	0007  82379AB
 	0008  Extended Express System Support Controller
@@ -33289,7 +33289,7 @@ edd8  ARK Logic
 	a0a1  2000MT
 	a0a9  2000MI
 # Found on M2N68-AM Motherboard
-f043  ASUSTeK Computer (Wrong ID)
+f043  ASUS (Wrong ID)
 f05b  Foxconn International (Wrong ID)
 f15e  SiFive
 f1d0  AJA Video
