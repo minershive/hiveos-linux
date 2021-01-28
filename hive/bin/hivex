@@ -1,34 +1,7 @@
 #!/bin/bash
 
 
-
-source /etc/environment
-[[ -f $RIG_CONF ]] && source $RIG_CONF
-
-
-# Supposed to be run with service
-function x_service() {
-	if [[ $X_DISABLED == 1 || $MAINTENANCE == 2 ]]; then
-		echo "X Server is disabled, exiting"
-		return 0
-	fi
-
-	# don't know why by this fixes amdgpu 17.40 bug
-	# xf86OpenConsole: Switching VT failed
-	# maybe time needed to allocate VTs...
-	#sleep 2
-
-	export PATH="./:/hive/bin:/hive/sbin:$PATH"
-	rm /run/hive/NV_OFF > /dev/null 2>&1
-
-	sudo -i xinit /hive/etc/xinitrc
-	exitcode=$?
-
-	echo "xinit exited (exitcode=$exitcode)"
-
-	systemctl restart hive-console
-	return $exitcode
-}
+DEF_X_VT=7
 
 
 function x_ready() {
@@ -60,18 +33,39 @@ function x_start() {
 }
 
 
+VT=$(fgconsole)
+[[ $? -ne 0 || $VT -eq $DEF_X_VT ]] && VT=1
+
+
 case "$1" in
-	service)
-		x_service
-	;;
 	start)
 		x_start
 		x_ready
+	;;
+	startbg)
+		x_start
+		x_ready && chvt $VT
+	;;
+	bg)
+		systemctl status hivex >/dev/null && chvt $VT
+	;;
+	fg)
+		systemctl status hivex >/dev/null && chvt $DEF_X_VT
 	;;
 	stop)
 		x_stop
 	;;
 	restart)
+		if pstree -As $$ | grep -q "xinit"; then
+			nohup bash -c 'hivex restartbg' > /tmp/nohup.log 2>&1 &
+			sleep 1
+		else
+			x_stop
+			x_start
+			x_ready
+		fi
+	;;
+	restartbg)
 		x_stop
 		x_start
 		x_ready

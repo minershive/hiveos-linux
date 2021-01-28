@@ -1,8 +1,22 @@
 #!/usr/bin/env bash
+
 #This is run every time X is starting
 #Can be symlinked to users .xinitrc
 #Exec bit is important to run script in bash, not sh
 
+source /etc/environment
+export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+
+[[ -f $RIG_CONF ]] && source $RIG_CONF
+
+if [[ $X_DISABLED == 1 || $MAINTENANCE == 2 ]]; then
+	echo "X Server is disabled, exiting"
+	return 0
+fi
+
+export PATH="./:/hive/bin:/hive/sbin:$PATH"
+
+rm /run/hive/NV_OFF > /dev/null 2>&1
 
 #if no connected monitor set resolution for x11vnc
 re='\<connected\>' #find word
@@ -13,8 +27,16 @@ else
     echo "XRANDR: Connected monitor detected will use native resolution"
 fi
 
+# enable kill X server with keyboard
+setxkbmap -option "terminate:ctrl_alt_bksp"
 
-#Startx VNC server
+if [[ $X_NOGUI == 1 || "$(grep '/ ' /proc/mounts | awk '{print $1}')" == "tmpfs" ]]; then
+	/usr/bin/touch /run/hive/xready
+	sleep infinity
+	exit
+fi
+
+# Startx VNC server
 if [[ -e $VNC_PASSWD ]]; then
 	cp $VNC_PASSWD /tmp/vnc-password.txt
 	dos2unix-safe /tmp/vnc-password.txt
@@ -25,39 +47,23 @@ fi
 #-nopw
 #> /var/log/x11vnc.log 2>&1 &
 
-
-#enable kill X server with keyboard
-setxkbmap -option "terminate:ctrl_alt_bksp"
-
-#display no sleep
+# display no sleep
 #setterm -blank 0
 #setterm -powersave off
 #xset -dpms
 
-
-#taskbar
+# taskbar
 tint2 &
 
-#wallpaper
+# wallpaper
 (sleep 2 && feh --bg-fill --no-fehbg /hive/share/images/wallpaper.jpg) &
-
 
 termcmd=""
 
-
-## NVIDIA OC is there are GPUs
-#GPU_COUNT_NVIDIA=`gpu-detect NVIDIA`
-#[[ $GPU_COUNT_NVIDIA -gt 0 && -e $NVIDIA_OC_CONF ]] &&
-#	echo "> Nvidia OC" &&
-#   nvidia-oc > /var/log/nvidia-oc.log 2>&1 &&
-#   termcmd+="cat /var/log/nvidia-oc.log;"
-#   termcmd+=" nvidia-oc;"
-
-termcmd+=" /usr/bin/touch /run/hive/xready;"
-
 roxargs="--replace --maximise"
 (lsb_release -a 2>&1 | grep -q '16\.04') && roxargs+=' --disable-sm'
-roxterm $roxargs -e bash -c "$termcmd motd; firstrun; ([ -e /home/user/xinit.user.sh ] && bash /home/user/xinit.user.sh); bash" &
+roxterm $roxargs -e bash -c "$termcmd motd boot; firstrun; ([ -e /home/user/xinit.user.sh ] && bash /home/user/xinit.user.sh); bash" &
 
+/usr/bin/touch /run/hive/xready
 
 openbox-session

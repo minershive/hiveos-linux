@@ -6,9 +6,10 @@ Description=Hive X Server
 [Service]
 Type=simple
 ExecStartPre=/bin/rm -f /run/hive/xready
-ExecStart=/hive/bin/hivex service
+ExecStart=/usr/bin/xinit /hive/etc/xinitrc
 ExecStopPost=/bin/rm -f /run/hive/xready
-ExecStopPost=/bin/systemctl restart hive-console
+ExecStopPost=/usr/bin/killall -q Xorg
+KillMode=process
 
 #StandardOutput=syslog
 #StandardError=syslog
@@ -16,7 +17,7 @@ ExecStopPost=/bin/systemctl restart hive-console
 
 #StandardOutput=tty
 #StandardInput=tty
-#TTYPath=/dev/tty1
+TTYPath=/dev/tty7
 
 
 [Install]

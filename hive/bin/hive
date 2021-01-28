@@ -6,6 +6,8 @@
 #  \/  \/ \___| \/ \_/\___|\__, |\__,_|_|_|  \___|  \/    \/\___/|_|  \___| \/    \/_|_| |_|\___|_|  \__,_|_|___/
 #                             |_|
 
+# do not allow to run it interactively
+[[ -t 0 ]] && exit 0
 
 source /etc/environment
 export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
@@ -224,7 +226,6 @@ else
 		modprobe nvidia_drm modeset=1
 	fi
 	pgrep --full nvidia-persistenced > /dev/null || nvidia-persistenced --persistence-mode
-	rm /run/hive/NV_OFF > /dev/null 2>&1 # allow to run Nvidia tools
 
 	if [[ $GPU_COUNT_AMD -gt 0 ]]; then
 		rm -f /var/log/amd-oc.log
@@ -262,6 +263,9 @@ fi
 
 
 wd start
+
+# allow to run Nvidia tools
+rm /run/hive/NV_OFF > /dev/null 2>&1 
 
 gpu-detect listjson > $GPU_DETECT_JSON
 
@@ -390,9 +394,7 @@ fi
 
 echo2 "> System start complete"
 
-
-# restart console only if X not running
-hivex status >/dev/null || systemctl restart hive-console
-
+# start console
+systemctl restart hive-console
 
 exit 0

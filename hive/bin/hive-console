@@ -20,4 +20,4 @@ function console_restart() {
 # set trap
 #trap 'console_restart' EXIT
 
-sudo -i bash -c "motd; firstrun; bash"
+sudo -i bash -c "motd boot; firstrun; bash"
