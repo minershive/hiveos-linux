@@ -37,7 +37,7 @@ fi
 
 if [[ $fastmode -eq 0 ]]; then
 	# wait a bit if sreboot is already running
-	if pgrep sreboot >/dev/null; then 
+	if pgrep sreboot >/dev/null; then
 		echo "> Reboot is already requested"
 		sleep 3
 	else
@@ -54,7 +54,7 @@ if [[ $fastmode -eq 0 ]]; then
 	fi
 	killall apt apt-get dpkg 2>/dev/null
 
-   	# stop hw watchdogs pings
+	# stop hw watchdogs pings
 	killall -s 9 ${WATCHDOGS[@]} 2>/dev/null
 fi
 
@@ -70,16 +70,17 @@ fi
 
 echo 1 > /proc/sys/kernel/sysrq # enable
 
-echo "> Flushing disks"
+#echo "> Flushing disks"
 echo s > /proc/sysrq-trigger # sync
 # wait for sync to really complete. it takes ages on slow drives
-sync 
+#sync
 
 echo "> Unmounting disks"
 echo u > /proc/sysrq-trigger # umount
+sleep 1
 # use it instead of just sleeping. it also takes some time on slow drives
-umount -f /hive-config && mount -n -o ro /hive-config
-mount -f -o remount,ro /
+[[ -d /hive-config && -w /hive-config ]] && umount -f /hive-config && mount -n -o ro /hive-config
+[[ -w / ]] && mount -f -o remount,ro /
 
 
 if [[ $1 == "shutdown" || $1 == "wakealarm" || $POWERCYCLE -ne 0 ]]; then
