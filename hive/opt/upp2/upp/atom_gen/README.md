@@ -66,7 +66,7 @@
        linux/drivers/gpu/drm/amd/pm/inc/smu_v11_0_pptable.h > smu_v11_0_navi10.py
 
 
-##  smu_v11_0_navi20.py (Navi20/21)
+##  smu_v11_0_navi20.py (Navi21/22/23)
 
     clang2py -k 'mst' \
       --clang-args="--include stdint.h \

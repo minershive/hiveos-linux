@@ -23,6 +23,11 @@ primitives = [
     ctypes.c_uint32, ctypes.c_float
 ]
 
+# Defined as uint in kernel, but in reality these are float
+float_fields = ['a', 'b', 'c', 'm',
+                'VcBtcPsmA', 'VcBtcPsmB', 'VcBtcVminA', 'VcBtcVminB']
+float_arrays = ['Fset', 'Vdroop']
+
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -45,7 +50,7 @@ def _read_binary_file(filename):
     return bytearray(raw_data)
 
 
-def _write_pp_tables_file(filename, raw_data):
+def _write_binary_file(filename, raw_data):
     try:
         f = open(filename, 'wb')
         f.write(raw_data)
@@ -66,9 +71,24 @@ def _bytes2hex(bytes):
     return codecs.encode(bytes, 'hex_codec').decode()
 
 
-def extract_rom(vrom_file, out_pp_file):
+def _checksum(rom_bytes):
+    checksum = 0
+    checksum_bytes_length = rom_bytes[0x2] * 512
+    for byte in rom_bytes[:checksum_bytes_length]:
+        checksum += byte
+    checksum = checksum & 0xff
+
+    return checksum
+
+
+def _rom_info(vrom_file):
     """
-    Extracts PowerPlay table from VROM image
+    Displays the VROM image info and returns PowrPlay table offest and size
+
+    Returns:
+    pp_offset, pp_lenght (touple): pp_offset (int): pp table offset in vROM
+                                   pp_lenght (int): pp table lenght
+
     """
 
     rom_bytes = _read_binary_file(vrom_file)
@@ -79,7 +99,7 @@ def extract_rom(vrom_file, out_pp_file):
     if rom_magic_str != '55AA':
         err_msg = 'Invalid Video ROM magic: {}, must be 55AA'
         print(err_msg.format(rom_magic_str))
-        return None
+        return None, None
 
     # Fetching ATOM 'Common Table'
     rom_tbl_offset_bytes = rom_bytes[rom_tbl_ptr:rom_tbl_ptr+2]
@@ -99,7 +119,7 @@ def extract_rom(vrom_file, out_pp_file):
     else:
         err_msg = 'Can not handle ATOM Common Table revision {}'
         eprint(err_msg.format(rom_tbl_rev))
-        return None
+        return None, None
 
     print('Found ATOM Common Table rev. {}'.format(rom_tbl_rev))
 
@@ -107,21 +127,28 @@ def extract_rom(vrom_file, out_pp_file):
     if rom_signature != 'ATOM':
         err_msg = 'Invalid Video ROM signature: "{}", must match "ATOM".'
         eprint(err_msg.format(rom_signature))
-        return None
+        return None, None
 
     # Dump some VROM info
     rom_partn_offset_bytes = rom_bytes[part_num_ptr:part_num_ptr+2]
     rom_partn_offset = struct.unpack('<H', rom_partn_offset_bytes)[0]
     boot_msg_offset = rom_tbl.usBIOS_BootupMessageOffset
     cfg_file_offset = rom_tbl.usConfigFilenameOffset
+    crc_blck_offset = rom_tbl.usCRC_BlockOffset
 
     part_info = rom_bytes[rom_partn_offset:boot_msg_offset-1].split(b'\x00')
-    boot_msgs = rom_bytes[boot_msg_offset:cfg_file_offset-1].split(b'\x00')
+    boot_msgs = rom_bytes[boot_msg_offset:rom_tbl_offset-1].split(b'\x00')
+    chksm = rom_bytes[0x21:0x22]
+    crc32 = rom_bytes[crc_blck_offset:crc_blck_offset+4]
 
     print('Video ROM information:\n')
     for msg in part_info + boot_msgs:
-        print('  ' + msg.decode().strip('\r\n'))
+        if msg:
+            print('  ' + msg.decode().strip('\r\n'))
     print('')
+    print('CHKSUM: 0x{} (off by {}), CRC: 0x{}'.format(chksm.hex().upper(),
+                                                       _checksum(rom_bytes),
+                                                       crc32.hex().upper()))
 
     # Fetching 'Master Data Table'
     master_dt_tbl_ofst = rom_tbl.usMasterDataTableOffset
@@ -142,10 +169,47 @@ def extract_rom(vrom_file, out_pp_file):
     print(msg.format(pp_tbl_len, pp_tbl_header.ucTableFormatRevision,
                      pp_tbl_header.ucTableContentRevision, pp_tbl_offset))
 
+    return pp_tbl_offset, pp_tbl_len
+
+
+def extract_rom(vrom_file, out_pp_file):
+    """
+    Extracts PowerPlay table from VROM image
+    """
+
+    pp_tbl_offset, pp_tbl_len = _rom_info(vrom_file)
+    if not pp_tbl_offset:
+        return None
+    rom_bytes = _read_binary_file(vrom_file)
     pp_tbl = rom_bytes[pp_tbl_offset:pp_tbl_offset+pp_tbl_len]
 
     print('Saving PowerPlay table to {}'.format(out_pp_file))
-    _write_pp_tables_file(out_pp_file, pp_tbl)
+    _write_binary_file(out_pp_file, pp_tbl)
+
+
+def inject_pp_table(input_rom, output_rom, pp_bin_file):
+    """
+    Injects PowerPlay table into VROM image
+    """
+
+    pp_tbl_offset, pp_tbl_len = _rom_info(input_rom)
+    if not pp_tbl_offset:
+        return None
+    pp_bytes = _read_binary_file(pp_bin_file)
+    if len(pp_bytes) != pp_tbl_len:
+        msg = 'ERROR: The lenght of {} PowerPlay table must match the ' + \
+              'length of PowerPlay table in {} vROM image ({} bytes)'
+        print(msg.format(pp_bin_file, input_rom, pp_tbl_len))
+        return None
+    rom_bytes = _read_binary_file(input_rom)
+    print('Replacing PowerPlay data...')
+    rom_bytes[pp_tbl_offset:pp_tbl_offset+pp_tbl_len] = pp_bytes
+    new_checksum = _checksum(rom_bytes)
+    print('Shifting checksum by {}...'.format(new_checksum))
+    rom_bytes[0x21] = (rom_bytes[0x21] - new_checksum) & 0xff
+    _write_binary_file(output_rom, rom_bytes)
+
+    return True
 
 
 def validate_pp(header, length, rawdump):
@@ -205,7 +269,7 @@ def _get_bigcap_indices(string):
 
 def _print_raw_value(offset, symbol, rawbytes, name, value):
     hexval = _bytes2hex(rawbytes)
-    raw_msg = ' 0x{:04x} ({:04n}) {} {:>8} {:32s}: {:n}'
+    raw_msg = ' 0x{:04x} ({:04n}) {} {:>8} {:32s}:{: n}'
     # Polaris variable names have small-caps prefixes that we don't want
     big_caps = _get_bigcap_indices(name)
     if big_caps:
@@ -428,12 +492,15 @@ def build_data_tree(data, raw=None, decoded=None, parent_name='/',
         if data._type_ in primitives:
             d_symbol = data._type_._type_
             for d_value in data:
+                d_bytes = d_value.to_bytes(d_size, 'little')
+                if parent_name in float_arrays:
+                    d_symbol = 'f'
+                    d_value = struct.unpack(d_symbol, d_bytes)[0]
                 child_key = index
                 decoded[child_key] = {'value':  d_value,
                                       'offset': d_offset,
                                       'type':   d_symbol}
                 if rawdump:
-                    d_bytes = d_value.to_bytes(d_size, 'little')
                     _print_raw_value(d_offset, d_symbol, d_bytes,
                                      parent_name, d_value)
                 d_offset += d_size
@@ -474,8 +541,7 @@ def build_data_tree(data, raw=None, decoded=None, parent_name='/',
                 d_symbol = ctyp_cls._type_
                 d_size = d_meta.size
                 d_bytes = d_value.to_bytes(d_size, 'little')
-                # Defined as uint in kernel, but in reality these are float
-                if name in ['a', 'b', 'c', 'm'] and ctyp_cls == ctypes.c_uint:
+                if ctyp_cls == ctypes.c_uint and name in float_fields:
                     d_symbol = 'f'
                     d_value = struct.unpack(d_symbol, d_bytes)[0]
                 if rawdump:
@@ -558,8 +624,12 @@ def select_pp_struct(rawbytes, rawdump=False, debug=False):
         gpugen = 'Navi 10 or 14'
         from upp.atom_gen import smu_v11_0_navi10 as pp_struct
         ctypes_strct = pp_struct.struct_smu_11_0_powerplay_table
-    elif pp_ver == (15, 0):     # Navi 20, 21
-        gpugen = 'Navi 20 or 21'
+    elif pp_ver == (15, 0):     # Navi 21
+        gpugen = 'Navi 21'
+        from upp.atom_gen import smu_v11_0_7_navi20 as pp_struct
+        ctypes_strct = pp_struct.struct_smu_11_0_7_powerplay_table
+    elif pp_ver == (16, 0):     # Navi 22, 23?
+        gpugen = 'Navi 22/23'
         from upp.atom_gen import smu_v11_0_7_navi20 as pp_struct
         ctypes_strct = pp_struct.struct_smu_11_0_7_powerplay_table
     elif pp_ver is not None:
@@ -596,8 +666,10 @@ def dump_pp_table(pp_bin_file, data_dict=None, indent=0, parent='',
         if data_dict[member] is None:
             print('{}{}: UNUSED'.format(' '*indent, member))
         elif 'value' in data_dict[member]:
-            print('{}{}: {}'.format(' '*indent, name,
-                                    data_dict[member]['value']))
+            msg = '{}{}: {}'
+            if data_dict[member]['type'] == 'f':
+                msg = '{}{}:{: n}'
+            print(msg.format(' '*indent, name, data_dict[member]['value']))
         else:
             print('{}{}:'.format(' '*indent, name))
             dump_pp_table(None, data_dict[member], indent+2, parent=member)
@@ -695,8 +767,6 @@ def set_value(pp_bin_file, pp_tbl_bytes, var_path, new_value,
         off = current_data['offset']
         d_type = current_data['type']
         d_size = struct.calcsize(d_type)
-        #msg = 'Changing {} from {} to {} at 0x{:03x}'
-        #print(msg.format(var_pth_str, curr_val, new_value, off))
         if curr_val != new_value:
             msg = 'Changing {} from {} to {}'
             print(msg.format(var_pth_str, curr_val, new_value))
@@ -714,4 +784,4 @@ def set_value(pp_bin_file, pp_tbl_bytes, var_path, new_value,
                              var_pth_str, new_value, ''))
     pp_tbl_bytes[off:off+d_size] = bytes_value
     if write:
-        _write_pp_tables_file(pp_bin_file, pp_tbl_bytes)
+        _write_binary_file(pp_bin_file, pp_tbl_bytes)

@@ -3,7 +3,7 @@
 # To run without install relative imports needs to match the module ones, which
 # is true when in 'src' directory, then: python3 -m upp.upp --help
 
-VERSION="0.0.7-4"
+VERSION="0.0.9-1"
 
 import click
 import tempfile
@@ -76,7 +76,7 @@ def _get_pp_data_from_registry(reg_file_path):
         eprint(e)
         return None
     print(('Successfully loaded' + msg).format(reg_file_path, reg_path))
-    decode._write_pp_tables_file(tmp_pp_file.name, registry_data)
+    decode._write_binary_file(tmp_pp_file.name, registry_data)
     tmp_pp_file.close()
 
     return tmp_pp_file.name
@@ -103,7 +103,7 @@ def _write_pp_to_reg_file(filename, data, debug=False):
         reg_pp_data = REG_HEADER + formatted_reg_string + 2 * '\r\n'
         if debug:
             print(reg_pp_data)
-        decode._write_pp_tables_file(filename, reg_pp_data.encode('utf-16'))
+        decode._write_binary_file(filename, reg_pp_data.encode('utf-16'))
         print('Written {} Soft PowerPlay bytes to {}'.format(len(data),
                                                              filename))
     else:
@@ -155,8 +155,8 @@ def cli(ctx, debug, pp_file, from_registry, ignore):
       - Polaris
       - Vega
       - Radeon VII
-      - Navi 10
-      - Navi 14
+      - Navi 10, 14
+      - Navi 21, 22, 23
 
     Note: iGPUs found in many recent AMD APUs are using completely different
     PowerPlay control methods, this tool does not support them.
@@ -174,7 +174,7 @@ def cli(ctx, debug, pp_file, from_registry, ignore):
 
 @click.command(short_help='Show UPP version.')
 def version():
-    """Show UPP version."""
+    """Shows UPP version."""
     version = VERSION #pkg_resources.require("upp")[0].version
     click.echo(version)
 
@@ -184,7 +184,7 @@ def version():
               default='False')
 @click.pass_context
 def dump(ctx, raw):
-    """Dump all PowerPlay data to console
+    """Dumps all PowerPlay data to console
 
     De-serializes PowerPlay binary data into a human-readable text output.
     For example:
@@ -231,8 +231,44 @@ def extract(ctx, video_rom):
         pp_file = video_rom + '.pp_table'
     msg = "Extracting PP table from '{}' ROM image..."
     print(msg.format(video_rom))
-    decode.extract_rom(video_rom, pp_file)
-    print('Done')
+    if decode.extract_rom(video_rom, pp_file):
+        print('Done')
+
+    return 0
+
+
+@click.command(short_help='Inject PowerPlay table into Video BIOS ROM image.')
+@click.option('-i', '--input-rom', required=True, metavar='<filename>',
+              help='Input Video ROM binary image file.')
+@click.option('-o', '--output-rom', required=False, metavar='<filename>',
+              help='Output Video ROM binary image file.')
+@click.pass_context
+def inject(ctx, input_rom, output_rom):
+    """Injects PowerPlay data from file into VBIOS ROM image
+
+    The input video ROM binary must be specified with -i/--input-rom
+    parameter, and the output ROM can be specified with an optional
+    -o/--output-rom parameter.
+
+    \b
+        upp -p modded.pp_table inject -i original.rom -o modded.rom
+
+    The output filename defaults to <input ROM file name>.modded.
+
+    WARNING: Modified vROM image is probalby not going to work if flashed as
+    is to your card, due to ROM signature checks on recent Radeon cards.
+    Authors of this tool are in no way responsible for any damage that may
+    happen to your expansive graphics card if you choose to flash the modified
+    video ROM, you are doing it entierly on your own risk.
+    """
+    pp_file = ctx.obj['PPBINARY']
+    if not output_rom:
+        output_rom = input_rom + '.modded'
+    msg = "Injecting {} PP table into {} ROM image..."
+    print(msg.format(pp_file, input_rom))
+    if decode.inject_pp_table(input_rom, output_rom, pp_file):
+        print('Saved modified vROM image as {}.'.format(output_rom))
+
     return 0
 
 
@@ -265,7 +301,7 @@ def get(ctx, variable_path_set):
         var_path = _normalize_var_path(set_pair_str)
         res = decode.get_value(pp_file, var_path, data, debug=debug)
         if res:
-            print(res['value'])
+            print('{:n}'.format(res['value']))
         else:
             eprint('ERROR: Incorrect variable path:', set_pair_str)
             if ignore:
@@ -332,8 +368,8 @@ def set(ctx, variable_path_set, to_registry, write):
         decode.set_value(pp_file, pp_bytes, set_list[:-1], set_list[-1],
                          data_dict=data, write=False, debug=debug)
     if write:
-        #print("Commiting changes to '{}'.".format(pp_file))
-        decode._write_pp_tables_file(pp_file, pp_bytes)
+        #eprint("Commiting changes to '{}'.".format(pp_file))
+        decode._write_binary_file(pp_file, pp_bytes)
     else:
         eprint("WARNING: Nothing was written to '{}'.".format(pp_file),
               "Add --write option to commit the changes for real!")
@@ -344,6 +380,7 @@ def set(ctx, variable_path_set, to_registry, write):
 
 
 cli.add_command(extract)
+cli.add_command(inject)
 cli.add_command(dump)
 cli.add_command(get)
 cli.add_command(set)

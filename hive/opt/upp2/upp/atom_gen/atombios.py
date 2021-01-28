@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# TARGET arch is: ['--include', 'stdint.h', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '--include', 'linux/drivers/gpu/drm/amd/include/atom-types.h', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+# TARGET arch is: ['--include', 'stdint.h', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '--include', 'linux/drivers/gpu/drm/amd/include/atom-types.h', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
 # WORD_SIZE is: 8
 # POINTER_SIZE is: 8
 # LONGDOUBLE_SIZE is: 16
@@ -255,19 +255,19 @@ class struct__COMPUTE_MEMORY_ENGINE_PLL_PARAMETERS_V4(ctypes.Structure):
 class struct__COMPUTE_MEMORY_ENGINE_PLL_PARAMETERS_V5(ctypes.Structure):
     pass
 
-class union__COMPUTE_MEMORY_ENGINE_PLL_PARAMETERS_V5_1(ctypes.Union):
-    _pack_ = True # source:False
-    _fields_ = [
-    ('ucCntlFlag', ctypes.c_ubyte),
-    ('ucInputFlag', ctypes.c_ubyte),
-     ]
-
 class union__COMPUTE_MEMORY_ENGINE_PLL_PARAMETERS_V5_0(ctypes.Union):
     _pack_ = True # source:False
     _fields_ = [
     ('ulClock', ATOM_COMPUTE_CLOCK_FREQ),
     ('ulClockParams', ctypes.c_uint32),
     ('ulFbDiv', ATOM_S_MPLL_FB_DIVIDER),
+     ]
+
+class union__COMPUTE_MEMORY_ENGINE_PLL_PARAMETERS_V5_1(ctypes.Union):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('ucCntlFlag', ctypes.c_ubyte),
+    ('ucInputFlag', ctypes.c_ubyte),
      ]
 
 struct__COMPUTE_MEMORY_ENGINE_PLL_PARAMETERS_V5._pack_ = True # source:False
@@ -328,18 +328,18 @@ class struct__COMPUTE_GPU_CLOCK_OUTPUT_PARAMETERS_V1_7(ctypes.Structure):
 class struct__COMPUTE_MEMORY_CLOCK_PARAM_PARAMETERS_V2_1(ctypes.Structure):
     pass
 
-class union__COMPUTE_MEMORY_CLOCK_PARAM_PARAMETERS_V2_1_0(ctypes.Union):
-    _pack_ = True # source:False
-    _fields_ = [
-    ('ulClock', ctypes.c_uint32),
-    ('ulFbDiv', ATOM_S_MPLL_FB_DIVIDER),
-     ]
-
 class union__COMPUTE_MEMORY_CLOCK_PARAM_PARAMETERS_V2_1_1(ctypes.Union):
     _pack_ = True # source:False
     _fields_ = [
     ('ucInputFlag', ctypes.c_ubyte),
     ('ucPllCntlFlag', ctypes.c_ubyte),
+     ]
+
+class union__COMPUTE_MEMORY_CLOCK_PARAM_PARAMETERS_V2_1_0(ctypes.Union):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('ulClock', ctypes.c_uint32),
+    ('ulFbDiv', ATOM_S_MPLL_FB_DIVIDER),
      ]
 
 struct__COMPUTE_MEMORY_CLOCK_PARAM_PARAMETERS_V2_1._pack_ = True # source:False
@@ -580,7 +580,6 @@ class struct__ATOM_DIG_ENCODER_CONFIG_V3(ctypes.Structure):
 class struct__DIG_ENCODER_CONTROL_PARAMETERS_V3(ctypes.Structure):
     pass
 
-ATOM_DIG_ENCODER_CONFIG_V3 = struct__ATOM_DIG_ENCODER_CONFIG_V3
 class union__DIG_ENCODER_CONTROL_PARAMETERS_V3_0(ctypes.Union):
     _pack_ = True # source:False
     _fields_ = [
@@ -588,6 +587,7 @@ class union__DIG_ENCODER_CONTROL_PARAMETERS_V3_0(ctypes.Union):
     ('ucPanelMode', ctypes.c_ubyte),
      ]
 
+ATOM_DIG_ENCODER_CONFIG_V3 = struct__ATOM_DIG_ENCODER_CONFIG_V3
 struct__DIG_ENCODER_CONTROL_PARAMETERS_V3._pack_ = True # source:False
 struct__DIG_ENCODER_CONTROL_PARAMETERS_V3._fields_ = [
     ('usPixelClock', ctypes.c_uint16),
@@ -759,6 +759,7 @@ class struct__ATOM_DIG_TRANSMITTER_CONFIG_V3(ctypes.Structure):
 class struct__DIG_TRANSMITTER_CONTROL_PARAMETERS_V3(ctypes.Structure):
     pass
 
+ATOM_DIG_TRANSMITTER_CONFIG_V3 = struct__ATOM_DIG_TRANSMITTER_CONFIG_V3
 class union__DIG_TRANSMITTER_CONTROL_PARAMETERS_V3_0(ctypes.Union):
     _pack_ = True # source:False
     _fields_ = [
@@ -767,7 +768,6 @@ class union__DIG_TRANSMITTER_CONTROL_PARAMETERS_V3_0(ctypes.Union):
     ('asMode', ATOM_DP_VS_MODE),
      ]
 
-ATOM_DIG_TRANSMITTER_CONFIG_V3 = struct__ATOM_DIG_TRANSMITTER_CONFIG_V3
 struct__DIG_TRANSMITTER_CONTROL_PARAMETERS_V3._pack_ = True # source:False
 struct__DIG_TRANSMITTER_CONTROL_PARAMETERS_V3._fields_ = [
     ('_0', union__DIG_TRANSMITTER_CONTROL_PARAMETERS_V3_0),
@@ -817,6 +817,16 @@ class struct__ATOM_DIG_TRANSMITTER_CONFIG_V4(ctypes.Structure):
 class struct__DIG_TRANSMITTER_CONTROL_PARAMETERS_V4(ctypes.Structure):
     pass
 
+class union__DIG_TRANSMITTER_CONTROL_PARAMETERS_V4_1(ctypes.Union):
+    pass
+
+ATOM_DIG_TRANSMITTER_CONFIG_V4 = struct__ATOM_DIG_TRANSMITTER_CONFIG_V4
+union__DIG_TRANSMITTER_CONTROL_PARAMETERS_V4_1._pack_ = True # source:False
+union__DIG_TRANSMITTER_CONTROL_PARAMETERS_V4_1._fields_ = [
+    ('acConfig', ATOM_DIG_TRANSMITTER_CONFIG_V4),
+    ('ucConfig', ctypes.c_ubyte),
+]
+
 class union__DIG_TRANSMITTER_CONTROL_PARAMETERS_V4_0(ctypes.Union):
     pass
 
@@ -826,16 +836,6 @@ union__DIG_TRANSMITTER_CONTROL_PARAMETERS_V4_0._fields_ = [
     ('usPixelClock', ctypes.c_uint16),
     ('usInitInfo', ctypes.c_uint16),
     ('asMode', ATOM_DP_VS_MODE_V4),
-]
-
-class union__DIG_TRANSMITTER_CONTROL_PARAMETERS_V4_1(ctypes.Union):
-    pass
-
-ATOM_DIG_TRANSMITTER_CONFIG_V4 = struct__ATOM_DIG_TRANSMITTER_CONFIG_V4
-union__DIG_TRANSMITTER_CONTROL_PARAMETERS_V4_1._pack_ = True # source:False
-union__DIG_TRANSMITTER_CONTROL_PARAMETERS_V4_1._fields_ = [
-    ('acConfig', ATOM_DIG_TRANSMITTER_CONFIG_V4),
-    ('ucConfig', ctypes.c_ubyte),
 ]
 
 struct__DIG_TRANSMITTER_CONTROL_PARAMETERS_V4._pack_ = True # source:False
@@ -3000,8 +3000,8 @@ class struct__ATOM_VOLTAGE_CONTROL(ctypes.Structure):
 class struct__ATOM_VOLTAGE_OBJECT(ctypes.Structure):
     pass
 
-ATOM_VOLTAGE_CONTROL = struct__ATOM_VOLTAGE_CONTROL
 ATOM_VOLTAGE_FORMULA = struct__ATOM_VOLTAGE_FORMULA
+ATOM_VOLTAGE_CONTROL = struct__ATOM_VOLTAGE_CONTROL
 struct__ATOM_VOLTAGE_OBJECT._pack_ = True # source:False
 struct__ATOM_VOLTAGE_OBJECT._fields_ = [
     ('ucVoltageType', ctypes.c_ubyte),
@@ -3146,11 +3146,11 @@ class struct__ATOM_VOLTAGE_OBJECT_INFO_V3_1(ctypes.Structure):
 class union__ATOM_VOLTAGE_OBJECT_V3(ctypes.Union):
     pass
 
-ATOM_I2C_VOLTAGE_OBJECT_V3 = struct__ATOM_I2C_VOLTAGE_OBJECT_V3
-ATOM_EVV_VOLTAGE_OBJECT_V3 = struct__ATOM_EVV_VOLTAGE_OBJECT_V3
 ATOM_LEAKAGE_VOLTAGE_OBJECT_V3 = struct__ATOM_LEAKAGE_VOLTAGE_OBJECT_V3
-ATOM_GPIO_VOLTAGE_OBJECT_V3 = struct__ATOM_GPIO_VOLTAGE_OBJECT_V3
+ATOM_I2C_VOLTAGE_OBJECT_V3 = struct__ATOM_I2C_VOLTAGE_OBJECT_V3
 ATOM_SVID2_VOLTAGE_OBJECT_V3 = struct__ATOM_SVID2_VOLTAGE_OBJECT_V3
+ATOM_EVV_VOLTAGE_OBJECT_V3 = struct__ATOM_EVV_VOLTAGE_OBJECT_V3
+ATOM_GPIO_VOLTAGE_OBJECT_V3 = struct__ATOM_GPIO_VOLTAGE_OBJECT_V3
 union__ATOM_VOLTAGE_OBJECT_V3._pack_ = True # source:False
 union__ATOM_VOLTAGE_OBJECT_V3._fields_ = [
     ('asGpioVoltageObj', ATOM_GPIO_VOLTAGE_OBJECT_V3),
@@ -4554,6 +4554,20 @@ class struct__ATOM_VRAM_MODULE_V2(ctypes.Structure):
 class struct__ATOM_MEMORY_TIMING_FORMAT(ctypes.Structure):
     pass
 
+class union__ATOM_MEMORY_TIMING_FORMAT_0(ctypes.Union):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('usMRS', ctypes.c_uint16),
+    ('usDDR3_MR0', ctypes.c_uint16),
+     ]
+
+class union__ATOM_MEMORY_TIMING_FORMAT_1(ctypes.Union):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('usEMRS', ctypes.c_uint16),
+    ('usDDR3_MR1', ctypes.c_uint16),
+     ]
+
 class union__ATOM_MEMORY_TIMING_FORMAT_2(ctypes.Union):
     pass
 
@@ -4569,20 +4583,6 @@ union__ATOM_MEMORY_TIMING_FORMAT_2._fields_ = [
     ('_0', struct__ATOM_MEMORY_TIMING_FORMAT_2_0),
     ('usDDR3_MR2', ctypes.c_uint16),
 ]
-
-class union__ATOM_MEMORY_TIMING_FORMAT_0(ctypes.Union):
-    _pack_ = True # source:False
-    _fields_ = [
-    ('usMRS', ctypes.c_uint16),
-    ('usDDR3_MR0', ctypes.c_uint16),
-     ]
-
-class union__ATOM_MEMORY_TIMING_FORMAT_1(ctypes.Union):
-    _pack_ = True # source:False
-    _fields_ = [
-    ('usEMRS', ctypes.c_uint16),
-    ('usDDR3_MR1', ctypes.c_uint16),
-     ]
 
 struct__ATOM_MEMORY_TIMING_FORMAT._pack_ = True # source:False
 struct__ATOM_MEMORY_TIMING_FORMAT._fields_ = [
@@ -4678,18 +4678,18 @@ class struct__ATOM_MEMORY_TIMING_FORMAT_V2(ctypes.Structure):
 class struct__ATOM_MEMORY_FORMAT(ctypes.Structure):
     pass
 
-class union__ATOM_MEMORY_FORMAT_1(ctypes.Union):
-    _pack_ = True # source:False
-    _fields_ = [
-    ('usEMRS3Value', ctypes.c_uint16),
-    ('usDDR3_MR3', ctypes.c_uint16),
-     ]
-
 class union__ATOM_MEMORY_FORMAT_0(ctypes.Union):
     _pack_ = True # source:False
     _fields_ = [
     ('usEMRS2Value', ctypes.c_uint16),
     ('usDDR3_Reserved', ctypes.c_uint16),
+     ]
+
+class union__ATOM_MEMORY_FORMAT_1(ctypes.Union):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('usEMRS3Value', ctypes.c_uint16),
+    ('usDDR3_MR3', ctypes.c_uint16),
      ]
 
 struct__ATOM_MEMORY_FORMAT._pack_ = True # source:False
@@ -4734,18 +4734,18 @@ struct__ATOM_VRAM_MODULE_V3._fields_ = [
 class struct__ATOM_VRAM_MODULE_V4(ctypes.Structure):
     pass
 
-class union__ATOM_VRAM_MODULE_V4_0(ctypes.Union):
-    _pack_ = True # source:False
-    _fields_ = [
-    ('usEMRS2Value', ctypes.c_uint16),
-    ('usDDR3_Reserved', ctypes.c_uint16),
-     ]
-
 class union__ATOM_VRAM_MODULE_V4_1(ctypes.Union):
     _pack_ = True # source:False
     _fields_ = [
     ('usEMRS3Value', ctypes.c_uint16),
     ('usDDR3_MR3', ctypes.c_uint16),
+     ]
+
+class union__ATOM_VRAM_MODULE_V4_0(ctypes.Union):
+    _pack_ = True # source:False
+    _fields_ = [
+    ('usEMRS2Value', ctypes.c_uint16),
+    ('usDDR3_Reserved', ctypes.c_uint16),
      ]
 
 struct__ATOM_VRAM_MODULE_V4._pack_ = True # source:False
@@ -5309,8 +5309,8 @@ class struct__DP_ENCODER_SERVICE_PARAMETERS_V2(ctypes.Structure):
 class struct__DP_ENCODER_SERVICE_PS_ALLOCATION_V2(ctypes.Structure):
     pass
 
-DP_ENCODER_SERVICE_PARAMETERS_V2 = struct__DP_ENCODER_SERVICE_PARAMETERS_V2
 PROCESS_AUX_CHANNEL_TRANSACTION_PARAMETERS_V2 = struct__PROCESS_AUX_CHANNEL_TRANSACTION_PARAMETERS_V2
+DP_ENCODER_SERVICE_PARAMETERS_V2 = struct__DP_ENCODER_SERVICE_PARAMETERS_V2
 struct__DP_ENCODER_SERVICE_PS_ALLOCATION_V2._pack_ = True # source:False
 struct__DP_ENCODER_SERVICE_PS_ALLOCATION_V2._fields_ = [
     ('asDPServiceParam', DP_ENCODER_SERVICE_PARAMETERS_V2),
