@@ -10,8 +10,9 @@ fi
 
 # set minimum LA for watchdog to 2 * cores/threads + 1
 #WD_MIN_LA=$(( $(nproc --all) * 2 + 1 ))
-WD_MIN_LA=$(( $(nproc --all) + 5 ))
-WD_DEF_LA=$(( $(nproc --all) + 25 ))
+CORES=$(nproc --all)
+WD_MIN_LA=$(( CORES + 5 ))
+WD_DEF_LA=$(( CORES + 20 ))
 
 
 WD_SLEEP=10 # seconds to sleep over iteration
@@ -21,6 +22,7 @@ KHS_OLD=120 # seconds that considered old hashrate
 LAST_STAT="/run/hive/last_stat.json"
 
 
+la_inc=0
 ok_count=0
 check_count=0
 gpu_err_count=0
@@ -179,18 +181,21 @@ function get_gpu_info() {
 	jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i
 		([]; . + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+"  Temp: "+.[1]+"C  Fan: "+.[2]+"%  Power: "+.[3]+"W"' $GPU_STATS_JSON 2>/dev/null
 	dmesg -Tk | tail -n 300 | grep "Xid"
-	[[ -z "$1" ]] && return 0 
+	[[ -z "$1" ]] && return 0
 	COLUMNS=110 top -bHn 1 | head -n 20
 	return 0
 }
 
 
 function check_la() {
+	local rq_count=`ps -e o stat,args | grep -cP "^R[^\[]+$"` # run queue proc count
+	[[ $rq_count -gt 5 && $rq_count -gt $la_inc ]] && la_inc=$(( rq_count - 1 )) &&
+		echo "${YELLOW}Increasing LA limit by $la_inc${NOCOLOR}"
 	local max_la=${WD_MAX_LA:-$WD_DEF_LA}
 	[[ $max_la -lt $WD_MIN_LA ]] && max_la=$WD_MIN_LA
+	max_la=$(( max_la + la_inc ))
 	local max_la2x=$(( max_la * 2 ))
 	read la1 la5 la15 procs < /proc/loadavg
-
 	# reboot immediately if LA (5 min) >= maxLA
 	if [[ ${la5%.*} -ge $max_la ]]; then
 		echo "${RED}LA is more than ${max_la}.0: $la5, rebooting ${NOCOLOR}"
@@ -213,6 +218,8 @@ function check_la() {
 		[[ $check_count == 0 ]] &&
 			echo "${GREEN}OK${NOCOLOR} LA(5m): $la5 < ${max_la}.0, LA(1m): $la1 < ${max_la2x}.0"
 	fi
+
+	[[ $la_inc -gt 0 ]] && ((la_inc--))
 }
 
 
