@@ -471,6 +471,7 @@ gpu_compact() {
 	local last_idx=${#busids[@]}
 	local amount=$(( (cols - 1)/step ))
 	[[ $(( amount - last_idx + first_idx )) -lt 0 ]] && last_idx=$(( amount + 1 ))
+	[[ $first_idx -ge $last_idx ]] && return 1
 
 	while true
 	do
@@ -619,8 +620,7 @@ miners_info() {
 		[[ ! -z ${run_miners[$idx]} ]] && output+="$SEP$BYELLOW${run_miners[$idx]}$NOCOLOR"
 	done
 	local fs=
-	[[ -f $WALLET_CONF ]] && 
-		fs=`grep -m 1 -oP "FLIGHT SHEET \K\".*\"(?= ###$)" $WALLET_CONF 2>/dev/null` || fs="${BRED}EMPTY"
+	[[ -f $WALLET_CONF ]] && fs=`grep -m 1 -oP "FLIGHT SHEET \K\".*\"(?= ###$)" $WALLET_CONF 2>/dev/null` || fs="${BRED}EMPTY"	
 	echo "Flightsheet: $BCYAN$fs$NOCOLOR$output$NOCOLOR"
 
 	return 0
@@ -778,10 +778,15 @@ function show_top() {
 
 function motd_watch() {
 	# default values
+	if [[ "$1" == "boot" ]]; then
+		local compact_top=0
+		local compact_gpu=0
+	else
+		local compact_top=1
+		local compact_gpu=1
+	fi
 	local first=1
 	local second=1
-	local compact_top=1
-	local compact_gpu=1
 	local alt_buffer=1
 	local full_screen=0
 
@@ -817,10 +822,10 @@ function motd_watch() {
 			buffer+=$'\n'$'\n'
 			if [[ $compact_gpu -eq 0 ]]; then
 				gpu_info buffer || buffer+=`unbuffer gpu-detect list`$'\n'
+				buffer+=$'\n'
 			else
-				gpu_compact buffer
+				gpu_compact buffer && buffer+=$'\n'
 			fi
-			buffer+=$'\n'
 			# strip colors and wrap lines for correct size
 			used_lines=`echo "$buffer" | sed 's/\x1b\[[0-9;]*m//g; s/.\{'$((cols+1))'\}/&\n/g' | wc -l`
 			((used_lines--))
@@ -902,6 +907,12 @@ if [[ "$1" == "watch" ]]; then
 	exit
 fi
 
+# run motd watch in main terminal (console or X) only if monitor is connected
+if [[ "$1" == "boot" && -t 1 ]]; then
+	[[ $(tty) == "/dev/tty$(fgconsole)" || ( $(tty) == "/dev/pts/0" && $(fgconsole) == 7 ) ]] &&
+		grep -q "^connected" /sys/class/drm/*/status 2>/dev/null &&
+		( motd_watch boot )
+fi
 
 # start from beginning of line
 echo -n $'\r'
@@ -915,7 +926,7 @@ echo
 
 # show help only on boot and console session start
 # this does not work correct in teleconsole
-if [[ "$1" =~ ^(help|--help|-h)$ || `timeout --foreground -s9 3 ps --no-headers $PPID 2>/dev/null` =~ (-bash|motd) ]]; then
+if [[ "$1" =~ ^(boot|help|--help|-h)$ || `timeout --foreground -s9 3 ps --no-headers $PPID 2>/dev/null` =~ (-bash|motd) ]]; then
 	# do not wrap help in motd
 	tput rmam
 	unbuffer helpme | tr -d '\r' | awk '{print $0" "}'
