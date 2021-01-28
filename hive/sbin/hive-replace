@@ -305,9 +305,9 @@ function get_image {
 
 	# Copy|download hive image to tmpfs
 	echo -e "\n${CYAN}> Downloading image file${NOCOLOR}"
-	if [[ "$url" == *http* ||  "$url" == *ftp* ]]; then
+	if [[ "$url" == http* ||  "$url" == ftp* ]]; then
 		echo ""
-		wget -t 0 -T $TIMEOUT "$url"
+		wget -t 0 -T $TIMEOUT --no-check-certificate "$url"
 		[[ $? -ne 0 ]] && echo -e "${RED}Download Hive OS image failed. Check url${NOCOLOR}" && return 1
 	else
 		[[ ! -f $url ]] && echo -e "${RED}Hive OS image not found. Check path${NOCOLOR}" && return 1
@@ -325,7 +325,7 @@ function get_image {
 	# check archive integrity
 	echo -e "\n${CYAN}> Checking archive integrity${NOCOLOR}"
 	if [[ $archname == *\.xz ]]; then
-		xz -t $TMPDIR/$archname > /dev/null
+		xz -t --verbose $TMPDIR/$archname > /dev/null
 	else #if [[ $archname == *\.zip ]]; then
 		unzip -t $TMPDIR/$archname > /dev/null
 	fi
@@ -339,12 +339,20 @@ function get_image {
 # Starting actions
 function prepare {
 	#[[ $(tty) == *tty* ]] && echo "This script does not work in the local console, exiting" && return 1
-	if pstree -As $$ | grep -q "xinit"; then 
-		echo -e "${RED}Hive-replace does not work in X server console! Run it from text local or remote shell${NOCOLOR}"
-		[[ $thishive -eq 1 ]] && echo -e "${YELLOW}Use ${BYELLOW}hivex stop${YELLOW} to close X server. Then run hive-replace again${NOCOLOR}"
-		return 1
+	if pstree -As $$ | grep -q "xinit"; then
+		if [[ $thishive -ne 1 ]]; then
+			echo -e "${RED}Hive-replace does not work in X server console!${NOCOLOR}"
+			echo -e "${YELLOW}Run it from text local or remote shell${NOCOLOR}"
+			return 1
+		fi
+		echo -e "${YELLOW}Hive-replace does not work in X server console!${NOCOLOR}"
+		echo -e "${YELLOW}X server will be stopped now and process will continue${NOCOLOR}"
+		sleep 5
+		# stop X and restart console to resume hive-replace from motd
+		hivex stop
+		systemctl restart hive-console
 	fi
-	pstree -As $$ | grep -q -P "(ssh|shellinabox|hive-console|screen)" || (echo -e "${YELLOW}Hive-replace does not work in X server console! Make sure it is not running from it${NOCOLOR}"; sleep 5)
+	#pstree -As $$ | grep -q -P "(ssh|shellinabox|hive-console|screen)" || (echo -e "${YELLOW}Hive-replace does not work in X server console! Make sure it is not running from it${NOCOLOR}"; sleep 5)
 
 	mem=$(free -m | awk 'NR == 2{print$2}')
 	#clear
