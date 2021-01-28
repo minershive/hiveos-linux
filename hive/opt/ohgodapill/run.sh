@@ -10,7 +10,7 @@ while true; do
 	[[ $OHGODAPILL_START_TIMEOUT -ne 0 ]] &&
 		sleep ${OHGODAPILL_START_TIMEOUT#-}
 
-	/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2 $@ > /var/run/hive/ohgodapill 2>&1
+	/hive/opt/ohgodapill/OhGodAnETHlargementPill-r2 $OHGODAPILL_ARGS > /var/run/hive/ohgodapill 2>&1
 
 	sleep 1
 done
