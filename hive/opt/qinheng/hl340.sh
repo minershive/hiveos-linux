@@ -4,24 +4,24 @@
 
 DEV_CHINA=/dev/china_dog0
 
-#grep processes but not a self sh script
-PREVPID=`ps aux | grep "hl340" | grep -v 'hl340.sh' | grep -v grep | awk '{print $2}'`
-if [[ ! -z $PREVPID ]]; then
-	echo "Killing Watchdog QinHeng Electronics HL-340 existing process $PREVPID"
-	kill -9 $PREVPID
-fi
+# grep processes but not a self sh script
+PREVPID=(`ps aux | grep "hl340" | grep -v 'hl340.sh' | grep -v grep | awk '{print $2}'`)
+for pid in "${PREVPID[@]}"; do
+	echo "Killing Watchdog QinHeng Electronics HL-340 existing process $pid"
+	sudo kill -9 $pid
+done
 
 
 c=`lsusb | grep -E '1a86:7523|5131:2007|0471:2379' | wc -l`
 echo "QinHeng Electronics HL-340 Watchdogs found: $c"
 
-if [ $c -eq 0 ]; then
+if [[ $c -eq 0 ]]; then
 	exit 1
 fi
 
 
-if [ -e $DEV_CHINA ]; then
-    echo "Found on  port $DEV_CHINA"
+if [[ -e $DEV_CHINA ]]; then
+    echo "Found on port $DEV_CHINA"
     nohup /hive/opt/qinheng/hl340 ping $DEV_CHINA > /dev/null 2>&1 &
     exit 0
 fi

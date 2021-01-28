@@ -4,7 +4,7 @@
 PORT=/dev/ttyACM0
 
 # buggy devices to skip
-buggy=("/dev/sg0" "/dev/hidraw0")
+buggy=("/dev/sg0" "/dev/hidraw0" "/dev/usb/hiddev0")
 
 
 check_port() {
@@ -19,36 +19,54 @@ check_port() {
 
 
 watchdog_query() {
-	local DMPLOG=/tmp/owdump.log
 	stty -F $PORT 9600 raw -echo || return 1
-	for (( i=1; i <= 10; i++ ))
-	do
+	DMPLOG=$(mktemp /tmp/wdlog.XXXXXX) || return 2
+	for (( i=1; i <= 10; i++ )); do
 		exec {fd}< $PORT
 		cat <&${fd} > $DMPLOG &
-		echo -n $1 > $PORT || return 2
+		echo -n "$1" > $PORT
+		exitcode=$?
 		sleep 0.1s
-		kill -INT $!
+		kill -9 $!
+		wait $!
 		exec {fd}<&-
+		[[ $exitcode -ne 0 ]] && break
 		reply=`cat $DMPLOG | cut -d"~" -f 2`
-		[[ ! -z $reply && "$reply" != "A" ]] && echo $reply && return 0
+		[[ ! -z "$reply" && "$reply" != "A" ]] && break
 		sleep 0.2s
 	done
-	return 3
+	rm -f $DMPLOG
+	[[ ! -z "$reply" ]] && echo "$reply" && return 0
+	[[ $exitcode -ne 0 ]] && return 3
+	return 4
+}
+
+
+watchdog_nowarn() {
+	# output watchdog replies to /dev/null to avoid ch341 errors
+	stty -F $PORT 9600 raw -echo && 
+		exec {fd}< $PORT && 
+		cat <&${fd} > /dev/null &
+	# kill background processes if any on exit
+	trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 }
 
 
 watchdog_ping() {
 	#if port 22 (ssh) responds then
 	#send ping signal to WD, if WD does not receive it for a while, then WD RESET the MB.
-	pinging=1
+	local errors=0
+	local pinging=1
 	local port=22
 	t2=`date +%s` || t2=0
+	watchdog_nowarn
 	while true
 	do
 		t1=$t2
 		if [[ $pinging -eq 1 ]] && nc -w 1 -z localhost $port 2>&1; then
 			echo "Pinging watchdog"
-			echo -n "~U" > $PORT || break;
+			echo -n "~U" > $PORT && errors=0 || ((errors++))
+			(( errors > 10 )) && break
 		else
 			logger -s -t "$(basename "$0")" "NOT pinging watchdog - sshd port: $port, enabled: $pinging"
 			port=`grep -oP "^Port[\s]+\K[0-9]+" /etc/ssh/sshd_config 2>/dev/null | tail -n 1`
@@ -59,7 +77,7 @@ watchdog_ping() {
 		[[ $t2 -eq 0 || $t1 -eq 0 || $(( t2 - t1 )) -gt 10 ]] && pinging=0 || pinging=1
 	done
 
-	message error "opendev wd error"
+	echo "$PORT" | message error "opendev wd error" payload
 	exit 1
 }
 
@@ -291,7 +309,8 @@ case $1 in
 	read)
 		check_port $2
 		echo "Reading settings"
-		watchdog_query "~F" || exit
+		query="$(watchdog_query '~F')" || exit
+		echo "$query"
 	;;
 
 	settings)

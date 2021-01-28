@@ -12,32 +12,84 @@ PORT=/dev/china_dog0
 
 echo "Using $PORT"
 
-
-
 [[ ! -c $PORT ]] &&
 	echo "$PORT is not a character device" &&
 	exit 1
 
 
+watchdog_query() {
+	stty -F $PORT 9600 raw -echo || return 1
+	DMPLOG=$(mktemp /tmp/wdlog.XXXXXX) || return 2
+	for (( i=1; i <= 10; i++ )); do
+		exec {fd}< $PORT
+		cat <&${fd} > $DMPLOG &
+		echo -ne "$1" > $PORT
+		exitcode=$?
+		sleep 0.1s
+		kill -9 $!
+		wait $!
+		exec {fd}<&-
+		[[ $exitcode -ne 0 ]] && break
+		reply=`hexdump -e '16/1 "%02x " "\n"' $DMPLOG`
+		[[ ! -z "$reply" ]] && break
+		sleep 0.1s
+	done
+	rm -f $DMPLOG
+	[[ ! -z "$reply" ]] && echo "$reply" && return 0
+	[[ $exitcode -ne 0 ]] && return 3
+	return 4
+}
+
+
+nowarn=0
+watchdog_nowarn() {
+	[[ $nowarn -eq 1 ]] && return
+	nowarn=1
+	# output watchdog replies to /dev/null to avoid ch341 errors
+	stty -F $PORT 9600 raw -echo && 
+		exec {fd}< $PORT && 
+		cat <&${fd} > /dev/null &
+	# kill background processes if any on exit
+	trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+}
+
+
 if [[ -e /hive-config/watchdog/wd-nano.on ]]; then
 	# Arduino nano
+	mode="Arduino nano watchdog"
 	ping="r90p90"
 	reset="r2p90"
 elif [[ -e /hive-config/watchdog/wd-fixorgua.on ]]; then
 	# FixOrgUa
-	#https://fix.org.ua/index.php/fix-forum/tekhpodderzhka/67-po-dlya-watchdog?start=6#135
+	# https://fix.org.ua/index.php/fix-forum/tekhpodderzhka/67-po-dlya-watchdog?start=6#135
+	mode="FixOrgUa watchdog"
 	ping="\x31\x41"
 	reset="\x33\x33"
 else
-	# Default China dog
-	ping="\x1E\x00"
-	reset="\xFF\x55"
+	# Finedar dog
+	reply=`watchdog_query "\x80" 2>/dev/null`
+	if [[ $? -eq 0 && "$reply" =~ 81\ [0-9]{2}\ ([0-9]{2}) ]]; then
+		watchdog_nowarn
+		sleep 0.2s
+		echo -n "\xF3" > $PORT && sleep 0.2s
+		echo -n "\x1E" > $PORT && sleep 0.2s # 5 min
+		mode="Finedar watchdog v${BASH_REMATCH[1]}"
+		ping="\x80"
+		reset="\xFF"
+	else
+		# Default China dog
+		mode="Default watchdog"
+		ping="\x1E\x00"
+		reset="\xFF\x55"
+	fi
 fi
+
+echo "$mode"
 
 
 if [[ $1 == "reset" ]]; then
 	echo "Pushing Reset"
-	echo -ne $reset > $PORT
+	echo -ne "$reset" > $PORT
 	exit 0
 fi
 
@@ -59,6 +111,10 @@ fi
 #	sleep 5
 #done
 
+# use it for all watchdogs
+watchdog_nowarn
+
+errors=0
 pinging=1
 port=22
 t2=`date +%s` || t2=0
@@ -67,7 +123,8 @@ do
 	t1=$t2
 	if [[ $pinging -eq 1 ]] && nc -w 1 -z localhost $port 2>&1; then
 		echo "Pinging watchdog"
-		echo -ne $ping > $PORT || break;
+		echo -ne $ping > $PORT && errors=0 || ((errors++))
+		(( errors > 10 )) && break
 	else
 		logger -s -t "$(basename "$0")" "NOT pinging watchdog - sshd port: $port, enabled: $pinging"
 		port=`grep -oP "^Port[\s]+\K[0-9]+" /etc/ssh/sshd_config 2>/dev/null | tail -n 1`
@@ -78,4 +135,4 @@ do
 	[[ $t2 -eq 0 || $t1 -eq 0 || $(( t2 - t1 )) -gt 10 ]] && pinging=0 || pinging=1
 done
 
-message error "hl340 wd error"
+echo "$mode $PORT" | message error "hl340 wd error" payload
