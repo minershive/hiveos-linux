@@ -6,6 +6,8 @@ if [[ $1 == "start" ]]; then
 	echo ""
 	echo "${CYAN}> Starting services${NOCOLOR}"
 	hivex start >/dev/null 2>&1
+	nvidia-oc > /dev/null 2>&1
+	amd-oc > /dev/null 2>&1
 	autofan start > /dev/null 2>&1
 	exit
 fi

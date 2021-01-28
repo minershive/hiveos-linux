@@ -496,9 +496,6 @@ function install_driver() { # @url or @file, @force_install
 	sleep 1
 	local as=$(screen -ls | grep -c autoswitch)
 	local mn=$(screen -ls | grep -c miner)
-	local af=$(screen -ls | grep -c autofan)
-	#local wd=$(wd status | grep -c running)
-
 	local exitcode=
 
 	nvstop
@@ -519,12 +516,8 @@ function install_driver() { # @url or @file, @force_install
 	install_nvs || exitcode=$?
 
 	echo -e ""
-	echo -e "${CYAN}> Starting services${NOCOLOR}"
-	hivex start > /dev/null 2>&1
-	#nvidia-oc > /dev/null 2>&1 # it will be run by miner
+	nvstop start
 
-	#[[ $wd -ne 0 ]] && wd start
-	[[ $af -ne 0 ]] && autofan start
 	[[ $mn -ne 0 ]] && miner start
 	[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 

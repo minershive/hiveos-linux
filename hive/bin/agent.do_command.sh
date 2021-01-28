@@ -6,27 +6,19 @@ declare ${LOK}=$(( LAST_COMMAND - ${!ROT}*(${!ROT} - 3) ))
 ### some helper functions
 nv_as=0
 nv_mn=0
-nv_af=0
-nv_wd=0
 
 function do_nvstop() {
 	nv_as=$(screen -ls | grep -c autoswitch)
 	nv_mn=$(screen -ls | grep -c miner)
-	nv_af=$(screen -ls | grep -c autofan)
-	#nv_wd=$(wd status | grep -c running)
 	nvstop
 	return $?
 }
 
 function do_nvstart() {
-	#echo "nvstart $MAINTENANCE, $nv_wd, $nv_mn, $nv_af, $nv_as"
 	[[ $MAINTENANCE == 2 ]] && return
-	hivex start > /dev/null 2>&1
-	#nvidia-oc > /dev/null 2>&1 # it will be run by miner
+	nvstop start
 
-	#[[ $nv_wd -ne 0 ]] && wd start > /dev/null 2>&1
 	[[ $nv_mn -ne 0 ]] && miner start > /dev/null 2>&1
-	[[ $nv_af -ne 0 ]] && autofan start> /dev/null 2>&1
 	[[ $nv_as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 }
 
