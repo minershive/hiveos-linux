@@ -15,7 +15,11 @@ get_hashes(){
   for (( t=0; t < $gpu_count; t++ )); do
     [[ $fork =~ "opencl" ]] && t_num=`cat ${log_name}_head | grep INFO | grep "device $t" | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | cut -d "|" -f 2 | awk '{print $6}'` || t_num=$t
     if [[ ! -z $t_num ]]; then
-      t_hs=`cat $log_name | tail -2000 | grep INFO | grep "GPU $t_num" | grep "primes=" | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | cut -d "|" -f 2 | awk '{print $8}' | cut -d "=" -f 2 | cut -d "/" -f 1`
+      if [[ `cat $log_name | tail -2000 | grep ERR | grep "GPU $t_num" | grep -c "crashed!"` -eq 0 ]]; then #check GPU error
+        t_hs=`cat $log_name | tail -2000 | grep INFO | grep "GPU $t_num" | grep "primes=" | tail -1 | sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g" | cut -d "|" -f 2 | awk '{print $8}' | cut -d "=" -f 2 | cut -d "/" -f 1`
+      else
+        t_hs=0
+      fi
       [[ -z $t_hs ]] && t_hs=0
       hs+="$t_hs "
       khs=`echo $khs $t_hs | awk '{ printf("%.6f", $1 + $2/1000) }'`

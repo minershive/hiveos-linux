@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-[[ `ps aux | grep "./xpmclient" | grep -v grep | wc -l` != 0 ]] &&
-  echo -e "${RED}$MINER_NAME miner is already running${NOCOLOR}" &&
-  exit 1
+# [[ `ps aux | grep "./xpmclient" | grep -v grep | wc -l` != 0 ]] &&
+#   echo -e "${RED}$MINER_NAME miner is already running${NOCOLOR}" &&
+#   exit 1
 
 miner_run_dir="/run/hive/miners/$MINER_NAME"
 
