@@ -264,7 +264,7 @@ function update_hosts {
 	# Hive API host
 	add_srv+=("$host")
 	# Hive shell host
-	[[ ! -z "$HSSH_SRV" ]] && add_srv+=("$HSSH_SRV")
+	[[ "$HSSH_SRV" =~ ^([0-9a-z\.-]+)(:[0-9]+)?$ ]] && add_srv+=("${BASH_REMATCH[1]}")
 	# Repo hosts
 	[[ -f $HIVEREPO_LIST ]] &&
 		host=`grep -oP "deb\s*(http://|https://|)\K[0-9a-z\.-]+" $HIVEREPO_LIST` &&
