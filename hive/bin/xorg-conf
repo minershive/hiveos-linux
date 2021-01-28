@@ -35,8 +35,8 @@ convert_busid() {
 
 gpu_detect="`lspci | grep -E "$GPU_DETECT_STRING"`"
 
-amd_primary=`echo "$gpu_detect" | head -n 1 | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL" | wc -l`
-readarray -t amd_busids < <(echo "$gpu_detect" | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL" | cut -d" " -f1)
+amd_primary=`echo "$gpu_detect" | head -n 1 | grep "AMD" | grep -vE "$GPU_AMD_INTERNAL" | wc -l`
+readarray -t amd_busids < <(echo "$gpu_detect" | grep "AMD" | grep -vE "$GPU_AMD_INTERNAL" | cut -d" " -f1)
 #echo "AMD - ${amd_busids[@]}"
 
 nvidia_primary=`echo "$gpu_detect" | head -n 1 | grep "NVIDIA" | grep -vE "$GPU_NVIDIA_INTERNAL" |  wc -l`
@@ -45,7 +45,7 @@ readarray -t nvidia_busids < <(echo "$gpu_detect" | grep "NVIDIA" | grep -vE "$G
 
 internal=`echo "$gpu_detect" | head -n 1 | grep -vE "NVIDIA|AMD"`
 #internal="`echo "$gpu_detect" | head -n 1 | grep -v "NVIDIA"`"
-#[[ "$internal" =~ "Advanced Micro Devices" && ! "$internal" =~ ($GPU_AMD_INTERNAL) ]] && internal=
+#[[ "$internal" =~ "AMD" && ! "$internal" =~ ($GPU_AMD_INTERNAL) ]] && internal=
 #echo "INTERNAL - $internal"
 
 
@@ -99,7 +99,7 @@ if [[ ! -z $internal && ( $SWITCH_OUTPUT_TO_MONITOR != 1 || "$internal" =~ $conn
 	[[ $internal =~ "VMware" ]] && internal_driver="vmware" # 00:02.0 VGA compatible controller: VMware SVGA II Adapter
 	[[ $internal =~ "Device 1234:1111" ]] && internal_driver="vesa"
 	[[ $internal =~ "QXL" ]] && internal_driver="vga" #internal_driver="modesetting", with modesetting driver - OC will not work
-	[[ $internal =~ "Advanced Micro Devices" ]] && internal_driver="amdgpu"
+	[[ $internal =~ "AMD" ]] && internal_driver="amdgpu"
 
 	if [[ ! -z $connected && "$internal" =~ $connected ]]; then
 		echo "Adding internal GPU $busid with \"$internal_driver\" driver, as the primary one"

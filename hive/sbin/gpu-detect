@@ -30,7 +30,7 @@ if [[ "$1" == "list" || "$1" == "listjson" ]]; then
 	fi
 
 	if [[ "$2" == "AMD" ]]; then
-		list=`lspci | grep -E "$GPU_DETECT_STRING" | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL"`
+		list=`lspci | grep -E "$GPU_DETECT_STRING" | grep "AMD" | grep -vE "$GPU_AMD_INTERNAL"`
 	elif [[ "$2" == "NVIDIA" ]]; then
 		list=`lspci | grep -E "$GPU_DETECT_STRING" | grep "NVIDIA" | grep -vE "$GPU_NVIDIA_INTERNAL"`
 	else
@@ -45,7 +45,7 @@ if [[ "$1" == "list" || "$1" == "listjson" ]]; then
 		unset gputype
 		[[ "$s" =~ "NVIDIA" && ! "$s" =~ ($GPU_NVIDIA_INTERNAL) ]] &&
 			gputype="NVIDIA" && COLOR=$GREEN && gpu_brand_i=$((gpu_brand_i+1))
-		[[ "$s" =~ "Advanced Micro Devices" && ! "$s" =~ ($GPU_AMD_INTERNAL) ]] &&
+		[[ "$s" =~ "AMD" && ! "$s" =~ ($GPU_AMD_INTERNAL) ]] &&
 			gputype="AMD" && COLOR=$RED && gpu_brand_i=$((gpu_brand_i+1))
 
 		re="^([0-9a-z\:\.]+) [^\:]+: (.*)\$"
@@ -196,7 +196,7 @@ if [[ "$1" == "list" || "$1" == "listjson" ]]; then
 		[[ -e $BUSID_FILE ]] && source $BUSID_FILE
 		if [[ ! -z "$BUSID_MB" || ! -z "$BUSID_AMD" || ! -z "$BUSID_NVIDIA" ]]; then
 			NVIDIA_COUNT=`lspci | grep -E "$GPU_STRING" | grep "NVIDIA" | grep -vE "$GPU_NVIDIA_INTERNAL" | wc -l`
-			AMD_COUNT=`lspci | grep -E "$GPU_STRING" | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL" | wc -l`
+			AMD_COUNT=`lspci | grep -E "$GPU_STRING" | grep "AMD" | grep -vE "$GPU_AMD_INTERNAL" | wc -l`
 			# use common bus id array for appropriate GPUs
 			[[ -z "$BUSID_NVIDIA" && $NVIDIA_COUNT -gt 0 && $AMD_COUNT -eq 0 ]] && BUSID_NVIDIA="$BUSID_MB"
 			[[ -z "$BUSID_AMD" && $AMD_COUNT -gt 0 && $NVIDIA_COUNT -eq 0 ]] && BUSID_AMD="$BUSID_MB"
@@ -240,9 +240,9 @@ elif [[ $1 == "listnvidia" ]]; then
 	echo "${list//00000000\:}"
 
 elif [[ $1 == "AMD" ]]; then
-	lspci | grep -E "$GPU_DETECT_STRING" | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL" | wc -l
+	lspci | grep -E "$GPU_DETECT_STRING" | grep "AMD" | grep -vE "$GPU_AMD_INTERNAL" | wc -l
 elif [[ $1 == "AMD_FIRST" ]]; then
-	lspci | grep -E "$GPU_DETECT_STRING" | head -n 1 | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL" | wc -l
+	lspci | grep -E "$GPU_DETECT_STRING" | head -n 1 | grep "AMD" | grep -vE "$GPU_AMD_INTERNAL" | wc -l
 elif [[ $1 == "NVIDIA" ]]; then
 	lspci | grep -E "$GPU_DETECT_STRING" | grep "NVIDIA" | grep -vE "$GPU_NVIDIA_INTERNAL" | wc -l
 elif [[ $1 == "NVIDIA_FIRST" ]]; then

@@ -94,11 +94,11 @@ AMD_TARGET_TEMP=
 
 gpu_names=`echo "$gpu_detect_json" | jq -r -c '.[] | select(.brand == "amd") | (.busid+"\""+.name+" "+.mem+"\"")'`
 
-#readarray -t AMD_BUSIDS < <(lspci | grep -E "$GPU_DETECT_STRING" | grep "Advanced Micro Devices" | grep -vE "$GPU_AMD_INTERNAL" | cut -d" " -f1)
+#readarray -t AMD_BUSIDS < <(lspci | grep -E "$GPU_DETECT_STRING" | grep "AMD" | grep -vE "$GPU_AMD_INTERNAL" | cut -d" " -f1)
 readarray -t AMD_BUSIDS  < <( echo "$gpu_detect_json" | jq -r '. | to_entries[] | select(.value.brand == "amd") | .value.busid' )
 
 # this is needed for amdmemorytweak to work correct when internal AMD gpu is present
-readarray -t AMD_ALL_BUSIDS < <(lspci | grep -E "$GPU_DETECT_STRING" | grep "Advanced Micro Devices" | cut -d" " -f1)
+readarray -t AMD_ALL_BUSIDS < <(lspci | grep -E "$GPU_DETECT_STRING" | grep "AMD" | cut -d" " -f1)
 
 
 n=${#AMD_BUSIDS[@]}
