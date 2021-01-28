@@ -149,11 +149,11 @@ function run_miner() {
 		export LD_PRELOAD=libcurl-compat.so.3.0.0
 
 	# Drop TIME_WAIT sockets
-	if [[ ! -z $MINER_API_PORT && $(lsmod | grep droptcpsock) ]]; then
+	if [[ ! -z $MINER_API_PORT && -f /proc/net/tcpdropsock ]]; then
 		echo ""
 		while true; do
 			sockets=$(netstat -n | grep ":$MINER_API_PORT " | grep WAIT)
-			[[ -z $sockets ]] && break
+			[[ -z "$sockets" ]] && break
 			echo -e "${WHITE}Trying to release TIME_WAIT sockets:${NOCOLOR}\n$sockets\n"
 			echo "$sockets" | awk '{print $4"\t"$5}' >/proc/net/tcpdropsock
 			sleep 1
@@ -192,9 +192,10 @@ miner_start_ts=0
 
 while true; do
 	# do not rotate logs if miner restarts quickly to keep old logs
-	[[ $(date +%s) -ge $(( miner_start_ts + MINER_LOG_MIN_TIME )) ]] &&
-		miner logrotate $MINER_NAME || echo "${GRAY}Skipping miner log rotation due to execution time < ${MINER_LOG_MIN_TIME}sec${NOCOLOR}"
-
+	[[ $(date +%s) -lt $(( miner_start_ts + MINER_LOG_MIN_TIME )) ]] &&
+   		echo "${GRAY}Skipping miner log rotation due to execution time < ${MINER_LOG_MIN_TIME}sec${NOCOLOR}" ||
+		miner logrotate $MINER_NAME
+	
 	miner_start_ts=$(date +%s)
 
 	# prevent Ctrl+C from killing screen. only killing miner for first time
