@@ -78,9 +78,12 @@ GRAY=$'\033[2;37m'
 
 
 function exit_handler {
-	echo
-	echo "press any key to close session"
-	[[ -t 0 ]] && read -n 1 || read -t 600 -n 1
+	echo -e "\npress any key to close session"
+	if [[ -t 0 ]]; then 
+		read -n 1 
+	else
+		read -n 1 -t 600
+	fi
 }
 
 
