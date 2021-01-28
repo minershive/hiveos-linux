@@ -166,6 +166,11 @@ fi
 [[ -L /usr/lib/x86_64-linux-gnu/libcurl3.so ]] && rm /usr/lib/x86_64-linux-gnu/libcurl3.so && ln -s /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3.0.0 /usr/lib/x86_64-linux-gnu/libcurl-compat.so.3
 
 
+# stop unattended upgrade services
+systemctl stop unattended-upgrades.service
+systemctl mask unattended-upgrades.service
+systemctl disable --now apt-daily{,-upgrade}.{timer,service}
+
 
 # Remove old 0.5 files to same space ---------------------------------------------------------------------------
 rm -rf /hive/bminer* /hive/claymore* /hive/ccminer* /hive/cpuminer* /hive/custom* /hive/dstm* \
