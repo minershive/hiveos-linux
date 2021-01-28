@@ -186,7 +186,11 @@ function do_command() {
 					oc_if_changed
 
 					miner restart
-					[[ $? == 0 ]] && message ok "Wallet changed, miner restarted" --id=$cmd_id || message warn "Error restarting miner" --id=$cmd_id
+					if [[ $? -eq 0 ]]; then 
+						message ok "Wallet changed, miner restarted" --id=$cmd_id
+					else	
+						message warn "Error restarting miner" --id=$cmd_id
+					fi
 				else
 					message error "No \"wallet\" config given" --id=$cmd_id
 				fi

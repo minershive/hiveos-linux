@@ -206,6 +206,9 @@ function parse_host_url() {
 
 # Main loop cycle
 function loop {
+	# remount to make some things working
+	[[ ! -w /tmp ]] && echo "Remounting /tmp" && mount none /tmp -t tmpfs -o size=100m,mode=1777 2>/dev/null
+
 	local exitcode="$1"
 	# increase current push interval if last command was received more then $RESPONSE_TIME ago
 	no_command=$(( $(date +%s) - LAST_COMMAND ))
@@ -291,11 +294,9 @@ function loop {
 
 	# check filesystem status
 	if [[ ! -w / ]]; then
-		sleep 10 # wait. maybe sreboot was called
-		echo "Filesystem is read-only, rebooting"
+		echo "Filesystem is read-only, rebooting in 30 sec"
+		sleep 30 # wait. maybe sreboot was called
 		[[ $rebooting != 1 ]] && rebooting=1 && mount | message error "Filesystem is read-only, rebooting" payload
-		# remount to make some things working
-		[[ ! -w /tmp ]] && echo "Remounting /tmp" && mount none /tmp -t tmpfs -o size=100m,mode=1777 2>/dev/null
 		# using reboot as sreboot most probably failed
 		sync
 		reboot -f
