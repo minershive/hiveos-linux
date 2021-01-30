@@ -22,29 +22,25 @@ function miner_config_gen() {
   [[ "$GMINER_ALGO" == "ethash" && "$GMINER_ALGO2" == "blake2s" ]]   && conf="--algo eth+kda" && echo "Dual mining ETH+KDA"
   [[ "$GMINER_ALGO" == "ethash" && "$GMINER_ALGO2" == "handshake" ]] && conf="--algo eth+hns" && echo "Dual mining ETH+HNS"
 
-  local host=
-  local port=
+  local hosts=($GMINER_HOST)
+  local ports=($GMINER_PORT)
 
-  for (( i = 1; i <= `wc -w <<< $GMINER_HOST`; i++ )); do
-    host=`awk '(NR == '$i')' <<< "$GMINER_HOST"`
-    [[ ! -z `awk '(NR == '$i')' <<< "$GMINER_PORT"` ]] && port=`awk '(NR == '$i')' <<< "$GMINER_PORT"`
-
-    conf+=" --server $host --port $port --user $GMINER_TEMPLATE"
+  for (( i=0; i < ${#hosts[@]}; i++)); do
+    conf+=" --server ${hosts[$i]}"
+    [[ ! -z ${ports[$i]} ]] && conf+=" --port ${ports[$i]}"
+    [[ ! -z $GMINER_TEMPLATE ]] && conf+=" --user $GMINER_TEMPLATE"
     [[ ! -z $GMINER_PASS ]] && conf+=" --pass $GMINER_PASS"
-
     [[ $GMINER_TLS -eq 1 ]] && conf+=" --ssl 1"
   done
 
-  host=
-  port=
+  hosts=($GMINER_HOST2)
+  ports=($GMINER_PORT2)
 
-  for (( i = 1; i <= `wc -w <<< $GMINER_HOST2`; i++ )); do
-    host=`awk '(NR == '$i')' <<< "$GMINER_HOST2"`
-    [[ ! -z `awk '(NR == '$i')' <<< "$GMINER_PORT2"` ]] && port=`awk '(NR == '$i')' <<< "$GMINER_PORT2"`
-
-    conf+=" --dserver $host --dport $port --duser $GMINER_TEMPLATE2"
+  for (( i=0; i < ${#hosts[@]}; i++)); do
+    conf+=" --dserver ${hosts[$i]}"
+    [[ ! -z ${ports[$i]} ]] && conf+=" --dport ${ports[$i]}"
+    [[ ! -z $GMINER_TEMPLATE2 ]] && conf+=" --duser $GMINER_TEMPLATE2"
     [[ ! -z $GMINER_PASS2 ]] && conf+=" --dpass $GMINER_PASS2"
-
     [[ $GMINER_TLS2 -eq 1 ]] && conf+=" --dssl 1"
   done
 
