@@ -1,4 +1,4 @@
-#
+#++++
 #	List of PCI ID's
 #
 #	Version: 2021.01.11
@@ -4469,7 +4469,7 @@
 1017  SPEA Software AG
 	5343  SPEA 3D Accelerator
 1018  Unisys Systems
-1019  Elitegroup Computer Systems
+1019  ECS
 101a  AT&T GIS (NCR)
 	0005  100VG ethernet
 	0007  BYNET BIC4G/2C/2G
@@ -6770,7 +6770,7 @@
 	8760  PM8010 [SuperTrak EX SAS and SATA 6G RAID Controller]
 	c350  80333 [SuperTrak EX12350]
 	e350  80333 [SuperTrak EX24350]
-105b  Foxconn International
+105b  Foxconn
 105c  Wipro Infotech Limited
 105d  Number 9 Computer Company
 	2309  Imagine 128
@@ -14634,7 +14634,7 @@
 	0805  SD TypA Controller
 	0d01  FIR Port Type-DO
 		1179 0001  FIR Port Type-DO
-117a  A-Trend Technology
+117a  A-Trend
 117b  L G Electronics
 117c  ATTO Technology
 	002c  ExpressSAS R380
@@ -21104,7 +21104,7 @@
 16f2  ETAS
 	0200  I/O board
 		16f2 0010  ES53xx I/O board
-16f3  Jetway Information
+16f3  Jetway
 16f4  Vweb
 	8000  VW2010
 16f6  VideoTele.com
@@ -21144,7 +21144,7 @@
 	2020  XCode II Series
 	2100  XCode 2100 Series
 1749  RLX Technologies
-174b  PC Partner Limited / Sapphire Technology
+174b  PC Partner / Sapphire
 174d  WellX Telecom SA
 175c  AudioScience
 175e  Sanera Systems
@@ -21283,7 +21283,7 @@
 	a300  OCTEON TX CN83XX
 	af00  CN99xx [ThunderX2] Integrated PCI Host bridge
 	af84  CN99xx [ThunderX2] Integrated PCI Express RP Bridge
-1787  Hightech Information System
+1787  HIS
 1789  Ennyah Technologies
 # also used by Struck Innovative Systeme for joint developments
 1796  Research Centre Juelich
@@ -22364,7 +22364,7 @@
 # nee NextNet Wireless
 19d1  Motorola Expedience
 19d4  Quixant Limited
-19da  ZOTAC International (MCO)
+19da  ZOTAC
 19de  Pico Computing
 19e2  Vector Informatik
 19e3  DDRdrive LLC
@@ -23371,7 +23371,7 @@
 	0010  Networking DOM Engine
 	0011  IO Bridge
 1da1  Teko Telecom S.r.l.
-1da2  Sapphire Technology Limited
+1da2  Sapphire
 	e26a  Radeon R7 250
 1da3  Habana Labs
 	0001  HL-1000 AI Inference Accelerator [Goya]
