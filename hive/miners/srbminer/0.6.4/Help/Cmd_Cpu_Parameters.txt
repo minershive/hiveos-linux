@@ -1,0 +1,27 @@
+Parameters:
+
+--cpu-threads                   (number of cpu threads to use for mining, separate values with ;)
+--cpu-threads-intensity		(thread intensity, can be 1 or 2. Def. is 1, separate values with ; and !)		
+--cpu-threads-priority value    (worker thread priority, 1-5 where 5 is highest (def. is 2), separate values with ;)
+--cpu-affinity value            (thread affinity bitmask, hex or decimal value, separate values with ;)
+
+--disable-cpu-optimisations     (use only SSE2 for cpu mining)
+--disable-huge-pages            (disable usage of huge pages)
+--disable-hw-aes                (use only soft AES for cpu mining)
+--disable-msr-tweaks            (disable extra tweaks for some CPU algorithms(def. is enabled)
+--disable-numa                  (disable binding to numa nodes)
+--msr-use-preset		(defines MSR preset to use 0-2)
+--msr-use-tweaks value          (defines MSR tweaks to use 0-4, | 0 - Intel, 0,1,2,3,4 - AMD |)
+
+
+; is used to separate algorithms, ! is used to separate parameters for an algorithm
+On Linux you need to escape the ; character with a backslash! ( \; )
+When setting any of the parameters don't use " or ' around the value!
+Order of the parameters is important, always put --algorithm as the first parameter, and then use the cpu parameters!
+
+--cpu-threads-intensity takes values for every cpu worker separated with !
+Example : --cpu-threads 3 --cpu-threads-intensity 1!1!2	[ means worker 0 intensity is 1, worker 1 intensity is 1, worker 2 intensity is 2 ]
+Example : --cpu-threads 16 --cpu-threads-intensity 2	[ means apply intensity 2 to all 16 workers ]
+
+--msr-use-preset can be used to select from 3 predefined presets (0,1,2) of register values. If not used, preset is auto selected.
+If combined with --msr-use-tweaks parameter, you will use values from the defined preset.

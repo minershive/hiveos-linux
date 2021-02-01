@@ -1,0 +1,8 @@
+SRBMiner-Multi v0.6.4
+* added algorithm 'autolykos2' (Ergo) for CPU/GPU mining, fee 1.25%
+* performance increase on 'phi5' algorithm on CPU's with AVX2
+* removed devfee for 'cryptonight_heavyx' algorithm
+* bug fixes
+
+
+

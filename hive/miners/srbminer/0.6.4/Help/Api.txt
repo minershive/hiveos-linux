@@ -1,0 +1,21 @@
+Api has two interfaces : json and gui (over http)
+
+To use it you must enable it first, by using the --api-enable parameter.
+Set your rig name with --api-rig-name rig_name.
+
+After you started the miner, you can access the GUI stats in your browser :
+http://127.0.0.1:21550/stats
+
+Or the json : http://127.0.0.1:21550
+
+
+There are also three other parameters that can help you to restart miner, reboot or shutdown your machine remotely :
+
+--api-rig-restart-url
+This should be a unique string, which accessed in browser results in a computer restart. Miner needs to have admin privileges.
+
+--api-rig-shutdown-url
+This should be a unique string, which accessed in browser results in a computer shutdown. Miner needs to have admin privileges.
+
+--api-miner-restart-url
+This should be a unique string, which accessed in browser restarts SRBMiner-MULTI.
