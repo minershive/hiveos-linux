@@ -19,6 +19,8 @@ function vega10_oc() {
 	local MIN_CLOCK=700
 	local MIN_VOLT=750
 	local HARD_LIM=800
+	local MIN_SOCCLK=650
+	local MAX_SOCCLK=1200
 
 	local PPT=/tmp/pp_table$cardno                            # PPT prepared
 	local CARDPPT=/sys/class/drm/card$cardno/device/pp_table  # PPT active
@@ -45,6 +47,7 @@ function vega10_oc() {
 	maxCoreClock=$(( data[3]/100 ))
 	maxMemoryClock=$(( data[4]/100 ))
 	safeCoreState=4
+	SocState=$maxSocState
 
 	echo "Max core: ${maxCoreClock}MHz, Max mem: ${maxMemoryClock}MHz, Max mem state: $maxMemoryState, Max core state: $maxCoreState, Max SoC state: $maxSocState"
 
@@ -69,35 +72,30 @@ function vega10_oc() {
 		#[[ $AGGRESSIVE == 1 ]] && atitool -v=silent -debug=0 -i=$card_idx -vddcr_hbm=$mvdd >/dev/null && echo "Setting HBM voltage to ${mvdd}V"
 		atitool -v=silent -debug=0 -i=$card_idx -vddcr_hbm=$mvdd >/dev/null && echo "Setting HBM voltage to ${mvdd}V"
 	fi
-	if [[ ! -z ${MEM_CLOCK[$i]} ]];then
-	clk=${MEM_CLOCK[$i]}
-	for idx in `eval echo {$maxMemoryState..1}`; do
-#		[[ ${VDDCI[$i]} -gt $MIN_VOLT ]] && args+=" MclkDependencyTable/${idx}/Vddci=0"
-		[[ ${MVDD[$i]} -gt $MIN_VOLT ]] && args+=" MclkDependencyTable/${idx}/VddInd=1"
-
-		if [[ ${MEM_CLOCK[$i]} -gt $MIN_CLOCK ]]; then
+	if [[ ! -z ${MEM_CLOCK[$i]} ]]; then
+		clk=${MEM_CLOCK[$i]}
+		for idx in `eval echo {$maxMemoryState..1}`; do
+#			[[ ${VDDCI[$i]} -gt $MIN_VOLT ]] && args+=" MclkDependencyTable/${idx}/Vddci=0"
+			[[ ${MVDD[$i]} -gt $MIN_VOLT ]] && args+=" MclkDependencyTable/${idx}/VddInd=1"
+			if [[ ${MEM_CLOCK[$i]} -gt $MIN_CLOCK ]]; then
 				args+=" MclkDependencyTable/${idx}/MemClk=$(( clk*100 ))"
-		fi
-		clk=$(($clk-100))
-	done
-	# If SoC Clock isn't set than starting
-	# lookup procedure to find best matching SoC clock to memory clock 
-    SocState=$maxSocState
-    if [[ -z ${SOCCLK[i]} || ${SOCCLK[$i]} -eq 0 ]]; then
-    	for idx in `eval echo {1..$maxSocState}`; do
-    		SocClk=`python3 /hive/opt/upp2/upp.py -p $PPT get SocclkDependencyTable/$idx/Clk 2> /dev/null`
-			SocState=$idx
-			if [[ ${MEM_CLOCK[$i]} -ge $((SocClk/100)) ]]; then
-				args+=" SocclkDependencyTable/$idx/Clk=$SocClk "
-				continue
-			else
-				break
 			fi
+			clk=$(($clk-100))
 		done
-		args+=" SocclkDependencyTable/$SocState/Clk=$SocClk "
-	fi
-	#echo SoCClk=$SocClk
-	#End SocClock
+		# If SoC Clock isn't set than starting lookup procedure to find best matching SoC clock to memory clock
+		if [[ -z ${SOCCLK[i]} || ${SOCCLK[$i]} -eq 0 ]]; then
+			for idx in `eval echo {1..$maxSocState}`; do
+				SocClk=`python3 /hive/opt/upp2/upp.py -p $PPT get SocclkDependencyTable/$idx/Clk 2> /dev/null`
+				SocState=$idx
+				if [[ ${MEM_CLOCK[$i]} -ge $((SocClk/100)) ]]; then
+					args+=" SocclkDependencyTable/$idx/Clk=$SocClk "
+					continue
+				else
+					break
+				fi
+			done
+			args+=" SocclkDependencyTable/$SocState/Clk=$SocClk "
+		fi # end SocClock
 	fi
 	# set bios max core clock if needed
 	[[ ${CORE_CLOCK[$i]} -gt $maxCoreClock && $maxCoreClock -gt $MIN_CLOCK ]] &&
@@ -118,7 +116,7 @@ function vega10_oc() {
 	if [[ ! -z $CORE_CLOCK && ${CORE_CLOCK[$i]} -gt $MIN_CLOCK ]]; then
 		clk=${CORE_CLOCK[$i]}
 		for idx in `eval echo {1..$CoreState}`; do
-    		CoreClk=`python3 /hive/opt/upp2/upp.py -p $PPT get GfxclkDependencyTable/$idx/Clk 2> /dev/null`
+			CoreClk=`python3 /hive/opt/upp2/upp.py -p $PPT get GfxclkDependencyTable/$idx/Clk 2> /dev/null`
 			CoreState=$idx
 			if [[ $clk -gt $((CoreClk/100)) ]]; then
 				args+=" GfxclkDependencyTable/$idx/Clk=$CoreClk "
@@ -127,16 +125,15 @@ function vega10_oc() {
 				break
 			fi
 		done
-		args+="GfxclkDependencyTable/$CoreState/Clk=${clk}00 "
-		
-		#in aggressive mode use soc OC
-		if [[  ! -z $SOCCLK && ${SOCCLK[$i]} -gt 800 ]];then
-			clk=$((${SOCCLK[$i]}+20))
-			SocState=3 # TBD
+		args+=" GfxclkDependencyTable/$CoreState/Clk=${clk}00 "
+		if [[ ${SOCCLK[$i]} -gt $MIN_SOCCLK && ${SOCCLK[$i]} -lt $MAX_SOCCLK ]]; then
+			clk=$((${SOCCLK[$i]}))
+			SocState=3 #$maxSocState # TBD
+			#clk=${SOCCLK[$i]}
 			for idx in `eval echo {$maxSocState..1}`; do
-				args+="SocclkDependencyTable/$idx/Clk=${clk}00 "
-				clk=$(($clk-10))
-		 	done
+				args+=" SocclkDependencyTable/$idx/Clk=${clk}00 "
+				[[ $SocState -ge $idx ]] && clk=$(($clk-10))
+			done
 		fi
 	fi
 
@@ -161,7 +158,7 @@ function vega10_oc() {
 	#in aggr set Core/Soc voltage with atitool too
 	[[ ${CORE_VDDC[$i]} -gt $MIN_VOLT && ${CORE_VDDC[$i]} -lt $HARD_LIM ]] && vdd=$(echo "scale=2; ${CORE_VDDC[$i]}/1000" | bc -l) &&
 			 		atitool -v=silent -i=$card_idx -vddcr_soc=$vdd >/dev/null && 
-			 		echo "Setting Core/SoC voltage to ${vdd}V"
+			 		echo -e "Setting Core/SoC voltage to ${PURPLE}$(echo ${vdd} | awk '{printf "%.0f\n", 1000*$1}')${NOCOLOR} mV"
 #	fi
 
 	#memtweak if exist
@@ -170,13 +167,13 @@ function vega10_oc() {
 
 	echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
 
-	echo -n "Setting DPM gfxСore state to ${PURPLE}$CoreState ${NOCOLOR}" &&
+	echo -n -e "Setting DPM Core state to ${PURPLE}$CoreState ${NOCOLOR}" &&
 	echo $CoreState > /sys/class/drm/card$cardno/device/pp_dpm_sclk  && echo "on ${GREEN}"`cat /sys/class/drm/card$cardno/device/pp_dpm_sclk | grep "*" | awk '{ print $2 }'`${NOCOLOR}
-
-	echo -n "Setting DPM SoC state to ${PURPLE}$SocState ${NOCOLOR}" &&
+	
+	echo -n -e "Setting DPM SoC  state to ${PURPLE}$SocState ${NOCOLOR}" &&
 	echo $SocState > /sys/class/drm/card$cardno/device/pp_dpm_socclk && echo "on ${GREEN}"`cat /sys/class/drm/card$cardno/device/pp_dpm_socclk | grep "*" | awk '{ print $2 }'`${NOCOLOR}
 	
-	echo -n -e "Setting DPM MEM state to ${PURPLE}$maxMemoryState ${NOCOLOR}" &&
+	echo -n -e "Setting DPM MEM  state to ${PURPLE}$maxMemoryState ${NOCOLOR}" &&
 	echo $maxMemoryState > /sys/class/drm/card$cardno/device/pp_dpm_mclk && echo -e "on ${GREEN}"`cat /sys/class/drm/card$cardno/device/pp_dpm_mclk | grep "*" | awk '{ print $2 }'`${NOCOLOR}
 	
 	# set fan speed
