@@ -909,7 +909,7 @@ fi
 
 # run motd watch in main terminal (console or X) only if monitor is connected
 if [[ "$1" == "boot" && -t 1 ]]; then
-	[[ $(tty) == "/dev/tty$(fgconsole)" || $(pstree -As $$ | grep -q "xinit") -gt 0 ]] &&
+	[[ $(tty) == "/dev/tty$(fgconsole)" || $(pstree -As $$ | grep -c "xinit") -gt 0 ]] &&
 		grep -q "^connected" /sys/class/drm/*/status 2>/dev/null &&
 		( motd_watch boot )
 fi
