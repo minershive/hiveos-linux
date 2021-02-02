@@ -1,0 +1,3 @@
+XMRigCC 2.8.5
+* added parameter `"max-cpu-usage": 100` to throttle cpu usage without reducing the cores/threads
+* fixed Hashrate printout when hashrate is > 99999.9h/s
