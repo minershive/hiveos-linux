@@ -1,7 +1,0 @@
-Package: hive-miners-xmrig-new-xmrig-5.8.2
-Version: 0.6-01
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - XMRig v5.8.2
