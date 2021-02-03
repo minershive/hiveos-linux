@@ -569,16 +569,23 @@ conf_miners_array() {
 }
 
 
-run_miners_array() {
-	local -n arr=$1
-	arr=()
+run_miners_update_timer=0
+run_miners=()
+run_miners_update() {
+	if [[ ${#run_miners[@]} -gt 0 ]]; then
+		if [[ `$NEEDSUDO screen -ls miner | grep -c "(Attached)"` -gt 0 ]]; then
+			(( ++run_miners_update_timer < 15 )) && return 0
+		fi
+	fi
+	run_miners_update_timer=0
+	run_miners=()
 	local windows
 	windows=`timeout 1 $NEEDSUDO screen -S miner -Q windows | tail -n 1` || return 1
 	readarray -t windows < <( echo "${windows//  /$'\n'}" )
 	local win
 	for win in "${windows[@]}"
 	do
-		[[ $win =~ ^([0-9]+)([^[:space:]]+)?[[:space:]]+(.*)$ ]] && arr[${BASH_REMATCH[1]}]="${BASH_REMATCH[3]}"
+		[[ $win =~ ^([0-9]+)([^[:space:]]+)?[[:space:]]+(.*)$ ]] && run_miners[${BASH_REMATCH[1]}]="${BASH_REMATCH[3]}"
 	done
 }
 
@@ -586,8 +593,7 @@ run_miners_array() {
 miners_info() {
 	#echo "Miners: $WHITE${scr//(L)/ -}$NOCOLOR"
 	[[ -e $WALLET_CONF ]] && . $WALLET_CONF
-	local run_miners
-	run_miners_array run_miners
+	run_miners_update
 	local conf_miners
 	conf_miners_array conf_miners
 	[[ ${#run_miners[@]} -eq 0 && ${#conf_miners[@]} -eq 0 ]] && return 0
@@ -620,7 +626,7 @@ miners_info() {
 		[[ ! -z ${run_miners[$idx]} ]] && output+="$SEP$BYELLOW${run_miners[$idx]}$NOCOLOR"
 	done
 	local fs=
-	[[ -f $WALLET_CONF ]] && fs=`grep -m 1 -oP "FLIGHT SHEET \K\".*\"(?= ###$)" $WALLET_CONF 2>/dev/null` || fs="${BRED}EMPTY"	
+	[[ -f $WALLET_CONF ]] && fs=`grep -m 1 -oP "FLIGHT SHEET \K\".*\"(?= ###$)" $WALLET_CONF 2>/dev/null` || fs="${BRED}EMPTY"
 	echo "Flightsheet: $BCYAN$fs$NOCOLOR$output$NOCOLOR"
 
 	return 0
@@ -809,7 +815,7 @@ function motd_watch() {
 	while true
 	do
 		rig_conf_update
-		run_miners_array run_miners
+		run_miners_update
 		conf_miners_array conf_miners
 
 		lines=`tput lines`
