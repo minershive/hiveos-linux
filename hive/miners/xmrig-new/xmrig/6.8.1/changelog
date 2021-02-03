@@ -1,0 +1,7 @@
+XMRig v6.8.1
+* fixed AMD GPUs health data readings
+* added support for flexible huge page sizes
+
+
+
+
