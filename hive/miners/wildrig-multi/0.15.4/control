@@ -1,7 +1,0 @@
-Package: hive-miners-wildrig-multi-0.15.4
-Version: 0.6-17
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Bee <bee@hiveos.farm>
-Description: Hive miner - WildRig-Multi v0.15.4 preview 15
