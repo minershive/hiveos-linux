@@ -9,7 +9,7 @@ logfile /run/hive/teleconsole.%n
 logfile flush 1
 logtstamp off
 #logtstamp after 122
-
+msgwait 1
 
 screen -t killidle		telec killidle
 screen -t teleconsole	bash -i -c 'teleconsole; telec stop'

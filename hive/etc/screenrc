@@ -3,10 +3,8 @@ hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{= kw}%?%-w%?%{r}[ %{W}%t%?(%u)%?%{
 
 defshell /bin/bash
 
+msgwait 1
 
 #sessionname miner
-
-#screen -t sendstats		bash -i -c '/home/user/miner/bin/claymore-send-stat.sh ; bash'
-#screen -t claymore		bash -i -c '/home/user/miner/bin/claymore ; bash'
 
 #select 0
