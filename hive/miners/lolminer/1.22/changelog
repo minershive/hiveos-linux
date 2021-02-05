@@ -1,0 +1,4 @@
+lolMiner v1.22
+* significantly improved the performance of zombie mode on RX 400 and RX 500 GPUs, especially for low zombie tune values between 0 and 4 and rather high epochs. 
+  Performance increases by 7-11% on epoch 393 (--4g-alloc-size 4080 on a RX 580. 4G) and 15-20% on epoch 400. 
+  Re-tuning using the auto-tune is recommended. Also this version might draw a bit more power, but with approximately same total efficiency
