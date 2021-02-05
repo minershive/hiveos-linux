@@ -1,0 +1,7 @@
+SRBMiner-Multi v0.6.5
+* huge performance increase on 'autolykos2' algorithm on GPU's, up to ~600%
+* huge performance increase on 'autolykos2' algorithm on CPU's with AVX2, up to ~500%
+* added abort mechanism for 'autolykos2' dataset creation on CPU
+
+
+
