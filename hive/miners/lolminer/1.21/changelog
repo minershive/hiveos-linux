@@ -1,0 +1,10 @@
+lolMiner v1.21
+* slightly improved the performance of Linux zombie mode on Polaris GPUs on medium tune stages (needs re-tuning from previous settings)
+* increased range of accepted zombie tune parameter for GPUs with high interconnect bandwidth
+* slightly decreased GPU load of Polaris GPUs during DAG build
+* DNS resolving and the connection attempt can now timeout (after 10 seconds each) and will re-try to connect afterwards
+* added more control about handling cards that are detected to be non-working any more: use parameter --watchdog off/exit/script to turn off any action, exit the miner with a specific exit code or to run an external script
+* bug fixes
+   * fixed a issue that might cause the rig to drop to 0 hash rate on epoch changes - including changes with activated ZIL caching
+   * fixed the pool hash rate reporting not working correctly in dual & split stratum modes
+   * fixed the dual stratum connection not picking up the correct worker name when --worker is used
