@@ -1,0 +1,8 @@
+TeamRedMiner v0.8.1
+* Big Navi RX 6000 series support added: currently only basic support release for all supported Navi algos (ethash, kawpow, mtp, nimiq)
+   * kernels are close to or identical with Navi10 A-mode (ethash) and default modes for Navi10 (kawpow, mtp, nimiq)
+   * Big Navi should run in A-mode for ethash (default choice), not B-mode
+   * please refer to miner manual for ethash tuning details
+* ETH+ZIL mining: new pool strategy 'min_epoch' added for switching between plain ETH and ETH+ZIL pools
+* Ethash Navi display GPUs now using A-mode by default to prevent allocation issues, Navi GPUs without a monitor attached will continue to default to B-mode
+* Statistics: now proper handling of negative temperatures
