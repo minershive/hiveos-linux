@@ -1,0 +1,2 @@
+NanoMiner v3.2.0
+* added autolykos algorithm support for Ergo coin, it's available for 3GB on both AMD and Nvidia GPUs, devfee is 5%
