@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-[ -t 1 ] && . /hive/bin/colors
+[[ -t 1 ]] && . /hive/bin/colors
 
 
 if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
@@ -20,8 +20,9 @@ OK_MESSAGE_REDUCE=$(( 1 * 60 / WD_SLEEP )) #e.g. only every 6th message will be 
 KHS_OLD=120 # seconds that considered old hashrate
 
 LAST_STAT="/run/hive/last_stat.json"
+DELAY_FILE="/run/hive/wd_delay"
 
-
+wd_delay=0
 la_inc=0
 ok_count=0
 check_count=0
@@ -301,7 +302,18 @@ function loop() {
 	((check_count++))
 	[[ $check_count -ge $OK_MESSAGE_REDUCE ]] && check_count=0
 
-	[[ $disable -eq 1 || ($WD_TYPE == algo && -z $wd_algo) ]] && return
+	if [[ $disable -eq 1 || ($WD_TYPE == algo && -z $wd_algo) ]]; then
+		[[ -f $DELAY_FILE ]] && echo "Ignoring delay" && rm -f $DELAY_FILE
+		wd_delay=0
+		return
+	fi
+
+	if [[ -f $DELAY_FILE ]]; then
+		wd_delay="$(< $DELAY_FILE )"
+		rm -f $DELAY_FILE
+		echo "Adding delay: ${wd_delay}s"
+		SECONDS=0
+	fi
 
 	[[ $WD_TYPE == algo ]] && local wd_name=$wd_algo || local wd_name=$wd_miner
 
@@ -387,6 +399,13 @@ function loop() {
 
 	echo "${RED}BARK${NOCOLOR} ${CYAN}$wd_name${NOCOLOR} $khs kHs $hashless for $elapsed seconds"
 
+	if [[ $wd_delay -gt 0 && $SECONDS -gt $wd_delay ]]; then
+		echo "Delay was applied"
+		wd_delay=0
+		set_lastgood
+		return
+	fi
+
 	# check to reboot first
 	if [[ ! -z $WD_REBOOT ]]; then
 		reboot_timeout=`echo $WD_REBOOT 60 | awk '{print int($1*$2)}'`
@@ -447,7 +466,7 @@ case $1 in
 		run
 	;;
 	stop)
-		#systemctl stop hive-watchdog
+		systemctl stop hive-watchdog
 	;;
 	start)
 		systemctl status hive-watchdog > /dev/null 2>&1 || systemctl start hive-watchdog
@@ -458,12 +477,15 @@ case $1 in
 	log)
 		journalctl -u hive-watchdog -b --no-pager $2 $3 $4 $5 $6 $7 | tail -n 100
 	;;
+	delay)
+		[[ ! "$2" =~ ^[0-9]+$ ]] && echo "Invalid delay specified" || echo "$2" > $DELAY_FILE
+	;;
 	status)
 		systemctl status hive-watchdog
 	;;
 	*)
 		bname=`basename $0`
 		echo "${YELLOW}Hashrate Watchdog${NOCOLOR}"
-		echo "Usage: ${CYAN}$bname start|stop|restart|log|status${NOCOLOR}"
+		echo "Usage: ${CYAN}$bname start|stop|restart|log|status|delay SECONDS${NOCOLOR}"
 	;;
 esac
