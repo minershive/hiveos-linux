@@ -1,0 +1,4 @@
+lolMiner v1.23
+* reduced the amount of needed host memory when running many cards in zombie mode.
+  It will resolve issues when there is a high number of card. If 1.22 works good for you, but 1.23 is unstable stay at 1.22
+* slightly improve zombie mode performance on future epochs above 387
