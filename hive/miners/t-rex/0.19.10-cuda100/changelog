@@ -1,0 +1,3 @@
+T-Rex 0.19.10
+* added GPU PCI address to summary handler
+* fixed bug on ethash "GPU is idle" error when generating DAG

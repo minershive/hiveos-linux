@@ -1,0 +1,7 @@
+Package: hive-miners-t-rex-0.19.10-cuda111
+Version: 0.6-01
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Bee <bee@hiveos.farm>
+Description: Hive miner - T-Rex v0.19.10 CUDA 11.1 build
