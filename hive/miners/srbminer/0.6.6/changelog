@@ -1,0 +1,12 @@
+SRBMiner-Multi v0.6.6
+* performance increase on 'autolykos2' algorithm on GPU's
+* reduced power consumption on 'autolykos2' algorithm on GPU's
+* faster dataset creation on 'autolykos2' algorithm on GPU's
+* fixed miner crashing when creating dataset on 'autolykos2' algorithm
+* fixed miner crashing when running --gpu-auto-tune on 'autolykos2' algorithm
+* possible fix for 'duplicate share' issue on 'autolykos2' algorithm
+* fixed 'k12' algorithm
+* minor bug fixes
+
+
+
