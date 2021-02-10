@@ -45,6 +45,9 @@ function miner_config_gen() {
 	[[ ! -z $LOLMINER_WORKER ]] && conf+="--worker $LOLMINER_WORKER\n"
 
 	# TLS and other options
+	[[ $LOLMINER_TLS -eq 1 ]] && conf+="--tls 1\n"
+
+
 	while read -r line; do
 		[[ -z $line ]] && continue
 		local tls_cnt=$(echo "$line" | grep -e "--tls" | awk '{print $2}' | tr ';' ' ' | wc -w)
