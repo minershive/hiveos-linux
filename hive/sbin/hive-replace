@@ -753,7 +753,7 @@ for param in "$@"; do
 		;;
 		--download=*)
 			[[ -z ${param#*=} ]] && echo -e "${RED}> Download PATH is required, exiting${NOCOLOR}" && exit 1
-			[[ ! -f ${param#*=} ]] && echo -e "${RED}> Provided PATH does not exist, exiting${NOCOLOR}" && exit 1
+			[[ ! -d ${param#*=} ]] && echo -e "${RED}> Provided PATH does not exist, exiting${NOCOLOR}" && exit 1
 			download_path="${param#*=}"
 		;;
 		*)
