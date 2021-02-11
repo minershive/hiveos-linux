@@ -358,6 +358,11 @@ gpu_detect() {
 }
 
 
+last_gpu_info=
+last_gpu_detect_time=
+last_gpu_stats_time=
+gpu_stats=
+
 gpu_info() {
 	[[ ! -f $GPU_DETECT_JSON ]] && return 1
 
@@ -367,10 +372,32 @@ gpu_info() {
 	#	readarray -t all_stats < <( jq --slurp -r '.[] | .busids as $b | .temp as $t | .fan as $f | .power as $p | reduce range(0; $b|length) as $i ([];
 	#		. + [[$b[$i], $t[$i], $f[$i], $p[$i]]] ) | .[] | .[0]+";"+.[1]+";"+.[2]+";"+.[3]' $GPU_STATS_JSON 2>/dev/null )
 
-	local gpu_stats=
-	[[ -f $GPU_STATS_JSON && `stat --printf %Y $GPU_STATS_JSON` -gt $(( `date +%s` - 30 )) ]] &&
-		readarray -t gpu_stats < <( jq --slurp -r -c '.[] | .busids, .temp, .fan, .power, .mtemp | join(";")' $GPU_STATS_JSON 2>/dev/null )
+	#gpu_detect_time
+	local gpu_stats_time=0
+	if [[ -f $GPU_STATS_JSON ]]; then
+		gpu_stats_time=`stat --printf %Y $GPU_STATS_JSON`
+		if [[ $gpu_stats_time -le $(( `date +%s` - 30 )) ]]; then
+			gpu_stats=
+		elif [[ $gpu_stats_time -ne $last_gpu_stats_time ]]; then
+			readarray -t gpu_stats < <( jq --slurp -r -c '.[] | .busids, .temp, .fan, .power, .mtemp | join(";")' $GPU_STATS_JSON 2>/dev/null )
+		fi
+	fi
 
+	if [[ ! -z $last_gpu_stats_time && ! -z $last_gpu_detect_time &&
+		$last_gpu_stats_time -eq $gpu_stats_time && $last_gpu_detect_time -eq $gpu_detect_time ]]; then
+		if [[ ! -z $1 ]]; then
+			local -n ref=$1
+			ref+="$last_gpu_info"
+		else
+			echo -n "$last_gpu_info"
+		fi
+		return 0
+	fi
+	last_gpu_detect_time=$gpu_detect_time
+	last_gpu_stats_time=$gpu_stats_time
+
+	last_gpu_info=
+	local -n result=last_gpu_info
 	local busids=(${gpu_stats[0]//;/ })
 	local temps=(${gpu_stats[1]//;/ })
 	local fans=(${gpu_stats[2]//;/ })
@@ -385,7 +412,6 @@ gpu_info() {
 	local show_vbios=1
 	[[ $(( maxlen + 20 )) -gt $cols ]] && maxlen=gpu_detect_maxlen_novbios && show_vbios=0
 
-	[[ ! -z $1 ]] && local -n result=$1 || local result=
 	local gpu_idx=0
 	local idx
 	local info
@@ -440,7 +466,13 @@ gpu_info() {
 		result+=`printf "%b%4s %b%% %b%4s %bW" "$WHITE" "${fans[$idx]}" "$NOCOLOR" "$WHITE" "${powers[$idx]}" "$NOCOLOR"`
 		result+=$'\n'
 	done
-	[[ -z $1 ]] && echo -n "$result"
+
+	if [[ ! -z $1 ]]; then
+		local -n ref=$1
+		ref+="$result"
+	else
+		echo -n "$result"
+	fi
 	return 0
 }
 
@@ -782,6 +814,49 @@ function show_top() {
 }
 
 
+function motd_watch_output() {
+	local lines=`tput lines`
+	local cols=`tput cols`
+	local buffer=
+	local used_lines=0
+
+	if [[ $full_screen -ne 1 ]]; then
+		[[ $compact_top -eq 0 ]] && buffer+=`show_top` || buffer+=`sys_info_compact`
+		buffer+=$'\n'$'\n'
+		if [[ $compact_gpu -eq 0 ]]; then
+			gpu_info buffer || buffer+=`unbuffer gpu-detect list`$'\n'
+			buffer+=$'\n'
+		else
+			gpu_compact buffer && buffer+=$'\n'
+		fi
+		# strip colors and wrap lines for correct size
+		used_lines=`echo "$buffer" | sed 's/\x1b\[[0-9;]*m//g; s/.\{'$((cols+1))'\}/&\n/g' | wc -l`
+		((used_lines--))
+	fi
+
+	local log_lines=$(( lines - used_lines ))
+	if [[ $first == $second || $log_lines -lt $(( pos_limit*2 )) ]]; then
+		show_log $first $log_lines buffer
+	else
+		local real_limit=$(( log_lines/2 - pos_limit ))
+		[[ $position -gt $real_limit ]] && position=$real_limit
+		[[ $position -lt -$real_limit ]] && position=-$real_limit
+		local second_lines=$(( log_lines/2 - position ))
+		local first_lines=$(( log_lines - second_lines ))
+		show_log $first $first_lines buffer 1
+		buffer+=$'\n'
+		show_log $second $second_lines buffer
+	fi
+
+	if [[ $alt_buffer -eq 0 ]]; then
+		clear
+		echo -n "$buffer"
+	else
+		echo -n "$cursor${buffer//$'\n'/$clearline$'\n'}$clearend"
+	fi
+}
+
+
 function motd_watch() {
 	# default values
 	if [[ "$1" == "boot" ]]; then
@@ -808,9 +883,6 @@ function motd_watch() {
 	tput civis
 	tput bce
 
-	local buffer
-	local used_lines
-
 	# main loop
 	while true
 	do
@@ -818,44 +890,10 @@ function motd_watch() {
 		run_miners_update
 		conf_miners_array conf_miners
 
-		lines=`tput lines`
-		cols=`tput cols`
-
-		buffer=
-		used_lines=0
-		if [[ $full_screen -ne 1 ]]; then
-			[[ $compact_top -eq 0 ]] && buffer+=`show_top` || buffer+=`sys_info_compact`
-			buffer+=$'\n'$'\n'
-			if [[ $compact_gpu -eq 0 ]]; then
-				gpu_info buffer || buffer+=`unbuffer gpu-detect list`$'\n'
-				buffer+=$'\n'
-			else
-				gpu_compact buffer && buffer+=$'\n'
-			fi
-			# strip colors and wrap lines for correct size
-			used_lines=`echo "$buffer" | sed 's/\x1b\[[0-9;]*m//g; s/.\{'$((cols+1))'\}/&\n/g' | wc -l`
-			((used_lines--))
-		fi
-
-		local log_lines=$(( lines - used_lines ))
-		if [[ $first == $second || $log_lines -lt $(( pos_limit*2 )) ]]; then
-			show_log $first $log_lines buffer
+		if [[ "$1" == "boot" ]]; then
+			( motd_watch_output ) # sub shell
 		else
-			local real_limit=$(( log_lines/2 - pos_limit ))
-			[[ $position -gt $real_limit ]] && position=$real_limit
-			[[ $position -lt -$real_limit ]] && position=-$real_limit
-			local second_lines=$(( log_lines/2 - position ))
-			local first_lines=$(( log_lines - second_lines ))
-			show_log $first $first_lines buffer 1
-			buffer+=$'\n'
-			show_log $second $second_lines buffer
-		fi
-
-		if [[ $alt_buffer -eq 0 ]]; then
-			clear
-			echo -n "$buffer"
-		else
-			echo -n "$cursor${buffer//$'\n'/$clearline$'\n'}$clearend"
+			motd_watch_output
 		fi
 
 		read -rs -n 1 -t $WATCH_REFRESH key
@@ -881,7 +919,6 @@ function motd_watch() {
 		[[ "$key" == "+" ]] && ((position--)) && continue
 		[[ "$key" == "-" ]] && ((position++)) && continue
 		[[ "$key" == "=" ]] && position=0 && continue
-
 
 		[[ "$key" == "!" ]] && second=1 && continue
 		[[ "$key" == "@" ]] && second=2 && continue
