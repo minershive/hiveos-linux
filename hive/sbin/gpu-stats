@@ -153,18 +153,18 @@ function nvidia_stats() { # @arr_index
 
 		# timeout should be high enough on systems under load
 		NVIDIA_STATS=`timeout --foreground -s9 $TIMEOUT_NVIDIA \
-			nvtool --csv --quiet --busid --statuscode --temp --fanspeed --power --usage --status`
+			nvtool --csv --quiet --busid --device --statuscode --temp --fanspeed --power --usage --status`
 		exitcode=$?
 		if [[ $exitcode -ne 0 ]]; then
-			NVIDIA_STATS=" " # prevent query for every gpu
+			[[ -z "$NVIDIA_STATS" ]] && NVIDIA_STATS=" " # prevent query for every gpu
 			echo "nvtool error ($exitcode)" >&2
-			return 1
+			#return 1
 		fi
 	fi
 
-	IFS=";" read busid status temp speed power cload mload msg < <( echo "$NVIDIA_STATS" | grep -i "00000000:${busids[$1]}" )
+	IFS=";" read busid index status temp speed power cload mload msg < <( echo "$NVIDIA_STATS" | grep -i "00000000:${busids[$1]}" )
 	[[ -z "$busid" ]] && return 1
-	[[ "$status" -ne 0 ]] && echo "GPU#$1 ${busids[$1]} - $msg ($status)" >&2
+	[[ "$status" -ne 0 ]] && echo "GPU#$index ${busids[$1]} - $msg ($status)" >&2
 	put_stats "$1" "$temp" "$speed" `printf %.0f "$power"` "$cload"
 
 	[[ "$DEBUG" == "1" ]] &&
