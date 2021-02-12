@@ -77,52 +77,66 @@ function miner_config_gen() {
 #	fi
 
 	case $MINER_FORK in
-	   quarkchain)
-	     if [[ ! -z $ETHMINER_TEMPLATE && ! -z $ETHMINER_SERVER ]]; then
-		local url=
-		local server=
+		quarkchain)
+			if [[ ! -z $ETHMINER_TEMPLATE && ! -z $ETHMINER_SERVER ]]; then
+				local url=
+				local server=
+				local hosts=($ETHMINER_SERVER)
+				local ports=($ETHMINER_PORT)
+				local host=${hosts[0]}
+				local port=${ports[0]}
 
-		grep -q -E '^(stratum|http|https).*://' <<< $ETHMINER_SERVER
-		if [[ $? == 0 ]]; then
-			protocol=$(awk -F '://' '{print $1"://"}' <<< $ETHMINER_SERVER)
-			server=$(awk -F '://' '{print $2}' <<< $ETHMINER_SERVER)
-		else #no protocol in server
-			protocol="http://"
-			server=$ETHMINER_SERVER
-		fi
-			url="$protocol$server:$ETHMINER_PORT"
-			local wallet="--coinbase $ETHMINER_TEMPLATE"
-			echo $url    >> $MINER_CONFIG
-			echo $wallet >> $MINER_CONFIG
-	     fi
-             ;;
-	   *)
-		if [[ ! -z $ETHMINER_TEMPLATE && ! -z $ETHMINER_SERVER ]]; then
-			local url=
-			local protocol=
-			local server=
+				grep -q -E '^(stratum|http|https).*://' <<< ${host}
+				if [[ $? == 0 ]]; then
+					protocol=$(awk -F '://' '{print $1"://"}' <<< ${host})
+					server=$(awk -F '://' '{print $2}' <<< ${host})
+				else #no protocol in server
+					protocol="http://"
+					server=${host}
+				fi
 
-			grep -q -E '^(stratum|http|zil).*://' <<< $ETHMINER_SERVER
-			if [[ $? == 0 ]]; then
-				protocol=$(awk -F '://' '{print $1"://"}' <<< $ETHMINER_SERVER)
-				server=$(awk -F '://' '{print $2}' <<< $ETHMINER_SERVER)
-			else #no protocol in server
-				protocol="stratum+tcp://"
-				server=$ETHMINER_SERVER
+				url="$protocol$server:$port"
+				local wallet="--coinbase $ETHMINER_TEMPLATE"
+				echo $url    >> $MINER_CONFIG
+				echo $wallet >> $MINER_CONFIG
 			fi
+    ;;
+	  *)
+			if [[ ! -z $ETHMINER_TEMPLATE && ! -z $ETHMINER_SERVER ]]; then
+				local url=
+				local protocol=
+				local server=
+				local hosts=($ETHMINER_SERVER)
+				local ports=($ETHMINER_PORT)
+				local port=
 
-			url+=$protocol
+				for (( i=0; i < ${#hosts[@]}; i++)); do
+					grep -q -E '^(stratum|http|zil).*://' <<< ${hosts[$i]}
+					if [[ $? == 0 ]]; then
+						protocol=$(awk -F '://' '{print $1"://"}' <<< ${hosts[$i]})
+						server=$(awk -F '://' '{print $2}' <<< ${hosts[$i]})
+					else #no protocol in server
+						protocol="stratum+tcp://"
+						server=${hosts[$i]}
+					fi
 
-			ETHMINER_TEMPLATE=$(sed 's/\//%2F/g' <<< $ETHMINER_TEMPLATE) #HTML special chars
-			EMAIL=$(sed 's/@/%40/g' <<< $EMAIL) #HTML special chars
+					url+=$protocol
 
-			url+=$ETHMINER_TEMPLATE
-			[[ ! -z $ETHMINER_PASS ]] && url+=":$ETHMINER_PASS"
+					ETHMINER_TEMPLATE=$(sed 's/\//%2F/g' <<< $ETHMINER_TEMPLATE) #HTML special chars
+					EMAIL=$(sed 's/@/%40/g' <<< $EMAIL) #HTML special chars
 
-			url+="@$server:$ETHMINER_PORT"
+					url+=$ETHMINER_TEMPLATE
+					[[ ! -z $ETHMINER_PASS ]] && url+=":$ETHMINER_PASS"
 
-			echo "-P $url" >> $MINER_CONFIG
-		fi
+					[[ ! -z ${ports[$i]} ]] && port=${ports[$i]}
+
+					url+="@$server:$port"
+
+					echo "-P $url" >> $MINER_CONFIG
+
+				done
+
+			fi
 	esac
 
 	[[ ! -z $ETHMINER_USER_CONFIG ]] && echo "$ETHMINER_USER_CONFIG" >> $MINER_CONFIG
