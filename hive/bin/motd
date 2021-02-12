@@ -8,6 +8,7 @@ source /etc/environment
 [[ -f $RIG_CONF ]] && source $RIG_CONF
 [[ -e /hive/etc/gpu.ids ]] && source /hive/etc/gpu.ids
 
+HELLO_OK="/tmp/.hive-hello-ok"
 
 # 1/4 of 4GB
 LOW_RAM=1000
@@ -951,7 +952,7 @@ if [[ "$1" == "watch" ]]; then
 fi
 
 # run motd watch in main terminal (console or X) only if monitor is connected
-if [[ "$1" == "boot" && -t 1 ]]; then
+if [[ "$1" == "boot" && -t 1 && -f $HELLO_OK ]]; then
 	[[ $(tty) == "/dev/tty$(fgconsole)" || $(pstree -As $$ | grep -c "xinit") -gt 0 ]] &&
 		grep -q "^connected" /sys/class/drm/*/status 2>/dev/null &&
 		( motd_watch boot )
