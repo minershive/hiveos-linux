@@ -1,0 +1,6 @@
+lolMiner v1.24a
+* vs v1.24: fixed a bug, that often caused the amdgpu driver to report a VM_CONTEXT1_PROTECTION_FAULT_STATUS on startup
+* vs v1.24: fixed defect shares and wrong reported has hrate when started with fixed `--zombie-tune` parameters directly
+* vs v1.23: added (tunable) zombie mode kernels for R9 290(x) and R9 295 GPUs
+* fixed a bug with Baffin (RX 450,460, 550, 560) and Tonga (R9 380(X) ) GPUs showing too high hashrate and producing invalids in 1.23 zombie mode.
+* fixed a bug with ETC mining not starting up when more then two 4G GPUs in 1.23
