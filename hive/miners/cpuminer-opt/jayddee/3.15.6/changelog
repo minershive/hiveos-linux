@@ -1,0 +1,5 @@
+CPUminer-Opt-JayDDee v3.15.6
+* implemented keccak pre-hash optimization for x16* algos
+* added test for share reject reason when solo mining
+* added support for floating point, as well as integer, "networkhasps" in RPC getmininginfo method
+
