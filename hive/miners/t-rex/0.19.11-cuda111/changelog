@@ -1,0 +1,2 @@
+T-Rex 0.19.11
+* security fix: bind API servers to 127.0.0.1 by default to prevent unauthorised access to the API
