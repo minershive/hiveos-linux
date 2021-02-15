@@ -1,0 +1,9 @@
+NSFMiner v1.3.4
+* detected potential NVIDIA memory allocation failure, mostly on Windows desktop
+
+v1.3.3
+* fixed potential buffer overun in Nvidia GPU code.
+* renamed `--farm-recheck` option to `--getwork-recheck`. It applies only to getwork protocol.
+* renamed `--farm-retries` option to `--retry-max`: applies to both getwork and stratum protocols, set --retry-max to 0 for unlimited retries.
+* abbreviate PCI addresses in API responses to provide compatibility with Ethminer and mining OS integration.
+
