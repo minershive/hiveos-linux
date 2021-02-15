@@ -1,0 +1,6 @@
+SRBMiner-Multi v0.6.7
+* performance increase on 'autolykos2' algorithm on GPU's, devfee increased from 1.25% to 2.00%
+* added 1 or 2 buffer mode for build DAG on ethash, see manual fro option `--gpu-ethash-mode`
+* minor bug fixes
+
+

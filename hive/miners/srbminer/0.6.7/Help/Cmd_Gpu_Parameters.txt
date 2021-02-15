@@ -1,0 +1,30 @@
+Parameters:
+
+--gpu-id value                  (gpu id/s from --list-devices, separate values with ; and !)
+--gpu-intensity value           (gpu intensity, 1-31 or if > 31 it's treated as 'raw-intensity', separate values with ; and !)
+--gpu-auto-intensity value	(0-disabled, 1-light, 2-normal, separate values with ; and !)
+--gpu-extra-config		(additional config for some algorithms, separate values with ; and !)
+--gpu-target-temperature value  (gpu temperature, separate values with ; and !)
+--gpu-off-temperature value     (gpu turn off temperature, separate values with ; and !)
+--gpu-target-fan-speed value    (gpu fan speed in RPM, separate values with !)
+--gpu-adl-type value            (ADL to use (1-3), separate values with !)
+--gpu-boost value		(number from 0-50, separate values with ; and !)
+--gpu-tweak-profile value       (number from 0-10, 0 disables tweaking, separate values with ; and !)
+--gpu-ethash-mode value         (1 or 2. Sets number of buffers used for DAG, separate values with ; and !)
+--gpu-cn-mode value		(0 or 1. Default is 0. If you have a weaker GPU try 1. separate values with ; and !)
+
+
+; is used to separate algorithms, ! is used to separate parameters for an algorithm
+On Linux you need to escape the ; character with a backslash! ( \; )
+When setting any of the parameters don't use " or ' around the value!
+Order of the parameters is important, always put --algorithm as the first parameter, and then use the gpu parameters!
+
+
+Important:
+
+If algorithm is using 2 threads per GPU (auto chosen or  manually set), there is a chance for memory leaking if intensity/raw-intensity value for the second thread is too high.
+This can cause system crash, gpu crash or an unstable system!
+
+--gpu-ethash-mode:
+1 - Create 1 buffer for DAG on GPU if driver allows big enough allocation
+2 - Created 2 buffers for DAG on GPU

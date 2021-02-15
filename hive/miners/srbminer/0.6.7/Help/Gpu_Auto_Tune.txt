@@ -1,0 +1,18 @@
+Auto-tune tries to find good settings for your GPU's, and it can be controlled with parameter '--gpu-auto-tune'
+Your final results will probably be different every time, that's because auto tune searches for the best settings live, and it's not a predefined value.
+
+Modes:
+
+0: disabled
+1: normal
+2: fast
+
+By default auto-tune is disabled and set to '0'. You can enable it by setting '--gpu-auto-tune' value to 1 or 2.
+Sometimes auto-tune won't return you the best settings, and also sometimes it can happen that it won't apply the auto detected settings, so you need to manually set the --gpu-raw-intensity value it returned.
+
+Every GPU thread can be put into auto-tune mode, so you can combine stuff here, for example run a GPU with 2 threads, and set intensity for one of the threads manually, and leave the second on auto-tune.
+
+Check the examples, to get an idea on how to use it.
+
+After getting the result/s (--gpu-intensity), you should set the parameters manually in the batch file and run the miner, even if it will continue mining after the auto tune process is finished.
+It's better to use it only for getting the values and then running the miner in normal mode (not auto tune mode)

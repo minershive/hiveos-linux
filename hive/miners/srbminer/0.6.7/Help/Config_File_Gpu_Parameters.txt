@@ -1,0 +1,8 @@
+Parameters:
+
+"gpu_intensity"				: 1-31, if set to 0 miner will try to find best settings
+"gpu_target_temperature" 		: number between 0-99, miner will try to maintain defined temperature on all found video cards (ADL must be enabled, works only on cards supporting OverdriveN)
+"gpu_shutdown_temperature" 		: number between 0-100, if this temperature is reached, miner will shutdown system (ADL must be enabled)
+"gpu_off_temperature" 			: temperature in C, when to turn off GPU if it reaches this value. After value - 15, the GPU is turned on again automatically
+"gpu_tweak_profile" 			: number 0-10 , applies tweaks to the GPU that can increase hashrate. 0 - not using any tweaks, 10 - max tweaking. If you add L after the number it will use the low settings (ex. "4L")
+"gpu_ethash_mode"			: number 1-2, Sets number of buffers used for DAG
