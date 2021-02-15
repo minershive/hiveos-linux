@@ -1,0 +1,3 @@
+NanoMiner v3.2.2
+* fixed Autolykos for AMD Big Navi (Radeon 6xxx)
+* improved autolykos performance for AMD, 1-5% depending on GPU
