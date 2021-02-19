@@ -138,7 +138,7 @@ huge_rx_print(){
 }
 
 print_banner(){
-    echo -e "${CYAN}Hive HugePages Helper v${VERS}${NOCOLOR}"
+    echo -e "${CYAN}HugePages Helper v${VERS}${NOCOLOR}"
 }
 
 print_help(){
@@ -249,4 +249,3 @@ HPAGES_SET=`cat /proc/sys/vm/nr_hugepages`
 echo -e "${GREEN}[INFO]${NOCOLOR} New HugePages (2Mb) value set: ${GREEN}$HPAGES_SET${NOCOLOR}"
 
 exit 0
-

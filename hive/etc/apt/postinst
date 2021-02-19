@@ -42,11 +42,11 @@ mkdir -p /var/log/journal
 [[ ! -f /lib/systemd/system/hive-watchdog.service ]] &&
 	echo "Linking hive-watchdog service" &&
 	ln -s /hive/etc/hive-watchdog.service /lib/systemd/system/hive-watchdog.service
-	
+
 [[ ! -f /lib/systemd/system/hive-netpre.service ]] &&
 	echo "Linking hive-netpre service" &&
 	ln -s /hive/etc/hive-netpre.service /lib/systemd/system/hive-netpre.service &&
-	systemctl enable hive-netpre.service	
+	systemctl enable hive-netpre.service
 
 if [[ ! -L /lib/systemd/system/systemd-networkd-wait-online.service ]]; then #check for symlink
 	echo "Linking systemd-networkd-wait-online.service"
@@ -65,6 +65,11 @@ if [[ ! -L /lib/systemd/system/wpa_supplicant@ra0.service ]]; then #check for sy
 	rm /lib/systemd/system/wpa_supplicant@ra0.service > /dev/null 2>&1
 	ln -sf /hive/etc/wpa_supplicant@wlan0.service /lib/systemd/system/wpa_supplicant@ra0.service
 fi
+
+[[ ! -f /lib/systemd/system/avg_khs.service ]] &&
+	echo "Linking avg_khs service" &&
+	ln -s /hive/etc/avg_khs.service /lib/systemd/system/avg_khs.service
+
 
 systemctl daemon-reload
 

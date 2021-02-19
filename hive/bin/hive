@@ -20,6 +20,8 @@ touch /run/hive/NV_OFF
 
 #[ -t 1 ] &&
 . colors #use them anyway
+[[ -e /etc/os-release ]] &&	source /etc/os-release
+[[ -z $BRAND ]] && BRAND="Hive"
 
 #Check diskless
 DISKLESS=0
@@ -55,16 +57,15 @@ fi
 if [[ -e /hive-config/branding-logo.txt ]]; then
 	BRANDING_LOGO=$(cat /hive-config/branding-logo.txt; echo .) #echo . to preserve new lines
 	BRANDING_LOGO=${BRANDING_LOGO%.} #remove last .
-else
-	BRANDING_LOGO="
- _______ _______ ___ ___ _______
+elif [[ -z $BRANDING_LOGO ]]; then
+	BRANDING_LOGO="${BYELLOW}
+_______ _______ ___ ___ _______
 |   |   |_     _|   |   |    ___|
 |       |_|   |_|   |   |    ___|
 |___|___|_______|\_____/|_______|
-
+${NOCOLOR}
 "
 fi
-BRANDING_LOGO="${BYELLOW}${BRANDING_LOGO}${NOCOLOR}"
 
 
 #Check for proxy var. Or agent and others started from here will not see it
@@ -159,7 +160,7 @@ if [[ ! -z $RIG_ID && ! -z $RIG_PASSWD && ! -z $HIVE_HOST_URL ]]; then
 	request=`jq -c -n --arg rig_id "$RIG_ID" --arg passwd "$RIG_PASSWD" '{"method":"get_options","params":{"rig_id": $rig_id,"passwd": $passwd}}' 2>/dev/null`
 	response=`echo "$request" | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "$HIVE_HOST_URL/worker/api" -H "Content-Type: application/json"`
 	if [[ $exitcode -ne 0 ]]; then
-		echo -e "${RED}Connection to API server '$HIVE_HOST_URL' failed ($exitcode)${NOCOLOR}"
+		echo -e "${RED}ERROR: connection to API server ($HIVE_HOST_URL) failed ($exitcode)${NOCOLOR}"
 	else
 		_IFS=$IFS; IFS=$'\n'
 		res=(`echo "$response" | jq -c -r '.error.code, .result.disable_gui, .result.maintenance_mode, .error.message' 2>/dev/null`)
@@ -265,7 +266,7 @@ fi
 wd start
 
 # allow to run Nvidia tools
-rm /run/hive/NV_OFF > /dev/null 2>&1 
+rm /run/hive/NV_OFF > /dev/null 2>&1
 
 gpu-detect listjson > $GPU_DETECT_JSON
 
@@ -302,7 +303,7 @@ hello boot verbose nocolor
 
 # Setup locale maybe on the very first run
 #[[ ! -z "$SYSTEM_LANG" ]] &&
-#	locale-setup "$SYSTEM_LANG" && 
+#	locale-setup "$SYSTEM_LANG" &&
 #	export LC_ALL="$SYSTEM_LANG"
 
 # cache host only if network is online to reduce boot time. it will be run by cron anyway
@@ -313,6 +314,10 @@ fi
 
 echo2 "> Starting agent screen"
 agent-screen start
+
+
+#starting average hashrate calculating service
+avg_khs start
 
 
 # always generate X server config

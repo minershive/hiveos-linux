@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 . colors
+[[ -e /etc/os-release ]] &&	source /etc/os-release
+[[ -z $BRAND ]] && BRAND="Hive"
 
 #------------------------------------------------------------------------------------------------------------------
 
@@ -190,12 +192,12 @@ elif [[ $1 == "check" ]]; then
 elif [[ $1 == "fix" ]]; then
 	fix_packages
 else
-	echo -e "${CYAN}Hive Package Manager${NOCOLOR}
+	echo -e "${CYAN}$BRAND Package Manager${NOCOLOR}
 ${YELLOW}update${NOCOLOR} - update packages list from repository
 ${YELLOW}check${NOCOLOR} - check for broken packages
 ${YELLOW}fix${NOCOLOR} - reinstall broken packages
 ${YELLOW}purge${NOCOLOR} - remove all miners
-${YELLOW}list${NOCOLOR} - list all installed hive packages
+${YELLOW}list${NOCOLOR} - list all installed $BRAND packages
 ${YELLOW}list miners${NOCOLOR} - list only miners packages
 ${YELLOW}getlist${NOCOLOR} - list without versions
 ${YELLOW}remove miners${NOCOLOR} - uninstall miners

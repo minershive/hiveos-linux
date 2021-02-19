@@ -1,0 +1,15 @@
+#[[ ! -f /lib/systemd/system/avg_khs.service ]] && ln -s /hive/etc/avg_khs.service /lib/systemd/system/avg_khs.service
+
+[Unit]
+Description=Average hashrate calculating service
+
+[Service]
+Type=simple
+ExecStart=/hive/sbin/avg_khs run
+SyslogIdentifier=avg_khs
+OOMScoreAdjust=-100
+KillMode=process
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

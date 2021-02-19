@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+
+UPLOAD_INTERVAL=300 #seconds
+LAST_UPLOAD_TIME=0
+LAST_STAT="/run/hive/last_stat.json"
+KHS_STATS_DIR="/run/hive/khs_stats"
+KHS_STATS_SWAP_DIR="/home/user/.cache/khs_stats"
+SLEEP_TIME=10 #seconds to sleep over iteration
+OK_MESSAGE_REDUCE=$(( 1 * 60 / $SLEEP_TIME )) #e.g. only every 6th message will be displayed to reduce log
+
+if [[ -z $AVG_KHS ]]; then #reread env variables as after upgrade this can be empty
+  source /etc/environment
+  export $(cat /etc/environment | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+fi
+
+if [[ -z $HIVE_HOST_URL ]]; then #reread env variables as after upgrade this can be empty
+  source $RIG_CONF
+  export $(cat $RIG_CONF | grep -vE '^$|^#' | cut -d= -f1) #export all variables from file
+fi
+
+[ -t 1 ] && . /hive/bin/colors
+
+HIVE_URL="$HIVE_HOST_URL/worker/api"
+
+function download_khs_stats() {
+  echo -e "${GREEN}Downloading algorithm statistics${NOCOLOR}"
+  [[ ! -d $KHS_STATS_SWAP_DIR ]] && mkdir -p "$KHS_STATS_SWAP_DIR"
+  rm -f ${KHS_STATS_SWAP_DIR}/*
+  local responce=`echo '{"method": "get_hashrates_data", "params": {"rig_id": '$RIG_ID', "passwd": "'$RIG_PASSWD'"}}' | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "$HIVE_URL?id_rig=$RIG_ID&method=get_hashrates_data" -H "Content-Type: application/json" | jq -c '.result.data'`
+  exitcode=$?
+  if [[ $exitcode -ne 0 ]]; then
+    echo -e "${RED}Error connecting to Hive server${NOCOLOR} $HIVE_HOST_URL"
+    human-curl-error $exitcode
+  else
+    if [[ $responce != 'null' && ! -z $responce ]]; then
+      for (( i = 0; i < `echo $responce | jq '. | length'`; i++ )); do
+        local current_data=`echo $responce | jq -c '. | to_entries | .['$i']'`
+        local algo=`echo $current_data | jq -r '.key'`
+        echo -e "${GREEN}Saving $algo statistic info file${NOCOLOR}"
+        echo $current_data | jq -r '.value.khs_stats' > $KHS_STATS_SWAP_DIR/$algo
+        touch "$KHS_STATS_SWAP_DIR/$algo" -d "`echo $current_data | jq -r '.value.datetime'`"
+      done
+    else
+      echo -e "${GREEN}No data found${NOCOLOR}"
+    fi
+  fi
+}
+
+function upload_khs_stats() {
+  #prepare data to upload
+  echo -e "${GREEN}Preparing algorithm statistics for upload${NOCOLOR}"
+  upload_data='{"method":"set_hashrates_data","params":{"rig_id": '$RIG_ID',"passwd": "'$RIG_PASSWD'","data": {}}}'
+  for file in `find $KHS_STATS_DIR -type f`
+  do
+    local file_age=0
+    let file_age=`date +%s`-`stat --format='%Y' $file`
+    if [[ $file_age -ge 3600 ]]; then
+      #delete file if it's age greater than a hour
+      rm -f $file
+    else
+      #include file into upload data
+      local algo=${file##*/}
+      local datetime=`stat $file | grep "Modify:" | awk '{print $2" "$3}'`
+        echo -e "${GREEN}Uploading $algo statistic saved $datetime${NOCOLOR}"
+      local stats=`cat $file`
+      local algo_stats='{"params": {"data": {"'$algo'": {"datetime": "'$datetime'", "khs_stats":"'$stats'"}}}}'
+      local json=`echo $upload_data $algo_stats | jq -cs '.[0] * .[1]'  2>/dev/null` &&
+         upload_data="$json" ||
+         echo -e "${RED}JSON parsing error${NOCOLOR}"
+    fi
+  done
+
+  #upload
+  local response=$(echo $upload_data | curl --insecure -L --data @- --connect-timeout 7 --max-time 15 --silent -XPOST "${HIVE_URL}?id_rig=$RIG_ID&method=set_hashrates_data" -H "Content-Type: application/json")
+  exitcode=$?
+  if [[ $exitcode -ne 0 ]]; then
+    echo -e "${RED}Error connecting to Hive server${NOCOLOR} $HIVE_HOST_URL"
+    human-curl-error $exitcode
+  else
+    echo -e "${GREEN}Uploading algorithm statistics completed${NOCOLOR}"
+    LAST_UPLOAD_TIME=`date +%s`
+  fi
+}
+
+function check_stats_file() { #check algo hashrate statistics file, read swapped if it doesn't exist
+  if [[ ! -e $KHS_STATS_DIR/$algo ]]; then
+    if [[ -e $KHS_STATS_SWAP_DIR/$algo ]]; then
+      local khs_stats_swap_file_age=0
+      let khs_stats_swap_file_age=(`date +%s`-`stat --format='%Y' $KHS_STATS_SWAP_DIR/$algo`)/$SLEEP_TIME
+      if [[ $khs_stats_swap_file_age -le $((3600/$SLEEP_TIME)) ]]; then
+        cp "$KHS_STATS_SWAP_DIR/$algo" "$KHS_STATS_DIR/$algo"
+        local modify_date=`stat "$KHS_STATS_SWAP_DIR/$algo" | grep "Modify:" | awk '{print $2" "$3}'`
+        touch "$KHS_STATS_DIR/$algo" -d "$modify_date"
+        echo -e "${GREEN}$algo hashrate statistics restored from backup${NOCOLOR}"
+      fi
+    fi
+  fi
+}
+
+function check_upload_time() { #check is it time to swap statistics to disk
+  local upload_age=$UPLOAD_INTERVAL
+  let upload_age=`date +%s`-$LAST_UPLOAD_TIME
+  [[ $upload_age -gt $UPLOAD_INTERVAL ]] && echo 1 || echo 0
+}
+
+function calc_khs_stats() { #main function
+
+  local khs_json={}
+  local check_count=0
+  stats=`cat $LAST_STAT`
+
+  [[ ! -d $KHS_STATS_DIR ]] && mkdir -p "$KHS_STATS_DIR"
+
+  #parse agent stats
+  local miners_count=`echo $stats | jq '.params.meta | length'`
+  for (( i = 0; i < $miners_count; i++ )); do
+    [[ $i -ge 1 ]] && ((n=$i+1)) || n=
+    local miner_name=`echo $stats | jq -r '.params.meta | to_entries | .['$i'].key'`
+    local algo_count=`echo $stats | jq '.params.meta | to_entries['$i'].value | length'`
+    for (( j = 0; j < $algo_count; j++ )); do
+      [[ $j -ge 1 ]] && ((k=$j+1)) || k=
+      if [[ j -eq 0 ]]; then
+        local khs=`echo $stats | jq -r '.params.total_khs'$n`
+      else
+        local khs=`echo $stats | jq -r '.params.miner_stats'$n'.total_khs'$k`
+      fi
+      local miner_algo=`echo $stats | jq -r '.params.miner_stats'$n'.algo'$k`
+      #get HiveOS algo with algomap
+      local algo=
+      if [[ ! -z $miner_algo && $miner_algo != "null" ]]; then
+        map="/hive/opt/algomap/"$miner_name".json"
+        [[ -e $map ]] && local map_algo=$(cat $map | jq -r '.algomap."'${miner_algo,,}'"')
+        if [[ ! -z $map_algo && $map_algo != "null" ]]; then
+          algo=$map_algo
+        else
+          algo=$miner_algo
+        fi
+      fi
+
+      #add hashrate from prior miners if they exist
+      if [[ ! -z $algo && $algo != 'null' && ! -z $khs && $khs != 'null' ]]; then
+        khs=`jq -r '."'${algo}'"+"'$khs'"' <<< "$khs_json"`
+        [[ ! -z $khs ]] && local json=`echo $khs_json '{"'${algo}'": '"${khs}"'}' | jq -cs '.[0] * .[1]'  2>/dev/null` &&
+           khs_json="$json" ||
+           echo -e "${RED}JSON parsing error${NOCOLOR}"
+      fi
+    done
+  done
+
+  #get algo hashrate statistics and calculate average values
+  avg_khs_json='{"params":{"avg_khs": null}}'
+  algo_count=`echo $khs_json | jq '. | length'`
+  for (( i = 0; i < $algo_count; i++ )); do
+    algo=`echo $khs_json | jq -r 'to_entries['$i'].key'`
+    algo=${algo//\//⧸} #replace all chars "/" with "_"
+    khs=`echo $khs_json | jq -r 'to_entries['$i'].value'`
+    check_stats_file
+    if [[ -e $KHS_STATS_DIR/$algo ]]; then
+      local khs_stats_file_age=0
+      let khs_stats_file_age=(`date +%s`-`stat --format='%Y' $KHS_STATS_DIR/$algo`)/$SLEEP_TIME
+      [[ $khs_stats_file_age -gt $((3600/$SLEEP_TIME)) ]] && ((khs_stats_file_age=3600/$SLEEP_TIME))
+    else
+      ((khs_stats_file_age=3600/$SLEEP_TIME))
+    fi
+
+    for (( f = 0; f < $khs_stats_file_age-1; f++ )); do
+      echo "0" >> "$KHS_STATS_DIR/$algo"
+    done
+    echo $khs >> "$KHS_STATS_DIR/$algo"
+    [[ $khs_stats_file_age -gt 1 ]] && echo -e "${GREEN}Found a gap in $algo hashrate statistics, $(($khs_stats_file_age-1)) zeros added${NOCOLOR}"
+
+    tail -360 "$KHS_STATS_DIR/$algo" > "$KHS_STATS_DIR/${algo}_n"
+    mv "$KHS_STATS_DIR/${algo}_n" "$KHS_STATS_DIR/$algo"
+
+    local avg_khs_15=`tail -n $((900/$SLEEP_TIME)) $KHS_STATS_DIR/$algo | awk '{sum+=$1} END { print sum/NR }'`
+    local avg_khs_60=`awk '{sum+=$1} END { print sum/NR }' $KHS_STATS_DIR/$algo`
+
+    local json=`echo "$avg_khs_json" '{"params":{"avg_khs":{"'${algo//⧸/\/}'": ['$avg_khs_15', '$avg_khs_60']}}}' | jq -cs '.[0] * .[1]' 2>/dev/null` &&
+      avg_khs_json="$json" ||
+      echo -e "${RED}JSON parsing error${NOCOLOR}"
+  done
+
+  if [[ `check_upload_time` -eq 1 && ! -z $RIG_ID  && ! -z $RIG_PASSWD ]]; then
+    upload_khs_stats
+  fi
+
+  [[ $check_count -eq 0 ]] && echo "$avg_khs_json"
+  ((check_count++))
+  [[ $check_count -ge $OK_MESSAGE_REDUCE ]] && check_count=0
+
+  #save average values to file
+  echo "$avg_khs_json" > "$AVG_KHS"
+}
+
+function run() {
+  download_khs_stats
+  while true; do
+    calc_khs_stats
+    sleep $SLEEP_TIME
+  done
+}
+
+########################################################################################################################
+
+case $1 in
+  run)
+    run
+  ;;
+  stop)
+    systemctl stop avg_khs
+  ;;
+  start)
+    systemctl status avg_khs > /dev/null 2>&1
+    [[ $? -ne 0 ]] && systemctl start avg_khs
+  ;;
+  restart)
+    systemctl restart avg_khs
+  ;;
+  log)
+    journalctl -u avg_khs --no-pager $2 $3 $4 $5 $6 $7
+  ;;
+  status)
+    systemctl status avg_khs
+  ;;
+  time)
+    time calc_khs_stats
+  ;;
+  *)
+    bname=`basename $0`
+    echo -e "${YELLOW}Average hashrate calclating service${NOCOLOR}"
+    echo -e "Usage: ${CYAN}$bname start|stop|restart|log|status${NOCOLOR}"
+  ;;
+esac

@@ -6,7 +6,7 @@ SWAP_FILE="/hiveswapfile"
 SWAP_SIZE_TARGET=${2:-4096}
 #MEMORY_SIZE_TARGET=${3:-16384}
 DELAY=5
-	
+
 function DelayDot() {
 	local i=
 	for((i=0; i < DELAY; i++))
@@ -122,7 +122,7 @@ function RemoveSwapFile() {
 		echo -e "${YELLOW}Swap is not active. There is nothing to do!${NOCOLOR}"
 		exit 1
 	fi
-	
+
 	echo -e "${YELLOW}Swap file removing:${NOCOLOR}"
 	echo -n "- deactivating and removing swap file "
 	sudo swapoff $SWAP_FILE && sudo rm $SWAP_FILE && echo -e "${GREEN}OK${NOCOLOR}"
@@ -134,7 +134,7 @@ function RemoveSwapFile() {
 	if [ $(fstabRemoveEntry) ]; then
 		echo -e "${RED}FAIL${NOCOLOR}"
 		exit 1
-	
+
 	else
 		echo -e "${GREEN}OK${NOCOLOR}"
 	fi
@@ -151,7 +151,7 @@ function Help() {
 
 ######################################################################
 
-echo -e "${CYAN}Hive Swap File Helper v${VERS}${NOCOLOR}"
+echo -e "${CYAN}Swap File Helper v${VERS}${NOCOLOR}"
 
 case "$1" in
 	create)

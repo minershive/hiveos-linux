@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
 source colors
+[[ -e /etc/os-release ]] &&	source /etc/os-release
+[[ -z $BRAND ]] && BRAND="Hive"
+[[ -z $BRAND ]]	&& DEFAULT_REPO_URL="http://download.hiveos.farm/repo/binary"
 
 HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
 
@@ -18,14 +21,15 @@ export DEBIAN_FRONTEND=noninteractive
 
 function print_help {
 	demourl="http://192.168.0.1/repo/binary"
-	repourl=`get_default_repo` || repourl="$demourl"
 	echo "${CYAN}Usage: selfupgrade [option] [repository URL] [version]${NOCOLOR}
+Description:
+  Tool for upgrading OS from $BRAND repository.
 Options:
 ${GREEN}  -h|--help       ${NOCOLOR}to show current help
 ${GREEN}  -f|--force      ${NOCOLOR}to force upgrade by cleaning apt lists, caches and locks
                   it can help in situations when selfupgrade says 'System is up to date' but actually it isn't
 ${GREEN}  -g|--grub       ${NOCOLOR}to update only grub config
-${GREEN}  repository URL  ${NOCOLOR}to get updates from; should start with http like ${repourl}
+${GREEN}  repository URL  ${NOCOLOR}to get updates from; should start with http like ${DEFAULT_REPO_URL} or ${demourl}
 ${GREEN}  version         ${NOCOLOR}to upgrade or downgrade; should be used the following format x.y-zz, like 0.6-65
 Examples:
 ${GREEN}  selfupgrade 0.6-65 ${demourl} -f ${NOCOLOR}

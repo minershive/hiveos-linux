@@ -218,7 +218,7 @@ function update_hosts {
 	[[ "$hostname" =~ ^([0-9]+).* ]] && hostname="hive$WORKER_NAME" #echo "${BASH_REMATCH[1]}"
 	newhosts+=$'\n'"# WORKER NAME"$'\n'"127.0.0.1 $hostname"$'\n'
 
-	newhosts+=$'\n'"# HIVEOS CACHE BEGIN"$'\n'
+	newhosts+=$'\n'"# API CACHE BEGIN"$'\n'
 
 	# check dnscrypt
 	#[[ -f /etc/resolv.conf && " $( < /etc/resolv.conf ) " =~ nameserver[[:blank:]]*$dc_ip[[:space:]] ]] &&
