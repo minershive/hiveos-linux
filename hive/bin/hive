@@ -20,7 +20,7 @@ touch /run/hive/NV_OFF
 
 #[ -t 1 ] &&
 . colors #use them anyway
-[[ -e /etc/os-release ]] &&	source /etc/os-release
+[[ -e /etc/brand.conf ]] &&	source /etc/brand.conf
 [[ -z $BRAND ]] && BRAND="Hive"
 
 #Check diskless

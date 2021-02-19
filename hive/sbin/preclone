@@ -43,8 +43,11 @@ mkdir -p /var/log/journal
 
 
 rm -r /hive-config/*
-cp -r /hive/etc/hive-config.stub/* /hive-config/
-
+if [[ -d /etc/hive-config.stub ]]; then
+	cp -r /etc/hive-config.stub/* /hive-config/
+else
+	cp -r /hive/etc/hive-config.stub/* /hive-config/
+fi
 
 echo "" > /root/.bash_history
 echo "" > /home/user/.bash_history
@@ -89,4 +92,3 @@ zerofill /hive-config
 echo "> Filling /"
 zerofill /
 echo "Done"
-

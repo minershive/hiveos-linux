@@ -174,7 +174,11 @@ if [[ $interactive == 1 ]]; then
 
 	#Create config file from input
 	mkdir -p /hive-config/network
-	cp -f /hive/etc/hive-config.stub/network/wifi.txt $wificonfig
+	if [[ -f /etc/hive-config.stub/network/wifi.txt ]]; then
+		cp -f /etc/hive-config.stub/network/wifi.txt $wificonfig
+	else
+		cp -f /hive/etc/hive-config.stub/network/wifi.txt $wificonfig
+	fi
 
 	#sed -i "s/^WIFI_SSID=.*/WIFI_SSID=\"$WIFI_SSID\"\r/g" $wificonfig
 	#sed -i "s/^WIFI_PASSWORD=.*/WIFI_PASSWORD=\"$WIFI_PASSWORD\"\r/g" $wificonfig
@@ -199,7 +203,7 @@ if [[ $interactive == 1 ]]; then
 
 	echo
 	wifi_info
-	
+
 	[[ $state == "routable" ]] &&
 		echo -e "${GREEN}WiFi setup done. Connected to network${NOCOLOR}" ||
 		echo -e "${RED}WiFi setup done. No connection. Check settings and try again${NOCOLOR}"
@@ -207,6 +211,3 @@ if [[ $interactive == 1 ]]; then
 	echo -e "If you will not use WiFi please disable service later with command ${CYAN}wifi-disable${NOCOLOR}"
 
 fi
-
-
-

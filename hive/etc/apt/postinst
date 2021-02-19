@@ -140,7 +140,11 @@ fi
 
 [[ ! -d /hive-config ]] && mkdir -p -m 777 /hive-config
 
-cp -r --no-clobber /hive/etc/hive-config.stub/* /hive-config/
+if [[ -d /etc/hive-config.stub ]]; then
+	cp -r --no-clobber /etc/hive-config.stub/* /hive-config/
+else
+	cp -r --no-clobber /hive/etc/hive-config.stub/* /hive-config/
+fi
 
 
 
