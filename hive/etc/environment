@@ -41,3 +41,6 @@ SSL_SESSION_FILE=/tmp/ssl-session-file.pem
 BUSID_FILE=/hive-config/busid.conf
 
 API_HOST_FILE=/run/hive/api_host_url
+
+AVG_KHS=/run/hive/avg_khs.json
+SEND_AVG_KHS=0  

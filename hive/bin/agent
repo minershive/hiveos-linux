@@ -488,6 +488,20 @@ function loop {
 		fi
 	fi
 
+	# Add average hashrate
+	if [[ $SEND_AVG_KHS -eq 1 ]]; then
+		local file_age=0
+		let file_age=`date +%s`-`stat --format='%Y' $AVG_KHS`
+		if [[ $file_age -le 20 ]]; then
+			local avg_khs_json=`cat $AVG_KHS`
+			json=`echo "$request" "$avg_khs_json" | jq -s -c '.[0] * .[1]' 2>/dev/null` &&
+			request="$json" ||
+				echo -e "${RED}avg_khs json parsing error${NOCOLOR}"
+		else
+			echo -e "${RED}avg_khs data is too old, check avg_khs service${NOCOLOR}"
+		fi
+	fi
+
 	echo "$request" > $LAST_STAT
 
 	[[ $AGENT_GZIP == 1 ]] && echo -n  "Z "

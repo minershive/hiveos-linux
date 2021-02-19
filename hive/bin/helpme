@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 
 [ -t 1 ] && . colors
+[[ -e /etc/brand.conf ]] &&	source /etc/brand.conf
+[[ -z $BRAND ]] && BRAND="Hive"
 
 # ${BCYAN}Ctrl${CYAN}+${BCYAN}a d$NOCOLOR to exit, ${BCYAN}Ctrl${CYAN}+${BCYAN}a${CYAN}+${BCYAN}a$NOCOLOR to switch between
 echo -e "${YELLOW}=== Commands FAQ ===
 ${CYAN}helpme$NOCOLOR - shows this FAQ. ${CYAN}motd$NOCOLOR [${BYELLOW}watch$NOCOLOR] - shows summary info, or live stats and logs
 ${CYAN}miner $NOCOLOR[${CYAN}start$NOCOLOR|${CYAN}stop$NOCOLOR|${CYAN}restart$NOCOLOR]$NOCOLOR - shows running miner screen, or starts/stops/restarts it
-${CYAN}agent-screen $NOCOLOR[${CYAN}restart$NOCOLOR] - shows Hive client agent screen
+${CYAN}agent-screen $NOCOLOR[${CYAN}restart$NOCOLOR] - shows $BRAND client agent screen
 ${CYAN}selfupgrade $NOCOLOR[$CYAN--force$NOCOLOR] [${CYAN}VER$NOCOLOR] - upgrade to latest or specified version, i.e. 0.6-65
 ${CYAN}firstrun -f $NOCOLOR[${CYAN}URL$NOCOLOR] - force rig setup, re-enter ID and password, URL is optional
 ${CYAN}wifi $NOCOLOR[${CYAN}SSID PASS$NOCOLOR] - setup WiFi if available
-${BCYAN}net-test${NOCOLOR} - check network connection to internet and Hive servers
+${BCYAN}net-test${NOCOLOR} - check network connection to internet and $BRAND servers
 ${PURPLE}hive-passwd${NOCOLOR} - change system password for ssh/vnc/shellinabox
 ${PURPLE}logs-on${NOCOLOR} | ${PURPLE}logs-off${NOCOLOR} - keep logs on disk / in RAM (for USB Flash drives)
 ${PURPLE}gpu-fans-find ${NOCOLOR}[${PURPLE}GPU${NOCOLOR}] - find GPU by spinning fans. GPU index can be specified, i.e. 5
 ${PURPLE}disk-expand${NOCOLOR} - expand system partition to use all available disk space
-${PURPLE}hpkg ${NOCOLOR}[${PURPLE}remove miners noinstall${NOCOLOR}] - Hive package manager. Specify option to remove all
+${PURPLE}hpkg ${NOCOLOR}[${PURPLE}remove miners noinstall${NOCOLOR}] - $BRAND package manager. Specify option to remove all
 ${PURPLE}hive-replace ${NOCOLOR}[${PURPLE}--list${NOCOLOR}] - live image replacement tool. Image can be selected from list
 ${GREEN}nvidia-driver-update $NOCOLOR[${GREEN}VER$NOCOLOR] - update to latest or specified version, i.e. 418, 418.88
 ${BRED}amd-info${NOCOLOR} | ${BGREEN}nvidia-info${NOCOLOR} - shows GPU information"

@@ -2,20 +2,21 @@
 #Checks if config exists, ask for rig if no config found
 
 [[ -t 1 ]] && . colors
+[[ -e /etc/brand.conf ]] &&	source /etc/brand.conf
+[[ -z $BRAND ]] && BRAND="Hive"
 
 if [[ -e /hive-config/branding-logo.txt ]]; then
 	BRANDING_LOGO=$(cat /hive-config/branding-logo.txt; echo .) #echo . to preserve new lines
 	BRANDING_LOGO=${BRANDING_LOGO%.} #remove last .
-else
-	BRANDING_LOGO="
+elif [[ -z $BRANDING_LOGO ]]; then
+	BRANDING_LOGO="${BYELLOW}
 _______ _______ ___ ___ _______
 |   |   |_     _|   |   |    ___|
 |       |_|   |_|   |   |    ___|
 |___|___|_______|\_____/|_______|
-
+${NOCOLOR}
 "
 fi
-BRANDING_LOGO="${BYELLOW}${BRANDING_LOGO}${NOCOLOR}"
 
 
 #${CYAN}Welcome to Miners Hive.${NOCOLOR}
@@ -81,7 +82,7 @@ EOF
 elif [[ ! -e $HELLO_OK ]]; then
 	msg=$(cat <<EOF
 ${BRANDING_LOGO}
-${YELLOW}Config "$RIG_CONF" exists but during boot the connection to API server failed.
+${YELLOW}Config "$RIG_CONF" exists but during boot the connection to $BRAND server failed.
 Either the server or your network is temporary down.
 If you have changed the password for this rig, then you need to enter credentials again.$NOCOLOR
 Run ${CYAN}hello${NOCOLOR} to try again. Or run ${CYAN}firstrun -f${NOCOLOR} to enter new ID and password.
@@ -94,7 +95,7 @@ EOF
 
 	echo "Trying to say hello again...";
 	hello verbose
-	
+
 	exit 0
 
 else
@@ -164,7 +165,7 @@ while true; do
 		echo -en "Setup WiFi? ${YELLOW}(y/N)${NOCOLOR} "
 		ask_yn "n" && wifi
 	fi
-	
+
 	echo -e "Server API URL: ${YELLOW}$HIVE_HOST_URL${NOCOLOR}"
 	echo "Press ENTER to continue with this URL or type a new one"
 	read_url
@@ -179,7 +180,7 @@ FILEEOF
 
 	echo ""
 	echo "Config written to \"$RIG_CONF\"."
-	
+
 	#We ask if the user wants to change the password. By default - change
 	echo -e "\n${CYAN}Default password for \"user\" is \"1\".${NOCOLOR}"
 	echo -e "We recommend to change default password on rigs exposed to Internet."
@@ -196,4 +197,3 @@ FILEEOF
 	echo -en "Try again? ${YELLOW}(Y/n)${NOCOLOR} "
 	ask_yn "y" || break
 done
-

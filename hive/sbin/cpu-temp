@@ -23,7 +23,7 @@ get_cpu_temp () {
 }
 
 print_help(){
-    echo -e "${CYAN}Hive cpu-temp Helper v$VERS"
+    echo -e "${CYAN}Cpu-temp Helper v$VERS"
     echo -e "${WHITE}This tool shows CPU temp."
     echo
     echo -e "${YELLOW}Usage:"

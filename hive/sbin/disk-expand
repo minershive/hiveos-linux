@@ -80,7 +80,7 @@ function install-deps() {
 ######################################################################
 
 [[ -z $SILENT ]] &&
-	echo -e "${CYAN}Hive Disk Expand Utility v${VERS}${NOCOLOR}"
+	echo -e "${CYAN}Disk Expand Utility v${VERS}${NOCOLOR}"
 
 #Just a copy-paste
 #bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
@@ -106,9 +106,9 @@ FS_TYPE=`df --output=fstype / 2>/dev/null | tail -n 1` || FS_TYPE="unknown"
 FS_EXPAND=$(( PART_SIZE - FS_SIZE ))
 
 if [[ -z $SILENT ]]; then
-	echo -e "HIVE booted from ${GREEN}$DISK_NAME${NOCOLOR} and whole drive size is ${WHITE}$DISK_SIZE MB${NOCOLOR}"
-	echo -e "HIVE partition is ${YELLOW}$DISK_PART${NOCOLOR} and it's size is ${WHITE}$PART_SIZE MB${NOCOLOR}"
-	echo -e "HIVE partition filesystem is ${PURPLE}$FS_TYPE${NOCOLOR} and it's size is ${WHITE}$FS_SIZE MB${NOCOLOR}"
+	echo -e "OS booted from ${GREEN}$DISK_NAME${NOCOLOR} and whole drive size is ${WHITE}$DISK_SIZE MB${NOCOLOR}"
+	echo -e "OS partition is ${YELLOW}$DISK_PART${NOCOLOR} and it's size is ${WHITE}$PART_SIZE MB${NOCOLOR}"
+	echo -e "OS partition filesystem is ${PURPLE}$FS_TYPE${NOCOLOR} and it's size is ${WHITE}$FS_SIZE MB${NOCOLOR}"
 fi
 
 if [[ $GPT == 1 ]]; then
@@ -118,7 +118,7 @@ else
 fi
 
 if [[ $EXPAND_SIZE -gt ${FREE_SPACE_LIMIT} ]]; then
-	echo -e "${YELLOW}> Trying to auto-expand Hive partition by ${WHITE}${EXPAND_SIZE} MB${NOCOLOR}${YELLOW} up to ${WHITE}$((PART_SIZE+EXPAND_SIZE)) MB${NOCOLOR}${YELLOW} in total${NOCOLOR}"
+	echo -e "${YELLOW}> Trying to auto-expand OS partition by ${WHITE}${EXPAND_SIZE} MB${NOCOLOR}${YELLOW} up to ${WHITE}$((PART_SIZE+EXPAND_SIZE)) MB${NOCOLOR}${YELLOW} in total${NOCOLOR}"
 
 	# Give user time for break process in interactive mode
 	if [[ -z $SILENT ]]; then
@@ -129,7 +129,7 @@ if [[ $EXPAND_SIZE -gt ${FREE_SPACE_LIMIT} ]]; then
 	install-deps
 	part_expand "$DISK_NAME" "$DISK_PART"
 elif [[ $FS_EXPAND -gt ${FREE_SPACE_LIMIT} ]]; then
-	echo -e "${YELLOW}> Trying to auto-expand Hive filesystem by ${WHITE}$FS_EXPAND MB${NOCOLOR}${YELLOW} up to ${WHITE}$((FS_SIZE+FS_EXPAND)) MB${NOCOLOR}${YELLOW} in total${NOCOLOR}"
+	echo -e "${YELLOW}> Trying to auto-expand OS filesystem by ${WHITE}$FS_EXPAND MB${NOCOLOR}${YELLOW} up to ${WHITE}$((FS_SIZE+FS_EXPAND)) MB${NOCOLOR}${YELLOW} in total${NOCOLOR}"
 	fs_expand "$DISK_PART"
 else
 	[[ -z $SILENT ]] && echo -e "${RED}Free disk space less then ${FREE_SPACE_LIMIT} MB. Exiting${NOCOLOR}"
@@ -140,7 +140,7 @@ if [[ $? -eq 0 ]]; then
 	partprobe > /dev/null 2>&1
 	NEW_PART_SIZE=`cat /proc/partitions | grep -w "${DISK_PART}" | awk '{ printf("%.f",$3/1024)}'`
 	NEW_FS_SIZE=`tune2fs -l "/dev/${DISK_PART}" | grep -oP "^Block (count|size):[\s]+\K[0-9]+" | awk -v RS="" '{print int($1*$2/1024/1024+0.5)}'` || NEW_FS_SIZE=$NEW_PART_SIZE
-	echo -e "New HIVE partition size is ${GREEN}$NEW_PART_SIZE${NOCOLOR} MB and filesystem size is ${GREEN}$NEW_FS_SIZE${NOCOLOR} MB"
+	echo -e "New OS partition size is ${GREEN}$NEW_PART_SIZE${NOCOLOR} MB and filesystem size is ${GREEN}$NEW_FS_SIZE${NOCOLOR} MB"
 fi
 
 exit 0
