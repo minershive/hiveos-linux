@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AUTOFAN_VERSION="2.34"
+AUTOFAN_VERSION="2.35"
 
 if [[ -z $RIG_CONF ]]; then #reread env variables as after upgrade this can be empty
 	source /etc/environment
@@ -110,8 +110,8 @@ function init_gpu() {
 	for (( i = 0 ; i < ${#card_names_array[@]}; i++ )); do
 		[[ " ${cpu_indexes_array[@]} " =~ " $i " ]] && continue
 		# remove some common strings
-		card_names_array[$i]="${card_names_array[i]/Radeon }"
-		card_names_array[$i]="${card_names_array[i]/GeForce }"
+		card_names_array[i]="${card_names_array[i]/Radeon }"
+		card_names_array[i]="${card_names_array[i]/GeForce }"
 		[[ ${#card_names_array[i]} -gt $GPU_MAX_LEN ]] && GPU_MAX_LEN=${#card_names_array[i]}
 	done
 	[[ $GPU_MAX_LEN -gt 16 ]] && GPU_MAX_LEN=16
@@ -124,11 +124,11 @@ function init_gpu() {
 		card_hwmon=()
 		for j in "${amd_indexes_array[@]}"; do
 			[[ `echo /sys/bus/pci/devices/0000:${card_bus_ids_array[j]}/drm/card*/` =~ \/card([0-9]+)\/ ]] &&
-				card_num[$j]=${BASH_REMATCH[1]}
-			card_hwmon[$j]=`realpath /sys/class/drm/card${card_num[j]}/device/hwmon/hwmon*/`
-			[[ -z ${card_hwmon[$j]} ]] && echo2 "${RED}Unable to get HWMON dir for gpu ${card_bus_ids_array[j]}${NOCOLOR}" && continue
-			[[ -e ${card_hwmon[$j]}/pwm1_max ]] && card_fanmax[$j]=`head -1 ${card_hwmon[$j]}/pwm1_max` || card_fanmax[$j]=255
-			[[ -e ${card_hwmon[$j]}/pwm1_min ]] && card_fanmin[$j]=`head -1 ${card_hwmon[$j]}/pwm1_min` || card_fanmin[$j]=0
+				card_num[j]=${BASH_REMATCH[1]}
+			card_hwmon[j]=`realpath /sys/class/drm/card${card_num[j]}/device/hwmon/hwmon*/`
+			[[ -z ${card_hwmon[j]} ]] && echo2 "${RED}Unable to get HWMON dir for gpu ${card_bus_ids_array[j]}${NOCOLOR}" && continue
+			[[ -e ${card_hwmon[j]}/pwm1_max ]] && card_fanmax[j]=`head -1 ${card_hwmon[j]}/pwm1_max` || card_fanmax[j]=255
+			[[ -e ${card_hwmon[j]}/pwm1_min ]] && card_fanmin[j]=`head -1 ${card_hwmon[j]}/pwm1_min` || card_fanmin[j]=0
 		done
 	fi
 
@@ -189,7 +189,7 @@ get_fan_speed() {
 	local core_prev_temp="$2"
 	local cur_fan_speed="$3"
 	local gpu_bus_id="$4"
-	local i="$5"
+	local idx="$5"
 	local brand="$6"
 	local name="$7"
 	local mem_cur_temp="$8"
@@ -268,7 +268,7 @@ get_fan_speed() {
 				[[ $cur_temp -gt $(( target_temp + 5 )) && $fast_fan -gt $target_fan_speed ]] &&
 					target_fan_speed=$fast_fan && msg="++++"
 			fi
-			
+
 		elif [[ $cur_temp -lt $prev_temp ]]; then
 			
 			# do not spin up fan if temp going down
@@ -311,12 +311,12 @@ get_fan_speed() {
 		printf -v echo_fan "%3d%% %-4s" "$target_fan_speed" ""
 	fi
 
-	[[ $i -lt 10 ]] && i=" $i"
 	[[ $brand == "Nvidia" ]] &&
 		printf -v name "${BGREEN}%-${GPU_MAX_LEN}.${GPU_MAX_LEN}s${NOCOLOR}" "$name" ||
 		printf -v name "${BRED}%-${GPU_MAX_LEN}.${GPU_MAX_LEN}s${NOCOLOR}" "$name"
 
-	gpu_info[i]="${BBLUE}$i${NOCOLOR} ${gpu_bus_id} $name  Target ${WHITE}$core_target_temp°${NOCOLOR}  Core $core_temp  Fan $echo_fan  $mem_temp  $msg"
+	[[ $idx -lt 10 ]] && local index=" $idx" || local index="$idx" # pad index
+	gpu_info[idx]="${BBLUE}$index${NOCOLOR} ${gpu_bus_id} $name  Target ${WHITE}$core_target_temp°${NOCOLOR}  Core $core_temp  Fan $echo_fan  $mem_temp  $msg"
 }
 
 
@@ -552,6 +552,8 @@ amd_auto_fan_control() {
 auto_fan_control() {
 	local last_stats=0
 	local VARIABLES=("ENABLED" "TARGET_TEMP" "CRITICAL_TEMP" "CRITICAL_TEMP_ACTION" "MIN_FAN" "MAX_FAN" "NO_AMD" "REBOOT_ON_ERROR" "TARGET_MEM_TEMP" "SMART_MODE")
+	local var
+	local ref
 
 	while true; do
 		for var in "${VARIABLES[@]}"; do
@@ -563,9 +565,8 @@ auto_fan_control() {
 		# set default values
 		for var in "${VARIABLES[@]}"; do
 			[[ ! -z "${!var}" ]] && continue
-			declare -n ref="$var"
-			declare -n def="DEF_$var"
-			ref="$def"
+			ref="DEF_$var"
+			printf -v "$var" "${!ref}"
 		done
 
 		[[ $(( CRITICAL_TEMP - MIN_TEMP_DIFF )) -lt $TARGET_TEMP ]] && CRITICAL_TEMP=$(( TARGET_TEMP + MIN_TEMP_DIFF ))
@@ -628,9 +629,9 @@ auto_fan_control() {
 
 			local changed=0
 			for var in "${VARIABLES[@]}"; do
-				declare -n prev="PREV_$var"
-				[[ "$prev" == "${!var}" ]] && continue;
-				prev="${!var}"
+				ref="PREV_$var"
+				[[ "${!ref}" == "${!var}" ]] && continue;
+				printf -v "$ref" "${!var}"
 				((changed++))
 			done
 
@@ -660,9 +661,9 @@ auto_fan_control() {
 
 			echo2 "$(printf "%s\n" "${gpu_info[@]}")"
 
-			declare -a temperatures_array_previous=("${temperatures_array[@]}")
-			declare -a memtemp_array_previous=("${memtemp_array[@]}")
-			declare -a fans_array_previous=("${fans_array[@]}")
+			temperatures_array_previous=("${temperatures_array[@]}")
+			memtemp_array_previous=("${memtemp_array[@]}")
+			fans_array_previous=("${fans_array[@]}")
 		elif [[ $ENABLED != 1 ]]; then
 			echo2 "${PURPLE} Autofan ${WHITE}DISABLED ${NOCOLOR}"
 			PREV_ENABLED=
