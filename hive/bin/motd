@@ -417,7 +417,7 @@ gpu_info() {
 	local idx
 	local info
 	for(( idx=0; idx < ${#gpu_detect_json[@]}; idx++ )); do
-		readarray -t info < <( echo "${gpu_detect_json[$idx]//;/$'\n'}" )
+		readarray -t info < <( echo "${gpu_detect_json[idx]//;/$'\n'}" )
 		local busid=${info[0]}
 		local brand=${info[1]}
 		local name=${info[2]}
@@ -437,34 +437,34 @@ gpu_info() {
 		fi
 		result+=`color_printf "$maxlen" "$output"`
 
-		[[ "${busids[$idx]}" != "$busid" || ${powers[$idx]} -eq 0 ]] && result+=$'\n' && continue
+		[[ "${busids[idx]}" != "$busid" || ${powers[idx]} -eq 0 ]] && result+=$'\n' && continue
 
 		local color=$WHITE
-		if [[ ${temps[$idx]} -ge 999 ]]; then
-			temps[$idx]="???"
+		if [[ ${temps[idx]} -ge 999 ]]; then
+			temps[idx]="???"
 			color=$BPURPLE
-		elif [[ ${temps[$idx]} -ge $CORE_VERY_HIGH_TEMP ]]; then
+		elif [[ ${temps[idx]} -ge $CORE_VERY_HIGH_TEMP ]]; then
 			color=$BRED
-		elif [[ ${temps[$idx]} -ge $CORE_HIGH_TEMP ]]; then
+		elif [[ ${temps[idx]} -ge $CORE_HIGH_TEMP ]]; then
 			color=$BYELLOW
 		fi
-		result+=`printf "%b%3s%b°C " "$color" "${temps[$idx]}" "$NOCOLOR"`
+		result+=`printf "%b%3s%b°C " "$color" "${temps[idx]}" "$NOCOLOR"`
 
 		if [[ $show_mem_temp -eq 1 ]]; then
 			local mcolor=$WHITE
-			if [[ ${mtemps[$idx]} -ge 999 ]]; then
-				mtemps[$idx]="???"
+			if [[ ${mtemps[idx]} -ge 999 ]]; then
+				mtemps[idx]="???"
 				mcolor=$BPURPLE
-			elif [[ ${mtemps[$idx]} -ge $MEM_VERY_HIGH_TEMP ]]; then
+			elif [[ ${mtemps[idx]} -ge $MEM_VERY_HIGH_TEMP ]]; then
 				mcolor=$BRED
-			elif [[ ${mtemps[$idx]} -ge $MEM_HIGH_TEMP ]]; then
+			elif [[ ${mtemps[idx]} -ge $MEM_HIGH_TEMP ]]; then
 				mcolor=$BYELLOW
 			fi
-			result+=`printf "%b%3s%b°C " "$mcolor" "${mtemps[$idx]:---}" "$NOCOLOR"`
+			result+=`printf "%b%3s%b°C " "$mcolor" "${mtemps[idx]:---}" "$NOCOLOR"`
 		fi
 
-		[[ ${powers[$idx]} -gt 999 ]] && ${powers[$idx]}="???"
-		result+=`printf "%b%4s %b%% %b%4s %bW" "$WHITE" "${fans[$idx]}" "$NOCOLOR" "$WHITE" "${powers[$idx]}" "$NOCOLOR"`
+		[[ ${powers[idx]} -gt 999 ]] && ${powers[idx]}="???"
+		result+=`printf "%b%4s %b%% %b%4s %bW" "$WHITE" "${fans[idx]}" "$NOCOLOR" "$WHITE" "${powers[idx]}" "$NOCOLOR"`
 		result+=$'\n'
 	done
 
@@ -510,53 +510,53 @@ gpu_compact() {
 	do
 		for((idx=first_idx; idx<last_idx; idx++)); do
 			local color=$YELLOW
-			if [[ ${brands[$idx]} == "nvidia" ]]; then
+			if [[ ${brands[idx]} == "nvidia" ]]; then
 				color=$GREEN
-			elif [[ ${brands[$idx]} == "amd" ]]; then
+			elif [[ ${brands[idx]} == "amd" ]]; then
 				color=$RED
 			fi
-			result+=`printf "%b%${step}s%b" "$color" "${busids[$idx]/\.0}" "$NOCOLOR"`
+			result+=`printf "%b%${step}s%b" "$color" "${busids[idx]/\.0}" "$NOCOLOR"`
 		done
 		result+=$'\n'
 
 		for((idx=first_idx; idx<last_idx; idx++)); do
 			local color=$WHITE
-			if [[ ${temps[$idx]} -ge 999 ]]; then
-				temps[$idx]="???"
+			if [[ ${temps[idx]} -ge 999 ]]; then
+				temps[idx]="???"
 				color=$BPURPLE
-			elif [[ ${temps[$idx]} -ge $CORE_VERY_HIGH_TEMP ]]; then
+			elif [[ ${temps[idx]} -ge $CORE_VERY_HIGH_TEMP ]]; then
 				color=$BRED
-			elif [[ ${temps[$idx]} -ge $CORE_HIGH_TEMP ]]; then
+			elif [[ ${temps[idx]} -ge $CORE_HIGH_TEMP ]]; then
 				color=$BYELLOW
 			fi
-			result+=`printf "%b%$((step-2))s%b°C" "$color" "${temps[$idx]}" "$NOCOLOR"`
+			result+=`printf "%b%$((step-2))s%b°C" "$color" "${temps[idx]}" "$NOCOLOR"`
 		done
 		result+=$'\n'
 
 		if [[ $show_mem_temp -eq 1 ]]; then
 			for((idx=first_idx; idx<last_idx; idx++)); do
 				local color=$WHITE
-				if [[ ${mtemps[$idx]} -ge 999 ]]; then
-					mtemps[$idx]="???"
+				if [[ ${mtemps[idx]} -ge 999 ]]; then
+					mtemps[idx]="???"
 					color=$BPURPLE
-				elif [[ ${mtemps[$idx]} -ge $MEM_VERY_HIGH_TEMP ]]; then
+				elif [[ ${mtemps[idx]} -ge $MEM_VERY_HIGH_TEMP ]]; then
 					color=$BRED
-				elif [[ ${mtemps[$idx]} -ge $MEM_HIGH_TEMP ]]; then
+				elif [[ ${mtemps[idx]} -ge $MEM_HIGH_TEMP ]]; then
 					color=$BYELLOW
 				fi
-				result+=`printf "%b%$((step-2))s%b°C" "$color" "${mtemps[$idx]:---}" "$NOCOLOR"`
+				result+=`printf "%b%$((step-2))s%b°C" "$color" "${mtemps[idx]:---}" "$NOCOLOR"`
 			done
 			result+=$'\n'
 		fi
 
 		for((idx=first_idx; idx<last_idx; idx++)); do
-			result+=`printf "%b%$((step-2))s%b %%" "$WHITE" "${fans[$idx]}" "$NOCOLOR"`
+			result+=`printf "%b%$((step-2))s%b %%" "$WHITE" "${fans[idx]}" "$NOCOLOR"`
 		done
 		result+=$'\n'
 
 		for((idx=first_idx; idx<last_idx; idx++)); do
-			[[ ${powers[$idx]} -gt 999 ]] && powers[$idx]="???"
-			result+=`printf "%b%$((step-2))s%b W" "$WHITE" "${powers[$idx]}" "$NOCOLOR"`
+			[[ ${powers[idx]} -gt 999 ]] && powers[idx]="???"
+			result+=`printf "%b%$((step-2))s%b W" "$WHITE" "${powers[idx]}" "$NOCOLOR"`
 		done
 		result+=$'\n'
 
@@ -588,16 +588,15 @@ rig_conf_update() {
 	. $RIG_CONF
 }
 
-
-conf_miners_array() {
-	local -n arr=$1
-	arr=()
+conf_miners=()
+conf_miners_update() {
+	conf_miners=()
 	local miner
 	local idx
 	for idx in {1..7}
 	do
 		[[ $idx -eq 1 ]] && miner="MINER" || miner="MINER$idx"
-		arr[$idx]="${!miner}"
+		conf_miners[idx]="${!miner}"
 	done
 }
 
@@ -627,17 +626,16 @@ miners_info() {
 	#echo "Miners: $WHITE${scr//(L)/ -}$NOCOLOR"
 	[[ -e $WALLET_CONF ]] && . $WALLET_CONF
 	run_miners_update
-	local conf_miners
-	conf_miners_array conf_miners
+	conf_miners_update
 	[[ ${#run_miners[@]} -eq 0 && ${#conf_miners[@]} -eq 0 ]] && return 0
 	local idx
 	local output=
 	for idx in {1..7}
 	do
-		[[ -z ${run_miners[$idx]} && -z ${conf_miners[$idx]} ]] && continue
-		if [[ ! -z ${conf_miners[$idx]} ]]; then
+		[[ -z ${run_miners[idx]} && -z ${conf_miners[idx]} ]] && continue
+		if [[ ! -z ${conf_miners[idx]} ]]; then
 			# get version from flightsheet
-			local miner_name=${conf_miners[$idx]//-/_}
+			local miner_name=${conf_miners[idx]//-/_}
 			local miner_fork="${miner_name^^}_FORK"
 			miner_fork=${!miner_fork}
 			[[ ! -z $miner_fork ]] && miner_fork="-$miner_fork"
@@ -645,7 +643,7 @@ miners_info() {
 			miner_ver=${!miner_ver}
 			if [[ -z $miner_ver ]]; then
 				# get default version from miner config
-				local MINER_DIR=/hive/miners/${conf_miners[$idx]}
+				local MINER_DIR=/hive/miners/${conf_miners[idx]}
 				[[ -e $MINER_DIR/h-manifest.conf ]] && source $MINER_DIR/h-manifest.conf
 				[[ -e $MINER_DIR/h-config.sh ]] && source $MINER_DIR/h-config.sh
 				local miner_ver=`miner_ver 2>/dev/null`
@@ -654,9 +652,9 @@ miners_info() {
 				[[ ! -z $miner_ver ]] && miner_ver=" $WHITE$miner_ver$NOCOLOR"
 			fi
 		fi
-		[[ ${run_miners[$idx]} == ${conf_miners[$idx]} ]] && output+="$SEP$BGREEN${conf_miners[$idx]}$miner_fork$NOCOLOR$miner_ver" && continue
-		[[ ! -z ${conf_miners[$idx]} ]] && output+="$SEP$BRED${conf_miners[$idx]}$miner_fork$NOCOLOR$miner_ver"
-		[[ ! -z ${run_miners[$idx]} ]] && output+="$SEP$BYELLOW${run_miners[$idx]}$NOCOLOR"
+		[[ ${run_miners[idx]} == ${conf_miners[idx]} ]] && output+="$SEP$BGREEN${conf_miners[idx]}$miner_fork$NOCOLOR$miner_ver" && continue
+		[[ ! -z ${conf_miners[idx]} ]] && output+="$SEP$BRED${conf_miners[idx]}$miner_fork$NOCOLOR$miner_ver"
+		[[ ! -z ${run_miners[idx]} ]] && output+="$SEP$BYELLOW${run_miners[idx]}$NOCOLOR"
 	done
 	local fs=
 	[[ -f $WALLET_CONF ]] && fs=`grep -m 1 -oP "FLIGHT SHEET \K\".*\"(?= ###$)" $WALLET_CONF 2>/dev/null` || fs="${BRED}EMPTY"
@@ -682,11 +680,6 @@ show_log() {
 	# log menu
 	local menu_color=$DGRAY
 
-	#local run_miners
-	#run_miners_array run_miners
-	#local conf_miners
-	#conf_miners_array conf_miners
-
 	local output=" "
 	local i
 	for i in {1..11}
@@ -704,9 +697,9 @@ show_log() {
 			title="help"
 			tab="h"
 		else
-			title=${run_miners[$i]}
+			title=${run_miners[i]}
 			color=$BGREEN
-			[[ -z $title ]] && title=${conf_miners[$i]} && color=$BRED
+			[[ -z $title ]] && title=${conf_miners[i]} && color=$BRED
 			[[ -z $title && "$i" != "$screen" ]] && continue
 		fi
 		[[ ! -z $title ]] && title=" $title"
@@ -781,7 +774,7 @@ show_log() {
 			local length=$(( ${#arr[@]} - 1 ))
 			local real_lines
 			for((idx=length; idx>=0; idx--)); do
-				real_lines=$(( ${#arr[$idx]}/(cols+1) + 1 ))
+				real_lines=$(( ${#arr[idx]}/(cols+1) + 1 ))
 				[[ $(( calc_lines + real_lines )) -gt $needed_lines ]] && break
 				calc_lines=$(( calc_lines + real_lines ))
 			done
@@ -889,7 +882,7 @@ function motd_watch() {
 	do
 		rig_conf_update
 		run_miners_update
-		conf_miners_array conf_miners
+		conf_miners_update
 
 		if [[ "$1" == "boot" ]]; then
 			( motd_watch_output ) # sub shell
