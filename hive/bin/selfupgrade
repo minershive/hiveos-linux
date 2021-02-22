@@ -2,8 +2,10 @@
 
 source colors
 [[ -e /etc/brand.conf ]] &&	source /etc/brand.conf
-[[ -z $BRAND ]] && BRAND="Hive"
-[[ -z $BRAND ]]	&& DEFAULT_REPO_URL="http://download.hiveos.farm/repo/binary"
+if [[ -z $BRAND ]]; then
+	BRAND="Hive"
+	DEFAULT_REPO_URL=`get_default_repo`
+fi
 
 HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
 
