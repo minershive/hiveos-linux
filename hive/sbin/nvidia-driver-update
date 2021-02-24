@@ -4,7 +4,10 @@
 
 . colors
 
-URL=http://download.hiveos.farm/drivers/
+[[ -e /etc/brand.conf ]] && source /etc/brand.conf
+[[ -z $DOWNLOAD_URL ]] && DOWNLOAD_URL=http://download.hiveos.farm
+
+DRVURL=$DOWNLOAD_URL/drivers/
 DRVPATH=/hive-drivers-pack/
 TIMEOUT=10
 RETRY=3
@@ -13,6 +16,9 @@ MINFREEMB=700
 DRVPATTERN="NVIDIA-Linux-x86_64-"
 DRVREGEXP="${DRVPATTERN}\K[0-9\.]+(?=\.run)"
 DRVNVIDIAURL="https://download.nvidia.com/XFree86/Linux-x86_64/"
+
+# repo list
+REPO_LIST=/etc/apt/sources.list.d/hiverepo.list
 
 CUDA_VER=(
 	11.2 460.27.04
@@ -129,30 +135,30 @@ function free_space() { # @url for package to keep
 }
 
 
+versions=()
 function get_versions() { # returns $versions
+	[[ ${#versions[@]} -gt 0 ]] && return 0
 	echo -ne "${CYAN}> Loading drivers list - ${NOCOLOR}"
-	local cnt=0
 	local list=
-	if [[ "$extrepo" == 1 ]]; then
+	if [[ "$DRVURL" == "$DRVNVIDIAURL" ]]; then
 		list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY $DRVNVIDIAURL` &&
 			readarray -t versions < <(echo "$list" | grep -oP "\>\K[0-9]+\.[0-9\.]+" | sort -u -V)
 	else
-		list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY $URL` &&
+		list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY $DRVURL` &&
 			readarray -t versions < <(echo "$list" | grep -oP "$DRVREGEXP" | sort -u -V)
 	fi
-	cnt=${#versions[@]}
-	[[ $cnt -eq 0 ]] && echo -e "${RED}Failed${NOCOLOR}" && return 1
-	echo -e "${GREEN}$cnt${NOCOLOR}"
+	[[ ${#versions[@]} -eq 0 ]] && echo -e "${RED}Failed${NOCOLOR}" && return 1
+	echo -e "${GREEN}${#versions[@]}${NOCOLOR}"
 	return 0
 }
 
 
 function get_stable() { # returns $stable_version
 	echo -en "${WHITE}> Stable version - ${NOCOLOR}"
-	if [[ "$extrepo" == 1 ]]; then
+	if [[ "$DRVURL" == "$DRVNVIDIAURL" ]]; then
 		local list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY ${DRVNVIDIAURL}latest.txt`
 	else
-		local list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY ${URL}VERSIONS.txt`
+		local list=`curl -sLk --connect-timeout $TIMEOUT --retry $RETRY ${DRVURL}VERSIONS.txt`
 	fi
 	[[ -z "$list" ]] && echo -e "${RED}Failed${NOCOLOR}" && return 1
 	stable_version=`echo "$list" | grep -oP "$DRVREGEXP" | tail -n 1`
@@ -181,6 +187,7 @@ function get_current() { # @silent, returns $current_version
 
 
 function get_latest() { # returns $latest_version
+	latest_version=
 	get_versions || return
 	get_current 1
 	latest_version="${versions[-1]}"
@@ -311,27 +318,25 @@ function get_url() { # @version or @url, returns $url and $url_tesla
 	# latest stable
 	if [[ -z "$1" ]]; then
 		get_latest || return $?
-		url="${URL}${DRVPATTERN}${latest_version}.run"
-	# 440.95.01 format
-	elif [[ "$1" =~ ^[0-9]{3}\.[0-9]{2,3}\.[0-9]{2}$ ]]; then
-		url="${DRVNVIDIAURL}$1/${DRVPATTERN}$1.run"
-		url_tesla="https://uk.download.nvidia.com/tesla/$1/${DRVPATTERN}$1.run"
-	# 123.45 format
-	elif [[ "$1" =~ ^[0-9]{3}\.[0-9]{2,3}$ ]]; then
-#		local last=
-#		get_versions
-#		if [[ $? -eq 0 ]]; then
-#			for drv in "${versions[@]}"
-#			do
-#				[[ "$drv" == "$1" ]] && last="$drv" && break
-#			done
-#		fi
-#		if [[ ! -z "$last" ]]; then
-#			url="${URL}${DRVPATTERN}${last}.run"
-#		else
-#			echo -e "${YELLOW}> ${WHITE}$1${YELLOW} was not found in the list. Trying to get it from NVIDIA${NOCOLOR}"
+		url="${DRVURL}${DRVPATTERN}${latest_version}.run"
+	# 440.95.01 & 123.45 formats
+	elif [[ "$1" =~ ^[0-9]{3}\.[0-9]{2,3}\.[0-9]{2}$ || "$1" =~ ^[0-9]{3}\.[0-9]{2,3}$ ]]; then
+		local last=
+		get_versions
+		if [[ $? -eq 0 ]]; then
+			for drv in "${versions[@]}"
+			do
+				[[ "$drv" == "$1" || "${drv%.*}" == "$1" ]] && last="$drv" && break
+			done
+		fi
+		if [[ ! -z "$last" ]]; then
+			url="${DRVURL}${DRVPATTERN}${last}.run"
+		else
+			echo -e "${YELLOW}> ${WHITE}$1${YELLOW} was not found in the list. Trying to get it from NVIDIA${NOCOLOR}"
 			url="${DRVNVIDIAURL}$1/${DRVPATTERN}$1.run"
-#		fi
+			[[ "$1" =~ ^[0-9]{3}\.[0-9]{2,3}\.[0-9]{2}$ ]] &&
+				url_tesla="https://uk.download.nvidia.com/tesla/$1/${DRVPATTERN}$1.run"
+		fi
 	# 123 format
 	elif [[ "$1" =~ ^[0-9]{3}$ ]]; then
 		get_versions || return $?
@@ -343,7 +348,7 @@ function get_url() { # @version or @url, returns $url and $url_tesla
 		done
 		[[ -z "$last" ]] && echo -e "${RED}> Unable to find latest driver version for $1 series${NOCOLOR}" && return 1
 		echo -e "${GREEN}> Latest driver for $1 series - ${WHITE}$last${NOCOLOR}"
-		url="${URL}${DRVPATTERN}${last}.run"
+		url="${DRVURL}${DRVPATTERN}${last}.run"
 	# url
 	else
 		url="$1"
@@ -385,7 +390,7 @@ function get_package() { # @url or @file, returns $package
 		echo -e ""
 		echo -e "${CYAN}> Downloading - ${WHITE}$url${NOCOLOR}"
 		[ ! -t 1 ] && verb="-nv" # reduce log in non-interactive mode
-		wget $verb -T $TIMEOUT -t $RETRY -c -P ${DRVPATH} $url 2>&1
+		wget $verb --no-check-certificate -T $TIMEOUT -t $RETRY -c -P ${DRVPATH} $url 2>&1
 		exitcode=$?
 		[[ $exitcode -ne 0 ]] && echo -e "${RED}> Download error ($exitcode)${NOCOLOR}" && return $exitcode
 
@@ -501,16 +506,22 @@ function install_driver() { # @url or @file, @force_install
 	nvstop
 	exitcode=$?
 	if [[ $exitcode -eq 0 ]]; then
-		local cmdline="--accept-license --no-questions --ui=none --dkms --no-opengl-files" #--install-libglvnd #--tmpdir=/hive-drivers-pack
+		local cmdline="--accept-license --no-questions --ui=none --dkms --no-opengl-files --no-install-compat32-libs" #--tmpdir=/hive-drivers-pack
 		# ignore GCC version mismatch
 		[[ $2 -eq 1 ]] && cmdline="$cmdline --no-cc-version-check" && local mode=" (forced mode)"
 		echo -e ""
 		echo -e "${CYAN}> Installing driver${mode}. ${WHITE}PLEASE WAIT!${NOCOLOR}"
 		${DRVPATH}$basename $cmdline
 		exitcode=$?
-		[[ $exitcode -eq 0 ]] &&
-			echo -e "${GREEN}> Done${NOCOLOR}" ||
+		# do not report error on driver loading without GPU
+		[[ $exitcode -eq 1 && `gpu-detect NVIDIA` -eq 0 ]] &&
+			grep -q "Unable to load the 'nvidia-drm' kernel module" /var/log/nvidia-installer.log &&
+			exitcode=0
+		if [[ $exitcode -eq 0 ]]; then
+			echo -e "${GREEN}> Done${NOCOLOR}"
+		else
 			echo -e "${YELLOW}> Failed ($exitcode)${NOCOLOR}"
+		fi
 	fi
 
 	install_nvs || exitcode=$?
@@ -559,26 +570,42 @@ function show_help() {
   nvidia-driver-update  -n | --nvs	reinstall nvidia-settings only
   nvidia-driver-update  -r | --remove	remove downloaded driver packages except currently installed
   nvidia-driver-update  -h | --help	display help
+  nvidia-driver-update  --repo[=URL]	use custom repository (specified by URL) (HTTP(S)/FTP)
 Examples:
   nvidia-driver-update --force 455
-  nvidia-driver-update --force --ext --list"
+  nvidia-driver-update --force --ext --list
+  nvidia-driver-update --list --repo=ftp://192.168.1.1/drivers/
+"
 }
 
 
 driver=
 force=
-extrepo=
 
 for param in $@; do
 	case "$param" in
 
 		-e|--ext)
-			extrepo=1
+			DRVURL=$DRVNVIDIAURL
 		;;
 
 		-f|--force)
 			force=1
 		;;
+
+		--repo)
+			[[ ! -f $REPO_LIST ]] && echo -e "${RED}> No default repository, exiting${NOCOLOR}" && exit 1
+			DRVURL=`grep -m1 -oP "deb\s*\K[^\s]+/repo/" $REPO_LIST`
+			[[ -z "$DRVURL" || "$DRVURL" =~ "${DOWNLOAD_URL##*/}" ]] && echo -e "${RED}> No custom repository, exiting${NOCOLOR}" && exit 1
+			[[ ! "$DRVURL" =~ /$ ]] && DRVURL+="/"
+		;;
+
+		--repo=*)
+			[[ -z ${param#*=} ]] && echo -e "${RED}> Repository URL is required, exiting${NOCOLOR}" && exit 1
+			DRVURL="${param#*=}"
+			[[ ! "$DRVURL" =~ /$ ]] && DRVURL+="/"
+		;;
+
 	esac
 done
 
