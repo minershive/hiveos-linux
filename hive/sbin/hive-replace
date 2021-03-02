@@ -464,7 +464,7 @@ function prepare {
 	done
 
 	for i in {1..3}; do
-		for pid in `lsof / | grep -v -P "^COMMAND|$SCRIPT_NAME| (mem|txt|rtd|cwd) |network|telec|hssh|watchdog|hl340|srrv2|hive-console" | awk '{print $2}'`; do
+		for pid in `lsof / | grep -v -P "^COMMAND|$SCRIPT_NAME| (mem|txt|rtd|cwd) |network|telec|hssh|watchdog|hl340|srrv2|hive-console|watchdog-octofan" | awk '{print $2}'`; do
 			cmd=`ps -p $pid -o args | tail -n 1`
 			kill -9 $pid 2>/dev/null && echo -e "> kill $pid: $cmd" && sleep 0.1
 		done
@@ -498,7 +498,7 @@ function prepare {
 	cp -a /usr/lib/x86_64-linux-gnu/libgmp* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
 	cp -a /usr/lib/x86_64-linux-gnu/libstdc++* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
 	cp -a /usr/lib/x86_64-linux-gnu/libpopt.so* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
-	
+
 	cp -a /usr/lib/x86_64-linux-gnu/libicu*.so* $TMPDIR/usr/lib/x86_64-linux-gnu > /dev/null 2>&1
 
 	cp -aR /dev $TMPDIR > /dev/null 2>&1
@@ -549,7 +549,7 @@ function write {
 		fi
 		exitcode=$?
 		[[ $exitcode -eq 0 ]] && echo -e "\r$(tail -n 1 ./progress 2>/dev/null)      "
-	fi 
+	fi
 	[[ $exitcode -ne 0 ]] && echo -e "${RED}Write image failed, exiting${NOCOLOR}" && return 2
 
 	# Fix GPT table if needed
