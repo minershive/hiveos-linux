@@ -9,7 +9,7 @@ NAVI_CVDDC_MIN=600   # Min VDDC - Gfx Core
 NAVI_CVDDC_MAX=1200  # Max VDDC - Gfx Core
 NAVI_CVDDC_SAFE=950  # Default fail safe voltage
 # SoC VDD limits, mV
-NAVI_SOC_VDD_MIN=600   # Min SoC VDD
+NAVI_SOC_VDD_MIN=650   # Min SoC VDD
 NAVI_SOC_VDD_MAX=1200  # Max SoC VDD
 # Memory Interface Controller Interface Voltage, mV
 NAVI_VDDCI_MIN=650   # Min VDDCI
@@ -22,10 +22,9 @@ NAVI_MaxMemClock=1075 # Max memory clock
 
 #echo "Set OC for GPU$i"
 echo "manual" > /sys/class/drm/card$cardno/device/power_dpm_force_performance_level
-
+args=""
 if [[ $NAVI_COUNT -ne 0 ]]; then
-    args=""
-    
+
     if [[ ! -z $VDDCI && ${VDDCI[$i]} -ge $NAVI_VDDCI_MIN && ${VDDCI[$i]} -le $NAVI_VDDCI_MAX ]]; then
        vlt_vddci=$((${VDDCI[$i]} * 4 ))
        args+="smc_pptable/MemVddciVoltage/1=${vlt_vddci} smc_pptable/MemVddciVoltage/2=${vlt_vddci} smc_pptable/MemVddciVoltage/3=${vlt_vddci} "
@@ -36,30 +35,35 @@ if [[ $NAVI_COUNT -ne 0 ]]; then
        args+="smc_pptable/MemMvddVoltage/1=${vlt_mvdd} smc_pptable/MemMvddVoltage/2=${vlt_mvdd} smc_pptable/MemMvddVoltage/3=${vlt_mvdd} "
     fi
 
-    if [[ ! -z $SOCCLK && ${SOCCLK[$i]} -gt 0 ]]; then
-        args+="smc_pptable/FreqTableSocclk/1=${SOCCLK[$i]} "
-    fi
+    #args+="smc_pptable/MinVoltageGfx=$(( NAVI_CVDDC_MIN * 4 )) smc_pptable/MinVoltageSoc=$(( NAVI_SOC_VDD_MIN * 4 )) "
+    args+="smc_pptable/MinVoltageGfx=$(( NAVI_CVDDC_MIN * 4 )) "
 
     if [[ ! -z $SOCVDDMAX && ${SOCVDDMAX[$i]} -ge $NAVI_SOC_VDD_MIN && ${SOCVDDMAX[$i]} -le $NAVI_SOC_VDD_MAX ]]; then
         vlt_soc=$((${SOCVDDMAX[$i]} * 4 ))
         args+="smc_pptable/MaxVoltageSoc=${vlt_soc} "
     fi
-
+    
+    if [[ $IS_NAVI20 -gt 0 ]]; then
+       #args+="smc_pptable/MinVoltageUlvGfx=$(( NAVI_CVDDC_MIN * 4 - 100 )) smc_pptable/MinVoltageGfx=$(( NAVI_CVDDC_MIN * 4 )) "
+       #args+="smc_pptable/MinVoltageUlvSoc=3100 smc_pptable/MinVoltageSoc=3200 "
+       #args+="smc_pptable/FreqTableSocclk/0=720  smc_pptable/FreqTableSocclk/1=${SOCCLK[$i]} "
+       args+="smc_pptable/VcBtcEnabled=0 smc_pptable/dBtcGbGfxDfllModelSelect=2 smc_pptable/DpmDescriptor/0/VoltageMode=2 smc_pptable/MaxVoltageGfx=$((NAVI_CVDDC_SAFE*4)) "
+       # SsCurve coef a,b,c must be inserted here
+    else
+    # navi10
     # overdrive_table/max/ 0/1/2/4/6=gfxclock, 3/5/7=gfxvolt, 9=pl_overdrive, 8=memclock
-    python3 /hive/opt/upp2/upp.py  -p /sys/class/drm/card$cardno/device/pp_table set \
-    	smc_pptable/FanStopTemp=0 smc_pptable/FanStartTemp=0 smc_pptable/FanZeroRpmEnable=0 \
-    	smc_pptable/MinVoltageGfx=$(( NAVI_CVDDC_MIN * 4 ))  \
+#       if [[ ! -z $SOCCLK && ${SOCCLK[$i]} -gt 0 ]]; then
+#          args+="smc_pptable/FreqTableSocclk/1=${SOCCLK[$i]} smc_pptable/FreqTableSocclk/2=${SOCCLK[$i]} "
+#       fi
+       args+="overdrive_table/max/8=${NAVI_MaxMemClock} "
+       args+="overdrive_table/min/3=${NAVI_CVDDC_MIN} overdrive_table/min/5=${NAVI_CVDDC_MIN} overdrive_table/min/7=${NAVI_CVDDC_MIN} "
+    fi
+
+    python3 /hive/opt/upp2/upp.py -p /sys/class/drm/card$cardno/device/pp_table set \
+    	smc_pptable/FanStopTemp=0 smc_pptable/FanStartTemp=10 smc_pptable/FanZeroRpmEnable=0 \
     	$args \
-    	overdrive_table/max/8=${NAVI_MaxMemClock} \
-    	overdrive_table/min/3=${NAVI_CVDDC_MIN} overdrive_table/min/5=${NAVI_CVDDC_MIN} overdrive_table/min/7=${NAVI_CVDDC_MIN} \
     	--write >/dev/null
 fi
-
-#	smcPPTable/FanTargetTemperature=85 
-#	smcPPTable/MemMvddVoltage/3=5200
-#	smcPPTable/MemVddciVoltage/3=3200
-#	smcPPTable/FanPwmMin=35
-#	OverDrive8Table/ODFeatureCapabilities/9=0
 
 function _SetcoreVDDC {
 #    echo "noop"
@@ -72,8 +76,11 @@ function _SetcoreClock {
     echo "s 1 $1" > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
     [[  -z $vdd  || $vdd -eq 0 ]] && vdd="${NAVI_CVDDC_SAFE}"
     [[  -z $vdd  && $NAVI_COUNT -ne 0 ]] && vdd="0"
-    [[ $vdd -ge $((NAVI_CVDDC_MIN+25)) ]] && echo "vc 1 $(($1-200)) $(($vdd-25))" > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
-    echo "vc 2 $1 $vdd" > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
+    if [[ $IS_NAVI20 -eq 0 ]]; then
+#       [[ $IS_NAVI10 -eq 0 ]] && echo "vc 0 800 600" > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
+       [[ $vdd -ge $((NAVI_CVDDC_MIN+25)) ]] && echo "vc 1 $(($1-200)) $(($vdd-25))" > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
+       echo "vc 2 $1 $vdd" > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
+    fi
     echo c > /sys/class/drm/card$cardno/device/pp_od_clk_voltage
 }
 
