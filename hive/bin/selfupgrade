@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
 source colors
+
+function get_default_repo {
+	grep -m1 -oP "deb \K[^\s]+" /hive/etc/hiverepo.list
+}
+
 [[ -e /etc/brand.conf ]] &&	source /etc/brand.conf
 if [[ -z $BRAND ]]; then
 	BRAND="Hive"
@@ -47,10 +52,6 @@ function set_repo {
 	[[ -e $HIVEREPO_LIST ]] && existing_repository_list="$(< $HIVEREPO_LIST)"
 	echo "${CYAN}> Using repository ${WHITE}$param${NOCOLOR}"
 	echo "$repository_list" > $HIVEREPO_LIST
-}
-
-function get_default_repo {
-	grep -m1 -oP "deb \K[^\s]+" /hive/etc/hiverepo.list
 }
 
 function restore_repo {
