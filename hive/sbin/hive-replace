@@ -23,8 +23,8 @@ if [[ -z $DOWNLOAD_URL ]]; then
 	DOWNLOAD_URL=https://download.hiveos.farm
 	# direct urls to images
 	STABLE_URL=$DOWNLOAD_URL/latest/
-	VEGA_URL=$DOWNLOAD_URL/vega/
 	BETA_URL=$DOWNLOAD_URL/beta/
+	#VEGA_URL=$DOWNLOAD_URL/vega/
 	# images archive
 	IMAGES_URL=$DOWNLOAD_URL/history/
 else
@@ -196,7 +196,7 @@ function get_image_from_list {
 			amd=`echo "$info" | grep -m1 -ioP "^amd[^\s]* \K.*"` && ver+="${SEP}${RED}A${NOCOLOR} $amd"
 			#boot=`echo "$info" | grep -m1 "^Dual"` && ver+="${SEP}$boot"
 			# get last line for desc
-			desc=`echo "$info" | tail -n 1 | grep -ivP "^(amd|nvidia|Linux|md5|$OS_BRAND)"` && ver+="${SEP} $desc"
+			desc=`echo "$info" | tail -n 1 | grep -ivP "^(amd|nvidia|Linux|md5|$OS_BRAND)"` && ver+="${SEP}$desc"
 		fi
 		((index++))
 		printf "%b%2s) %b\n" $WHITE $index "${NOCOLOR}$ver"
