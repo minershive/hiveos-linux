@@ -12,6 +12,7 @@ if [[ $1 == "-h" || $1 == "--help" ]]; then
 	echo -e "Usage:"
 	echo -e "  ${YELLOW}sreboot${NOCOLOR} - just reboots"
 	echo -e "  ${YELLOW}sreboot shutdown${NOCOLOR} - shutdowns"
+	echo -e "  ${YELLOW}sreboot cooloff${NOCOLOR} - stops miner, waits 30s, then shutdowns"
 	echo -e "  ${YELLOW}sreboot wakealarm [timeout]${NOCOLOR} - shutdowns and sets wake alarm in BIOS to [timeout] (default $WAKEALARM_TIMEOUT seconds)"
 	echo -e "  ${YELLOW}sreboot -h|--help${NOCOLOR} - shows this message"
 	exit 0
@@ -22,6 +23,12 @@ if [[ $1 == "wakealarm" && ! -e /sys/class/rtc/rtc0/wakealarm ]]; then
 	exit 1
 fi
 
+if [[ $1 == "cooloff" ]]; then
+	echo "> Stopping miner"
+	miner stop
+	echo "> Waiting cooloff period of 30s"
+	sleep 30s
+fi
 
 POWERCYCLE=
 # include POWERCYCLE only if it is supported
@@ -83,8 +90,8 @@ sleep 1
 [[ -w / ]] && mount -f -o remount,ro /
 
 
-if [[ $1 == "shutdown" || $1 == "wakealarm" || $POWERCYCLE -ne 0 ]]; then
-	if [[ $1 != "shutdown" ]]; then
+if [[ $1 == "shutdown" || $1 == "cooloff" || $1 == "wakealarm" || $POWERCYCLE -ne 0 ]]; then
+	if [[ $1 == "wakealarm"  ]]; then
 		[[ ! -z $2 ]] && WAKEALARM_TIMEOUT=$2
 		echo "> Setting wakealarm to $WAKEALARM_TIMEOUT sec and shutting down"
 		echo 0 > /sys/class/rtc/rtc0/wakealarm
