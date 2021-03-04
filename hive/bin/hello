@@ -263,8 +263,6 @@ if [[ $exitcode -ne 0 ]]; then
 	exit $exitcode
 fi
 
-echo "${BGREEN}OK${NOCOLOR}"
-
 # output and check json
 parsed=`echo "$response" | jq ${NOCOLOR:+-C} '.' 2>/dev/null`
 exitcode=$?
@@ -297,6 +295,8 @@ if [[ -z "$config" || "$config" == "null" ]]; then
 	#hello_quit
 	exit 1
 fi
+
+echo "${BGREEN}OK${NOCOLOR}"
 
 # stop screen session if not running from it
 [[ $arg_check == 0 ]] && hello_quit
