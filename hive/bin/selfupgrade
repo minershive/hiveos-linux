@@ -1,16 +1,8 @@
 #!/usr/bin/env bash
 
 source colors
-
-function get_default_repo {
-	grep -m1 -oP "deb \K[^\s]+" /hive/etc/hiverepo.list
-}
-
-[[ -e /etc/brand.conf ]] &&	source /etc/brand.conf
-if [[ -z $BRAND ]]; then
-	BRAND="Hive"
-	DEFAULT_REPO_URL=`get_default_repo`
-fi
+[[ -e /etc/brand.conf ]] && source /etc/brand.conf
+[[ -z $BRAND ]] && BRAND="Hive"
 
 HIVEREPO_LIST=/etc/apt/sources.list.d/hiverepo.list
 
@@ -28,16 +20,18 @@ export DEBIAN_FRONTEND=noninteractive
 
 function print_help {
 	demourl="http://192.168.0.1/repo/binary"
+	[[ -z $DEFAULT_REPO_URL ]] && DEFAULT_REPO_URL=`grep -m1 -oP "deb \K[^\s]+" /hive/etc/hiverepo.list`
 	echo "${CYAN}Usage: selfupgrade [option] [repository URL] [version]${NOCOLOR}
 Description:
   Tool for upgrading OS from $BRAND repository.
 Options:
-${GREEN}  -h|--help       ${NOCOLOR}to show current help
-${GREEN}  -f|--force      ${NOCOLOR}to force upgrade by cleaning apt lists, caches and locks
+${GREEN}  -h|--help        ${NOCOLOR}to show current help
+${GREEN}  -f|--force       ${NOCOLOR}to force upgrade by cleaning apt lists, caches and locks
                   it can help in situations when selfupgrade says 'System is up to date' but actually it isn't
-${GREEN}  -g|--grub       ${NOCOLOR}to update only grub config
-${GREEN}  repository URL  ${NOCOLOR}to get updates from; should start with http like ${DEFAULT_REPO_URL} or ${demourl}
-${GREEN}  version         ${NOCOLOR}to upgrade or downgrade; should be used the following format x.y-zz, like 0.6-65
+${GREEN}  -g|--grub        ${NOCOLOR}to update only grub config
+${GREEN}  -c|--consolefont ${NOCOLOR}to update console font
+${GREEN}  repository URL   ${NOCOLOR}to get updates from; should start with http like ${demourl} or ${DEFAULT_REPO_URL}
+${GREEN}  version          ${NOCOLOR}to upgrade or downgrade; should be used the following format x.y-zz, like 0.6-65
 Examples:
 ${GREEN}  selfupgrade 0.6-65 ${demourl} -f ${NOCOLOR}
                   force upgrade/downgrade to version 0.6-65 from repository ${demourl}
@@ -53,6 +47,7 @@ function set_repo {
 	echo "${CYAN}> Using repository ${WHITE}$param${NOCOLOR}"
 	echo "$repository_list" > $HIVEREPO_LIST
 }
+
 
 function restore_repo {
 	if [[ ! -z "$existing_repository_list" && "$existing_repository_list" != "$(< $HIVEREPO_LIST)" ]]; then
@@ -167,6 +162,16 @@ for param in "$@"; do
 			exit
 		;;
 
+		--consolefont|-c)
+			if [[ -f /hive/etc/console-setup ]]; then
+				setupcon # update current console
+				[[ ! -f /etc/default/console-setup || "$(< /hive/etc/console-setup)" != "$(< /etc/default/console-setup)" ]] &&
+					cp -f /hive/etc/console-setup /etc/default/console-setup &&
+					update-initramfs -u # update boot image
+			fi
+			exit
+		;;
+
 		http*) #Set user repository
 			set_repo "$param"
 		;;
@@ -258,6 +263,7 @@ if [[ $exitcode -eq 0 ]]; then
 		# Here should be listed all non-miner packages so that versions check will work
 		apt-get install -y -f --only-upgrade hive hive-lib hive-opt hive-opt-algomap $hive_extra_packages
 		aexitcode=$?
+		[[ $aexitcode -ne 0 ]] && echo "${RED}(exitcode=$aexitcode)${NOCOLOR}"
 		[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 
 		# Update root miners packages, maybe some versions will be uninstalled
@@ -266,6 +272,7 @@ if [[ $exitcode -eq 0 ]]; then
 			echo "${CYAN}> Checking miners packages${NOCOLOR}"
 			apt-get install -y -f --only-upgrade $packages
 			aexitcode=$?
+			[[ $aexitcode -ne 0 ]] && echo "${RED}(exitcode=$aexitcode)${NOCOLOR}"
 			[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 		fi
 
@@ -275,11 +282,13 @@ if [[ $exitcode -eq 0 ]]; then
 			echo "${CYAN}> Checking miners version packages${NOCOLOR}"
 			apt-get install -y -f --only-upgrade $packages
 			aexitcode=$?
+			[[ $aexitcode -ne 0 ]] && echo "${RED}(exitcode=$aexitcode)${NOCOLOR}"
 			[[ $aexitcode -gt $exitcode ]] && exitcode=$aexitcode
 		fi
 	else
 		apt-get install -y -f --only-upgrade --allow-downgrades --reinstall hive=$VERSION
 		exitcode=$?
+		[[ $exitcode -ne 0 ]] && echo "${RED}(exitcode=$exitcode)${NOCOLOR}"
 	fi
 fi
 
