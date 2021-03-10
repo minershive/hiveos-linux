@@ -9,7 +9,7 @@
 
 archName="e1000e-$driverVersion.tar.gz"
 downloadUrl="https://downloadmirror.intel.com/15817/eng/$archName"
-tmpDir="/hive/tmp"
+tmpDir="/tmp"
 archpath="$tmpDir/$archName"
 
 echo -e "${WHITE}> Installing Intel's E1000E driver${NOCOLOR}"
