@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-[[ -e /hive/opt/k10temp ]] && rm -R /hive/opt/k10temp
-exit 0

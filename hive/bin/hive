@@ -224,7 +224,8 @@ else
 	if [[ $GPU_COUNT_NVIDIA -gt 0 ]]; then
 		rm -f /var/log/nvidia-oc.log
 		echo2 "> Loading ${GREEN}NVIDIA${NOCOLOR} drivers, $GPU_COUNT_NVIDIA GPU"
-		modprobe nvidia_drm modeset=1
+		#modprobe nvidia_drm modeset=1
+		modprobe nvidia
 	fi
 	pgrep --full nvidia-persistenced > /dev/null || nvidia-persistenced --persistence-mode
 
@@ -388,14 +389,11 @@ fi
 	autofan start
 
 
-#k10temp for cpu temp
-modprobe k10temp
-if [[ $(modinfo k10temp | grep alias | wc -l) -lt 12 ]]; then
-	echo2 "> Installing k10temp module"
-	#nohup /hive/opt/k10temp/install.sh > /dev/null 2>&1 &
-	/hive/opt/k10temp/install.sh
+# AMD k10temp module
+if [[ "$(< /proc/cpuinfo)" =~ AuthenticAMD ]] then
+	/hive/opt/k10temp/install.sh quiet | sed 's/\x1b\[[0-9;]*m//g' # remove colors from syslog
+	modprobe k10temp
 fi
-
 
 echo2 "> System start complete"
 

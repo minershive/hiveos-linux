@@ -1,8 +1,0 @@
-Package: hive-opt-k10temp
-Version: 0.6-87
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Bee <bee@hiveos.farm>
-Description: Kernel driver k10temp
-Depends: hive-opt(>=0.6-10)

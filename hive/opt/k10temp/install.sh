@@ -1,47 +1,47 @@
 #!/bin/bash
+# quiet|force
 
-[ -t 1 ] && . /hive/bin/colors
+[[ -t 1 ]] && source colors
 
+tmpDir=/tmp
+buildDir=$tmpDir/k10temp
+srcDir=/hive/opt/k10temp/source
 
-echo -e "${GREEN}> Installing k10temp module${NOCOLOR}"
+src_ver=`grep -m1 -oP "DRV_VER\s*:=\s*\K[^\s]+" $srcDir/Makefile 2>/dev/null`
+cur_ver=`modinfo -F version k10temp 2>/dev/null`
+if [[ $? -eq 0 ]]; then
+	[[ "$1" != "quiet" ]] && echo -e "Installed module version: ${cur_ver:-unknown}"
+	[[ "$1" != "force" && "$cur_ver" == "$src_ver" ]] && exit 0
+fi
 
-tmpDir="/hive/tmp"
-#downloadUrl="https://github.com/groeck/k10temp/archive/master.zip"
+rmmod k10temp 2>/dev/null
+mkdir -p $tmpDir
 
-rmmod k10temp
-#mkdir -p $tmpDir
-#cd $tmpDir
+echo -e "${GREEN}> Building k10temp module ${src_ver}${NOCOLOR}"
 
-#wget -c --no-check-certificate $downloadUrl
-#[ $? -ne 0 ] && echo -e "${RED}Error downloading $downloadUrl${NOCOLOR}" && exit 1
-
-
-#unzip -o master.zip
-#cd k10temp-master
-[[ -e /hive/opt/k10temp/build ]] && rm -R /hive/opt/k10temp/build
-cp -R /hive/opt/k10temp/source /hive/opt/k10temp/build
-cd /hive/opt/k10temp/build
+[[ -d $buildDir ]] && rm -R $buildDir
+cp -R $srcDir $buildDir
+cd $buildDir
 make
 
-[ $? -ne 0 ] && echo "${RED}> Driver building error" && exit 1
+[[ $? -ne 0 ]] && echo "${RED}> Driver building error${NOCOLOR}" && exit 1
 
 echo -e "${GREEN}> Driver integration${NOCOLOR}"
 
 make install
-#cd ..
-#rm -rf k10temp-master
-#rm master.zip
+
 cd ..
-rm -R /hive/opt/k10temp/build
+rm -R $buildDir
+
 modprobe k10temp
 
-if [[ $? = 0 ]]; then
-	echo -e "${GREEN}> Installed, updating initramfs${NOCOLOR}"
-else
+if [[ $? -ne 0 ]]; then
 	echo -e "${RED}> Module installation failed${NOCOLOR}"
 	exit 1
 fi
 
+echo -e "${GREEN}> Installed, updating initramfs${NOCOLOR}"
 update-initramfs -u
 echo -e "${GREEN}Done. Have a happy CPU mining${NOCOLOR}"
+
 exit 0
