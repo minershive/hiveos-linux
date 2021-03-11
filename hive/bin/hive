@@ -329,7 +329,7 @@ echo2 "`xorg-conf`"
 # auto enable X server for Nvidia gpu
 [[ -z $X_DISABLED && $GPU_COUNT_NVIDIA -gt 0 ]] && X_DISABLED=0
 
-if [[ $X_DISABLED == 0 && $DISKLESS != 1 && $MAINTENANCE != 2 ]]; then
+if [[ $X_DISABLED == 0 && $MAINTENANCE != 2 ]]; then
 	echo2 "> Starting X Server"
 
 	# don't know why by this fixes amdgpu 17.40 bug

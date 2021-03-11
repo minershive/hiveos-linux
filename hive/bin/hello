@@ -122,23 +122,30 @@ cpu_id=`dmidecode -t 4 | grep ID | sed 's/.*ID://;s/ //g'`
 	first_mac=`sed 's/://g' /sys/class/net/eth0/address` || #on some motherboards eth0 is disabled
 	first_mac=$(echo $net_interfaces | jq -r .[0].mac | sed 's/://g') #just grab the first in list
 
+if [[ ! -f /hive-config/.DISKLESS_AMD ]]; then
+
 bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
 if [[ "$(echo $bootpart | grep -c nvme)" -gt 0 ]]; then
-	bootdisk=${bootpart::-2} #cutoff partnumber
+    bootdisk=${bootpart::-2} #cutoff partnumber
 else
-	bootdisk=${bootpart::-1} #cutoff partnumber
+    bootdisk=${bootpart::-1} #cutoff partnumber
 fi
 #disk_model=`parted -mls | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
 disk_info=`parted -mls 2>/dev/null | grep "/dev/"`
 # root disk first
 disk_model=`echo "$disk_info" | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
 disk_model+=`echo "$disk_info" | grep -v "$bootdisk:" | awk -F ':' '{print ", " $7 " " $2}'`
+else
+fsip=`cat /proc/cmdline | grep -o '\bhttproot=[^ ]*' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'`
+disk_model="Diskless PXE from $fsip"
+fi
 
 kernel=`uname --kernel-release`
 amd_version=`dpkg -s amdgpu-pro 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`
 [[ -z $amd_version ]] && amd_version=`dpkg -s amdgpu 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`
 #if there is no driver but only OpenCL
-[[ -z $amd_version ]] && amd_version="OpenCL `dpkg -s opencl-amdgpu-pro-icd 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`"
+[[ -z $amd_version ]] && amd_version=`dpkg -s opencl-amdgpu-pro-icd 2>&1 | grep '^Version: ' | sed 's/Version: //' | awk -F'-' '{print $1}'`
+[[ -z $amd_version ]] && [[ -f /opt/amdgpu-pro/VERSION ]] && amd_version=`cat /opt/amdgpu-pro/VERSION |awk -F '-'  '{print $1}'`
 
 # System pseudo unique number
 uid=$(echo ${system_uuid}-${cpu_id}-${first_mac} | tr '[:upper:]' '[:lower:]' | sha1sum | awk '{print $1}')
