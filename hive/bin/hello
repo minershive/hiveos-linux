@@ -20,6 +20,8 @@ arg_boot=0
 arg_verbose=0
 # no color
 arg_nocolor=0
+# no miner start
+arg_nostart=0
 
 # check for arguments
 for var in "$@"; do
@@ -28,6 +30,7 @@ for var in "$@"; do
 		redetect) arg_redetect=1;;
 		verbose) arg_verbose=1;;
 		nocolor) arg_nocolor=1;;
+		nostart) arg_nostart=1;;
 		# used internally
 		retry) arg_retry=1;;
 		check) arg_check=1;;
@@ -465,7 +468,7 @@ if [[ $arg_boot == 0 ]]; then
 	fi
 
 	[[ -e $WALLET_CONF ]] && wallet=$(< $WALLET_CONF) || wallet=
-	[[ "$old_wallet" != "$wallet" ]] && miner restart
+	[[ "$old_wallet" != "$wallet" && $arg_nostart == 0 ]] && miner restart
 fi
 
 #echo "${CYAN}> Touching $HELLO_OK${NOCOLOR}"

@@ -332,8 +332,7 @@ gpu-detect listjson > $GPU_DETECT_JSON
 
 # Moved from postinst again as hello need to see new version
 #echo "${CYAN}> Saying hello to server again${NOCOLOR}"
-#hello="$(unbuffer hello)" || echo "$hello"
-hello
+hello nostart
 
 # Restart agent
 echo "${CYAN}> Restarting agent${NOCOLOR}"
