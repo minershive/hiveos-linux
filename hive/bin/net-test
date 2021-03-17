@@ -250,10 +250,9 @@ function Connections {
 		Connection "hiveos.farm" "" " "
 		[[ $? -eq 4 && $DOH -ne 1 ]] && echo -e "$(PrintCase "")	${BRED}Or try to enable DoH service: ${WHITE}dnscrypt -i${NOCOLOR}"
 		# add default hosts
-		[[ -z "$API_HOST_URLs" || $ADV -eq 1 ]] &&
-			for host in "${API_HOSTS[@]}"; do
-				[[ ! " ${HOSTS[@]} " =~ " $host " ]] && HOSTS+=("$host")
-			done
+		for host in "${API_HOSTS[@]}"; do
+			[[ ! " ${HOSTS[@]} " =~ " $host " ]] && HOSTS+=("$host")
+		done
 	fi
 
 	# Repo urls
