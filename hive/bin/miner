@@ -63,12 +63,12 @@ function start() {
 	[[ -f /run/hive/cur_miner ]] && rm /run/hive/cur_miner
 
 	#[[ ! -z $MAINTENANCE && $MAINTENANCE -gt 0 ]] &&
-	#	echo -e "${YELLOW}Maintenance mode enabled, exiting${NOCOLOR}" &&
+	#	echo -e "${YELLOW}Maintenance mode enabled${NOCOLOR}" &&
 	#	exit 1
 
 	if [[ -z $MINER ]]; then
 		message warn "No miner is set" > /dev/null
-		echo -e "${YELLOW}No miner is set in config, exiting ${NOCOLOR}"
+		echo -e "${YELLOW}No miner is set in config${NOCOLOR}"
 		exit 1
 	fi
 
@@ -127,9 +127,10 @@ function stop() {
 
 	#screens=`screen -ls miner | grep -E "[0-9]+\.miner" | cut -d. -f1 | awk '{print $1}'`
 	screens=(`screen -ls miner | grep -Po "\K[0-9]+(?=\.miner)" | sort --unique`)
-	[[ ${#screens[@]} -eq 0 ]] &&
-		echo "No miner screens found" &&
-		return
+	if [[ ${#screens[@]} -eq 0 ]]; then
+		echo "No miner screens found"
+		return 1
+	fi
 
 	# prevent some miners from restarting in the loop
 	echo 1 > $MINER_STOP
@@ -419,7 +420,7 @@ function status {
 
 ########################################################################################################################
 
-case $1 in
+case "$1" in
 	start)
 		bench_check
 		# start WD before miner to return miner start exit code not WD
@@ -440,9 +441,13 @@ case $1 in
 	restart)
 		# we do not touch WD here or it will be reset and never reboot worker
 		bench_check
-		#echo -e "Restarting ${CYAN}$MINER${NOCOLOR}"
 		echo -e "${YELLOW}Restarting miner${NOCOLOR}" #can be different on miner change
 		stop
+		if [[ $? -ne 0 && $MAINTENANCE -gt 0 ]]; then
+			echo -e "${YELLOW}Maintenance mode enabled and no miner was running${NOCOLOR}"
+			echo -e "Use ${WHITE}miner start${NOCOLOR} in maintenance mode"
+			exit 1
+		fi	
 		# need some time to finish it seems
 		sleep 1
 		start
