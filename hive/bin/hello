@@ -126,21 +126,20 @@ cpu_id=`dmidecode -t 4 | grep ID | sed 's/.*ID://;s/ //g'`
 	first_mac=$(echo $net_interfaces | jq -r .[0].mac | sed 's/://g') #just grab the first in list
 
 if [[ ! -f /hive-config/.DISKLESS_AMD ]]; then
-
-bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
-if [[ "$(echo $bootpart | grep -c nvme)" -gt 0 ]]; then
-    bootdisk=${bootpart::-2} #cutoff partnumber
+	bootpart=`readlink -f /dev/block/$(mountpoint -d /)`
+	if [[ "$(echo $bootpart | grep -c nvme)" -gt 0 ]]; then
+	    bootdisk=${bootpart::-2} #cutoff partnumber
+	else
+	    bootdisk=${bootpart::-1} #cutoff partnumber
+	fi
+	#disk_model=`parted -mls | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
+	disk_info=`parted -mls 2>/dev/null | grep "/dev/"`
+	# root disk first
+	disk_model=`echo "$disk_info" | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
+	disk_model+=`echo "$disk_info" | grep -v "$bootdisk:" | awk -F ':' '{print ", " $7 " " $2}'`
 else
-    bootdisk=${bootpart::-1} #cutoff partnumber
-fi
-#disk_model=`parted -mls | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
-disk_info=`parted -mls 2>/dev/null | grep "/dev/"`
-# root disk first
-disk_model=`echo "$disk_info" | grep -m1 "$bootdisk:" | awk -F ':' '{print $7 " " $2}'`
-disk_model+=`echo "$disk_info" | grep -v "$bootdisk:" | awk -F ':' '{print ", " $7 " " $2}'`
-else
-fsip=`cat /proc/cmdline | grep -o '\bhttproot=[^ ]*' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'`
-disk_model="Diskless PXE from $fsip"
+	fsip=`cat /proc/cmdline | grep -o '\bhttproot=[^ ]*' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'`
+	disk_model="Diskless PXE from $fsip"
 fi
 
 kernel=`uname --kernel-release`
