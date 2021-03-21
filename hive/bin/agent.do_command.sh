@@ -159,12 +159,13 @@ function do_command() {
 				# Final actions ---------------------------------------------------------
 				if [[ $justwrite != 1 && $bench -eq 0 ]]; then
 					hostname-check
-					[[ "$old_wallet" != "$(<$WALLET_CONF)" ]] && miner restart || miner start
+					if [[ "$old_wallet" != "$(<$WALLET_CONF)" ]]; then
+						miner restart
+					else
+						miner start
+					fi	
 				fi
 
-				# Start Watchdog. It will exit if WD_ENABLED=0 ---------------------------
-				#[[ $WD_ENABLED=1 && $bench -eq 0 ]] && wd restart
-				
 				if [[ $bench -eq 0 ]]; then
 					message ok "Rig config changed" --id=$cmd_id
 				else
@@ -705,9 +706,9 @@ function oc_if_changed () {
 	[[ ! -z $amd_oc && $amd_oc != "null" && $amd_oc != $amd_oc_old ]] &&
 		amd_oc_changed=1 || amd_oc_changed=
 
-	[[ $justwrite != 1 && ! -z $nvidia_oc_changed || ! -z $amd_oc_changed ]] &&
-		echo -e "${YELLOW}Stopping miner before Overclocking${NOCOLOR}" &&
-		miner stop
+	#[[ $justwrite != 1 && ! -z $nvidia_oc_changed || ! -z $amd_oc_changed ]] &&
+	#	echo -e "${YELLOW}Stopping miner before Overclocking${NOCOLOR}" &&
+	#	miner stop
 
 	if [[ ! -z $nvidia_oc_changed ]]; then
 		#echo -e "${YELLOW}Saving Nvidia OC config${NOCOLOR}"

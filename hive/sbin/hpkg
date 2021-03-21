@@ -43,10 +43,11 @@ function remove_miners() {
 	packages=$(getlist miners)
 	[[ -z $packages ]] && echo "Nothing to uninstall" && exit 0
 
-
+	local mn=0
 	if miner status >/dev/null; then
 		echo -e "${CYAN}> Stopping miners${NOCOLOR}"
 		miner stop
+		mn=1
 	fi
 
 	echo
@@ -97,8 +98,9 @@ function remove_miners() {
 		echo -e "${CYAN}> Skipping restarting miner${NOCOLOR}" &&
 		exit 0
 
-	echo -e "${CYAN}> Restarting miner${NOCOLOR}"
-	miner start
+	[[ $mn -ne 0 ]] &&
+		echo -e "${CYAN}> Restarting miner${NOCOLOR}" &&
+		miner start
 
 }
 
