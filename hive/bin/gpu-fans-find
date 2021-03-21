@@ -16,6 +16,9 @@ DEBUG=0
 
 export DISPLAY=":0"
 
+as=0
+mn=0
+
 
 amd_set_fan_pwm() {
 	local hwmondir="$1"
@@ -213,18 +216,21 @@ echo ""
 	exit 1
 
 
+
 if [[ "$DEBUG" != "1" ]]; then
-	echo -e "> Stopping miner session"
-	miner stop
+	as=$(screen -ls | grep -c autoswitch)
 
-	#echo -e "> Stopping hashrate watchdog"
-	#wd stop
+	if miner status >/dev/null; then
+		echo "> Stopping miner session"
+		miner stop
+		mn=1
+	fi
 
-	echo -e "> Stopping autofan"
+	echo "> Stopping autofan"
 	autofan stop
 fi 
 
-echo -e "> Stopping Fans"
+echo "> Stopping Fans"
 [[ ! -z ${AMD_BUSID[*]} ]] && echo -e "${YELLOW}Notice: If you have AMD GPU with GPU temp 511 this fan will not be stopped!${NOCOLOR}"
 stop_fans
 
@@ -247,14 +253,17 @@ if [[ "$DEBUG" != "1" ]]; then
 	[[ ! -z ${NVIDIA_BUSID[*]} ]] && nvidia-oc 1>/dev/null
 	[[ ! -z ${AMD_BUSID[*]} ]] && amd-oc 1>/dev/null
 
-	echo -e "> Starting autofan"
+	echo "> Starting autofan"
 	autofan start
 
 	#echo -e "> Starting hashrate watchdog"
 	#wd start
 
-	echo -e "> Starting miner session"
-	miner start
+	[[ $mn -ne 0 ]] && 
+		echo "> Starting miner session" &&
+		miner start
+
+	[[ $as -ne 0 ]] && nohup bash -c 'sleep 15 && autoswitch start' > /tmp/nohup.log 2>&1 &
 fi
 
 exit 0
