@@ -390,7 +390,7 @@ fi
 
 
 # AMD k10temp module
-if [[ "$(< /proc/cpuinfo)" =~ AuthenticAMD ]] then
+if [[ "$(< /proc/cpuinfo)" =~ AuthenticAMD ]]; then
 	/hive/opt/k10temp/install.sh quiet | sed 's/\x1b\[[0-9;]*m//g' # remove colors from syslog
 	modprobe k10temp
 fi
