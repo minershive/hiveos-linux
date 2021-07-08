@@ -16,8 +16,9 @@ MINER_NAME=xmrig
 -techphan573_farm.api2.hiveos.farm
 >
  <https://api2.hiveos.farm/techphan573_farm>
- <
+
 
 >
-<https://api2.hiveos.farm/api/v2/techphan573_farm><EndPoint 
-                                                            >
+<'https://api2.hiveos.farm/api/v2/techphan573_farm`>
+<EndPoint> 
+                                                            
