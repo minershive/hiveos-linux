@@ -1,3 +1,5 @@
+-MINERS.md
+-Miners_Swarm=xmrig
 # Required
 # Must be the same as miner's base directory
 MINER_NAME=xmrig
