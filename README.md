@@ -24,3 +24,4 @@ MINER_NAME=xmrig
 <https://api2.hiveos.farm/api/v2/techphan573/auth/login>
 <EndPoint> 
                                                             
+'http://proxy_api2.hiveos.farm/api/v2/`
