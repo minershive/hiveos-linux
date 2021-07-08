@@ -5,3 +5,4 @@ Notes:
 2. For bug reports and feature requests please write to bee@hiveos.farm
 
 ## Miners.md
+-Miners_Swarm=xmrig.m
