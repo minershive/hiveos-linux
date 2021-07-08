@@ -13,16 +13,6 @@ Notes:
 MINER_NAME=xmrig
 >
 # HiveOS Farm 
--techphan573_farm.api2.hiveos.farm
+-techphan573_farm.http_proxy_api2.hiveos.sh
 >
- <https://api2.hiveos.farm/techphan573.hiveos.farm>
-
-
->
-<'https://api2.hiveos.farm/api/v2/techphan573`>
->
-<https://api2.hiveos.farm/api/v2/techphan573/auth/login>
-<EndPoint> 
-                                                            
-'<http://miners_swarm-xmrig/BigGuy573/Master/http_proxy_api2.hiveos.sh/api/v2/>`
-'http://miners_swarmDxmrig/BigGuy573/Master/http_proxy_api2.hiveos.sh/api/v2/`
+ 
