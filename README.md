@@ -11,3 +11,6 @@ Notes:
 # Required
 # Must be the same as miner's base directory
 MINER_NAME=xmrig
+
+# HiveOS Farm 
+-techphan573_farm@hiveos.farm
