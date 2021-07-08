@@ -6,6 +6,7 @@ Notes:
 
 ## Miners.md
 -Miners_Swarm=xmrig.m
+>
 -Miners_Swarm=xmrig
 # Required
 # Must be the same as miner's base directory
