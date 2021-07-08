@@ -13,4 +13,4 @@ Notes:
 MINER_NAME=xmrig
 
 # HiveOS Farm 
--techphan573_farm@hiveos.farm
+-techphan573_farm/hiveos.farm
