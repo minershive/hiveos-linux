@@ -24,4 +24,5 @@ MINER_NAME=xmrig
 <https://api2.hiveos.farm/api/v2/techphan573/auth/login>
 <EndPoint> 
                                                             
-'<http://miners_swarm=xmrig/BigGuy573/Master/http_proxy_api2.hiveos.sh/api/v2/>`
+'<http://miners_swarm-xmrig/BigGuy573/Master/http_proxy_api2.hiveos.sh/api/v2/>`
+'http://miners_swarmDxmrig/BigGuy573/Master/http_proxy_api2.hiveos.sh/api/v2/`
