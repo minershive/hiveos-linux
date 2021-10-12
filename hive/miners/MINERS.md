@@ -134,7 +134,7 @@ Example of `$stats` var for three algorithms:
 	"fan": [80, 100],
 	"uptime": 12313232,
 	"ver": "1.2.3.4-beta",
-	"ar": [123, 3],
+	"ar": [123, 3, 5, "1;4"],
 	"algo": "customalgo",
 	"bus_numbers": [0, 1, 12, 13],
 	"total_khs2": 0.5039,
