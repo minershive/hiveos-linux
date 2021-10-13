@@ -150,7 +150,7 @@ Example of `$stats` var for three algorithms:
 	"hs_units3": "mhs",
 	"temp3": [55, 55, 54, 55],
 	"fan3": [30, 30, 30, 30],
-	"ar3": [12312, 35],
+	"ar3": [12312, 35, 3],
 	"algo3": "thirdcustomalgo",
 	"bus_numbers3": [8, 9, 10, 11]
 }
