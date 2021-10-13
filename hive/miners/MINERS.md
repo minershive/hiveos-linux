@@ -111,7 +111,7 @@ Example of `$stats` var:
 
 	//Optional: accepted, rejected shares.
 	//2 numbers are required, you can add total invalids as 3rd number
-	//4th array item can be string with invalids per gpu semicolon separated in order or bus_numbers, e.g. "0;1;0;5" where 5 is for 13th pci bus
+	//4th array item can be string with invalids per gpu semicolon separated in order of bus_numbers, e.g. "0;1;0;5" where 5 is for 13th pci bus
 	"ar": [123, 3, optional Invalids, "optional Invalids per GPU"],
 
 	//Optional: algo used by miner, should one of the exiting in Hive
