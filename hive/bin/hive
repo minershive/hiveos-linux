@@ -400,4 +400,8 @@ echo2 "> System start complete"
 # start console
 systemctl restart hive-console
 
+
+# restart network interface
+ifconfig eth0 down
+ifconfig eth0 up
 exit 0
