@@ -139,7 +139,7 @@ function calc_khs_stats() { #main function
 
       #add hashrate from prior miners if they exist
       if [[ ! -z $algo && $algo != 'null' && ! -z $khs && $khs != 'null' ]]; then
-        khs=`jq -r '."'${algo}'"+"'$khs'"' <<< "$khs_json"`
+        khs=`jq -r '."'"${algo}"'"+"'$khs'"' <<< "$khs_json"`
         [[ ! -z $khs ]] && local json=`echo $khs_json '{"'${algo}'": '"${khs}"'}' | jq -cs '.[0] * .[1]'  2>/dev/null` &&
            khs_json="$json" ||
            echo -e "${RED}JSON parsing error${NOCOLOR}"
@@ -153,6 +153,8 @@ function calc_khs_stats() { #main function
   for (( i = 0; i < $algo_count; i++ )); do
     algo=`echo $khs_json | jq -r 'to_entries['$i'].key'`
     algo=${algo//\//⧸} #replace all chars "/" with "_"
+    algo=$(echo $algo | tr '/' "_")
+    algo=$(echo $algo | tr ' ' "_")
     khs=`echo $khs_json | jq -r 'to_entries['$i'].value'`
     check_stats_file
     if [[ -e $KHS_STATS_DIR/$algo ]]; then
