@@ -152,9 +152,9 @@ function calc_khs_stats() { #main function
   algo_count=`echo $khs_json | jq '. | length'`
   for (( i = 0; i < $algo_count; i++ )); do
     algo=`echo $khs_json | jq -r 'to_entries['$i'].key'`
-    algo=${algo//\//⧸} #replace all chars "/" with "_"
-    algo=$(echo $algo | tr '/' "_")
-    algo=$(echo $algo | tr ' ' "_")
+    algo=${algo//\\/_} #replace all chars "\" with "_"
+    algo=${algo// /_}} #replace all chars " " with "_"
+    algo=${algo////_}  #replace all chars "/" with "_"
     khs=`echo $khs_json | jq -r 'to_entries['$i'].value'`
     check_stats_file
     if [[ -e $KHS_STATS_DIR/$algo ]]; then
